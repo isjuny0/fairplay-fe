@@ -1,0 +1,23 @@
+name: Chore
+description: 구성, 설정, 인프라 작업을 정리합니다.
+title: "[chore]: "
+labels: ["chore"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: 목적
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 범위
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: 완료 기준
+    validations:
+      required: true

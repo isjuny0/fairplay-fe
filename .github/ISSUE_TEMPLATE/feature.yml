@@ -1,0 +1,23 @@
+name: Feature request
+description: 새 기능이나 개선 요청을 정리합니다.
+title: "[feat]: "
+labels: ["feature"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: 목표
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 범위
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: 완료 기준
+    validations:
+      required: true

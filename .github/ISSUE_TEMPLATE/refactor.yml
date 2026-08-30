@@ -1,0 +1,23 @@
+name: Refactor
+description: 리팩터링 작업을 정리합니다.
+title: "[refactor]: "
+labels: ["refactor"]
+body:
+  - type: textarea
+    id: target
+    attributes:
+      label: 대상
+    validations:
+      required: true
+  - type: textarea
+    id: reason
+    attributes:
+      label: 이유
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: 완료 기준
+    validations:
+      required: true
