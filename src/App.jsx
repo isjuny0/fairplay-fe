@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { createSpace, joinSpace, listSpaces } from './api/spaces.js';
+import { joinSpace, listSpaces } from './api/spaces.js';
 
 const DEFAULT_API_BASE_URL = 'http://localhost:8080';
 
@@ -57,13 +57,13 @@ function App() {
     event.preventDefault();
     const value = input.trim();
     if (!value) {
-      setError(modal === 'create' ? '스페이스 이름을 입력해 주세요.' : '참여 코드를 입력해 주세요.');
+      setError('참여 코드를 입력해 주세요.');
       return;
     }
     setError('');
     setIsSubmitting(true);
     try {
-      const nextSpace = modal === 'create' ? await createSpace(value) : await joinSpace(value);
+      const nextSpace = await joinSpace(value);
       setSpaces((current) => [...current, nextSpace]);
       setModal(null);
     } catch (requestError) {
@@ -79,8 +79,7 @@ function App() {
 
   return <div className="app-shell">
     <header className="main-header"><div className="brand"><span className="logo-mark" aria-hidden="true">F</span><span className="wordmark">Fairplay</span></div><button type="button" className="logout-button" onClick={handleLogout}>로그아웃</button></header>
-    <main className="main-content"><div className="page-heading"><div><h1>내 스페이스</h1><p>참여 중인 스페이스를 확인하거나 새로 시작하세요.</p></div><div className="heading-actions"><button type="button" className="secondary-button" onClick={() => openModal('join')}>코드로 참가</button><button type="button" className="primary-button" onClick={() => openModal('create')}>스페이스 생성</button></div></div>{isLoading ? <p className="status-message">목록을 불러오는 중...</p> : spaces.length === 0 ? <section className="empty-state"><p>참여 중인 스페이스가 없습니다.</p><span>스페이스를 생성하거나 참여 코드를 입력해 주세요.</span></section> : <ul className="space-list">{spaces.map((space) => <li key={space.id}><button type="button"><strong>{space.name}</strong><span>{space.role === 'INSTRUCTOR' ? '교수' : '학생'}</span></button></li>)}</ul>}</main>
-    {modal === 'create' && <Modal title="스페이스 생성" submitLabel="생성" onClose={() => setModal(null)} onSubmit={handleSpaceSubmit} isSubmitting={isSubmitting} error={error}><label className="field-label" htmlFor="space-name">스페이스 이름</label><input id="space-name" autoFocus value={input} onChange={(event) => setInput(event.target.value)} placeholder="예: 캡스톤 디자인"/></Modal>}
+    <main className="main-content"><div className="page-heading"><div><h1>내 스페이스</h1><p>참여 중인 스페이스를 확인하거나 참여 코드로 참가하세요.</p></div><div className="heading-actions"><button type="button" className="secondary-button" onClick={() => openModal('join')}>코드로 참가</button></div></div>{isLoading ? <p className="status-message">목록을 불러오는 중...</p> : spaces.length === 0 ? <section className="empty-state"><p>참여 중인 스페이스가 없습니다.</p><span>전달받은 참여 코드를 입력해 주세요.</span></section> : <ul className="space-list">{spaces.map((space) => <li key={space.id}><button type="button"><strong>{space.name}</strong><span>{space.role === 'INSTRUCTOR' ? '교수' : '학생'}</span></button></li>)}</ul>}</main>
     {modal === 'join' && <Modal title="스페이스 참가" submitLabel="참가" onClose={() => setModal(null)} onSubmit={handleSpaceSubmit} isSubmitting={isSubmitting} error={error}><label className="field-label" htmlFor="join-code">참여 코드</label><input id="join-code" autoFocus value={input} onChange={(event) => setInput(event.target.value)} placeholder="참여 코드 입력"/></Modal>}
   </div>;
 }
