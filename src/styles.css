@@ -26,7 +26,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(29, 180, 127
 .logout-button, .secondary-button, .primary-button { min-height: 40px; padding: 0 14px; border-radius: 8px; font-size: 13px; font-weight: 600; }
 .logout-button, .secondary-button { border: 1px solid #d9dde0; background: #fff; color: #3d4348; }
 .primary-button { border: 1px solid #1db47f; background: #1db47f; color: #fff; }
-.primary-button:disabled { opacity: .55; cursor: default; }
+.primary-button:disabled, .secondary-button:disabled { opacity: .55; cursor: default; }
 .workspace { display: flex; min-height: calc(100vh - 64px); }
 .sidebar { width: 220px; flex: 0 0 220px; padding: 18px 12px; border-right: 1px solid #e5e7e9; background: #fff; }
 .sidebar nav { display: flex; flex-direction: column; gap: 4px; }
@@ -51,6 +51,23 @@ h2 { margin-bottom: 0; font-size: 19px; }
 .space-list button:hover { border-color: #1db47f; }
 .space-list button[aria-pressed='true'] { border-color: #1db47f; background: #f4fbf8; }
 .space-list span { color: #777e84; font-size: 12px; }
+.team-list { display: grid; gap: 12px; margin: 28px 0 0; padding: 0; list-style: none; }
+.team-card { min-height: 116px; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 20px; border: 1px solid #e2e5e7; border-radius: 10px; background: #fff; }
+.team-card.is-joined { border-color: #1db47f; background: #f4fbf8; }
+.team-card-main { min-width: 0; flex: 1; }
+.team-card-header { display: flex; align-items: center; gap: 10px; }
+.team-card-header h2 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-meta { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 16px; color: #777e84; font-size: 13px; }
+.team-meta strong { color: #454b50; font-weight: 600; }
+.status-badge { flex: 0 0 auto; display: inline-flex; align-items: center; min-height: 24px; padding: 0 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.status-open { background: #edf9f5; color: #147c59; }
+.status-pending { background: #fff6df; color: #8a6200; }
+.status-joined, .status-approved { background: #e9f2ff; color: #2e65a8; }
+.status-rejected, .status-full { background: #f1f2f3; color: #646b70; }
+.team-action { flex: 0 0 auto; }
+.team-action button { min-width: 96px; }
+.inline-error { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 20px; padding: 12px 14px; border-radius: 8px; background: #fff2f2; color: #a63232; font-size: 13px; }
+.inline-error button { padding: 4px 0; border: 0; background: transparent; color: inherit; font-weight: 700; white-space: nowrap; }
 .placeholder p { color: #727980; font-size: 14px; }
 .modal-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 20px; background: rgba(20, 24, 22, .35); }
 .modal { width: min(100%, 420px); padding: 24px; border-radius: 12px; background: #fff; }
@@ -58,6 +75,8 @@ h2 { margin-bottom: 0; font-size: 19px; }
 .icon-button { width: 36px; height: 36px; border: 0; background: transparent; color: #5d646a; font-size: 24px; }
 .field-label { display: block; margin-bottom: 8px; font-size: 13px; font-weight: 700; }
 .modal input { width: 100%; height: 46px; padding: 0 12px; border: 1px solid #d5dadd; border-radius: 8px; }
+.form-fields { display: grid; gap: 18px; }
+.field-help { margin: 8px 0 0; color: #858c91; font-size: 12px; }
 .form-error { margin: 10px 0 0; color: #c33d3d; font-size: 12px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
 @media (max-width: 720px) {
@@ -72,10 +91,13 @@ h2 { margin-bottom: 0; font-size: 19px; }
   .heading-actions { width: 100%; }
   .heading-actions button { flex: 1; }
   .space-list { grid-template-columns: 1fr; }
+  .team-card { align-items: flex-end; }
 }
 @media (max-width: 480px) {
   .heading-actions { flex-direction: column; }
   .heading-actions button { width: 100%; min-height: 44px; }
+  .team-card { align-items: stretch; flex-direction: column; gap: 18px; }
+  .team-action button { width: 100%; min-height: 44px; }
 }
 @media (max-width: 390px) {
   .wordmark { display: none; }
