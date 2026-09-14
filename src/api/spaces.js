@@ -16,23 +16,23 @@ async function request(path, options) {
 }
 
 export async function listSpaces() {
-  if (!useMockApi) return request('/api/spaces');
+  if (!useMockApi) return request('/spaces');
   await wait(); return readMockSpaces();
 }
 
 export async function createSpace(name) {
-  if (!useMockApi) return request('/api/spaces', { method: 'POST', body: JSON.stringify({ name }) });
+  if (!useMockApi) return request('/spaces', { method: 'POST', body: JSON.stringify({ name }) });
   await wait();
   const spaces = readMockSpaces();
-  const space = { id: crypto.randomUUID(), name, role: 'INSTRUCTOR' };
+  const space = { id: crypto.randomUUID(), name, role: 'MANAGER' };
   saveMockSpaces([...spaces, space]); return space;
 }
 
 export async function joinSpace(code) {
-  if (!useMockApi) return request('/api/spaces/join', { method: 'POST', body: JSON.stringify({ code }) });
+  if (!useMockApi) return request('/spaces/join', { method: 'POST', body: JSON.stringify({ code }) });
   await wait();
   if (code.toUpperCase() !== 'FAIRPLAY') throw new Error('올바르지 않은 참여 코드입니다. (테스트 코드: FAIRPLAY)');
   const spaces = readMockSpaces();
-  const space = { id: crypto.randomUUID(), name: 'Fairplay 테스트 스페이스', role: 'STUDENT' };
+  const space = { id: crypto.randomUUID(), name: 'Fairplay 테스트 스페이스', role: 'USER' };
   saveMockSpaces([...spaces, space]); return space;
 }
