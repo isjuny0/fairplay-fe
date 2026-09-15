@@ -4,9 +4,9 @@ const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 const wait = () => new Promise((resolve) => setTimeout(resolve, 250));
 
 const sampleTeams = [
-  { id: 'sample-a', name: 'A팀', memberCount: 3, maxMembers: 6, leaderName: '김민준', membershipStatus: 'NONE' },
-  { id: 'sample-b', name: 'B팀', memberCount: 5, maxMembers: 6, leaderName: '이서연', membershipStatus: 'PENDING' },
-  { id: 'sample-c', name: 'C팀', memberCount: 6, maxMembers: 6, leaderName: '박지훈', membershipStatus: 'NONE' },
+  { id: 'sample-a', name: 'A팀', memberCount: 3, maxMembers: 6, leaderName: '김준영', membershipStatus: 'NONE' },
+  { id: 'sample-b', name: 'B팀', memberCount: 5, maxMembers: 6, leaderName: '김영진', membershipStatus: 'PENDING' },
+  { id: 'sample-c', name: 'C팀', memberCount: 6, maxMembers: 6, leaderName: '박선우', membershipStatus: 'NONE' },
 ];
 
 function readMockTeams() {

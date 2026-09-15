@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createSpace, joinSpace, listSpaces } from './api/spaces.js';
 import { createTeam, listTeams, requestTeamJoin } from './api/teams.js';
+import InstructorDashboard from './components/InstructorDashboard.jsx';
 
 const DEFAULT_API_BASE_URL = 'http://localhost:8080';
 const commonMenus = ['팀 목록', '팀 홈', '작업', '승인 대기', 'AI 작업 평가', '동료 평가', '기여도 리포트'];
@@ -247,7 +248,7 @@ function App() {
           return <li key={team.id} className={isJoined ? 'team-card is-joined' : 'team-card'}><div className="team-card-main"><div className="team-card-header"><h2>{team.name}</h2><TeamStatus status={team.membershipStatus} isFull={isFull}/></div><div className="team-meta"><span>인원 <strong>{team.memberCount}/{team.maxMembers}명</strong></span><span>리더 <strong>{team.leaderName}</strong></span></div></div><div className="team-action">{isJoined ? <button type="button" className="secondary-button" onClick={() => { setSelectedTeam(team); selectMenu('팀 홈'); }}>팀 홈</button> : <button type="button" className="secondary-button" disabled={isFull || isPending || cannotJoinOtherTeam || joiningTeamId === team.id} onClick={() => handleJoinRequest(team.id)}>{joiningTeamId === team.id ? '신청 중...' : isPending ? '대기 중' : isFull ? '마감' : cannotJoinOtherTeam ? '가입 불가' : team.membershipStatus === 'REJECTED' ? '다시 신청' : '참가 신청'}</button>}</div></li>;
         })}</ul>}</>}
 
-        {(activeMenu === '스페이스 대시보드' || (isInstructor && activeMenu === '팀 목록')) && <section className="placeholder"><h1>교수 대시보드</h1><p>팀 진행률과 미가입·평가 미제출 현황은 M-04에서 구현합니다.</p></section>}
+        {(activeMenu === '스페이스 대시보드' || (isInstructor && activeMenu === '팀 목록')) && <InstructorDashboard spaceId={selectedSpace?.id} isAuthorized={isInstructor}/>}
 
         {activeMenu !== '스페이스' && activeMenu !== '팀 목록' && activeMenu !== '스페이스 대시보드' && <section className="placeholder"><h1>{activeMenu}</h1><p>이 메뉴의 실제 기능은 다음 이슈에서 구현합니다.</p></section>}
       </main>
