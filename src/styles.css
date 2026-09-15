@@ -11,7 +11,15 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(29, 180, 127
 .terms { max-width: 320px; margin-top: -12px; color: #949ba1; font-size: 11px; line-height: 1.6; }
 .google-button { width: 100%; min-height: 54px; display: flex; align-items: center; justify-content: center; gap: 12px; border: 1px solid #d9dde0; border-radius: 10px; background: #fff; font-weight: 600; }
 .google-button:hover, .logout-button:hover, .secondary-button:hover { background: #f7f8f8; }
+.google-button:disabled, .logout-button:disabled { cursor: wait; opacity: .65; }
+.temporary-login-button { margin-top: -20px; padding: 0; border: 0; background: transparent; color: #70777e; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
+.temporary-login-button:hover { color: #147c59; }
 .google-icon { width: 21px; height: 21px; }
+.auth-error { margin: -18px 0 0; color: #c33d3d; font-size: 12px; line-height: 1.5; text-align: center; }
+.auth-status { gap: 18px; color: #70777e; font-size: 14px; }
+.auth-status p { margin: 0; }
+.loading-spinner { width: 28px; height: 28px; border: 3px solid #dceee7; border-top-color: #1db47f; border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .app-shell { min-height: 100vh; background: #fff; }
 .topbar { position: sticky; top: 0; z-index: 20; min-height: 64px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; padding: 0 24px; border-bottom: 1px solid #e5e7e9; background: #fff; }
 .topbar-brand, .profile-area, .context-info { display: flex; align-items: center; gap: 10px; }
@@ -19,6 +27,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(29, 180, 127
 .context-info strong { max-width: 180px; overflow: hidden; color: #34393d; text-overflow: ellipsis; white-space: nowrap; }
 .context-info span + span { padding-left: 10px; border-left: 1px solid #dfe2e4; }
 .profile-area { justify-self: end; color: #555c61; font-size: 13px; }
+.logout-error { max-width: 220px; overflow: hidden; color: #c33d3d; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .role-badge { display: inline-flex; align-items: center; min-height: 26px; padding: 0 9px; border: 1px solid #bfe7d8; border-radius: 999px; background: #edf9f5; color: #147c59; font-size: 11px; font-weight: 700; }
 .menu-button { display: none; width: 44px; height: 44px; padding: 0; border: 0; background: transparent; font-size: 20px; }
 .logo-mark { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; background: #20c997; color: #fff; font-weight: 800; }
@@ -68,6 +77,40 @@ h2 { margin-bottom: 0; font-size: 19px; }
 .team-action button { min-width: 96px; }
 .inline-error { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 20px; padding: 12px 14px; border-radius: 8px; background: #fff2f2; color: #a63232; font-size: 13px; }
 .inline-error button { padding: 4px 0; border: 0; background: transparent; color: inherit; font-weight: 700; white-space: nowrap; }
+.instructor-dashboard { display: grid; gap: 28px; }
+.summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.summary-card { min-width: 0; min-height: 118px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; padding: 18px; border: 1px solid #e2e5e7; border-radius: 10px; background: #fff; color: #697077; text-align: left; }
+button.summary-card:hover { border-color: #d5a93e; background: #fffdf6; }
+.summary-card strong { color: #22272b; font-size: 28px; line-height: 1; }
+.summary-card small { margin-left: 4px; font-size: 13px; font-weight: 600; }
+.summary-card em { color: #8a6200; font-size: 11px; font-style: normal; font-weight: 700; }
+.summary-card.tone-warning { border-color: #eadfbf; background: #fffdf7; }
+.issue-detail { display: grid; grid-template-columns: minmax(180px, .8fr) minmax(0, 1.6fr); gap: 24px; padding: 20px; border: 1px solid #eadfbf; border-radius: 10px; background: #fffdf7; }
+.issue-detail h2 { margin-bottom: 6px; }
+.issue-detail p { margin: 0; color: #777e84; font-size: 13px; line-height: 1.5; }
+.issue-detail ul, .progress-list { margin: 0; padding: 0; list-style: none; }
+.issue-detail ul { display: grid; gap: 8px; }
+.issue-detail li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 7px; background: #fff; font-size: 13px; }
+.issue-detail li span { color: #777e84; text-align: right; }
+.compact-empty { align-self: center; }
+.dashboard-section { display: grid; gap: 14px; }
+.section-heading { display: flex; align-items: center; justify-content: space-between; }
+.section-heading span { color: #858c91; font-size: 12px; }
+.progress-list { display: grid; gap: 10px; }
+.progress-list > li { display: grid; gap: 14px; padding: 18px; border: 1px solid #e2e5e7; border-radius: 10px; }
+.progress-team, .progress-team > div, .progress-row, .progress-meta { display: flex; align-items: center; }
+.progress-team, .progress-row { justify-content: space-between; gap: 16px; }
+.progress-team > div { min-width: 0; gap: 10px; }
+.progress-team > div > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.progress-team > div > span, .progress-meta { color: #777e84; font-size: 12px; }
+.progress-track { height: 8px; min-width: 0; flex: 1; overflow: hidden; border-radius: 999px; background: #edf0ef; }
+.progress-track span { display: block; height: 100%; border-radius: inherit; background: #1db47f; }
+.progress-row > strong { width: 42px; color: #34393d; font-size: 13px; text-align: right; }
+.progress-meta { flex-wrap: wrap; gap: 8px 18px; }
+.dashboard-loading { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.dashboard-loading div { height: 118px; border-radius: 10px; background: #f0f2f1; animation: pulse 1.2s ease-in-out infinite alternate; }
+.dashboard-error, .permission-notice { min-height: 240px; display: grid; place-content: center; justify-items: center; padding: 24px; text-align: center; }
+.dashboard-error p, .permission-notice p { color: #727980; font-size: 14px; }
 .placeholder p { color: #727980; font-size: 14px; }
 .modal-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 20px; background: rgba(20, 24, 22, .35); }
 .modal { width: min(100%, 420px); padding: 24px; border-radius: 12px; background: #fff; }
@@ -92,12 +135,18 @@ h2 { margin-bottom: 0; font-size: 19px; }
   .heading-actions button { flex: 1; }
   .space-list { grid-template-columns: 1fr; }
   .team-card { align-items: flex-end; }
+  .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .issue-detail { grid-template-columns: 1fr; }
+  .dashboard-loading { grid-template-columns: 1fr; }
 }
 @media (max-width: 480px) {
   .heading-actions { flex-direction: column; }
   .heading-actions button { width: 100%; min-height: 44px; }
   .team-card { align-items: stretch; flex-direction: column; gap: 18px; }
   .team-action button { width: 100%; min-height: 44px; }
+  .summary-card { min-height: 108px; }
+  .issue-detail li { align-items: flex-start; flex-direction: column; }
+  .issue-detail li span { text-align: left; }
 }
 @media (max-width: 390px) {
   .wordmark { display: none; }
@@ -106,4 +155,5 @@ h2 { margin-bottom: 0; font-size: 19px; }
   .login-page { padding: 16px; }
   .login-card { padding: 28px 20px; }
 }
-@media (prefers-reduced-motion: reduce) { .sidebar { transition: none; } }
+@keyframes pulse { from { opacity: .55; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .sidebar { transition: none; } .loading-spinner, .dashboard-loading div { animation: none; } }
