@@ -11,7 +11,15 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(29, 180, 127
 .terms { max-width: 320px; margin-top: -12px; color: #949ba1; font-size: 11px; line-height: 1.6; }
 .google-button { width: 100%; min-height: 54px; display: flex; align-items: center; justify-content: center; gap: 12px; border: 1px solid #d9dde0; border-radius: 10px; background: #fff; font-weight: 600; }
 .google-button:hover, .logout-button:hover, .secondary-button:hover { background: #f7f8f8; }
+.google-button:disabled, .logout-button:disabled { cursor: wait; opacity: .65; }
+.temporary-login-button { margin-top: -20px; padding: 0; border: 0; background: transparent; color: #70777e; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
+.temporary-login-button:hover { color: #147c59; }
 .google-icon { width: 21px; height: 21px; }
+.auth-error { margin: -18px 0 0; color: #c33d3d; font-size: 12px; line-height: 1.5; text-align: center; }
+.auth-status { gap: 18px; color: #70777e; font-size: 14px; }
+.auth-status p { margin: 0; }
+.loading-spinner { width: 28px; height: 28px; border: 3px solid #dceee7; border-top-color: #1db47f; border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .app-shell { min-height: 100vh; background: #fff; }
 .topbar { position: sticky; top: 0; z-index: 20; min-height: 64px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; padding: 0 24px; border-bottom: 1px solid #e5e7e9; background: #fff; }
 .topbar-brand, .profile-area, .context-info { display: flex; align-items: center; gap: 10px; }
@@ -19,6 +27,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(29, 180, 127
 .context-info strong { max-width: 180px; overflow: hidden; color: #34393d; text-overflow: ellipsis; white-space: nowrap; }
 .context-info span + span { padding-left: 10px; border-left: 1px solid #dfe2e4; }
 .profile-area { justify-self: end; color: #555c61; font-size: 13px; }
+.logout-error { max-width: 220px; overflow: hidden; color: #c33d3d; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .role-badge { display: inline-flex; align-items: center; min-height: 26px; padding: 0 9px; border: 1px solid #bfe7d8; border-radius: 999px; background: #edf9f5; color: #147c59; font-size: 11px; font-weight: 700; }
 .menu-button { display: none; width: 44px; height: 44px; padding: 0; border: 0; background: transparent; font-size: 20px; }
 .logo-mark { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; background: #20c997; color: #fff; font-weight: 800; }
@@ -146,6 +155,5 @@ button.summary-card:hover { border-color: #d5a93e; background: #fffdf6; }
   .login-page { padding: 16px; }
   .login-card { padding: 28px 20px; }
 }
-@media (prefers-reduced-motion: reduce) { .sidebar { transition: none; } }
 @keyframes pulse { from { opacity: .55; } to { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .dashboard-loading div { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .sidebar { transition: none; } .loading-spinner, .dashboard-loading div { animation: none; } }

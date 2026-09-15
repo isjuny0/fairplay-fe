@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
+import { getCurrentUser, loginWithGoogle, logout } from './api/auth.js';
 import { createSpace, joinSpace, listSpaces } from './api/spaces.js';
 import { createTeam, listTeams, requestTeamJoin } from './api/teams.js';
 import InstructorDashboard from './components/InstructorDashboard.jsx';
 
-const DEFAULT_API_BASE_URL = 'http://localhost:8080';
 const commonMenus = ['팀 목록', '팀 홈', '작업', '승인 대기', 'AI 작업 평가', '동료 평가', '기여도 리포트'];
 const instructorMenus = ['스페이스 대시보드', '리포트 검토 및 공개'];
+const authBypassEnabled = import.meta.env.VITE_AUTH_BYPASS === 'true';
+const temporaryUser = { id: 'local-user', email: 'local@fairplay.dev', name: '사용자' };
 
 const roleLabels = {
   INSTRUCTOR: '교수',
@@ -44,7 +46,9 @@ function TeamStatus({ status, isFull }) {
 }
 
 function App() {
-  const [screen, setScreen] = useState(window.location.pathname === '/main' ? 'main' : 'login');
+  const initialPath = window.location.pathname;
+  const [screen, setScreen] = useState(initialPath === '/main' ? (authBypassEnabled ? 'main' : 'checking') : 'login');
+  const [user, setUser] = useState(initialPath === '/main' && authBypassEnabled ? temporaryUser : null);
   const [spaces, setSpaces] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [modal, setModal] = useState(null);
@@ -68,12 +72,45 @@ function App() {
     () => teams.find((team) => ['JOINED', 'APPROVED'].includes(team.membershipStatus)),
     [teams],
   );
+  const [authError, setAuthError] = useState('');
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
 
   useEffect(() => {
-    const onPopState = () => setScreen(window.location.pathname === '/main' ? 'main' : 'login');
+    const onPopState = () => {
+      const path = window.location.pathname;
+      if (path === '/main') {
+        if (authBypassEnabled) {
+          setUser(temporaryUser);
+          setScreen('main');
+        } else {
+          setScreen('checking');
+        }
+      } else {
+        setScreen('login');
+      }
+    };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
+
+  useEffect(() => {
+    if (screen !== 'checking') return;
+    let active = true;
+    getCurrentUser()
+      .then((currentUser) => {
+        if (!active) return;
+        setUser(currentUser);
+        setScreen('main');
+      })
+      .catch(() => {
+        if (!active) return;
+        window.history.replaceState({}, '', '/');
+        setScreen('login');
+      });
+    return () => { active = false; };
+  }, [screen]);
 
   useEffect(() => {
     if (screen !== 'main') return;
@@ -107,23 +144,44 @@ function App() {
     };
   }, [selectedSpace]);
 
-  const handleGoogleLogin = () => {
-    if (import.meta.env.VITE_AUTH_MODE !== 'oauth') {
+  const handleGoogleLogin = async () => {
+    setAuthError('');
+    setIsAuthenticating(true);
+    try {
+      const currentUser = await loginWithGoogle();
+      setUser(currentUser);
       window.history.pushState({}, '', '/main');
       setScreen('main');
-      return;
+    } catch (requestError) {
+      setAuthError(requestError.message || 'Google 로그인을 시작하지 못했습니다.');
+    } finally {
+      setIsAuthenticating(false);
     }
-    const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/$/, '');
-    window.location.assign(`${apiBaseUrl}/oauth2/authorization/google`);
   };
 
-  const handleLogout = () => {
-    window.history.pushState({}, '', '/');
-    setScreen('login');
-    setSidebarOpen(false);
-    setSelectedSpace(null);
-    setSelectedTeam(null);
-    setActiveMenu('스페이스');
+  const handleTemporaryLogin = () => {
+    setUser(temporaryUser);
+    window.history.pushState({}, '', '/main');
+    setScreen('main');
+  };
+
+  const handleLogout = async () => {
+    setLogoutError('');
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      setUser(null);
+      window.history.pushState({}, '', '/');
+      setScreen('login');
+      setSidebarOpen(false);
+      setSelectedSpace(null);
+      setSelectedTeam(null);
+      setActiveMenu('스페이스');
+    } catch (requestError) {
+      setLogoutError(requestError.message || '로그아웃하지 못했습니다.');
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const selectMenu = (menu) => {
@@ -219,8 +277,12 @@ function App() {
       .finally(() => setTeamsLoading(false));
   };
 
+  if (screen === 'checking') {
+    return <main className="login-page"><section className="login-card auth-status" aria-live="polite"><span className="loading-spinner" aria-hidden="true"/><p>로그인 상태를 확인하고 있습니다.</p></section></main>;
+  }
+
   if (screen === 'login') {
-    return <main className="login-page"><section className="login-card" aria-label="로그인"><p className="login-description">Google 계정으로 로그인해 주세요.</p><button type="button" className="google-button" onClick={handleGoogleLogin}><GoogleIcon/><span>Google로 계속하기</span></button><p className="terms">계속하면 Fairplay의 이용약관과 개인정보 처리방침에 동의하게 됩니다.</p></section></main>;
+    return <main className="login-page"><section className="login-card" aria-label="로그인"><p className="login-description">Google 계정으로 로그인해 주세요.</p><button type="button" className="google-button" onClick={handleGoogleLogin} disabled={isAuthenticating}><GoogleIcon/><span>{isAuthenticating ? 'Google 로그인 연결 중...' : 'Google로 계속하기'}</span></button>{authBypassEnabled && <button type="button" className="temporary-login-button" onClick={handleTemporaryLogin}>임시로 메인 화면 보기</button>}{authError && <p className="auth-error" role="alert">{authError}</p>}<p className="terms">계속하면 Fairplay의 이용약관과 개인정보 처리방침에 동의하게 됩니다.</p></section></main>;
   }
 
   const userRole = selectedSpace?.role || 'STUDENT';
@@ -232,7 +294,7 @@ function App() {
     <header className="topbar">
       <div className="topbar-brand"><button type="button" className="menu-button" aria-label="메뉴 열기" aria-expanded={sidebarOpen} onClick={() => setSidebarOpen(true)}>☰</button><span className="logo-mark" aria-hidden="true">F</span><span className="wordmark">Fairplay</span></div>
       <div className="context-info"><strong>{selectedSpace?.name || '스페이스 미선택'}</strong><span>{currentTeam?.name || '팀 미선택'}</span><span>다음 마감 없음</span></div>
-      <div className="profile-area"><span className="role-badge">{roleLabels[userRole]}</span><span className="profile-name">사용자</span><button type="button" className="logout-button" onClick={handleLogout}>로그아웃</button></div>
+      <div className="profile-area">{logoutError && <span className="logout-error" role="alert">{logoutError}</span>}<span className="role-badge">{roleLabels[userRole]}</span><span className="profile-name">{user?.name || '사용자'}</span><button type="button" className="logout-button" onClick={handleLogout} disabled={isLoggingOut}>{isLoggingOut ? '로그아웃 중...' : '로그아웃'}</button></div>
     </header>
     <div className="workspace">
       {sidebarOpen && <button type="button" className="sidebar-overlay" aria-label="메뉴 닫기" onClick={() => setSidebarOpen(false)}/>}
