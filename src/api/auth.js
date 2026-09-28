@@ -1,8 +1,7 @@
-const DEFAULT_API_BASE_URL = 'http://localhost:8080';
 const GOOGLE_SCRIPT_ID = 'google-identity-services';
 const GOOGLE_SCRIPT_URL = 'https://accounts.google.com/gsi/client';
 
-const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/$/, '');
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 let googleScriptRequest;
 
 function getErrorMessage(result, fallback) {
@@ -79,8 +78,8 @@ async function getCsrfToken() {
 }
 
 export async function loginWithGoogle() {
-  const code = await requestGoogleCode();
   const csrf = await getCsrfToken();
+  const code = await requestGoogleCode();
   const response = await fetch(`${apiBaseUrl}/api/auth/google`, {
     method: 'POST',
     credentials: 'include',
