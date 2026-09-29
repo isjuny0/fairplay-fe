@@ -4,7 +4,7 @@ const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 const wait = () => new Promise((resolve) => setTimeout(resolve, 250));
 
 const sampleTeams = [
-  { id: 'sample-a', name: 'A팀', memberCount: 4, maxMembers: 6, leaderId: 'member-kjy', deputyId: null, leaderName: '김준영', membershipStatus: 'NONE' },
+  { id: 'sample-a', name: 'A팀', memberCount: 4, maxMembers: 6, leaderId: 'member-kjy', deputyId: null, leaderName: '김준영', membershipStatus: 'APPROVED', myRole: 'MEMBER' },
   { id: 'sample-b', name: 'B팀', memberCount: 4, maxMembers: 6, leaderId: 'member-kyj', deputyId: null, leaderName: '김영진', membershipStatus: 'PENDING' },
   { id: 'sample-c', name: 'C팀', memberCount: 4, maxMembers: 6, leaderId: 'member-psw', deputyId: null, leaderName: '박선우', membershipStatus: 'NONE' },
 ];
@@ -17,19 +17,33 @@ function saveMockTeams(teamsBySpace) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(teamsBySpace));
 }
 
+function normalizeMockTeams(spaceId, teams) {
+  const preferredTeamIndex = teams.findIndex((team) => team.id === `${spaceId}-sample-a` || team.name === 'A팀');
+  const joinedTeamIndex = preferredTeamIndex >= 0 ? preferredTeamIndex : 0;
+
+  return teams.map((team, index) => {
+    const membershipStatus = team.membershipStatus === 'JOINED' ? 'APPROVED' : team.membershipStatus;
+    const isJoinedTeam = index === joinedTeamIndex;
+
+    return {
+      ...team,
+      spaceId: team.spaceId || spaceId,
+      leaderId: team.leaderId || null,
+      deputyId: team.deputyId || null,
+      membershipStatus: isJoinedTeam ? 'APPROVED' : membershipStatus === 'APPROVED' ? 'NONE' : membershipStatus,
+      ...(isJoinedTeam ? { myRole: team.myRole || 'MEMBER' } : {}),
+    };
+  });
+}
+
 function getMockTeams(spaceId) {
   const teamsBySpace = readMockTeams();
   if (!teamsBySpace[spaceId]) {
     teamsBySpace[spaceId] = sampleTeams.map((team) => ({ ...team, id: `${spaceId}-${team.id}`, spaceId }));
-    saveMockTeams(teamsBySpace);
   }
-  return teamsBySpace[spaceId].map((team) => ({
-    ...team,
-    spaceId: team.spaceId || spaceId,
-    leaderId: team.leaderId || null,
-    deputyId: team.deputyId || null,
-    membershipStatus: team.membershipStatus === 'JOINED' ? 'APPROVED' : team.membershipStatus,
-  }));
+  teamsBySpace[spaceId] = normalizeMockTeams(spaceId, teamsBySpace[spaceId]);
+  saveMockTeams(teamsBySpace);
+  return teamsBySpace[spaceId];
 }
 
 async function request(path, options = {}) {
