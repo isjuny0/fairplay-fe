@@ -3,6 +3,8 @@ import { getCurrentUser, loginWithGoogle, logout } from './api/auth.js';
 import { createSpace, joinSpace, listSpaces } from './api/spaces.js';
 import { createTeam, listTeams, requestTeamJoin } from './api/teams.js';
 import InstructorDashboard from './components/InstructorDashboard.jsx';
+import PublishedReport from './components/PublishedReport.jsx';
+import ReportReview from './components/ReportReview.jsx';
 
 const commonMenus = ['팀 목록', '팀 홈', '작업', '승인 대기', 'AI 작업 평가', '동료 평가', '기여도 리포트'];
 const instructorMenus = ['스페이스 대시보드', '리포트 검토 및 공개'];
@@ -312,7 +314,11 @@ function App() {
 
         {(activeMenu === '스페이스 대시보드' || (isInstructor && activeMenu === '팀 목록')) && <InstructorDashboard spaceId={selectedSpace?.id} isAuthorized={isInstructor}/>}
 
-        {activeMenu !== '스페이스' && activeMenu !== '팀 목록' && activeMenu !== '스페이스 대시보드' && <section className="placeholder"><h1>{activeMenu}</h1><p>이 메뉴의 실제 기능은 다음 이슈에서 구현합니다.</p></section>}
+        {activeMenu === '리포트 검토 및 공개' && <ReportReview spaceId={selectedSpace?.id} isAuthorized={isInstructor}/>}
+
+        {activeMenu === '기여도 리포트' && !isInstructor && <PublishedReport reportId={currentTeam?.publishedReportId} teamId={currentTeam?.id}/>}
+
+        {activeMenu !== '스페이스' && activeMenu !== '팀 목록' && activeMenu !== '스페이스 대시보드' && activeMenu !== '리포트 검토 및 공개' && activeMenu !== '기여도 리포트' && <section className="placeholder"><h1>{activeMenu}</h1><p>이 메뉴의 실제 기능은 다음 이슈에서 구현합니다.</p></section>}
       </main>
     </div>
     {modal === 'create' && <Modal title="스페이스 생성" submitLabel="생성" onClose={() => setModal(null)} onSubmit={handleSpaceSubmit} isSubmitting={isSubmitting} error={error}><label className="field-label" htmlFor="space-name">스페이스 이름</label><input id="space-name" autoFocus value={input} onChange={(event) => setInput(event.target.value)} placeholder="예: 캡스톤 디자인"/></Modal>}

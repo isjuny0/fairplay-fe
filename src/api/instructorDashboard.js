@@ -6,21 +6,18 @@ const mockDashboard = {
   summary: {
     teamCount: 3,
     averageProgress: 68,
-    unassignedCount: 2,
+    unassignedCount: 0,
     missingEvaluationCount: 4,
   },
   teams: [
-    { id: 'team-a', name: 'A팀', memberCount: 4, progressPercent: 82, pendingApprovals: 1, missingEvaluations: 0, status: 'ON_TRACK' },
-    { id: 'team-b', name: 'B팀', memberCount: 5, progressPercent: 67, pendingApprovals: 2, missingEvaluations: 1, status: 'ATTENTION' },
-    { id: 'team-c', name: 'C팀', memberCount: 3, progressPercent: 54, pendingApprovals: 0, missingEvaluations: 3, status: 'ATTENTION' },
+    { id: 'team-a', name: 'A팀', memberCount: 4, members: ['박선우', '김준영', '김영진', '염승혜'], progressPercent: 82, pendingApprovals: 1, missingEvaluations: 0, status: 'ON_TRACK' },
+    { id: 'team-b', name: 'B팀', memberCount: 4, members: ['서범주', '노신비', '정승민', '안수경'], progressPercent: 67, pendingApprovals: 2, missingEvaluations: 1, status: 'ATTENTION' },
+    { id: 'team-c', name: 'C팀', memberCount: 4, members: ['정규도', '박기재', '정채원', '강지원'], progressPercent: 54, pendingApprovals: 0, missingEvaluations: 3, status: 'ATTENTION' },
   ],
-  unassignedMembers: [
-    { id: 'user-1', name: '김하늘' },
-    { id: 'user-2', name: '이도윤' },
-  ],
+  unassignedMembers: [],
   missingEvaluations: [
-    { id: 'evaluation-1', teamName: 'B팀', roundName: '중간 동료 평가', members: ['최유진'] },
-    { id: 'evaluation-2', teamName: 'C팀', roundName: '중간 동료 평가', members: ['정민수', '한서아', '윤지호'] },
+    { id: 'evaluation-1', teamName: 'B팀', roundName: '중간 동료 평가', members: ['정승민'] },
+    { id: 'evaluation-2', teamName: 'C팀', roundName: '중간 동료 평가', members: ['박기재', '정채원', '강지원'] },
   ],
 };
 
