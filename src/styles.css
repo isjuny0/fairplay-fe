@@ -112,6 +112,42 @@ button.summary-card:hover { border-color: #d5a93e; background: #fffdf6; }
 .dashboard-loading div { height: 118px; border-radius: 10px; background: #f0f2f1; animation: pulse 1.2s ease-in-out infinite alternate; }
 .dashboard-error, .permission-notice { min-height: 240px; display: grid; place-content: center; justify-items: center; padding: 24px; text-align: center; }
 .dashboard-error p, .permission-notice p { color: #727980; font-size: 14px; }
+.team-home { display: grid; gap: 24px; }
+.team-role-badge { display: inline-flex; align-items: center; min-height: 32px; padding: 0 11px; border: 1px solid #bfe7d8; border-radius: 999px; background: #edf9f5; color: #147c59; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.next-action-card { min-height: 176px; display: flex; align-items: center; justify-content: space-between; gap: 28px; padding: 24px; border: 1px solid #cfe8df; border-radius: 12px; background: #f6fcf9; }
+.next-action-copy { min-width: 0; }
+.next-action-copy h2 { margin-top: 12px; font-size: 21px; }
+.next-action-copy p { margin: 8px 0 14px; color: #657078; font-size: 13px; line-height: 1.6; }
+.priority-badge, .task-status, .round-status { display: inline-flex; align-items: center; min-height: 24px; padding: 0 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.priority-badge { background: #e3f5ee; color: #147c59; }
+.priority-badge.is-high { background: #fff0e5; color: #a65016; }
+.next-action-deadline { color: #4f595f; font-size: 12px; font-weight: 700; }
+.next-action-card > .primary-button { flex: 0 0 auto; min-height: 44px; }
+.team-home-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, .8fr); gap: 16px; align-items: start; }
+.team-home-panel { min-width: 0; overflow: hidden; border: 1px solid #e2e5e7; border-radius: 10px; background: #fff; }
+.team-home-panel > .section-heading { min-height: 58px; padding: 0 18px; border-bottom: 1px solid #edf0ef; }
+.team-home-panel h2 { font-size: 16px; }
+.text-button { min-height: 44px; padding: 0 4px; border: 0; background: transparent; color: #147c59; font-size: 12px; font-weight: 700; }
+.recent-task-list, .evaluation-list { margin: 0; padding: 0; list-style: none; }
+.recent-task-list li, .evaluation-list li { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 78px; padding: 14px 18px; border-top: 1px solid #edf0ef; }
+.recent-task-list li:first-child, .evaluation-list li:first-child { border-top: 0; }
+.recent-task-list li > div:first-child, .evaluation-list li > div { min-width: 0; display: grid; gap: 6px; }
+.recent-task-list strong, .evaluation-list strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.recent-task-list li > div:first-child span, .evaluation-list li > div span { color: #7a8186; font-size: 11px; }
+.task-side { flex: 0 0 auto; display: grid; justify-items: end; gap: 7px; }
+.task-side time { color: #777e84; font-size: 11px; }
+.task-status.status-todo { background: #f1f2f3; color: #646b70; }
+.task-status.status-in-progress { background: #e9f2ff; color: #2e65a8; }
+.task-status.status-pending-approval { background: #fff6df; color: #8a6200; }
+.task-status.status-done { background: #edf9f5; color: #147c59; }
+.round-status { flex: 0 0 auto; }
+.round-status.status-draft { background: #f1f2f3; color: #646b70; }
+.round-status.status-open { background: #edf9f5; color: #147c59; }
+.round-status.status-closed { background: #e9f2ff; color: #2e65a8; }
+.panel-empty { min-height: 150px; display: grid; place-content: center; margin: 0; padding: 20px; color: #858c91; font-size: 12px; text-align: center; }
+.team-home-loading { display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px; }
+.team-home-loading div { height: 176px; border-radius: 10px; background: #f0f2f1; animation: pulse 1.2s ease-in-out infinite alternate; }
+.team-home-loading div:first-child { grid-column: 1 / -1; }
 .report-review, .published-report { display: grid; gap: 24px; }
 .report-disclaimer { display: flex; align-items: center; gap: 14px; padding: 15px 18px; border: 1px solid #cfe8df; border-radius: 10px; background: #f4fbf8; }
 .report-disclaimer strong { flex: 0 0 auto; color: #147c59; font-size: 13px; }
@@ -207,6 +243,9 @@ button.summary-card:hover { border-color: #d5a93e; background: #fffdf6; }
   .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .issue-detail { grid-template-columns: 1fr; }
   .dashboard-loading { grid-template-columns: 1fr; }
+  .team-home-grid { grid-template-columns: 1fr; }
+  .team-home-loading { grid-template-columns: 1fr; }
+  .team-home-loading div:first-child { grid-column: auto; }
   .report-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .report-workspace { grid-template-columns: 1fr; }
   .report-team-buttons { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -220,6 +259,9 @@ button.summary-card:hover { border-color: #d5a93e; background: #fffdf6; }
   .heading-actions button { width: 100%; min-height: 44px; }
   .team-card { align-items: stretch; flex-direction: column; gap: 18px; }
   .team-action button { width: 100%; min-height: 44px; }
+  .next-action-card { align-items: stretch; flex-direction: column; }
+  .next-action-card > .primary-button { width: 100%; }
+  .recent-task-list li { align-items: flex-start; }
   .summary-card { min-height: 108px; }
   .issue-detail li { align-items: flex-start; flex-direction: column; }
   .issue-detail li span { text-align: left; }
