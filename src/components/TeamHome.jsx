@@ -57,7 +57,7 @@ function TeamHome({ spaceId, team, userId, onNavigate }) {
   return <section className="team-home">
     <div className="page-heading">
       <div><h1>{home.team.name} 팀 홈</h1><p>내 역할과 다음 할 일, 가까운 일정을 확인하세요.</p></div>
-      <span className="team-role-badge">내 역할 · {roleLabels[home.team.myRole] || '팀원'}</span>
+      <div className="team-home-heading-actions"><button type="button" className="secondary-button" onClick={() => onNavigate('팀원 관리')}>팀원 관리</button><span className="team-role-badge">내 역할 · {roleLabels[home.team.myRole] || '팀원'}</span></div>
     </div>
 
     <section className="next-action-card" aria-labelledby="next-action-title">
