@@ -4,7 +4,7 @@ const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 const wait = () => new Promise((resolve) => setTimeout(resolve, 250));
 
 const sampleTeams = [
-  { id: 'sample-a', name: 'A팀', memberCount: 4, maxMembers: 6, leaderId: 'member-kjy', deputyId: null, leaderName: '김준영', membershipStatus: 'APPROVED', myRole: 'MEMBER' },
+  { id: 'sample-a', name: 'A팀', memberCount: 4, maxMembers: 6, leaderId: 'local-user', deputyId: 'member-kjy', leaderName: '박선우', membershipStatus: 'APPROVED', myRole: 'LEADER' },
   { id: 'sample-b', name: 'B팀', memberCount: 4, maxMembers: 6, leaderId: 'member-kyj', deputyId: null, leaderName: '김영진', membershipStatus: 'PENDING' },
   { id: 'sample-c', name: 'C팀', memberCount: 4, maxMembers: 6, leaderId: 'member-psw', deputyId: null, leaderName: '박선우', membershipStatus: 'NONE' },
 ];
@@ -24,14 +24,16 @@ function normalizeMockTeams(spaceId, teams) {
   return teams.map((team, index) => {
     const membershipStatus = team.membershipStatus === 'JOINED' ? 'APPROVED' : team.membershipStatus;
     const isJoinedTeam = index === joinedTeamIndex;
+    const isDefaultSampleTeam = team.id === `${spaceId}-sample-a` || team.name === 'A팀';
 
     return {
       ...team,
       spaceId: team.spaceId || spaceId,
-      leaderId: team.leaderId || null,
-      deputyId: team.deputyId || null,
+      leaderId: isDefaultSampleTeam ? 'local-user' : team.leaderId || null,
+      deputyId: isDefaultSampleTeam ? 'member-kjy' : team.deputyId || null,
+      leaderName: isDefaultSampleTeam ? '박선우' : team.leaderName,
       membershipStatus: isJoinedTeam ? 'APPROVED' : membershipStatus === 'APPROVED' ? 'NONE' : membershipStatus,
-      ...(isJoinedTeam ? { myRole: team.myRole || 'MEMBER' } : {}),
+      ...(isJoinedTeam ? { myRole: isDefaultSampleTeam ? 'LEADER' : team.myRole || 'MEMBER' } : {}),
     };
   });
 }
