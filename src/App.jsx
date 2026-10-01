@@ -321,7 +321,7 @@ function App() {
 
         {activeMenu === '팀원 관리' && !isInstructor && <TeamMembers team={currentTeam} viewerRole={currentTeam?.myRole || 'MEMBER'}/>}
 
-        {activeMenu === '작업' && !isInstructor && <TaskBoard team={currentTeam}/>}
+        {activeMenu === '작업' && !isInstructor && <TaskBoard team={currentTeam} userId={user?.id}/>}
 
         {activeMenu === '리포트 검토 및 공개' && <ReportReview spaceId={selectedSpace?.id} isAuthorized={isInstructor}/>}
 
