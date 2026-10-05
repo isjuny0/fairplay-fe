@@ -464,3 +464,61 @@ button.summary-card:hover { border-color: #d5a93e; background: #fffdf6; }
 }
 @keyframes pulse { from { opacity: .55; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .sidebar { transition: none; } .loading-spinner, .dashboard-loading div { animation: none; } }
+
+/* 실제 API에 연결된 화면의 공통 폼과 자료 표시 */
+textarea { font: inherit; }
+fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+.form-field { display: grid; gap: 6px; min-width: 0; margin: 14px 0; }
+.form-field .field-label { margin: 0; }
+.form-field input:not([type='checkbox']), .form-field select, .form-field textarea, .toolbar select, .allocation-row input[type='number'] { width: 100%; min-height: 42px; padding: 10px 12px; border: 1px solid #d5dadd; border-radius: 8px; background: #fff; color: #171a1d; }
+.form-field textarea { resize: vertical; min-height: 90px; }
+input[type='checkbox'] { width: 16px; height: 16px; accent-color: #147c59; }
+.form-field input[type='file'] { font-size: 13px; }
+.brand-button { padding: 0; border: 0; background: transparent; }
+.spaces-main { max-width: 1050px; }
+.stack { display: grid; gap: 20px; min-width: 0; }
+.panel { padding: 22px; border: 1px solid #e2e5e7; border-radius: 12px; min-width: 0; }
+.panel h2 { margin-bottom: 16px; }
+.panel h3 { margin: 0 0 10px; font-size: 16px; }
+.panel p { line-height: 1.7; }
+.clean-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.row-item { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; }
+.row-item small { display: block; margin-top: 8px; color: #727980; }
+.notice { margin: 0; padding: 14px; border-radius: 8px; background: #f1f9f5; color: #147c59; font-size: 13px; line-height: 1.7; }
+.join-code { font-size: 30px; letter-spacing: .15em; }
+.tab-bar { display: flex; flex-wrap: wrap; gap: 6px; padding-bottom: 12px; border-bottom: 1px solid #e2e5e7; }
+.tab-bar button { min-height: 42px; padding: 0 14px; border: 0; border-radius: 7px; background: #fff; color: #555c61; }
+.tab-bar button.active { background: #e9f8f2; color: #147c59; font-weight: 700; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; }
+.toolbar select { width: auto; }
+.two-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.real-modal { width: min(100%, 620px); max-height: calc(100dvh - 40px); overflow-y: auto; }
+.assignment-inputs { display: grid; gap: 10px; }
+.allocation-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.allocation-row input[type='number'] { width: 85px; margin-left: 10px; }
+.preserve-lines { white-space: pre-wrap; overflow-wrap: anywhere; }
+.deliverable-body { max-height: 320px; overflow-y: auto; padding: 16px; background: #f6f8f7; border-radius: 8px; }
+.deliverable-card .heading-actions { margin-top: 12px; flex-wrap: wrap; }
+.deliverable-card details summary { cursor: pointer; }
+.danger { color: #a63232; }
+.pagination { display: flex; justify-content: center; align-items: center; gap: 16px; font-size: 13px; }
+.back-button { justify-self: start; }
+.contribution-entry { padding: 16px 0; border-top: 1px solid #e2e5e7; }
+.approval-history { display: grid; gap: 8px; padding: 14px 0; border-bottom: 1px solid #e2e5e7; font-size: 13px; }
+.approval-history small { color: #727980; }
+.board-task-card p { margin: 0; font-size: 13px; line-height: 1.7; }
+.board-task-card small { font-size: 12px; color: #727980; }
+@media (max-width: 720px) {
+  .workspace { display: block; }
+  .sidebar { position: static; width: 100%; padding: 12px; transform: none; border-right: 0; border-bottom: 1px solid #e2e5e7; }
+  .sidebar nav { flex-direction: row; flex-wrap: wrap; gap: 8px; }
+  .sidebar .nav-item { width: auto; }
+  .sidebar .nav-section { width: 100%; margin: 4px 12px; }
+  .two-columns { grid-template-columns: 1fr; }
+  .row-item { align-items: flex-start; flex-wrap: wrap; }
+  .real-modal { padding: 20px; }
+  .task-column { display: block; }
+  .task-column-heading { display: flex; }
+  .allocation-row { align-items: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
