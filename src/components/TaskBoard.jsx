@@ -1,3 +1,4 @@
+import Icon from './Icon.jsx';
 import { useState } from 'react';
 import { createTask, listTasks } from '../api/tasks.js';
 import useResource from '../hooks/useResource.js';
@@ -64,7 +65,7 @@ export default function TaskBoard({ team, user, members }) {
             setCreating(true);
           }}
         >
-          새 작업 만들기
+          <Icon name="plus" />새 작업 만들기
         </button>
       </div>
       {members.length < 2 && (
@@ -96,6 +97,7 @@ export default function TaskBoard({ team, user, members }) {
           내 담당 작업만
         </label>
         <button className="secondary-button" onClick={resource.reload}>
+          <Icon name="refresh" />
           새로고침
         </button>
       </div>
@@ -103,38 +105,69 @@ export default function TaskBoard({ team, user, members }) {
         {tasks.length ? (
           <div className="task-columns">
             {Object.entries(statusLabels).map(([status, label]) => (
-              <section className="task-column" key={status}>
+              <section
+                className={`task-column task-state-${status.toLowerCase()}`}
+                key={status}
+              >
                 <div className="task-column-heading">
-                  <h2>{label}</h2>
+                  <h2>
+                    <span className="status-dot" />
+                    {label}
+                  </h2>
                   <span>
                     {tasks.filter((task) => task.status === status).length}
                   </span>
                 </div>
                 <div className="task-column-list">
+                  {!tasks.some((task) => task.status === status) && (
+                    <p className="column-empty">아직 작업이 없습니다</p>
+                  )}
                   {tasks
                     .filter((task) => task.status === status)
                     .map((task) => (
                       <article key={task.id} className="board-task-card">
-                        <span className="role-badge">가중치 {task.weight}</span>
+                        <div className="board-card-top">
+                          <span className="task-number">#{task.id}</span>
+                          <span className="task-weight">
+                            가중치 {task.weight}
+                          </span>
+                        </div>
                         <button
                           className="task-title-button"
                           onClick={() => setTaskId(task.id)}
                         >
                           <h3>{task.title}</h3>
                         </button>
-                        <p>
-                          {task.assignees
-                            .map(
-                              (assignment) =>
-                                `${memberName(members, assignment.userId)} ${assignment.allocationPercent}%`,
-                            )
-                            .join(', ')}
-                        </p>
-                        <small>마감 {formatDate(task.dueAt)}</small>
-                        <small>
-                          승인자{' '}
-                          {memberName(members, task.completionReviewerId)}
-                        </small>
+                        <dl className="task-card-meta">
+                          <div>
+                            <dt>담당</dt>
+                            <dd>
+                              {task.assignees.map((assignment) => (
+                                <span
+                                  key={assignment.userId}
+                                  className={
+                                    assignment.userId === user.id
+                                      ? 'my-assignment'
+                                      : ''
+                                  }
+                                >
+                                  {memberName(members, assignment.userId)}{' '}
+                                  <b>{assignment.allocationPercent}%</b>
+                                </span>
+                              ))}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>승인</dt>
+                            <dd>
+                              {memberName(members, task.completionReviewerId)}
+                            </dd>
+                          </div>
+                        </dl>
+                        <div className="task-deadline">
+                          <Icon name="calendar" />
+                          <small>마감 {formatDate(task.dueAt)}</small>
+                        </div>
                         {task.status !== 'DONE' &&
                           new Date(task.dueAt) < new Date() && (
                             <span className="is-overdue">마감 지남</span>

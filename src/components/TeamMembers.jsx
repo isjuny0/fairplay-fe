@@ -35,20 +35,32 @@ export default function TeamMembers({ team, user, onChanged }) {
   };
   return (
     <section className="stack">
-      <h1>팀원 관리</h1>
+      <div className="page-heading">
+        <div>
+          <h1>팀원 관리</h1>
+          <p>팀의 구성원과 역할을 확인하세요.</p>
+        </div>
+      </div>
       <ErrorNotice error={error} onRetry={resource.reload} />
       <ResourceState resource={resource}>
         {resource.data && (
-          <>
+          <div
+            className={`member-management-grid ${isLeader ? 'has-applications' : ''}`}
+          >
             <section className="panel">
               <h2>승인된 팀원 · {resource.data.members.length}명</h2>
               <ul className="clean-list">
                 {resource.data.members.map((member) => (
                   <li className="row-item" key={member.userId}>
-                    <span>
-                      <strong>{member.name}</strong>{' '}
-                      <span className="role-badge">{memberRole(member)}</span>
-                      {member.userId === user.id && ' · 나'}
+                    <span className="member-identity">
+                      <span className="member-avatar" aria-hidden="true">
+                        {member.name.slice(0, 1)}
+                      </span>
+                      <span>
+                        <strong>{member.name}</strong>{' '}
+                        <span className="role-badge">{memberRole(member)}</span>
+                        {member.userId === user.id && ' · 나'}
+                      </span>
                     </span>
                     {isLeader && !member.isLeader && (
                       <button
@@ -124,7 +136,7 @@ export default function TeamMembers({ team, user, onChanged }) {
                 )}
               </section>
             )}
-          </>
+          </div>
         )}
       </ResourceState>
     </section>

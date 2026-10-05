@@ -111,8 +111,13 @@ export default function App() {
             Fairplay
           </button>
         </div>
-        <div className="context-info">팀 프로젝트 공간</div>
+        <div className="context-info">
+          <span className="context-dot" />팀 프로젝트 공간
+        </div>
         <div className="profile-area">
+          <span className="profile-avatar" aria-hidden="true">
+            {user.name?.slice(0, 1)}
+          </span>
           <span className="profile-name">{user.name}</span>
           <button className="logout-button" disabled={busy} onClick={signOut}>
             로그아웃

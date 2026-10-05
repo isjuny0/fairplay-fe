@@ -1,3 +1,4 @@
+import Icon from './Icon.jsx';
 import { useState } from 'react';
 import { getSpace } from '../api/spaces.js';
 import {
@@ -77,17 +78,26 @@ export default function SpaceWorkspace({ spaceId, user, onBack }) {
       <aside className="sidebar">
         <nav aria-label="스페이스 메뉴">
           <button className="nav-item" onClick={onBack}>
-            ← 내 스페이스
+            <Icon name="back" />내 스페이스
           </button>
-          <p className="nav-section">{space?.name || '스페이스'}</p>
+          <div className="sidebar-space">
+            <span className="space-symbol">
+              <Icon name="grid" />
+            </span>
+            <div>
+              <span className="eyebrow">현재 스페이스</span>
+              <strong>{space?.name || '스페이스'}</strong>
+            </div>
+          </div>
+          <p className="nav-section">프로젝트</p>
           <button
-            className={`nav-item ${menu === '팀 목록' ? 'active' : ''}`}
+            className={`nav-item ${menu === '팀 목록' && teamId == null ? 'active' : ''}`}
             onClick={() => {
               setMenu('팀 목록');
               setTeamId(null);
             }}
           >
-            팀 목록
+            <Icon name="users" />팀 목록
           </button>
           {isManager && (
             <button
@@ -97,18 +107,20 @@ export default function SpaceWorkspace({ spaceId, user, onBack }) {
                 setTeamId(null);
               }}
             >
+              <Icon name="settings" />
               스페이스 관리
             </button>
           )}
           {joinedTeam && (
             <button
-              className="nav-item"
+              className={`nav-item ${teamId === joinedTeam.id ? 'active' : ''}`}
               onClick={() => {
                 setMenu('팀 목록');
                 setTeamId(joinedTeam.id);
               }}
             >
-              내 팀 · {joinedTeam.name}
+              <Icon name="home" />
+              <span className="nav-team-name">내 팀 · {joinedTeam.name}</span>
             </button>
           )}
         </nav>
@@ -150,11 +162,14 @@ export default function SpaceWorkspace({ spaceId, user, onBack }) {
                         setCreating(true);
                       }}
                     >
-                      팀 만들기
+                      <Icon name="plus" />팀 만들기
                     </button>
                   </div>
-                  <section className="panel">
-                    <h2>{buildingLabels[space.teamBuildingStatus]}</h2>
+                  <section className="panel building-panel">
+                    <h2>
+                      <Icon name="calendar" />
+                      {buildingLabels[space.teamBuildingStatus]}
+                    </h2>
                     <p>
                       프로젝트 · {formatDate(space.startAt)} ~{' '}
                       {formatDate(space.endAt)}
@@ -178,6 +193,9 @@ export default function SpaceWorkspace({ spaceId, user, onBack }) {
                           className={`team-card ${isApprovedMember(item) ? 'is-joined' : ''}`}
                           key={item.id}
                         >
+                          <span className="team-symbol" aria-hidden="true">
+                            <Icon name="users" />
+                          </span>
                           <div className="team-card-main">
                             <h2>{item.name}</h2>
                             <p className="team-meta">

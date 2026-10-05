@@ -1,3 +1,4 @@
+import Icon from './Icon.jsx';
 import { useState } from 'react';
 import {
   createDeliverable,
@@ -289,7 +290,7 @@ export default function Deliverables({
     }
   };
   return (
-    <section className="stack">
+    <section className="stack deliverables-section">
       <div className="section-heading">
         <h2>{taskId == null ? '산출물 관리' : '연결 산출물'}</h2>
         {canCreate && (
@@ -300,6 +301,7 @@ export default function Deliverables({
               setEditing(null);
             }}
           >
+            <Icon name="plus" />
             산출물 등록
           </button>
         )}
@@ -339,7 +341,12 @@ export default function Deliverables({
                   key={deliverable.id}
                 >
                   <div className="section-heading">
-                    <h3>{deliverable.title}</h3>
+                    <div className="deliverable-title">
+                      <span className="file-symbol">
+                        <Icon name="file" />
+                      </span>
+                      <h3>{deliverable.title}</h3>
+                    </div>
                     <span className="role-badge">
                       {deliverable.type} ·{' '}
                       {categoryLabels[deliverable.category]}
