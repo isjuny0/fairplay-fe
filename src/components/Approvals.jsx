@@ -1,3 +1,4 @@
+import Icon from './Icon.jsx';
 import { useState } from 'react';
 import { listApprovals } from '../api/approvals.js';
 import useResource from '../hooks/useResource.js';
@@ -28,8 +29,12 @@ export default function Approvals({ team, user, members }) {
     );
   return (
     <section className="stack">
-      <h1>승인 검토</h1>
-      <p>내가 승인자로 지정된 완료 요청입니다.</p>
+      <div className="page-heading">
+        <div>
+          <h1>승인 검토</h1>
+          <p>내가 승인자로 지정된 완료 요청입니다.</p>
+        </div>
+      </div>
       <div className="toolbar">
         <label>
           요청 상태{' '}
@@ -43,6 +48,7 @@ export default function Approvals({ team, user, members }) {
           </select>
         </label>
         <button className="secondary-button" onClick={resource.reload}>
+          <Icon name="refresh" />
           새로고침
         </button>
       </div>
@@ -50,8 +56,19 @@ export default function Approvals({ team, user, members }) {
         {resource.data?.length ? (
           <ul className="clean-list">
             {resource.data.map((approval) => (
-              <li className="panel row-item" key={approval.id}>
+              <li className="panel row-item approval-card" key={approval.id}>
                 <span>
+                  <span
+                    className={`status-badge approval-${approval.status.toLowerCase()}`}
+                  >
+                    {
+                      {
+                        PENDING: '승인 대기',
+                        APPROVED: '승인 완료',
+                        REJECTED: '반려',
+                      }[approval.status]
+                    }
+                  </span>
                   <strong>작업 #{approval.taskId}</strong>
                   <small>
                     요청자 {memberName(members, approval.requesterId)} ·{' '}

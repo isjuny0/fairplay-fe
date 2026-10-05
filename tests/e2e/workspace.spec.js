@@ -523,3 +523,36 @@ test('좁은 화면에서도 작업 상세를 가로 넘침 없이 확인한다'
     fullPage: true,
   });
 });
+
+test('모바일·태블릿·데스크톱에서 팀 탐색과 작업 생성 폼이 가로로 넘치지 않는다', async ({
+  page,
+}) => {
+  await workspace(page);
+  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  for (const width of [320, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(
+      page
+        .getByRole('navigation', { name: '팀 메뉴' })
+        .getByRole('button', { name: '작업 보드', exact: true }),
+    ).toHaveAttribute('aria-current', 'page');
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+    await page
+      .getByRole('button', { name: '새 작업 만들기', exact: true })
+      .click();
+    const dialog = page.getByRole('dialog');
+    await expect(
+      dialog.getByLabel('완료 승인자', { exact: true }),
+    ).toBeVisible();
+    expect(
+      await dialog.evaluate(
+        (element) => element.scrollWidth <= element.clientWidth,
+      ),
+    ).toBe(true);
+    await dialog.getByRole('button', { name: '닫기', exact: true }).click();
+  }
+});

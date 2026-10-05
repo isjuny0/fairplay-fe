@@ -106,7 +106,11 @@ export default function TaskDetail({ taskId, team, user, members, onBack }) {
           <>
             <div className="page-heading">
               <div>
-                <span className="role-badge">{statusLabels[task.status]}</span>
+                <span
+                  className={`status-badge task-state-${task.status.toLowerCase()}`}
+                >
+                  {statusLabels[task.status]}
+                </span>
                 <h1>{task.title}</h1>
                 <p>
                   가중치 {task.weight} · 마감 {formatDate(task.dueAt)}
@@ -125,182 +129,203 @@ export default function TaskDetail({ taskId, team, user, members, onBack }) {
                 </button>
               )}
             </div>
-            <section className="panel">
-              <h2>작업 설명</h2>
-              <p className="preserve-lines">{task.description}</p>
-              <p>승인자 · {memberName(members, task.completionReviewerId)}</p>
-              <ul className="clean-list">
-                {task.assignees.map((assignment) => (
-                  <li className="row-item" key={assignment.userId}>
-                    {memberName(members, assignment.userId)}
-                    <strong>{assignment.allocationPercent}%</strong>
-                  </li>
-                ))}
-              </ul>
-            </section>
-            <section className="panel">
-              <h2>담당자 수행 설명</h2>
-              {resource.data.contributions.map((contribution) => (
-                <div className="contribution-entry" key={contribution.userId}>
-                  <h3>
-                    {memberName(members, contribution.userId)}
-                    {contribution.userId === user.id && ' · 나'}
-                  </h3>
-                  {contribution.userId === user.id ? (
-                    <OwnContribution
-                      key={`${task.id}-${task.version}`}
-                      task={task}
-                      contribution={contribution.contributionDescription}
-                      busy={busy}
-                      onSave={(contributionDescription) =>
-                        mutate(() =>
-                          updateContribution(task.id, {
-                            expectedVersion: task.version,
-                            contributionDescription,
-                          }),
-                        )
-                      }
-                    />
-                  ) : (
-                    <p className="preserve-lines">
-                      {contribution.contributionDescription ||
-                        '아직 작성하지 않았습니다.'}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </section>
-            {isAssignee(task, user.id) && isMutable(task) && (
-              <section className="panel stack">
-                <div className="heading-actions">
-                  <button
-                    className="secondary-button"
-                    disabled={busy}
-                    onClick={() =>
-                      mutate(() =>
-                        updateTask(task.id, {
-                          expectedVersion: task.version,
-                          status:
-                            task.status === 'TODO' ? 'IN_PROGRESS' : 'TODO',
-                        }),
-                      )
-                    }
-                  >
-                    {task.status === 'TODO' ? '작업 시작' : '할 일로 되돌리기'}
-                  </button>
-                  <button
-                    className="primary-button"
-                    disabled={busy || !task.canRequestCompletion}
-                    onClick={() =>
-                      mutate(() => requestCompletion(task.id, task.version))
-                    }
-                  >
-                    완료 요청
-                  </button>
-                </div>
-                {!task.canRequestCompletion && (
-                  <p className="field-help">
-                    {completionBlockLabels[task.completionBlockReason]}
+            <div className="task-detail-layout">
+              <div className="stack">
+                <section className="panel">
+                  <h2>작업 설명</h2>
+                  <p className="preserve-lines">{task.description}</p>
+                  <p>
+                    승인자 · {memberName(members, task.completionReviewerId)}
                   </p>
-                )}
-              </section>
-            )}
-            {canEditTask(task, team, user.id) && (
-              <section className="panel">
-                <form
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    mutate(() =>
-                      assignCompletionReviewer(task.id, {
-                        reviewerId,
-                        expectedVersion: task.version,
-                      }),
-                    );
-                  }}
-                >
-                  <Field label="승인자 변경">
-                    <select
-                      required
-                      value={reviewerId}
-                      disabled={busy}
-                      onChange={(event) => setReviewerId(event.target.value)}
+                  <ul className="clean-list">
+                    {task.assignees.map((assignment) => (
+                      <li className="row-item" key={assignment.userId}>
+                        {memberName(members, assignment.userId)}
+                        <strong>{assignment.allocationPercent}%</strong>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+                <section className="panel">
+                  <h2>담당자 수행 설명</h2>
+                  {resource.data.contributions.map((contribution) => (
+                    <div
+                      className="contribution-entry"
+                      key={contribution.userId}
                     >
-                      <option value="">승인자를 선택하세요</option>
-                      {candidates.map((member, index) => (
-                        <option key={member.userId} value={member.userId}>
-                          {index + 1}. {member.name}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <button
-                    className="secondary-button"
-                    disabled={
-                      busy ||
-                      !candidates.some((member) => member.userId === reviewerId)
-                    }
-                  >
-                    승인자 저장
-                  </button>
-                </form>
-              </section>
-            )}
-            <Deliverables
-              team={team}
-              user={user}
-              members={members}
-              tasks={[task]}
-              taskId={task.id}
-              onChanged={resource.reload}
-            />
-            {currentApproval && (
-              <ApprovalDecision
-                key={currentApproval.id}
-                approval={currentApproval}
-                user={user}
-                onChanged={resource.reload}
-              />
-            )}
-            <section className="panel">
-              <h2>완료 요청 이력</h2>
-              <p className="field-help">
-                과거 작업 내용·파일 사본은 보관하지 않습니다. 현재 산출물과 요청
-                처리 이력을 확인하세요.
-              </p>
-              {history.length ? (
-                <ul className="clean-list">
-                  {history.map((approval) => (
-                    <li className="approval-history" key={approval.id}>
-                      <strong>
-                        {
-                          {
-                            PENDING: '승인 대기',
-                            APPROVED: '승인',
-                            REJECTED: '반려',
-                          }[approval.status]
-                        }
-                      </strong>
-                      <span>
-                        요청 {memberName(members, approval.requesterId)} ·
-                        승인자 {memberName(members, approval.reviewerId)}
-                      </span>
-                      <small>
-                        요청 {formatDate(approval.requestedAt)}
-                        {approval.decidedAt &&
-                          ` · 처리 ${formatDate(approval.decidedAt)}`}
-                      </small>
-                      {approval.reason && (
+                      <h3>
+                        {memberName(members, contribution.userId)}
+                        {contribution.userId === user.id && ' · 나'}
+                      </h3>
+                      {contribution.userId === user.id ? (
+                        <OwnContribution
+                          key={`${task.id}-${task.version}`}
+                          task={task}
+                          contribution={contribution.contributionDescription}
+                          busy={busy}
+                          onSave={(contributionDescription) =>
+                            mutate(() =>
+                              updateContribution(task.id, {
+                                expectedVersion: task.version,
+                                contributionDescription,
+                              }),
+                            )
+                          }
+                        />
+                      ) : (
                         <p className="preserve-lines">
-                          반려 사유: {approval.reason}
+                          {contribution.contributionDescription ||
+                            '아직 작성하지 않았습니다.'}
                         </p>
                       )}
-                    </li>
+                    </div>
                   ))}
-                </ul>
-              ) : (
-                <p>완료 요청 이력이 없습니다.</p>
-              )}
-            </section>
+                </section>
+                <Deliverables
+                  team={team}
+                  user={user}
+                  members={members}
+                  tasks={[task]}
+                  taskId={task.id}
+                  onChanged={resource.reload}
+                />
+              </div>
+              <aside
+                className="stack task-review-sidebar"
+                aria-label="작업 진행 및 검토"
+              >
+                {isAssignee(task, user.id) && isMutable(task) && (
+                  <section className="panel stack">
+                    <h2>작업 진행</h2>
+                    <div className="heading-actions">
+                      <button
+                        className="secondary-button"
+                        disabled={busy}
+                        onClick={() =>
+                          mutate(() =>
+                            updateTask(task.id, {
+                              expectedVersion: task.version,
+                              status:
+                                task.status === 'TODO' ? 'IN_PROGRESS' : 'TODO',
+                            }),
+                          )
+                        }
+                      >
+                        {task.status === 'TODO'
+                          ? '작업 시작'
+                          : '할 일로 되돌리기'}
+                      </button>
+                      <button
+                        className="primary-button"
+                        disabled={busy || !task.canRequestCompletion}
+                        onClick={() =>
+                          mutate(() => requestCompletion(task.id, task.version))
+                        }
+                      >
+                        완료 요청
+                      </button>
+                    </div>
+                    {!task.canRequestCompletion && (
+                      <p className="field-help">
+                        {completionBlockLabels[task.completionBlockReason]}
+                      </p>
+                    )}
+                  </section>
+                )}
+                {canEditTask(task, team, user.id) && (
+                  <section className="panel">
+                    <form
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        mutate(() =>
+                          assignCompletionReviewer(task.id, {
+                            reviewerId,
+                            expectedVersion: task.version,
+                          }),
+                        );
+                      }}
+                    >
+                      <Field label="승인자 변경">
+                        <select
+                          required
+                          value={reviewerId}
+                          disabled={busy}
+                          onChange={(event) =>
+                            setReviewerId(event.target.value)
+                          }
+                        >
+                          <option value="">승인자를 선택하세요</option>
+                          {candidates.map((member, index) => (
+                            <option key={member.userId} value={member.userId}>
+                              {index + 1}. {member.name}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <button
+                        className="secondary-button"
+                        disabled={
+                          busy ||
+                          !candidates.some(
+                            (member) => member.userId === reviewerId,
+                          )
+                        }
+                      >
+                        승인자 저장
+                      </button>
+                    </form>
+                  </section>
+                )}
+                {currentApproval && (
+                  <ApprovalDecision
+                    key={currentApproval.id}
+                    approval={currentApproval}
+                    user={user}
+                    onChanged={resource.reload}
+                  />
+                )}
+                <section className="panel">
+                  <h2>완료 요청 이력</h2>
+                  <p className="field-help">
+                    과거 작업 내용·파일 사본은 보관하지 않습니다. 현재 산출물과
+                    요청 처리 이력을 확인하세요.
+                  </p>
+                  {history.length ? (
+                    <ul className="clean-list">
+                      {history.map((approval) => (
+                        <li className="approval-history" key={approval.id}>
+                          <strong>
+                            {
+                              {
+                                PENDING: '승인 대기',
+                                APPROVED: '승인',
+                                REJECTED: '반려',
+                              }[approval.status]
+                            }
+                          </strong>
+                          <span>
+                            요청 {memberName(members, approval.requesterId)} ·
+                            승인자 {memberName(members, approval.reviewerId)}
+                          </span>
+                          <small>
+                            요청 {formatDate(approval.requestedAt)}
+                            {approval.decidedAt &&
+                              ` · 처리 ${formatDate(approval.decidedAt)}`}
+                          </small>
+                          {approval.reason && (
+                            <p className="preserve-lines">
+                              반려 사유: {approval.reason}
+                            </p>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>완료 요청 이력이 없습니다.</p>
+                  )}
+                </section>
+              </aside>
+            </div>
             {isMutable(task) &&
               isTeamEditor(team, user.id) &&
               history.length === 0 && (

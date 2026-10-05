@@ -1,3 +1,4 @@
+import Icon from './Icon.jsx';
 import { useState } from 'react';
 import { getTeamMembers } from '../api/teams.js';
 import { listTasks } from '../api/tasks.js';
@@ -51,12 +52,13 @@ export default function TeamWorkspace({ team, user, onChanged, onBack }) {
           : '관리자 조회';
   return (
     <section className="stack">
-      <div className="section-heading">
+      <div className="section-heading team-context">
         <button className="secondary-button" onClick={onBack}>
-          ← 팀 목록
+          <Icon name="back" />팀 목록
         </button>
-        <span>
-          {team.name} · {myRole}
+        <span className="team-context-name">
+          {team.name}
+          <span className="role-badge">{myRole}</span>
         </span>
       </div>
       <nav className="tab-bar" aria-label="팀 메뉴">
@@ -64,8 +66,20 @@ export default function TeamWorkspace({ team, user, onChanged, onBack }) {
           <button
             key={item}
             className={currentMenu === item ? 'active' : ''}
+            aria-current={currentMenu === item ? 'page' : undefined}
             onClick={() => setMenu(item)}
           >
+            <Icon
+              name={
+                {
+                  '팀 홈': 'home',
+                  '작업 보드': 'board',
+                  산출물: 'file',
+                  '승인 검토': 'check',
+                  '팀원 관리': 'users',
+                }[item]
+              }
+            />
             {item}
           </button>
         ))}
@@ -74,6 +88,7 @@ export default function TeamWorkspace({ team, user, onChanged, onBack }) {
         {currentMenu === '팀 홈' && (
           <section className="stack">
             <div>
+              <span className="eyebrow">우리 팀의 작업 공간</span>
               <h1>{team.name}</h1>
               <p>
                 승인된 팀원 {team.approvedMemberCount}명 · 리더{' '}
@@ -84,6 +99,7 @@ export default function TeamWorkspace({ team, user, onChanged, onBack }) {
             </div>
             <section className="next-action-card">
               <div>
+                <span className="eyebrow">다음 단계</span>
                 <h2>
                   {team.canCreateTask
                     ? '함께 작업을 시작하세요'
@@ -104,6 +120,38 @@ export default function TeamWorkspace({ team, user, onChanged, onBack }) {
                 {team.canCreateTask ? '작업 보드 열기' : '팀원 관리'}
               </button>
             </section>
+            <div className="quick-links">
+              {[
+                {
+                  label: '작업 보드',
+                  icon: 'board',
+                  description: '담당 작업의 진행 상태와 마감일을 확인하세요.',
+                },
+                {
+                  label: '산출물',
+                  icon: 'file',
+                  description: '프로젝트 자료와 작업 결과를 한곳에 모으세요.',
+                },
+                {
+                  label: '승인 검토',
+                  icon: 'check',
+                  description: '내게 요청된 완료 검토를 확인하세요.',
+                },
+              ].map(({ label, icon, description }) => (
+                <button
+                  className="quick-link"
+                  key={label}
+                  onClick={() => setMenu(label)}
+                >
+                  <span className="space-symbol">
+                    <Icon name={icon} />
+                  </span>
+                  <strong>{label}</strong>
+                  <span>{description}</span>
+                  <Icon name="arrow" />
+                </button>
+              ))}
+            </div>
           </section>
         )}
         {currentMenu === '팀원 관리' && (

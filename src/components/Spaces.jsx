@@ -1,3 +1,4 @@
+import Icon from './Icon.jsx';
 import { useState } from 'react';
 import { createSpace, joinSpace, listSpaces } from '../api/spaces.js';
 import useResource from '../hooks/useResource.js';
@@ -61,6 +62,7 @@ export default function Spaces({ onSelect }) {
     <section>
       <div className="page-heading">
         <div>
+          <span className="eyebrow">함께 만드는 프로젝트</span>
           <h1>내 스페이스</h1>
           <p>프로젝트 공간을 만들거나 참여 코드로 함께 시작하세요.</p>
         </div>
@@ -69,6 +71,7 @@ export default function Spaces({ onSelect }) {
             코드로 참여
           </button>
           <button className="primary-button" onClick={() => open('create')}>
+            <Icon name="plus" />
             스페이스 만들기
           </button>
         </div>
@@ -79,10 +82,25 @@ export default function Spaces({ onSelect }) {
             {resource.data.map((space) => (
               <li key={space.spaceId}>
                 <button onClick={() => onSelect(space.spaceId)}>
+                  <span className="space-card-top">
+                    <span className="space-symbol">
+                      <Icon name="grid" />
+                    </span>
+                    <span
+                      className={`role-badge ${space.role === 'MANAGER' ? 'role-manager' : ''}`}
+                    >
+                      {space.role === 'MANAGER' ? '관리자' : '참여자'}
+                    </span>
+                  </span>
                   <strong>{space.name}</strong>
-                  <span>
-                    {space.role === 'MANAGER' ? '관리자' : '참여자'} ·{' '}
-                    {buildingLabels[space.teamBuildingStatus]}
+                  <span className="space-card-footer">
+                    <span className="building-status">
+                      <span
+                        className={`status-dot building-${space.teamBuildingStatus.toLowerCase()}`}
+                      />
+                      {buildingLabels[space.teamBuildingStatus]}
+                    </span>
+                    <Icon name="arrow" />
                   </span>
                 </button>
               </li>
