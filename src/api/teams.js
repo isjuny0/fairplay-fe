@@ -1,115 +1,25 @@
-const STORAGE_KEY = 'fairplay-teams';
-const useMockApi = import.meta.env.VITE_TEAM_API_MODE !== 'api';
-const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080').replace(/\/$/, '');
-const wait = () => new Promise((resolve) => setTimeout(resolve, 250));
-
-const sampleTeams = [
-  { id: 'sample-a', name: 'A팀', memberCount: 4, maxMembers: 6, leaderId: 'local-user', deputyId: 'member-kjy', leaderName: '박선우', membershipStatus: 'APPROVED', myRole: 'LEADER' },
-  { id: 'sample-b', name: 'B팀', memberCount: 4, maxMembers: 6, leaderId: 'member-kyj', deputyId: null, leaderName: '김영진', membershipStatus: 'PENDING' },
-  { id: 'sample-c', name: 'C팀', memberCount: 4, maxMembers: 6, leaderId: 'member-psw', deputyId: null, leaderName: '박선우', membershipStatus: 'NONE' },
-];
-
-function readMockTeams() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; }
-}
-
-function saveMockTeams(teamsBySpace) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(teamsBySpace));
-}
-
-function normalizeMockTeams(spaceId, teams) {
-  const preferredTeamIndex = teams.findIndex((team) => team.id === `${spaceId}-sample-a` || team.name === 'A팀');
-  const joinedTeamIndex = preferredTeamIndex >= 0 ? preferredTeamIndex : 0;
-
-  return teams.map((team, index) => {
-    const membershipStatus = team.membershipStatus === 'JOINED' ? 'APPROVED' : team.membershipStatus;
-    const isJoinedTeam = index === joinedTeamIndex;
-    const isDefaultSampleTeam = team.id === `${spaceId}-sample-a` || team.name === 'A팀';
-
-    return {
-      ...team,
-      spaceId: team.spaceId || spaceId,
-      leaderId: isDefaultSampleTeam ? 'local-user' : team.leaderId || null,
-      deputyId: isDefaultSampleTeam ? 'member-kjy' : team.deputyId || null,
-      leaderName: isDefaultSampleTeam ? '박선우' : team.leaderName,
-      membershipStatus: isJoinedTeam ? 'APPROVED' : membershipStatus === 'APPROVED' ? 'NONE' : membershipStatus,
-      ...(isJoinedTeam ? { myRole: isDefaultSampleTeam ? 'LEADER' : team.myRole || 'MEMBER' } : {}),
-    };
+import { apiRequest } from './client.js';
+export const listTeams = (spaceId) =>
+  apiRequest(`/api/spaces/${spaceId}/teams`);
+export const getTeam = (teamId) => apiRequest(`/api/teams/${teamId}`);
+export const createTeam = (spaceId, name) =>
+  apiRequest(`/api/spaces/${spaceId}/teams`, {
+    method: 'POST',
+    body: { name },
   });
-}
-
-function getMockTeams(spaceId) {
-  const teamsBySpace = readMockTeams();
-  if (!teamsBySpace[spaceId]) {
-    teamsBySpace[spaceId] = sampleTeams.map((team) => ({ ...team, id: `${spaceId}-${team.id}`, spaceId }));
-  }
-  teamsBySpace[spaceId] = normalizeMockTeams(spaceId, teamsBySpace[spaceId]);
-  saveMockTeams(teamsBySpace);
-  return teamsBySpace[spaceId];
-}
-
-async function request(path, options = {}) {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-    ...options,
+export const requestTeamJoin = (teamId) =>
+  apiRequest(`/api/teams/${teamId}/applications`, { method: 'POST' });
+export const getTeamMembers = (teamId) =>
+  apiRequest(`/api/teams/${teamId}/members`);
+export const getTeamApplications = (teamId) =>
+  apiRequest(`/api/teams/${teamId}/applications?status=PENDING`);
+export const reviewTeamApplication = (applicationId, status) =>
+  apiRequest(`/api/team-applications/${applicationId}`, {
+    method: 'PATCH',
+    body: { status },
   });
-  const result = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(result?.message || '팀 요청을 처리하지 못했습니다.');
-  return result;
-}
-
-export async function listTeams(spaceId) {
-  if (!useMockApi) return request(`/spaces/${spaceId}/teams`);
-  await wait();
-  return getMockTeams(spaceId);
-}
-
-export async function createTeam(spaceId, { name, maxMembers }) {
-  if (!useMockApi) {
-    return request(`/spaces/${spaceId}/teams`, {
-      method: 'POST',
-      headers: { 'Idempotency-Key': crypto.randomUUID() },
-      body: JSON.stringify({ name }),
-    });
-  }
-
-  await wait();
-  const teamsBySpace = readMockTeams();
-  const teams = getMockTeams(spaceId);
-  const team = {
-    id: crypto.randomUUID(),
-    spaceId,
-    name,
-    memberCount: 1,
-    maxMembers,
-    leaderId: 'local-user',
-    deputyId: null,
-    leaderName: '사용자',
-    membershipStatus: 'APPROVED',
-    myRole: 'LEADER',
-  };
-  teamsBySpace[spaceId] = [...teams, team];
-  saveMockTeams(teamsBySpace);
-  return team;
-}
-
-export async function requestTeamJoin(spaceId, teamId) {
-  if (!useMockApi) {
-    return request(`/teams/${teamId}/applications`, {
-      method: 'POST',
-      headers: { 'Idempotency-Key': crypto.randomUUID() },
-    });
-  }
-
-  await wait();
-  const teamsBySpace = readMockTeams();
-  const teams = getMockTeams(spaceId);
-  const team = teams.find((item) => item.id === teamId);
-  if (!team) throw new Error('팀을 찾을 수 없습니다.');
-  if (team.memberCount >= team.maxMembers) throw new Error('모집이 마감된 팀입니다.');
-
-  teamsBySpace[spaceId] = teams.map((item) => item.id === teamId ? { ...item, membershipStatus: 'PENDING' } : item);
-  saveMockTeams(teamsBySpace);
-  return teamsBySpace[spaceId].find((item) => item.id === teamId);
-}
+export const assignTeamDeputy = (teamId, userId) =>
+  apiRequest(`/api/teams/${teamId}/deputy`, {
+    method: 'PATCH',
+    body: { userId },
+  });
