@@ -1,5 +1,6 @@
 import Icon from './Icon.jsx';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 import { getTeamDeletionRequest, getTeamMembers } from '../api/teams.js';
 import { listTasks } from '../api/tasks.js';
 import useResource from '../hooks/useResource.js';
@@ -9,6 +10,8 @@ import Deliverables from './Deliverables.jsx';
 import TaskBoard from './TaskBoard.jsx';
 import TeamMembers from './TeamMembers.jsx';
 import TeamSettings from './TeamSettings.jsx';
+import UnavailablePage from './UnavailablePage.jsx';
+import { teamMenuPath } from '../lib/routes.js';
 import { ErrorNotice, ResourceState } from './ui.jsx';
 
 function TeamDeliverables({ team, user, members }) {
@@ -35,15 +38,30 @@ export default function TeamWorkspace({
   team,
   space,
   user,
+  menu,
+  taskId,
   onChanged,
   onBack,
   onRemoved,
 }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const navigateToMenu = (nextMenu) =>
+    navigate(teamMenuPath(space.id, team.id, nextMenu));
+  const navigateToTask = (id) =>
+    navigate({
+      pathname: `${teamMenuPath(space.id, team.id, menu)}/${menu === '승인 검토' ? 'tasks/' : ''}${id}`,
+      search: location.search,
+    });
+  const navigateToTaskList = () =>
+    navigate({
+      pathname: teamMenuPath(space.id, team.id, menu),
+      search: location.search,
+    });
   const resource = useResource(
     () => getTeamMembers(team.id),
     [team.id, team.deputyId, team.approvedMemberCount],
   );
-  const [menu, setMenu] = useState('팀 홈');
   const approved = isApprovedMember(team);
   const deletionResource = useResource(async () => {
     if (!approved) return null;
@@ -57,7 +75,7 @@ export default function TeamWorkspace({
         return null;
       throw error;
     }
-  }, [team.id, approved, menu]);
+  }, [team.id, approved, menu, taskId]);
   useEffect(() => {
     const refresh = () => {
       deletionResource.reload();
@@ -76,7 +94,7 @@ export default function TeamWorkspace({
   const menus = approved
     ? ['팀 홈', '작업 보드', '산출물', '승인 검토', '팀원 관리', '팀 설정']
     : ['팀원 관리', '산출물'];
-  const currentMenu = menus.includes(menu) ? menu : menus[0];
+  const currentMenu = menus.includes(menu) ? menu : null;
   const members = resource.data || [];
   const myRole =
     team.leaderId === user.id
@@ -103,7 +121,7 @@ export default function TeamWorkspace({
             key={item}
             className={currentMenu === item ? 'active' : ''}
             aria-current={currentMenu === item ? 'page' : undefined}
-            onClick={() => setMenu(item)}
+            onClick={() => navigateToMenu(item)}
           >
             <Icon
               name={
@@ -136,7 +154,7 @@ export default function TeamWorkspace({
               </span>
               <button
                 className="secondary-button"
-                onClick={() => setMenu('팀 설정')}
+                onClick={() => navigateToMenu('팀 설정')}
               >
                 삭제 동의 확인
               </button>
@@ -151,6 +169,12 @@ export default function TeamWorkspace({
         </>
       )}
       <ResourceState resource={resource}>
+        {!menus.includes(menu) && (
+          <UnavailablePage
+            title="이 팀 화면에 접근할 수 없습니다."
+            description="승인된 팀원만 작업과 팀 설정을 사용할 수 있습니다. 조회 가능한 팀 메뉴를 선택해 주세요."
+          />
+        )}
         {currentMenu === '팀 홈' && (
           <section className="stack">
             <div>
@@ -180,7 +204,7 @@ export default function TeamWorkspace({
               <button
                 className="primary-button"
                 onClick={() =>
-                  setMenu(team.canCreateTask ? '작업 보드' : '팀원 관리')
+                  navigateToMenu(team.canCreateTask ? '작업 보드' : '팀원 관리')
                 }
               >
                 {team.canCreateTask ? '작업 보드 열기' : '팀원 관리'}
@@ -207,7 +231,7 @@ export default function TeamWorkspace({
                 <button
                   className="quick-link"
                   key={label}
-                  onClick={() => setMenu(label)}
+                  onClick={() => navigateToMenu(label)}
                 >
                   <span className="space-symbol">
                     <Icon name={icon} />
@@ -230,14 +254,28 @@ export default function TeamWorkspace({
             }}
           />
         )}
-        {currentMenu === '작업 보드' && (
-          <TaskBoard team={workTeam} user={user} members={members} />
+        {currentMenu === '작업 보드' && approved && (
+          <TaskBoard
+            team={workTeam}
+            user={user}
+            members={members}
+            taskId={taskId}
+            onOpenTask={navigateToTask}
+            onTaskBack={navigateToTaskList}
+          />
         )}
         {currentMenu === '산출물' && (
           <TeamDeliverables team={workTeam} user={user} members={members} />
         )}
-        {currentMenu === '승인 검토' && (
-          <Approvals team={workTeam} user={user} members={members} />
+        {currentMenu === '승인 검토' && approved && (
+          <Approvals
+            team={workTeam}
+            user={user}
+            members={members}
+            taskId={taskId}
+            onOpenTask={navigateToTask}
+            onTaskBack={navigateToTaskList}
+          />
         )}
         {currentMenu === '팀 설정' && approved && (
           <TeamSettings
@@ -246,7 +284,7 @@ export default function TeamWorkspace({
             user={user}
             members={members}
             deletionResource={deletionResource}
-            onNavigate={setMenu}
+            onNavigate={navigateToMenu}
             onRemoved={onRemoved}
             onChanged={() => {
               deletionResource.reload();

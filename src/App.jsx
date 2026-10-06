@@ -1,30 +1,29 @@
 import { useEffect, useState } from 'react';
+import { Navigate, useLocation, useNavigate } from 'react-router';
 import { getCurrentUser, loginWithGoogle, logout } from './api/auth.js';
-import Spaces from './components/Spaces.jsx';
-import SpaceWorkspace from './components/SpaceWorkspace.jsx';
+import AppRoutes from './components/AppRoutes.jsx';
+import { loginReturnPath } from './lib/routes.js';
 import { ErrorNotice } from './components/ui.jsx';
 
 export default function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [sessionNotice, setSessionNotice] = useState('');
-  const [spaceId, setSpaceId] = useState(null);
   useEffect(() => {
     let active = true;
     const expired = () => {
       setUser(null);
-      setSpaceId(null);
       setSessionNotice('로그인 세션이 만료되었습니다. 다시 로그인해 주세요.');
-      window.history.replaceState({}, '', '/');
     };
     window.addEventListener('fairplay:session-expired', expired);
     getCurrentUser()
       .then((currentUser) => {
         if (active) {
           setUser(currentUser);
-          window.history.replaceState({}, '', '/main');
           setSessionNotice('');
         }
       })
@@ -47,7 +46,7 @@ export default function App() {
       const currentUser = await loginWithGoogle();
       setUser(currentUser);
       setSessionNotice('');
-      window.history.replaceState({}, '', '/main');
+      navigate(loginReturnPath(location.state?.returnTo), { replace: true });
     } catch (requestError) {
       setError(requestError);
     } finally {
@@ -60,9 +59,8 @@ export default function App() {
     try {
       await logout();
       setUser(null);
-      setSpaceId(null);
       setSessionNotice('');
-      window.history.replaceState({}, '', '/');
+      navigate('/', { replace: true });
     } catch (requestError) {
       setError(requestError);
     } finally {
@@ -77,6 +75,14 @@ export default function App() {
           <p>로그인 상태를 확인하고 있습니다.</p>
         </section>
       </main>
+    );
+  if (!user && location.pathname !== '/')
+    return (
+      <Navigate
+        to="/"
+        replace
+        state={{ returnTo: location.pathname + location.search }}
+      />
     );
   if (!user)
     return (
@@ -106,7 +112,7 @@ export default function App() {
           <span className="logo-mark">F</span>
           <button
             className="brand-button wordmark"
-            onClick={() => setSpaceId(null)}
+            onClick={() => navigate('/main')}
           >
             Fairplay
           </button>
@@ -125,18 +131,7 @@ export default function App() {
         </div>
       </header>
       {error && <ErrorNotice error={error} />}
-      {spaceId == null ? (
-        <main className="main-content spaces-main">
-          <Spaces onSelect={setSpaceId} />
-        </main>
-      ) : (
-        <SpaceWorkspace
-          key={spaceId}
-          spaceId={spaceId}
-          user={user}
-          onBack={() => setSpaceId(null)}
-        />
-      )}
+      <AppRoutes user={user} />
     </div>
   );
 }

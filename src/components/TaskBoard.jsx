@@ -1,5 +1,6 @@
 import Icon from './Icon.jsx';
 import { useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { createTask, listTasks } from '../api/tasks.js';
 import useResource from '../hooks/useResource.js';
 import {
@@ -12,11 +13,34 @@ import TaskForm from './TaskForm.jsx';
 import TaskDetail from './TaskDetail.jsx';
 import { EmptyState, ResourceState } from './ui.jsx';
 
-export default function TaskBoard({ team, user, members }) {
-  const resource = useResource(() => listTasks(team.id), [team.id]);
-  const [taskId, setTaskId] = useState(null);
-  const [filter, setFilter] = useState('ALL');
-  const [onlyMine, setOnlyMine] = useState(false);
+export default function TaskBoard({
+  team,
+  user,
+  members,
+  taskId,
+  onOpenTask,
+  onTaskBack,
+}) {
+  const resource = useResource(() => listTasks(team.id), [team.id, taskId]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filter = Object.hasOwn(statusLabels, searchParams.get('status'))
+    ? searchParams.get('status')
+    : 'ALL';
+  const onlyMine = searchParams.get('mine') === '1';
+  const setFilter = (status) =>
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      if (status === 'ALL') next.delete('status');
+      else next.set('status', status);
+      return next;
+    });
+  const setOnlyMine = (checked) =>
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      if (checked) next.set('mine', '1');
+      else next.delete('mine');
+      return next;
+    });
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -27,8 +51,7 @@ export default function TaskBoard({ team, user, members }) {
     try {
       const task = await createTask(team.id, input);
       setCreating(false);
-      resource.reload();
-      setTaskId(task.id);
+      onOpenTask(task.id);
     } catch (requestError) {
       setError(requestError);
     } finally {
@@ -43,10 +66,7 @@ export default function TaskBoard({ team, user, members }) {
         team={team}
         user={user}
         members={members}
-        onBack={() => {
-          setTaskId(null);
-          resource.reload();
-        }}
+        onBack={onTaskBack}
       />
     );
   const tasks =
@@ -144,7 +164,7 @@ export default function TaskBoard({ team, user, members }) {
                         </div>
                         <button
                           className="task-title-button"
-                          onClick={() => setTaskId(task.id)}
+                          onClick={() => onOpenTask(task.id)}
                         >
                           <h3>{task.title}</h3>
                         </button>
