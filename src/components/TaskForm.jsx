@@ -12,6 +12,7 @@ export default function TaskForm({
   members,
   user,
   busy,
+  blocked = false,
   serverError,
   onSave,
   onClose,
@@ -54,6 +55,7 @@ export default function TaskForm({
     );
   const submit = (event) => {
     event.preventDefault();
+    if (blocked) return;
     setError(null);
     if (members.length < 2) {
       setError(new Error('승인된 팀원이 2명 이상 필요합니다.'));
@@ -91,7 +93,7 @@ export default function TaskForm({
       onClose={onClose}
     >
       <form onSubmit={submit}>
-        <fieldset className="form-fields" disabled={busy}>
+        <fieldset className="form-fields" disabled={busy || blocked}>
           <Field label="작업 제목">
             <input
               required
@@ -213,8 +215,14 @@ export default function TaskForm({
               </p>
             )}
         </fieldset>
+        {blocked && (
+          <p className="notice">
+            현재 팀 상태로는 작업을 저장할 수 없습니다. 창을 닫고 팀 상태를
+            확인해 주세요.
+          </p>
+        )}
         <ErrorNotice error={error || serverError} />
-        <FormActions busy={busy} onCancel={onClose} />
+        <FormActions busy={busy} disabled={blocked} onCancel={onClose} />
       </form>
     </Modal>
   );

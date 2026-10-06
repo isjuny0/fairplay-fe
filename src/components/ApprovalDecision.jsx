@@ -2,7 +2,12 @@ import { useState } from 'react';
 import { approveCompletion, rejectCompletion } from '../api/approvals.js';
 import { ErrorNotice, Field } from './ui.jsx';
 
-export default function ApprovalDecision({ approval, user, onChanged }) {
+export default function ApprovalDecision({
+  approval,
+  user,
+  blocked = false,
+  onChanged,
+}) {
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -13,6 +18,7 @@ export default function ApprovalDecision({ approval, user, onChanged }) {
   )
     return null;
   const decide = async (decision) => {
+    if (blocked) return;
     const trimmedReason = reason.trim();
     if (
       decision === 'reject' &&
@@ -46,7 +52,7 @@ export default function ApprovalDecision({ approval, user, onChanged }) {
       <p>작업 설명·담당 배분·개인 수행 설명·최신 산출물을 확인해 주세요.</p>
       <Field label="반려 사유">
         <textarea
-          disabled={busy}
+          disabled={busy || blocked}
           rows={3}
           maxLength={500}
           value={reason}
@@ -57,14 +63,14 @@ export default function ApprovalDecision({ approval, user, onChanged }) {
       <div className="modal-actions">
         <button
           className="secondary-button"
-          disabled={busy}
+          disabled={busy || blocked}
           onClick={() => decide('reject')}
         >
           반려
         </button>
         <button
           className="primary-button"
-          disabled={busy}
+          disabled={busy || blocked}
           onClick={() => decide('approve')}
         >
           완료 승인

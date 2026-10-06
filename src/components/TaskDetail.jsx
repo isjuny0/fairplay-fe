@@ -10,6 +10,7 @@ import { getApprovalHistory, requestCompletion } from '../api/approvals.js';
 import useResource from '../hooks/useResource.js';
 import {
   canEditTask,
+  canModifyTeamWork,
   completionBlockLabels,
   formatDate,
   isAssignee,
@@ -18,19 +19,21 @@ import {
   memberName,
   reviewerCandidates,
   statusLabels,
+  teamWorkBlocked,
 } from '../lib/domain.js';
 import ApprovalDecision from './ApprovalDecision.jsx';
 import Deliverables from './Deliverables.jsx';
 import TaskForm from './TaskForm.jsx';
 import { ErrorNotice, Field, ResourceState } from './ui.jsx';
 
-function OwnContribution({ task, contribution, busy, onSave }) {
+function OwnContribution({ task, contribution, busy, blocked, onSave }) {
   const [description, setDescription] = useState(contribution || '');
   const [error, setError] = useState(null);
   return (
     <form
       onSubmit={(event) => {
         event.preventDefault();
+        if (blocked) return;
         const trimmed = description.trim();
         if (trimmed && trimmed.length < 10) {
           setError(
@@ -47,7 +50,7 @@ function OwnContribution({ task, contribution, busy, onSave }) {
         help="공동 담당자는 모두 작성해야 합니다. 비워서 저장하면 기존 설명을 제거합니다."
       >
         <textarea
-          disabled={busy || !isMutable(task)}
+          disabled={busy || blocked || !isMutable(task)}
           maxLength={1000}
           rows={4}
           value={description}
@@ -56,7 +59,7 @@ function OwnContribution({ task, contribution, busy, onSave }) {
       </Field>
       <ErrorNotice error={error} />
       {isMutable(task) && (
-        <button className="secondary-button" disabled={busy}>
+        <button className="secondary-button" disabled={busy || blocked}>
           수행 설명 저장
         </button>
       )}
@@ -77,6 +80,7 @@ export default function TaskDetail({ taskId, team, user, members, onBack }) {
   const [editing, setEditing] = useState(false);
   const [reviewerId, setReviewerId] = useState('');
   const mutate = async (action) => {
+    if (!canModifyTeamWork(team)) return;
     setBusy(true);
     setError(null);
     try {
@@ -163,6 +167,7 @@ export default function TaskDetail({ taskId, team, user, members, onBack }) {
                           task={task}
                           contribution={contribution.contributionDescription}
                           busy={busy}
+                          blocked={!canModifyTeamWork(team)}
                           onSave={(contributionDescription) =>
                             mutate(() =>
                               updateContribution(task.id, {
@@ -200,7 +205,7 @@ export default function TaskDetail({ taskId, team, user, members, onBack }) {
                     <div className="heading-actions">
                       <button
                         className="secondary-button"
-                        disabled={busy}
+                        disabled={busy || !canModifyTeamWork(team)}
                         onClick={() =>
                           mutate(() =>
                             updateTask(task.id, {
@@ -217,7 +222,11 @@ export default function TaskDetail({ taskId, team, user, members, onBack }) {
                       </button>
                       <button
                         className="primary-button"
-                        disabled={busy || !task.canRequestCompletion}
+                        disabled={
+                          busy ||
+                          !canModifyTeamWork(team) ||
+                          !task.canRequestCompletion
+                        }
                         onClick={() =>
                           mutate(() => requestCompletion(task.id, task.version))
                         }
@@ -281,6 +290,7 @@ export default function TaskDetail({ taskId, team, user, members, onBack }) {
                     key={currentApproval.id}
                     approval={currentApproval}
                     user={user}
+                    blocked={teamWorkBlocked(team)}
                     onChanged={resource.reload}
                   />
                 )}
@@ -331,7 +341,7 @@ export default function TaskDetail({ taskId, team, user, members, onBack }) {
               history.length === 0 && (
                 <button
                   className="secondary-button danger"
-                  disabled={busy}
+                  disabled={busy || teamWorkBlocked(team)}
                   onClick={async () => {
                     if (
                       !window.confirm(
@@ -363,6 +373,7 @@ export default function TaskDetail({ taskId, team, user, members, onBack }) {
           members={members}
           user={user}
           busy={busy}
+          blocked={!canModifyTeamWork(team)}
           serverError={error}
           onClose={() => {
             setEditing(false);
