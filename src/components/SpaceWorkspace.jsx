@@ -139,9 +139,14 @@ export default function SpaceWorkspace({ spaceId, user, onBack }) {
                 <TeamWorkspace
                   key={team.id}
                   team={team}
+                  space={space}
                   user={user}
                   onChanged={resource.reload}
                   onBack={() => setTeamId(null)}
+                  onRemoved={() => {
+                    setTeamId(null);
+                    resource.reload();
+                  }}
                 />
               ) : (
                 <section className="stack">
