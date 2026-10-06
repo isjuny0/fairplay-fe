@@ -73,8 +73,12 @@ export default function TaskDetail({ taskId, team, user, members, onBack }) {
       getTask(taskId),
       getApprovalHistory(taskId),
     ]);
+    if (detail.task.teamId !== team.id)
+      throw new Error(
+        '이 팀에 속한 작업이 아닙니다. 작업 목록에서 다시 선택해 주세요.',
+      );
     return { ...detail, history };
-  }, [taskId]);
+  }, [taskId, team.id]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [editing, setEditing] = useState(false);

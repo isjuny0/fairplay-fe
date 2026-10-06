@@ -117,6 +117,15 @@ async function workspace(
         id: userId,
         name: manager ? '교수' : userId === 'leader' ? '리더' : '담당자',
       });
+    if (path === '/api/auth/google')
+      return respond({
+        id: userId,
+        name: userId === 'leader' ? '리더' : '담당자',
+      });
+    if (path === '/api/auth/logout') {
+      expired = true;
+      return route.fulfill({ status: 204 });
+    }
     if (path === '/api/spaces')
       return respond(
         method === 'POST' ? space : [{ ...space, role: space.myRole }],
@@ -385,6 +394,12 @@ async function workspace(
     },
     expire: () => {
       expired = true;
+    },
+    renew: () => {
+      expired = false;
+    },
+    setTaskTeamId: (id) => {
+      task.teamId = id;
     },
     setPending: () => {
       approvals = [
@@ -854,6 +869,7 @@ test('전원 동의 후 리더가 확인한 버전으로 최종 삭제하면 팀
     ({ method, path }) => method === 'DELETE' && path === '/api/teams/1',
   );
   expect(deletion.query).toBe('?deletionRequestId=40&expectedVersion=7');
+  await expect(page).toHaveURL(/\/spaces\/1$/);
   expect(deletion.body).toBe(null);
   expect(
     requests.some(
@@ -905,6 +921,7 @@ test('일반 팀원 탈퇴는 후임 없이 요청하고 스페이스에 머무�
   ).toHaveCount(0);
   const leave = requests.find(({ path }) => path === '/api/teams/1/members/me');
   expect(leave.query).toBe('');
+  await expect(page).toHaveURL(/\/spaces\/1$/);
   expect(leave.body).toBe(null);
 });
 
@@ -1107,4 +1124,229 @@ test('다른 팀원의 삭제 요청을 확인하면 이미 열린 작업 수정
   await dialog.getByRole('button', { name: '취소', exact: true }).click();
   await page.getByRole('button', { name: '팀 설정', exact: true }).click();
   await expect(page.getByText('0 / 2명 동의', { exact: true })).toBeVisible();
+});
+
+const workspaceRoutes = [
+  ['/spaces/1', '프로젝트 스페이스'],
+  ['/spaces/1/teams/1', '삼위일체 팀'],
+  ['/spaces/1/teams/1/tasks', '작업 보드'],
+  ['/spaces/1/teams/1/tasks/10', '회원 탈퇴 구현'],
+  ['/spaces/1/teams/1/deliverables', '산출물 관리'],
+  ['/spaces/1/teams/1/approvals', '승인 검토'],
+  ['/spaces/1/teams/1/approvals/tasks/10', '회원 탈퇴 구현'],
+  ['/spaces/1/teams/1/members', '팀원 관리'],
+  ['/spaces/1/teams/1/settings', '팀 설정'],
+];
+for (const [path, heading] of workspaceRoutes) {
+  test(`${heading} 화면은 직접 주소로 접속하고 새로고침해도 유지된다 (${path})`, async ({
+    page,
+  }) => {
+    await workspace(page);
+    await page.goto(path);
+    await expect(
+      page.getByRole('heading', { name: heading, exact: true }),
+    ).toBeVisible();
+    await page.reload();
+    await expect(
+      page.getByRole('heading', { name: heading, exact: true }),
+    ).toBeVisible();
+    expect(new URL(page.url()).pathname).toBe(path);
+  });
+}
+
+test('팀 메뉴와 작업 상세는 브라우저 뒤로가기·앞으로가기로 복원된다', async ({
+  page,
+}) => {
+  await workspace(page);
+  await expect(page).toHaveURL(/\/spaces\/1\/teams\/1$/);
+  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await page
+    .getByRole('button', { name: '회원 탈퇴 구현', exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/tasks\/10$/);
+  await page.goBack();
+  await expect(
+    page.getByRole('heading', { name: '작업 보드', exact: true }),
+  ).toBeVisible();
+  await page.goBack();
+  await expect(
+    page.getByRole('heading', { name: '삼위일체 팀', exact: true }),
+  ).toBeVisible();
+  await page.goForward();
+  await expect(
+    page.getByRole('heading', { name: '작업 보드', exact: true }),
+  ).toBeVisible();
+  await page.goForward();
+  await expect(
+    page.getByRole('heading', { name: '회원 탈퇴 구현', exact: true }),
+  ).toBeVisible();
+});
+
+test('작업 보드의 상태·내 작업 필터는 새로고침과 상세 복귀 후 유지된다', async ({
+  page,
+}) => {
+  await workspace(page);
+  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await page.getByRole('combobox').selectOption('IN_PROGRESS');
+  await page.getByLabel('내 담당 작업만').check();
+  await page.reload();
+  await expect(page.getByRole('combobox')).toHaveValue('IN_PROGRESS');
+  await expect(page.getByLabel('내 담당 작업만')).toBeChecked();
+  await page
+    .getByRole('button', { name: '회원 탈퇴 구현', exact: true })
+    .click();
+  await page.reload();
+  await page.getByRole('button', { name: '← 목록으로', exact: true }).click();
+  await expect(page.getByRole('combobox')).toHaveValue('IN_PROGRESS');
+  await expect(page.getByLabel('내 담당 작업만')).toBeChecked();
+  expect(new URL(page.url()).searchParams.get('mine')).toBe('1');
+});
+
+test('승인 상태 필터와 산출물 작업 범위·페이지는 주소에서 복원된다', async ({
+  page,
+}) => {
+  await workspace(page);
+  await page.goto('/spaces/1/teams/1/approvals?status=REJECTED');
+  await expect(page.getByRole('combobox')).toHaveValue('REJECTED');
+  await page.reload();
+  await expect(page.getByRole('combobox')).toHaveValue('REJECTED');
+  await page.goto('/spaces/1/teams/1/deliverables?taskId=10&page=2');
+  await expect(page.getByLabel('작업별 조회')).toHaveValue('10');
+  await expect(page.getByText('3 페이지', { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel('작업별 조회')).toHaveValue('10');
+  await expect(page.getByText('3 페이지', { exact: true })).toBeVisible();
+  await page.getByLabel('작업별 조회').selectOption('ALL');
+  await expect(page.getByText('1 페이지', { exact: true })).toBeVisible();
+  expect(new URL(page.url()).search).toBe('');
+});
+
+test('스페이스 관리 주소는 관리자에게만 화면을 제공한다', async ({ page }) => {
+  await workspace(page);
+  await page.goto('/spaces/1/settings');
+  await expect(
+    page.getByRole('heading', { name: '스페이스 관리 권한이 없습니다.' }),
+  ).toBeVisible();
+  await page.unroute('**/api/**');
+  await workspace(page, { manager: true, userId: 'manager' });
+  await page.goto('/spaces/1/settings');
+  await expect(
+    page.getByRole('heading', { name: '스페이스 관리', exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByRole('heading', { name: '스페이스 관리', exact: true }),
+  ).toBeVisible();
+});
+
+test('관리자의 직접 작업·팀 설정 주소 접근은 작업 API를 호출하지 않는다', async ({
+  page,
+}) => {
+  const { requests } = await workspace(page, {
+    manager: true,
+    userId: 'manager',
+  });
+  for (const path of [
+    '/spaces/1/teams/1/tasks/10',
+    '/spaces/1/teams/1/settings',
+  ]) {
+    await page.goto(path);
+    await expect(
+      page.getByRole('heading', { name: '이 팀 화면에 접근할 수 없습니다.' }),
+    ).toBeVisible();
+  }
+  expect(
+    requests.some(
+      ({ path }) =>
+        path === '/api/tasks/10' ||
+        path === '/api/teams/1/tasks' ||
+        path.includes('deletion-request'),
+    ),
+  ).toBe(false);
+});
+
+test('잘못된 주소·ID와 존재하지 않는 팀은 오류 화면으로 처리한다', async ({
+  page,
+}) => {
+  const { requests } = await workspace(page);
+  for (const path of [
+    '/unknown-page',
+    '/spaces/abc',
+    '/spaces/1/teams/0',
+    '/spaces/1/teams/1/tasks/-1',
+  ]) {
+    await page.goto(path);
+    await expect(
+      page.getByRole('heading', { name: '화면을 찾을 수 없습니다.' }),
+    ).toBeVisible();
+  }
+  await page.goto('/spaces/1/teams/999');
+  await expect(
+    page.getByRole('heading', { name: '팀을 열 수 없습니다.' }),
+  ).toBeVisible();
+  expect(
+    requests.some(({ path }) => /\/api\/.*(abc|NaN|\/0|\/-1)/.test(path)),
+  ).toBe(false);
+});
+
+test('작업의 실제 팀이 URL의 팀과 다르면 상세와 변경 기능을 제공하지 않는다', async ({
+  page,
+}) => {
+  const state = await workspace(page);
+  state.setTaskTeamId(2);
+  await page.goto('/spaces/1/teams/1/tasks/10');
+  await expect(page.getByRole('alert')).toContainText(
+    '이 팀에 속한 작업이 아닙니다.',
+  );
+  await expect(
+    page.getByRole('button', { name: '완료 요청', exact: true }),
+  ).toHaveCount(0);
+});
+
+test('세션 만료 후 로그인하면 요청한 상세 URL과 필터로 복귀한다', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.google = {
+      accounts: {
+        oauth2: {
+          initCodeClient: ({ callback }) => ({
+            requestCode: () => callback({ code: 'test-google-code' }),
+          }),
+        },
+      },
+    };
+  });
+  const state = await workspace(page);
+  state.expire();
+  await page.goto('/spaces/1/teams/1/tasks/10?status=IN_PROGRESS&mine=1');
+  await expect(
+    page.getByRole('button', { name: 'Google로 계속하기' }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/$/);
+  state.renew();
+  await page.getByRole('button', { name: 'Google로 계속하기' }).click();
+  await expect(
+    page.getByRole('heading', { name: '회원 탈퇴 구현', exact: true }),
+  ).toBeVisible();
+  expect(new URL(page.url()).pathname).toBe('/spaces/1/teams/1/tasks/10');
+  expect(new URL(page.url()).searchParams.get('mine')).toBe('1');
+});
+
+test('로그아웃 후 브라우저 뒤로가기로 보호된 화면이 복원되지 않는다', async ({
+  page,
+}) => {
+  await workspace(page);
+  await page.getByRole('button', { name: '팀 설정', exact: true }).click();
+  await page.getByRole('button', { name: '로그아웃', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'Google로 계속하기' }),
+  ).toBeVisible();
+  await page.goBack();
+  await expect(
+    page.getByRole('button', { name: 'Google로 계속하기' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: '삼위일체 팀', exact: true }),
+  ).toHaveCount(0);
 });

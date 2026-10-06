@@ -1,5 +1,7 @@
 import Icon from './Icon.jsx';
 import { useState } from 'react';
+import { useSearchParams } from 'react-router';
+import { parseRouteId } from '../lib/routes.js';
 import {
   createDeliverable,
   deleteDeliverable,
@@ -230,8 +232,29 @@ export default function Deliverables({
   taskId,
   onChanged = () => {},
 }) {
-  const [page, setPage] = useState(0);
-  const [scope, setScope] = useState('ALL');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedPage = Number(searchParams.get('page') || 0);
+  const page =
+    Number.isSafeInteger(requestedPage) && requestedPage >= 0
+      ? requestedPage
+      : 0;
+  const scopeId = parseRouteId(searchParams.get('taskId'));
+  const scope = scopeId == null ? 'ALL' : String(scopeId);
+  const setPage = (value) =>
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      if (value === 0) next.delete('page');
+      else next.set('page', String(value));
+      return next;
+    });
+  const setScope = (value) =>
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.delete('page');
+      if (value === 'ALL') next.delete('taskId');
+      else next.set('taskId', value);
+      return next;
+    });
   const selectedTaskId =
     taskId ?? (scope === 'ALL' ? undefined : Number(scope));
   const resource = useResource(
@@ -326,7 +349,6 @@ export default function Deliverables({
             value={scope}
             onChange={(event) => {
               setScope(event.target.value);
-              setPage(0);
             }}
           >
             <option value="ALL">전체 산출물</option>
@@ -442,7 +464,7 @@ export default function Deliverables({
         <button
           className="secondary-button"
           disabled={page === 0 || resource.loading}
-          onClick={() => setPage((value) => value - 1)}
+          onClick={() => setPage(page - 1)}
         >
           이전
         </button>
@@ -452,7 +474,7 @@ export default function Deliverables({
           disabled={
             resource.loading || resource.error || resource.data?.length !== 20
           }
-          onClick={() => setPage((value) => value + 1)}
+          onClick={() => setPage(page + 1)}
         >
           다음
         </button>

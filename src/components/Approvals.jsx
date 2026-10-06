@@ -1,17 +1,35 @@
 import Icon from './Icon.jsx';
-import { useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { listApprovals } from '../api/approvals.js';
 import useResource from '../hooks/useResource.js';
 import { formatDate, memberName } from '../lib/domain.js';
 import TaskDetail from './TaskDetail.jsx';
 import { EmptyState, ResourceState } from './ui.jsx';
 
-export default function Approvals({ team, user, members }) {
-  const [status, setStatus] = useState('PENDING');
-  const [taskId, setTaskId] = useState(null);
+export default function Approvals({
+  team,
+  user,
+  members,
+  taskId,
+  onOpenTask,
+  onTaskBack,
+}) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const status = ['PENDING', 'APPROVED', 'REJECTED'].includes(
+    searchParams.get('status'),
+  )
+    ? searchParams.get('status')
+    : 'PENDING';
+  const setStatus = (value) =>
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      if (value === 'PENDING') next.delete('status');
+      else next.set('status', value);
+      return next;
+    });
   const resource = useResource(
     () => listApprovals(team.id, status),
-    [team.id, status],
+    [team.id, status, taskId],
   );
   if (taskId != null)
     return (
@@ -21,10 +39,7 @@ export default function Approvals({ team, user, members }) {
         team={team}
         user={user}
         members={members}
-        onBack={() => {
-          setTaskId(null);
-          resource.reload();
-        }}
+        onBack={onTaskBack}
       />
     );
   return (
@@ -80,7 +95,7 @@ export default function Approvals({ team, user, members }) {
                 </span>
                 <button
                   className="primary-button"
-                  onClick={() => setTaskId(approval.taskId)}
+                  onClick={() => onOpenTask(approval.taskId)}
                 >
                   작업 검토
                 </button>
