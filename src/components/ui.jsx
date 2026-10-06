@@ -121,7 +121,12 @@ export function Modal({ title, onClose, busy, children }) {
     </div>
   );
 }
-export function FormActions({ busy, onCancel, label = '저장' }) {
+export function FormActions({
+  busy,
+  disabled = false,
+  onCancel,
+  label = '저장',
+}) {
   return (
     <div className="modal-actions">
       {onCancel && (
@@ -134,7 +139,11 @@ export function FormActions({ busy, onCancel, label = '저장' }) {
           취소
         </button>
       )}
-      <button type="submit" className="primary-button" disabled={busy}>
+      <button
+        type="submit"
+        className="primary-button"
+        disabled={busy || disabled}
+      >
         {busy ? '처리 중…' : label}
       </button>
     </div>

@@ -11,12 +11,14 @@ import {
 import useResource from '../hooks/useResource.js';
 import {
   categoryLabels,
+  canModifyTeamWork,
   deliverablePermissions,
   formatDate,
   isApprovedMember,
   isAssignee,
   isMutable,
   memberName,
+  teamWorkBlocked,
 } from '../lib/domain.js';
 import {
   EmptyState,
@@ -33,6 +35,7 @@ function DeliverableForm({
   tasks,
   permissions,
   busy,
+  blocked,
   error,
   onClose,
   onSave,
@@ -51,6 +54,7 @@ function DeliverableForm({
     setForm((current) => ({ ...current, [name]: value }));
   const submit = (event) => {
     event.preventDefault();
+    if (blocked) return;
     setValidationError(null);
     if (!form.title.trim()) {
       setValidationError(new Error('제목을 입력해 주세요.'));
@@ -93,7 +97,7 @@ function DeliverableForm({
       onClose={onClose}
     >
       <form onSubmit={submit}>
-        <fieldset disabled={busy} className="form-fields">
+        <fieldset disabled={busy || blocked} className="form-fields">
           <Field label="제목">
             <input
               required
@@ -205,8 +209,14 @@ function DeliverableForm({
             </p>
           )}
         </fieldset>
+        {blocked && (
+          <p className="notice">
+            현재 팀 상태로는 산출물을 저장할 수 없습니다. 창을 닫고 팀 상태를
+            확인해 주세요.
+          </p>
+        )}
         <ErrorNotice error={validationError || error} />
-        <FormActions busy={busy} onCancel={onClose} />
+        <FormActions busy={busy} disabled={blocked} onCancel={onClose} />
       </form>
     </Modal>
   );
@@ -233,12 +243,16 @@ export default function Deliverables({
   const [error, setError] = useState(null);
   const taskMap = new Map(tasks.map((task) => [task.id, task]));
   const eligibleTasks = tasks.filter(
-    (task) => isMutable(task) && isAssignee(task, user.id),
+    (task) =>
+      canModifyTeamWork(team) && isMutable(task) && isAssignee(task, user.id),
   );
   const canCreate =
     isApprovedMember(team) &&
+    !teamWorkBlocked(team) &&
     (taskId == null || eligibleTasks.some((task) => task.id === taskId));
   const save = async (input, file, type) => {
+    if (teamWorkBlocked(team) || (taskId != null && !canModifyTeamWork(team)))
+      return;
     setBusy(true);
     setError(null);
     try {
@@ -460,6 +474,10 @@ export default function Deliverables({
               : null
           }
           busy={busy}
+          blocked={
+            teamWorkBlocked(team) ||
+            ((editing?.taskId ?? taskId) != null && !canModifyTeamWork(team))
+          }
           error={error}
           onClose={() => setEditing(undefined)}
           onSave={save}

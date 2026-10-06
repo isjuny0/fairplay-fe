@@ -2,7 +2,12 @@ import Icon from './Icon.jsx';
 import { useState } from 'react';
 import { createTask, listTasks } from '../api/tasks.js';
 import useResource from '../hooks/useResource.js';
-import { formatDate, memberName, statusLabels } from '../lib/domain.js';
+import {
+  canModifyTeamWork,
+  formatDate,
+  memberName,
+  statusLabels,
+} from '../lib/domain.js';
 import TaskForm from './TaskForm.jsx';
 import TaskDetail from './TaskDetail.jsx';
 import { EmptyState, ResourceState } from './ui.jsx';
@@ -16,6 +21,7 @@ export default function TaskBoard({ team, user, members }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const save = async (input) => {
+    if (!canModifyTeamWork(team)) return;
     setBusy(true);
     setError(null);
     try {
@@ -59,7 +65,11 @@ export default function TaskBoard({ team, user, members }) {
         </div>
         <button
           className="primary-button"
-          disabled={!team.canCreateTask || members.length < 2}
+          disabled={
+            !team.canCreateTask ||
+            members.length < 2 ||
+            !canModifyTeamWork(team)
+          }
           onClick={() => {
             setError(null);
             setCreating(true);
@@ -190,6 +200,7 @@ export default function TaskBoard({ team, user, members }) {
           members={members}
           user={user}
           busy={busy}
+          blocked={!canModifyTeamWork(team)}
           serverError={error}
           onClose={() => setCreating(false)}
           onSave={save}

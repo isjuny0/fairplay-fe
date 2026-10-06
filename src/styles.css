@@ -1524,3 +1524,70 @@ fieldset {
     transition: none !important;
   }
 }
+
+.team-settings {
+  max-width: 880px;
+}
+.team-settings .panel > p {
+  margin: 0;
+}
+.deletion-empty {
+  padding: 24px 16px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+.deletion-summary,
+.deletion-scope,
+.lifecycle-notice {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.lifecycle-notice {
+  justify-content: space-between;
+}
+.deletion-scope {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #f5f7f6;
+  font-size: 14px;
+}
+.deletion-status,
+.consent-state {
+  flex: 0 0 auto;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  background: #eef2f0;
+  color: #59675f;
+}
+.deletion-ready,
+.consent-agreed {
+  color: #21734d;
+  background: #e8f4ed;
+}
+.deletion-cancelled,
+.consent-rejected {
+  color: #a04343;
+  background: #fbefef;
+}
+.deletion-invalidated {
+  color: #8d621d;
+  background: #fff5df;
+}
+.confirmation-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.confirmation-check input {
+  margin-top: 4px;
+  flex: 0 0 auto;
+}
+.consent-list strong {
+  overflow-wrap: anywhere;
+}

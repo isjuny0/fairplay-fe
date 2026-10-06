@@ -1,6 +1,6 @@
 import Icon from './Icon.jsx';
-import { useState } from 'react';
-import { getTeamMembers } from '../api/teams.js';
+import { useEffect, useState } from 'react';
+import { getTeamDeletionRequest, getTeamMembers } from '../api/teams.js';
 import { listTasks } from '../api/tasks.js';
 import useResource from '../hooks/useResource.js';
 import { isApprovedMember, memberName } from '../lib/domain.js';
@@ -8,7 +8,8 @@ import Approvals from './Approvals.jsx';
 import Deliverables from './Deliverables.jsx';
 import TaskBoard from './TaskBoard.jsx';
 import TeamMembers from './TeamMembers.jsx';
-import { ResourceState } from './ui.jsx';
+import TeamSettings from './TeamSettings.jsx';
+import { ErrorNotice, ResourceState } from './ui.jsx';
 
 function TeamDeliverables({ team, user, members }) {
   const resource = useResource(
@@ -30,15 +31,50 @@ function TeamDeliverables({ team, user, members }) {
   );
 }
 
-export default function TeamWorkspace({ team, user, onChanged, onBack }) {
+export default function TeamWorkspace({
+  team,
+  space,
+  user,
+  onChanged,
+  onBack,
+  onRemoved,
+}) {
   const resource = useResource(
     () => getTeamMembers(team.id),
     [team.id, team.deputyId, team.approvedMemberCount],
   );
   const [menu, setMenu] = useState('팀 홈');
   const approved = isApprovedMember(team);
+  const deletionResource = useResource(async () => {
+    if (!approved) return null;
+    try {
+      return await getTeamDeletionRequest(team.id);
+    } catch (error) {
+      if (
+        error.status === 404 &&
+        error.code === 'TEAM_DELETION_REQUEST_NOT_FOUND'
+      )
+        return null;
+      throw error;
+    }
+  }, [team.id, approved, menu]);
+  useEffect(() => {
+    const refresh = () => {
+      deletionResource.reload();
+      resource.reload();
+      onChanged();
+    };
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, [deletionResource.reload, resource.reload, onChanged]);
+  const workTeam = {
+    ...team,
+    workFrozen: approved && Boolean(deletionResource.data?.workFrozen),
+    workStateUnknown:
+      approved && (deletionResource.loading || Boolean(deletionResource.error)),
+  };
   const menus = approved
-    ? ['팀 홈', '작업 보드', '산출물', '승인 검토', '팀원 관리']
+    ? ['팀 홈', '작업 보드', '산출물', '승인 검토', '팀원 관리', '팀 설정']
     : ['팀원 관리', '산출물'];
   const currentMenu = menus.includes(menu) ? menu : menus[0];
   const members = resource.data || [];
@@ -77,6 +113,7 @@ export default function TeamWorkspace({ team, user, onChanged, onBack }) {
                   산출물: 'file',
                   '승인 검토': 'check',
                   '팀원 관리': 'users',
+                  '팀 설정': 'settings',
                 }[item]
               }
             />
@@ -84,6 +121,35 @@ export default function TeamWorkspace({ team, user, onChanged, onBack }) {
           </button>
         ))}
       </nav>
+      {approved && currentMenu !== '팀 설정' && (
+        <>
+          <ErrorNotice
+            error={deletionResource.error}
+            onRetry={deletionResource.reload}
+          />
+          {(workTeam.workFrozen || workTeam.workStateUnknown) && (
+            <div className="notice lifecycle-notice">
+              <span>
+                {workTeam.workStateUnknown
+                  ? '삭제 동의 현황을 확인할 때까지 작업 변경이 제한됩니다.'
+                  : '팀 삭제 동의가 진행 중입니다. 작업과 산출물은 조회만 할 수 있습니다.'}
+              </span>
+              <button
+                className="secondary-button"
+                onClick={() => setMenu('팀 설정')}
+              >
+                삭제 동의 확인
+              </button>
+            </div>
+          )}
+          {team.approvedMemberCount < 2 && (
+            <p className="notice">
+              승인된 팀원이 2명 이상이어야 작업 생성·수정·수행 설명·완료 요청을
+              진행할 수 있습니다. 자료 조회와 정리는 가능합니다.
+            </p>
+          )}
+        </>
+      )}
       <ResourceState resource={resource}>
         {currentMenu === '팀 홈' && (
           <section className="stack">
@@ -165,13 +231,28 @@ export default function TeamWorkspace({ team, user, onChanged, onBack }) {
           />
         )}
         {currentMenu === '작업 보드' && (
-          <TaskBoard team={team} user={user} members={members} />
+          <TaskBoard team={workTeam} user={user} members={members} />
         )}
         {currentMenu === '산출물' && (
-          <TeamDeliverables team={team} user={user} members={members} />
+          <TeamDeliverables team={workTeam} user={user} members={members} />
         )}
         {currentMenu === '승인 검토' && (
-          <Approvals team={team} user={user} members={members} />
+          <Approvals team={workTeam} user={user} members={members} />
+        )}
+        {currentMenu === '팀 설정' && approved && (
+          <TeamSettings
+            team={team}
+            space={space}
+            user={user}
+            members={members}
+            deletionResource={deletionResource}
+            onNavigate={setMenu}
+            onRemoved={onRemoved}
+            onChanged={() => {
+              deletionResource.reload();
+              onChanged();
+            }}
+          />
         )}
       </ResourceState>
     </section>

@@ -37,9 +37,15 @@ export const isAssignee = (task, userId) =>
   task.assignees.some((assignment) => assignment.userId === userId);
 export const isMutable = (task) =>
   ['TODO', 'IN_PROGRESS'].includes(task.status);
+export const teamWorkBlocked = (team) =>
+  Boolean(team.workFrozen || team.workStateUnknown);
+export const canModifyTeamWork = (team) =>
+  isApprovedMember(team) &&
+  team.approvedMemberCount >= 2 &&
+  !teamWorkBlocked(team);
 export const canEditTask = (task, team, userId) =>
   isMutable(task) &&
-  isApprovedMember(team) &&
+  canModifyTeamWork(team) &&
   (isAssignee(task, userId) || isTeamEditor(team, userId));
 export const memberRole = (member) =>
   member.isLeader ? '리더' : member.isDeputy ? '부리더' : '팀원';
@@ -63,13 +69,17 @@ export function reviewerCandidates(members, assignees) {
     );
 }
 export function deliverablePermissions(deliverable, task, team, userId) {
-  if (!isApprovedMember(team))
+  if (!isApprovedMember(team) || teamWorkBlocked(team))
     return { metadata: false, content: false, remove: false };
   if (deliverable.taskId != null) {
     const allowed = Boolean(
       task && isMutable(task) && isAssignee(task, userId),
     );
-    return { metadata: allowed, content: allowed, remove: allowed };
+    return {
+      metadata: allowed && canModifyTeamWork(team),
+      content: allowed && canModifyTeamWork(team),
+      remove: allowed,
+    };
   }
   const owner = deliverable.authorId === userId;
   return {
@@ -98,6 +108,14 @@ export const toDateInput = (value) =>
     : '';
 export const fromDateInput = (value) => `${value}:00+09:00`;
 export function errorMessage(error) {
+  if (error.code === 'TEAM_DELETION_REQUEST_INVALIDATED')
+    return '팀 구성 또는 삭제 대상이 변경되었습니다. 리더가 새 삭제 요청을 만들어 다시 동의받아 주세요.';
+  if (error.code === 'TEAM_DELETION_REQUEST_CANCELLED')
+    return '삭제 요청이 취소되었습니다. 최신 현황을 확인해 주세요.';
+  if (error.code === 'TEAM_DELETION_IN_PROGRESS')
+    return '팀 삭제 동의 중에는 작업을 변경할 수 없습니다. 팀 설정에서 동의 현황을 확인해 주세요.';
+  if (error.code === 'TEAM_LEAVE_HAS_DEPENDENCIES')
+    return '담당 작업·승인 요청·공용 산출물이 남아 있어 탈퇴할 수 없습니다. 역할을 인계하고 자료를 정리해 주세요.';
   if (error.code === 'VERSION_CONFLICT')
     return `${error.message} 최신 정보를 다시 불러온 후 변경 내용을 확인해 주세요.`;
   return error.message || '요청을 처리하지 못했습니다.';
