@@ -5,9 +5,43 @@ const members = [
   { userId: 'member', name: '담당자', isLeader: false, isDeputy: false },
 ];
 
+function deletionRequest(overrides = {}) {
+  return {
+    id: 40,
+    teamId: 1,
+    status: 'PENDING',
+    version: 0,
+    requestedBy: 'leader',
+    requestedAt: '2026-10-06T10:00:00+09:00',
+    requiredCount: 2,
+    agreedCount: 0,
+    myConsented: false,
+    canDelete: false,
+    taskCount: 1,
+    deliverableCount: 2,
+    workFrozen: true,
+    members: members.map((member) => ({
+      userId: member.userId,
+      name: member.name,
+      consented: false,
+      consentedAt: null,
+      decision: 'UNANSWERED',
+    })),
+    ...overrides,
+  };
+}
+
 async function workspace(
   page,
-  { userId = 'member', manager = false, memberCount = 2 } = {},
+  {
+    userId = 'member',
+    manager = false,
+    memberCount = 2,
+    initialDeletion = null,
+    membershipLocked = false,
+    leaveBlocked = false,
+    deletionLoadError = null,
+  } = {},
 ) {
   const requests = [];
   let task = {
@@ -28,6 +62,9 @@ async function workspace(
   let joinCode = null;
   let conflict = false;
   let expired = false;
+  let deletion = initialDeletion;
+  let teamRemoved = false;
+  let deletionConflict = false;
   const team = {
     id: 1,
     spaceId: 1,
@@ -51,6 +88,7 @@ async function workspace(
     teamBuildingStatus: 'OPEN',
     version: 0,
     myRole: manager ? 'MANAGER' : 'MEMBER',
+    membershipLockedAt: membershipLocked ? '2026-10-06T10:00:00+09:00' : null,
   };
   await page.route('**/api/**', async (route) => {
     const request = route.request();
@@ -61,6 +99,7 @@ async function workspace(
     requests.push({
       method,
       path,
+      query: url.search,
       body: request.postData(),
       headers: request.headers(),
     });
@@ -112,8 +151,103 @@ async function workspace(
       joinCode = null;
       return route.fulfill({ status: 204 });
     }
-    if (path === '/api/spaces/1/teams') return respond([team]);
-    if (path === '/api/teams/1') return respond(team);
+    if (path === '/api/spaces/1/teams')
+      return respond(teamRemoved ? [] : [team]);
+    if (path === '/api/teams/1') {
+      if (method === 'DELETE') {
+        if (deletionConflict) {
+          deletion.version++;
+          return respond(
+            {
+              code: 'VERSION_CONFLICT',
+              message: '동의 현황이 변경되었습니다.',
+            },
+            409,
+          );
+        }
+        if (
+          url.searchParams.get('expectedVersion') !==
+            String(deletion.version) ||
+          url.searchParams.get('deletionRequestId') !== String(deletion.id)
+        )
+          return respond(
+            { code: 'VERSION_CONFLICT', message: '잘못된 요청 버전입니다.' },
+            409,
+          );
+        teamRemoved = true;
+        return route.fulfill({ status: 204 });
+      }
+      return respond(team);
+    }
+    if (path === '/api/teams/1/deletion-request') {
+      if (deletionLoadError)
+        return respond(
+          {
+            code: deletionLoadError,
+            message: '삭제 현황을 확인할 수 없습니다.',
+          },
+          404,
+        );
+      return deletion
+        ? respond(deletion)
+        : respond(
+            {
+              code: 'TEAM_DELETION_REQUEST_NOT_FOUND',
+              message: '삭제 요청이 없습니다.',
+            },
+            404,
+          );
+    }
+    if (path === '/api/teams/1/deletion-requests') {
+      deletion = deletionRequest({
+        id: (deletion?.id || 39) + 1,
+        requiredCount: memberCount,
+        members: deletionRequest().members.slice(0, memberCount),
+      });
+      return respond(deletion, 201);
+    }
+    if (/^\/api\/team-deletion-requests\/\d+\/consent$/.test(path)) {
+      const agree = request.postDataJSON().agree;
+      deletion.members = deletion.members.map((member) =>
+        member.userId === userId
+          ? {
+              ...member,
+              consented: agree,
+              decision: agree ? 'AGREED' : 'REJECTED',
+              consentedAt: agree ? '2026-10-06T11:00:00+09:00' : null,
+            }
+          : member,
+      );
+      deletion.agreedCount = deletion.members.filter(
+        (member) => member.consented,
+      ).length;
+      deletion.myConsented = agree;
+      deletion.status = agree
+        ? deletion.agreedCount === deletion.requiredCount
+          ? 'READY'
+          : 'PENDING'
+        : 'CANCELLED';
+      deletion.workFrozen = agree;
+      deletion.canDelete =
+        deletion.status === 'READY' && userId === 'leader' && !membershipLocked;
+      deletion.version++;
+      return respond(deletion);
+    }
+    if (path === '/api/teams/1/members/me') {
+      if (leaveBlocked)
+        return respond(
+          {
+            code: 'TEAM_LEAVE_HAS_DEPENDENCIES',
+            message: '탈퇴할 수 없습니다.',
+          },
+          409,
+        );
+      if (userId === team.leaderId)
+        team.leaderId = url.searchParams.get('nextLeaderId');
+      team.myMembershipStatus = null;
+      team.approvedMemberCount--;
+      return route.fulfill({ status: 204 });
+    }
     if (path === '/api/teams/1/members')
       return respond(members.slice(0, memberCount));
     if (path === '/api/teams/1/tasks') {
@@ -240,6 +374,12 @@ async function workspace(
     .click();
   return {
     requests,
+    setDeletion: (value) => {
+      deletion = value;
+    },
+    setDeletionConflict: () => {
+      deletionConflict = true;
+    },
     setConflict: () => {
       conflict = true;
     },
@@ -555,4 +695,416 @@ test('모바일·태블릿·데스크톱에서 팀 탐색과 작업 생성 폼�
     ).toBe(true);
     await dialog.getByRole('button', { name: '닫기', exact: true }).click();
   }
+});
+
+async function openTeamSettings(page) {
+  await page.getByRole('button', { name: '팀 설정', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: '팀 설정', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: '현황 새로고침' }),
+  ).toBeEnabled();
+}
+
+function readyDeletion() {
+  return deletionRequest({
+    status: 'READY',
+    version: 7,
+    agreedCount: 2,
+    myConsented: true,
+    canDelete: true,
+    members: members.map((member) => ({
+      userId: member.userId,
+      name: member.name,
+      consented: true,
+      consentedAt: '2026-10-06T11:00:00+09:00',
+      decision: 'AGREED',
+    })),
+  });
+}
+
+test('리더는 삭제 요청을 만들고 별도로 동의하며 모바일에서 현황을 확인한다', async ({
+  page,
+}) => {
+  const { requests } = await workspace(page, { userId: 'leader' });
+  await openTeamSettings(page);
+  await page
+    .getByRole('button', { name: '팀 삭제 요청 만들기', exact: true })
+    .click();
+  await expect(page.getByRole('dialog')).toContainText('리더도 별도로 동의');
+  await page
+    .getByRole('button', { name: '삭제 요청 생성', exact: true })
+    .click();
+  await expect(page.getByText('0 / 2명 동의', { exact: true })).toBeVisible();
+  expect(requests.filter(({ method }) => method === 'PUT')).toHaveLength(0);
+  await expect(
+    page.getByRole('button', { name: '팀 최종 삭제' }),
+  ).toBeDisabled();
+  await page
+    .getByRole('button', { name: '팀 삭제에 동의', exact: true })
+    .click();
+  await expect(page.getByText('1 / 2명 동의', { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: '내 동의 완료' }),
+  ).toBeDisabled();
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: 'test-results/team-settings-mobile.png',
+    fullPage: true,
+  });
+  const creation = requests.find(
+    ({ path }) => path === '/api/teams/1/deletion-requests',
+  );
+  expect(creation.body).toBe(null);
+  expect(creation.headers['x-csrf-token']).toBe('test-token');
+});
+
+test('팀원은 본인 동의만 변경하고 철회하면 요청 전체가 취소된다', async ({
+  page,
+}) => {
+  const { requests } = await workspace(page, {
+    initialDeletion: deletionRequest(),
+  });
+  await openTeamSettings(page);
+  await expect(page.getByRole('button', { name: '팀 최종 삭제' })).toHaveCount(
+    0,
+  );
+  await page
+    .getByRole('button', { name: '팀 삭제에 동의', exact: true })
+    .click();
+  await expect(page.getByText('1 / 2명 동의', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '동의 철회 및 요청 취소' }).click();
+  await page
+    .getByRole('button', { name: '반대 및 요청 취소', exact: true })
+    .click();
+  await expect(page.getByText('요청 취소', { exact: true })).toBeVisible();
+  await expect(page.getByText('반대', { exact: true })).toBeVisible();
+  expect(
+    requests
+      .filter(
+        ({ method, path }) => method === 'PUT' && path.endsWith('/consent'),
+      )
+      .map(({ body }) => JSON.parse(body)),
+  ).toEqual([{ agree: true }, { agree: false }]);
+  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: '새 작업 만들기', exact: true }),
+  ).toBeEnabled();
+});
+
+test('취소·무효화된 요청은 리더가 새로 만들고 전원 재동의한다', async ({
+  page,
+}) => {
+  const state = await workspace(page, {
+    userId: 'leader',
+    initialDeletion: deletionRequest({
+      status: 'INVALIDATED',
+      workFrozen: false,
+    }),
+  });
+  await openTeamSettings(page);
+  await expect(page.getByText('재동의 필요', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '새 삭제 요청 만들기' }).click();
+  await page.getByRole('button', { name: '삭제 요청 생성' }).click();
+  await expect(page.getByText('0 / 2명 동의', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '삭제 반대 및 요청 취소' }).click();
+  await page
+    .getByRole('button', { name: '반대 및 요청 취소', exact: true })
+    .click();
+  await expect(page.getByText('요청 취소', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '새 삭제 요청 만들기' }).click();
+  await page.getByRole('button', { name: '삭제 요청 생성' }).click();
+  await expect(page.getByText('0 / 2명 동의', { exact: true })).toBeVisible();
+  expect(
+    state.requests.filter(
+      ({ path }) => path === '/api/teams/1/deletion-requests',
+    ),
+  ).toHaveLength(2);
+});
+
+test('전원 동의 후 리더가 확인한 버전으로 최종 삭제하면 팀 목록을 갱신한다', async ({
+  page,
+}) => {
+  const { requests } = await workspace(page, {
+    userId: 'leader',
+    initialDeletion: readyDeletion(),
+  });
+  await openTeamSettings(page);
+  await page.getByRole('button', { name: '팀 최종 삭제', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toContainText('작업 1개, 산출물 2개');
+  await expect(
+    dialog.getByRole('button', { name: '완전히 삭제' }),
+  ).toBeDisabled();
+  await dialog.getByLabel('삭제 범위와 복구 불가를 확인했습니다.').check();
+  await dialog.getByRole('button', { name: '완전히 삭제' }).click();
+  await expect(
+    page.getByRole('heading', { name: '프로젝트 스페이스', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText('아직 생성된 팀이 없습니다.', { exact: true }),
+  ).toBeVisible();
+  const deletion = requests.find(
+    ({ method, path }) => method === 'DELETE' && path === '/api/teams/1',
+  );
+  expect(deletion.query).toBe('?deletionRequestId=40&expectedVersion=7');
+  expect(deletion.body).toBe(null);
+  expect(
+    requests.some(
+      ({ method, path }) =>
+        method === 'DELETE' && path.startsWith('/api/spaces/'),
+    ),
+  ).toBe(false);
+});
+
+test('삭제 버전 충돌은 자동 재시도하지 않고 다시 확인하도록 한다', async ({
+  page,
+}) => {
+  const state = await workspace(page, {
+    userId: 'leader',
+    initialDeletion: readyDeletion(),
+  });
+  await openTeamSettings(page);
+  await page.getByRole('button', { name: '팀 최종 삭제', exact: true }).click();
+  state.setDeletionConflict();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('삭제 범위와 복구 불가를 확인했습니다.').check();
+  await dialog.getByRole('button', { name: '완전히 삭제' }).click();
+  await expect(dialog.getByRole('alert')).toContainText(
+    '동의 현황이 변경되었습니다.',
+  );
+  await expect(
+    dialog.getByRole('button', { name: '완전히 삭제' }),
+  ).toBeDisabled();
+  expect(
+    state.requests.filter(
+      ({ method, path }) => method === 'DELETE' && path === '/api/teams/1',
+    ),
+  ).toHaveLength(1);
+});
+
+test('일반 팀원 탈퇴는 후임 없이 요청하고 스페이스에 머무른다', async ({
+  page,
+}) => {
+  const { requests } = await workspace(page);
+  await openTeamSettings(page);
+  await page.getByRole('button', { name: '팀 탈퇴하기' }).click();
+  await expect(page.getByLabel('다음 리더', { exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: '탈퇴 확정' }).click();
+  await expect(
+    page.getByRole('heading', { name: '프로젝트 스페이스', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: '팀 열기', exact: true }),
+  ).toHaveCount(0);
+  const leave = requests.find(({ path }) => path === '/api/teams/1/members/me');
+  expect(leave.query).toBe('');
+  expect(leave.body).toBe(null);
+});
+
+test('리더 탈퇴는 현재 팀원 중 후임을 반드시 선택한다', async ({ page }) => {
+  const { requests } = await workspace(page, { userId: 'leader' });
+  await openTeamSettings(page);
+  await page.getByRole('button', { name: '팀 탈퇴하기' }).click();
+  await expect(page.getByRole('button', { name: '탈퇴 확정' })).toBeDisabled();
+  await page.getByLabel('다음 리더', { exact: true }).selectOption('member');
+  await page.getByRole('button', { name: '탈퇴 확정' }).click();
+  await expect(
+    page.getByRole('heading', { name: '프로젝트 스페이스', exact: true }),
+  ).toBeVisible();
+  expect(
+    requests.find(({ path }) => path === '/api/teams/1/members/me').query,
+  ).toBe('?nextLeaderId=member');
+});
+
+test('탈퇴에 남은 의존성이 있으면 담당 작업과 자료 정리를 안내한다', async ({
+  page,
+}) => {
+  const { requests } = await workspace(page, { leaveBlocked: true });
+  await openTeamSettings(page);
+  await page.getByRole('button', { name: '팀 탈퇴하기' }).click();
+  await page.getByRole('button', { name: '탈퇴 확정' }).click();
+  await expect(page.getByRole('dialog').getByRole('alert')).toContainText(
+    '담당 작업·승인 요청·공용 산출물',
+  );
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: '취소', exact: true })
+    .click();
+  await page.getByRole('button', { name: '담당 작업 확인' }).click();
+  await expect(
+    page.getByRole('heading', { name: '작업 보드', exact: true }),
+  ).toBeVisible();
+  expect(
+    requests.filter(({ path }) => path === '/api/teams/1/members/me'),
+  ).toHaveLength(1);
+});
+
+test('마지막 팀원은 탈퇴 대신 삭제 요청과 본인 동의로 팀을 삭제한다', async ({
+  page,
+}) => {
+  await workspace(page, { userId: 'leader', memberCount: 1 });
+  await openTeamSettings(page);
+  await expect(
+    page.getByRole('button', { name: '팀 탈퇴하기' }),
+  ).toBeDisabled();
+  await page
+    .getByRole('button', { name: '팀 삭제 요청 만들기', exact: true })
+    .click();
+  await page.getByRole('button', { name: '삭제 요청 생성' }).click();
+  await page
+    .getByRole('button', { name: '팀 삭제에 동의', exact: true })
+    .click();
+  await expect(page.getByText('1 / 1명 동의', { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: '팀 최종 삭제' }),
+  ).toBeEnabled();
+});
+
+test('팀 구성 고정 중에는 삭제·탈퇴·동의를 막되 반대는 허용한다', async ({
+  page,
+}) => {
+  await workspace(page, {
+    userId: 'leader',
+    membershipLocked: true,
+    initialDeletion: deletionRequest(),
+  });
+  await openTeamSettings(page);
+  await expect(
+    page.getByRole('button', { name: '팀 삭제에 동의', exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole('button', { name: '팀 탈퇴하기' }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole('button', { name: '팀 최종 삭제' }),
+  ).toBeDisabled();
+  await page.getByRole('button', { name: '삭제 반대 및 요청 취소' }).click();
+  await page
+    .getByRole('button', { name: '반대 및 요청 취소', exact: true })
+    .click();
+  await expect(
+    page.getByRole('button', { name: '새 삭제 요청 만들기' }),
+  ).toBeDisabled();
+});
+
+test('삭제 동의 중에는 작업·수행 설명·자료를 변경할 수 없다', async ({
+  page,
+}) => {
+  await workspace(page, { initialDeletion: deletionRequest() });
+  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: '새 작업 만들기', exact: true }),
+  ).toBeDisabled();
+  await page
+    .getByRole('button', { name: '회원 탈퇴 구현', exact: true })
+    .click();
+  await expect(page.getByLabel('내 수행 설명')).toBeDisabled();
+  await expect(
+    page.getByRole('button', { name: '수행 설명 저장' }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole('button', { name: '완료 요청', exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole('button', { name: '할 일로 되돌리기' }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole('button', { name: '작업 수정', exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: '산출물 등록', exact: true }),
+  ).toHaveCount(0);
+  await page.getByRole('button', { name: '산출물', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: '산출물 관리', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: '산출물 등록', exact: true }),
+  ).toHaveCount(0);
+});
+
+test('삭제 동의 중에는 승인·반려를 막고 관리자에게는 팀 설정을 제공하지 않는다', async ({
+  page,
+}) => {
+  const state = await workspace(page, {
+    userId: 'leader',
+    initialDeletion: deletionRequest(),
+  });
+  state.setPending();
+  await page.getByRole('button', { name: '승인 검토', exact: true }).click();
+  await page.getByRole('button', { name: '작업 검토' }).click();
+  await expect(page.getByRole('button', { name: '완료 승인' })).toBeDisabled();
+  await expect(
+    page.getByRole('button', { name: '반려', exact: true }),
+  ).toBeDisabled();
+  await page.unroute('**/api/**');
+  const managerState = await workspace(page, {
+    manager: true,
+    userId: 'manager',
+  });
+  await expect(
+    page.getByRole('button', { name: '팀 설정', exact: true }),
+  ).toHaveCount(0);
+  expect(
+    managerState.requests.some(({ path }) => path.includes('deletion-request')),
+  ).toBe(false);
+});
+
+test('삭제 요청 없음 외의 404는 오류로 표시하고 작업 변경을 막는다', async ({
+  page,
+}) => {
+  await workspace(page, { deletionLoadError: 'TEAM_NOT_FOUND' });
+  await openTeamSettings(page);
+  await expect(page.getByRole('alert')).toContainText(
+    '삭제 현황을 확인할 수 없습니다.',
+  );
+  await expect(
+    page.getByRole('button', { name: '팀 삭제 요청 만들기', exact: true }),
+  ).toHaveCount(0);
+  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: '새 작업 만들기', exact: true }),
+  ).toBeDisabled();
+});
+
+test('다른 팀원의 삭제 요청을 확인하면 이미 열린 작업 수정 창의 저장도 막는다', async ({
+  page,
+}) => {
+  const state = await workspace(page);
+  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await page
+    .getByRole('button', { name: '회원 탈퇴 구현', exact: true })
+    .click();
+  await page.getByRole('button', { name: '작업 수정', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('작업 제목').fill('아직 저장하지 않은 제목');
+  state.setDeletion(deletionRequest());
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect(
+    dialog.getByRole('button', { name: '저장', exact: true }),
+  ).toBeDisabled();
+  await expect(dialog.getByLabel('작업 제목')).toHaveValue(
+    '아직 저장하지 않은 제목',
+  );
+  await expect(
+    dialog.getByText(
+      '현재 팀 상태로는 작업을 저장할 수 없습니다. 창을 닫고 팀 상태를 확인해 주세요.',
+      { exact: true },
+    ),
+  ).toBeVisible();
+  expect(
+    state.requests.filter(
+      ({ method, path }) => method === 'PATCH' && path === '/api/tasks/10',
+    ),
+  ).toHaveLength(0);
+  await dialog.getByRole('button', { name: '취소', exact: true }).click();
+  await page.getByRole('button', { name: '팀 설정', exact: true }).click();
+  await expect(page.getByText('0 / 2명 동의', { exact: true })).toBeVisible();
 });
