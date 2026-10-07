@@ -522,6 +522,7 @@ test('지정 승인자가 사유를 입력해 반려하면 이력과 작업 수�
     .getByLabel('반려 사유')
     .fill('탈퇴 후 게시글 처리 테스트를 보완해 주세요.');
   await page.getByRole('button', { name: '반려', exact: true }).click();
+  await page.getByText('완료 요청 이력 · 1건', { exact: true }).click();
   await expect(
     page.getByText('반려 사유: 탈퇴 후 게시글 처리 테스트를 보완해 주세요.'),
   ).toBeVisible();
@@ -545,8 +546,8 @@ test('지정 승인자가 승인하면 완료 상태가 되고 수정·등록이
   state.setPending();
   await page.getByRole('button', { name: '승인 검토', exact: true }).click();
   await page.getByRole('button', { name: '작업 검토', exact: true }).click();
-  page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: '완료 승인', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: '승인 확정', exact: true }).click();
   await expect(page.getByText('완료', { exact: true })).toBeVisible();
   await expect(
     page.getByRole('button', { name: '작업 수정', exact: true }),
@@ -680,8 +681,9 @@ test('관리자는 스페이스 생성 후 팀 빌딩 기간을 지정하고 코
     expectedVersion: 0,
     teamBuildingOpensAt: '2026-10-05T10:00:00+09:00',
   });
+  await page.getByLabel('코드 유효 기간', { exact: true }).selectOption('custom');
   await page.getByLabel('유효 기간 (분)').fill('60');
-  await page.getByRole('button', { name: '최초 발급', exact: true }).click();
+  await page.getByRole('button', { name: '참여 코드 발급', exact: true }).click();
   await expect(page.getByText('A1B2C3D4', { exact: true })).toBeVisible();
   expect(
     JSON.parse(
@@ -690,8 +692,8 @@ test('관리자는 스페이스 생성 후 팀 빌딩 기간을 지정하고 코
       ).body,
     ),
   ).toEqual({ expirationMinutes: 60 });
-  page.once('dialog', (confirmation) => confirmation.accept());
   await page.getByRole('button', { name: '철회', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: '코드 철회', exact: true }).click();
   await expect(
     page.getByText('유효한 참여 코드가 없습니다.', { exact: true }),
   ).toBeVisible();
@@ -1168,6 +1170,7 @@ test('다른 팀원의 삭제 요청을 확인하면 이미 열린 작업 수정
     ),
   ).toHaveLength(0);
   await dialog.getByRole('button', { name: '취소', exact: true }).click();
+  await page.getByRole('button', { name: '버리고 닫기', exact: true }).click();
   await page.getByRole('button', { name: '팀 설정', exact: true }).click();
   await expect(page.getByText('0 / 2명 동의', { exact: true })).toBeVisible();
 });
@@ -1395,4 +1398,48 @@ test('로그아웃 후 브라우저 뒤로가기로 보호된 화면이 복원�
   await expect(
     page.getByRole('heading', { name: '삼위일체 팀', exact: true }),
   ).toHaveCount(0);
+});
+
+for (const failureCode of ['JOIN_CODE_ALREADY_EXISTS', 'FORBIDDEN'])
+  test(`참여 코드 발급은 ${failureCode === 'JOIN_CODE_ALREADY_EXISTS' ? '만료 코드 충돌만 재발급' : '권한 오류에서 재발급하지 않음'}`, async ({ page }) => {
+    await workspace(page, { manager: true, userId: 'manager' });
+    let issued = false;
+    const operations = [];
+    await page.route('**/api/spaces/1/join-code', async (route) => {
+      if (route.request().method() === 'GET') {
+        return route.fulfill({ status: issued ? 200 : 404, json: issued ? { code: 'F1E2D3C4', createdAt: '2026-10-07T10:00:00+09:00', expiresAt: '2026-10-10T10:00:00+09:00' } : { code: 'JOIN_CODE_NOT_FOUND' } });
+      }
+      operations.push({ path: 'create', body: route.request().postDataJSON() });
+      return route.fulfill({ status: failureCode === 'FORBIDDEN' ? 403 : 409, json: { code: failureCode, message: failureCode === 'FORBIDDEN' ? '관리 권한이 없습니다.' : '이미 발급된 코드가 있습니다.' } });
+    });
+    await page.route('**/api/spaces/1/join-code/rotate', async (route) => {
+      issued = true;
+      operations.push({ path: 'rotate', body: route.request().postDataJSON() });
+      return route.fulfill({ status: 200, json: { code: 'F1E2D3C4' } });
+    });
+    await page.goto('/spaces/1/settings');
+    await page.getByLabel('코드 유효 기간', { exact: true }).selectOption('4320');
+    await page.getByRole('button', { name: '참여 코드 발급', exact: true }).click();
+    if (failureCode === 'JOIN_CODE_ALREADY_EXISTS') {
+      await expect(page.getByText('F1E2D3C4', { exact: true })).toBeVisible();
+      expect(operations).toEqual([{ path: 'create', body: { expirationMinutes: 4320 } }, { path: 'rotate', body: { expirationMinutes: 4320 } }]);
+    } else {
+      await expect(page.getByRole('alert')).toContainText('관리 권한이 없습니다.');
+      expect(operations).toEqual([{ path: 'create', body: { expirationMinutes: 4320 } }]);
+    }
+  });
+
+test('다른 작업 정보를 저장해도 미저장 수행 설명을 보존한다', async ({ page }) => {
+  const state = await workspace(page);
+  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await page.getByRole('button', { name: '회원 탈퇴 구현', exact: true }).click();
+  await page.getByLabel('내 수행 설명', { exact: true }).fill('아직 저장하지 않은 개인 수행 기록입니다.');
+  await page.getByRole('button', { name: '작업 수정', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('작업 제목', { exact: true }).fill('회원 탈퇴 구현 수정');
+  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: '회원 탈퇴 구현 수정', exact: true })).toBeVisible();
+  await expect(page.getByLabel('내 수행 설명', { exact: true })).toHaveValue('아직 저장하지 않은 개인 수행 기록입니다.');
+  expect(state.requests.some(({ method, path }) => method === 'PATCH' && path === '/api/tasks/10')).toBe(true);
 });

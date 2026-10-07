@@ -10,6 +10,7 @@ async function preview(
       apiCalls.push(request.url());
   });
   await page.goto('/preview/main');
+  if (!await page.getByLabel('미리보기 역할').isVisible()) await page.getByText('미리보기 설정', { exact: true }).click();
   await page.getByLabel('미리보기 역할').selectOption(role);
   if (scenario !== 'active')
     await page.getByLabel('미리보기 상황').selectOption(scenario);
@@ -116,6 +117,7 @@ test('저점 사유 누락을 안내하고 공개 전 리포트는 팀원에게 
     .click();
   await expect(page.getByRole('alert')).toContainText('10~500자');
   await page.getByLabel('미리보기 상황').selectOption('review');
+  await page.getByRole('dialog').getByRole('button', { name: '변경 사항 버리기', exact: true }).click();
   await page.goto('/preview/spaces/1/teams/1/reports');
   await expect(
     page.getByRole('heading', { name: '공개된 리포트가 없습니다.' }),
@@ -143,6 +145,7 @@ test('관리자가 리포트를 공개하면 팀원은 본인 계산 근거를 �
   ).toHaveCount(0);
   await page.getByLabel('미리보기 역할').selectOption('member');
   await page.goto('/preview/spaces/1/teams/1/reports');
+  await page.getByText('나의 계산 근거 보기', { exact: true }).click();
   await expect(
     page.getByRole('heading', { name: '나의 계산 근거' }),
   ).toBeVisible();
@@ -174,7 +177,7 @@ test('팀원 직접 관리자 주소 접근은 차단하고 관리자는 수행 
   await page.getByLabel('미리보기 역할').selectOption('manager');
   await page.goto('/preview/spaces/1/dashboard');
   await page.getByRole('button', { name: '김하늘 수행 상세' }).click();
-  await page.getByText('인터뷰 결과 기록 파일 · FILE', { exact: true }).click();
+  await page.getByText('인터뷰 결과 기록 파일 · 파일', { exact: true }).click();
   const downloaded = page.waitForEvent('download');
   await page.getByRole('button', { name: '예시 파일 다운로드' }).click();
   expect((await downloaded).suggestedFilename()).toBe('인터뷰-기록.txt');
@@ -191,8 +194,8 @@ test('미리보기 업로드는 새 파일 형식을 지원하고 URL 새 등록
   await dialog.getByLabel('제목', { exact: true }).fill('발표 자료');
   await dialog.getByLabel('분류', { exact: true }).selectOption('PRESENTATION');
   await expect(dialog.getByLabel('자료 유형').locator('option')).toHaveText([
-    'TEXT',
-    'FILE',
+    '문서 작성',
+    '파일 업로드',
   ]);
   await dialog.getByLabel('자료 유형').selectOption('FILE');
   await dialog.getByLabel('파일', { exact: true }).setInputFiles({
@@ -294,8 +297,8 @@ test('자료 보완 후 새 완료 요청을 승인하면 새 AI 결과와 이�
   await page.getByRole('button', { name: '완료 요청', exact: true }).click();
   await page.getByLabel('미리보기 역할').selectOption('reviewer');
   await page.goto('/preview/spaces/1/teams/1/approvals/tasks/105');
-  page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: '완료 승인', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: '승인 확정', exact: true }).click();
   await expect(page.getByText('85 / 100', { exact: true })).toBeVisible();
   expect(calls).toEqual([]);
 });
@@ -329,6 +332,7 @@ for (const width of [320, 768, 1440])
       '/spaces/1/teams/1/reports',
     ]) {
       await page.goto(`/preview${path}`);
+      if (!await page.getByLabel('미리보기 역할').isVisible()) await page.getByText('미리보기 설정', { exact: true }).click();
       await expect(page.locator('h1')).toBeVisible();
       expect(
         await page.evaluate(
