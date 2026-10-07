@@ -1,3 +1,4 @@
+import { isPreviewPath } from '../mock/preview.js';
 import Icon from './Icon.jsx';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router';
@@ -11,6 +12,15 @@ import {
   uploadDeliverable,
 } from '../api/deliverables.js';
 import useResource from '../hooks/useResource.js';
+import { useInteractions } from '../hooks/useInteractions.js';
+import useSaveRecovery from '../hooks/useSaveRecovery.js';
+import SaveRecovery from './SaveRecovery.jsx';
+import { getTask } from '../api/tasks.js';
+import { getTeamWorkContext } from '../api/teams.js';
+import {
+  collectFieldErrors,
+  focusFirstFieldError,
+} from '../lib/formValidation.js';
 import {
   categoryLabels,
   canModifyTeamWork,
@@ -41,8 +51,16 @@ function DeliverableForm({
   error,
   onClose,
   onSave,
+  onLoadLatest,
 }) {
-  const [form, setForm] = useState({
+  const { confirm } = useInteractions();
+  const recovery = useSaveRecovery(error);
+  const conflict = error?.code === 'VERSION_CONFLICT';
+  const canReapply =
+    !recovery.latest ||
+    (recovery.latest.permissions.metadata &&
+      (!permissions.content || recovery.latest.permissions.content));
+  const [initialForm] = useState({
     title: initial?.title || '',
     description: initial?.description || '',
     category: initial?.category || 'OTHER',
@@ -50,37 +68,63 @@ function DeliverableForm({
     textOrUrl: initial?.textOrUrl || '',
     taskId: taskId ?? '',
   });
+  const [form, setForm] = useState(initialForm);
+  const targetContract = isPreviewPath(window.location.pathname);
+  const categories = targetContract
+    ? {
+        ...categoryLabels,
+        RESEARCH: '조사·분석',
+        PRESENTATION: '발표',
+        OPERATION: '행사·운영',
+      }
+    : categoryLabels;
+  const fileExtensions = targetContract
+    ? /\.(pdf|txt|md|hwp|hwpx|ppt|pptx|xls|xlsx)$/i
+    : /\.(pdf|png|jpe?g|txt|md)$/i;
+  const fileHelp = targetContract
+    ? 'TXT·MD·PDF·HWP·HWPX·PPT·PPTX·XLS·XLSX'
+    : 'PDF·PNG·JPEG·TXT·MD';
   const [file, setFile] = useState(null);
-  const [validationError, setValidationError] = useState(null);
-  const update = (name, value) =>
+  const [fieldErrors, setFieldErrors] = useState({});
+  const update = (name, value) => {
+    setFieldErrors((current) => ({
+      ...current,
+      [name]: undefined,
+      ...(name === 'type' ? { file: undefined, textOrUrl: undefined } : {}),
+    }));
     setForm((current) => ({ ...current, [name]: value }));
-  const submit = (event) => {
+  };
+  const submit = async (event) => {
     event.preventDefault();
-    if (blocked) return;
-    setValidationError(null);
-    if (!form.title.trim()) {
-      setValidationError(new Error('제목을 입력해 주세요.'));
+    if (busy || recovery.loading || blocked) return;
+    const errors = collectFieldErrors(event.currentTarget, {
+      ...(file &&
+      (file.size > 10 * 1024 * 1024 || !fileExtensions.test(file.name))
+        ? { file: `${fileHelp} 형식의 10MiB 이하 파일을 선택해 주세요.` }
+        : {}),
+    });
+    setFieldErrors(errors);
+    if (Object.keys(errors).length) {
+      focusFirstFieldError(event.currentTarget, errors);
       return;
     }
+    if (!canReapply || (conflict && !recovery.latest)) return;
     if (
-      file &&
-      (file.size > 10 * 1024 * 1024 ||
-        !/\.(pdf|png|jpe?g|txt|md)$/i.test(file.name))
-    ) {
-      setValidationError(
-        new Error('PDF·PNG·JPEG·TXT·MD 파일을 10MiB 이하로 선택해 주세요.'),
-      );
+      recovery.latest &&
+      !(await confirm({
+        title: '최신 산출물에 내 입력 반영',
+        message:
+          '비교한 최신 산출물에 현재 입력을 저장합니다. 다른 팀원의 변경 내용을 덮어쓸 수 있으며, 파일을 선택했다면 최신 원본도 교체됩니다. 저장할까요?',
+        label: '내 입력으로 저장',
+      }))
+    )
       return;
-    }
-    if (!initial && form.type === 'FILE' && !file) {
-      setValidationError(new Error('파일을 선택해 주세요.'));
-      return;
-    }
     const input = { title: form.title.trim(), category: form.category };
     if (!initial || permissions.content)
       input.description = form.description.trim() || null;
     if (initial) {
-      input.expectedVersion = initial.version;
+      input.expectedVersion =
+        recovery.latest?.deliverable.version ?? initial.version;
       if (permissions.content && initial.type !== 'FILE')
         input.textOrUrl = form.textOrUrl.trim();
     } else {
@@ -95,13 +139,27 @@ function DeliverableForm({
   return (
     <Modal
       title={initial ? '산출물 수정' : '산출물 등록'}
-      busy={busy}
+      busy={busy || recovery.loading}
       onClose={onClose}
+      wide
+      dirty={
+        Boolean(file) || JSON.stringify(form) !== JSON.stringify(initialForm)
+      }
     >
-      <form onSubmit={submit}>
-        <fieldset disabled={busy || blocked} className="form-fields">
-          <Field label="제목">
+      {targetContract && (
+        <p className="mock-notice">
+          최신 명세의 자료 유형·분류를 미리보기로 제공합니다. 실제 서버 업로드는
+          현재 구현된 형식을 따릅니다.
+        </p>
+      )}
+      <form onSubmit={submit} noValidate>
+        <fieldset
+          disabled={busy || recovery.loading || blocked}
+          className="form-fields"
+        >
+          <Field label="제목" error={fieldErrors.title}>
             <input
+              name="title"
               required
               maxLength={100}
               value={form.title}
@@ -113,7 +171,7 @@ function DeliverableForm({
               value={form.category}
               onChange={(event) => update('category', event.target.value)}
             >
-              {Object.entries(categoryLabels).map(([category, label]) => (
+              {Object.entries(categories).map(([category, label]) => (
                 <option key={category} value={category}>
                   {label}
                 </option>
@@ -121,7 +179,10 @@ function DeliverableForm({
             </select>
           </Field>
           {(!initial || permissions.content) && (
-            <Field label="설명">
+            <Field
+              label="설명"
+              help="선택 사항입니다. 자료의 목적이나 확인할 내용을 적어주세요."
+            >
               <textarea
                 maxLength={2000}
                 value={form.description}
@@ -139,8 +200,19 @@ function DeliverableForm({
                     setFile(null);
                   }}
                 >
-                  {['TEXT', 'URL', 'FILE'].map((type) => (
-                    <option key={type}>{type}</option>
+                  {(targetContract
+                    ? ['TEXT', 'FILE']
+                    : ['TEXT', 'URL', 'FILE']
+                  ).map((type) => (
+                    <option key={type} value={type}>
+                      {
+                        {
+                          TEXT: '문서 작성',
+                          FILE: '파일 업로드',
+                          URL: '외부 링크',
+                        }[type]
+                      }
+                    </option>
                   ))}
                 </select>
               </Field>
@@ -165,19 +237,35 @@ function DeliverableForm({
             (form.type === 'FILE' ? (
               <Field
                 label={initial ? '교체할 파일 (선택)' : '파일'}
-                help="PDF·PNG·JPEG·TXT·MD / 파일당 10MiB / 팀 전체 파일 1GiB"
+                error={fieldErrors.file}
+                help={`${fileHelp} / 파일당 10MiB / 팀 전체 파일 1GiB`}
               >
                 <input
+                  name="file"
                   type="file"
                   required={!initial}
-                  accept=".pdf,.png,.jpg,.jpeg,.txt,.md"
-                  onChange={(event) => setFile(event.target.files[0] || null)}
+                  accept={
+                    targetContract
+                      ? '.txt,.md,.pdf,.hwp,.hwpx,.ppt,.pptx,.xls,.xlsx'
+                      : '.pdf,.png,.jpg,.jpeg,.txt,.md'
+                  }
+                  onChange={(event) => {
+                    setFile(event.target.files[0] || null);
+                    setFieldErrors((current) => ({
+                      ...current,
+                      file: undefined,
+                    }));
+                  }}
                 />
               </Field>
             ) : (
-              <Field label={form.type === 'URL' ? 'URL' : '본문'}>
+              <Field
+                label={form.type === 'URL' ? 'URL' : '본문'}
+                error={fieldErrors.textOrUrl}
+              >
                 {form.type === 'URL' ? (
                   <input
+                    name="textOrUrl"
                     type="url"
                     required
                     maxLength={2000}
@@ -188,6 +276,7 @@ function DeliverableForm({
                   />
                 ) : (
                   <textarea
+                    name="textOrUrl"
                     required
                     maxLength={20000}
                     rows={6}
@@ -205,6 +294,17 @@ function DeliverableForm({
               삭제됩니다.
             </p>
           )}
+          {file && (
+            <div className="file-selection" role="status">
+              <strong>{file.name}</strong>
+              <p>
+                {(file.size / 1024).toFixed(1)}KiB ·{' '}
+                {initial
+                  ? '저장하면 기존 파일이 삭제되고 이 파일로 교체됩니다.'
+                  : '저장하면 업로드됩니다.'}
+              </p>
+            </div>
+          )}
           {initial && !permissions.content && (
             <p className="notice">
               팀 공용 자료의 제목과 분류만 정리할 수 있습니다.
@@ -217,8 +317,67 @@ function DeliverableForm({
             확인해 주세요.
           </p>
         )}
-        <ErrorNotice error={validationError || error} />
-        <FormActions busy={busy} disabled={blocked} onCancel={onClose} />
+        <ErrorNotice error={error} />
+        <SaveRecovery
+          error={error}
+          recovery={recovery}
+          onLoadLatest={
+            onLoadLatest ? () => recovery.refresh(onLoadLatest) : undefined
+          }
+          canReapply={canReapply}
+          rows={
+            recovery.latest
+              ? [
+                  {
+                    label: '제목',
+                    latest: recovery.latest.deliverable.title,
+                    input: form.title.trim(),
+                  },
+                  {
+                    label: '분류',
+                    latest: categories[recovery.latest.deliverable.category],
+                    input: categories[form.category],
+                  },
+                  ...(!permissions.content
+                    ? []
+                    : [
+                        {
+                          label: '설명',
+                          latest: recovery.latest.deliverable.description || '',
+                          input: form.description.trim(),
+                        },
+                        form.type === 'FILE'
+                          ? {
+                              label: '원본 파일',
+                              latest:
+                                recovery.latest.deliverable.file
+                                  ?.originalFilename,
+                              input:
+                                file?.name ||
+                                '선택한 새 파일 없음 · 최신 원본 유지',
+                            }
+                          : {
+                              label: form.type === 'URL' ? 'URL' : '본문',
+                              latest: recovery.latest.deliverable.textOrUrl,
+                              input: form.textOrUrl.trim(),
+                            },
+                      ]),
+                ]
+              : []
+          }
+        />
+        <FormActions
+          busy={busy || recovery.loading}
+          disabled={blocked || (conflict && !recovery.latest) || !canReapply}
+          onCancel={onClose}
+          label={
+            recovery.latest
+              ? '내 입력으로 다시 저장'
+              : error
+                ? '다시 저장'
+                : '저장'
+          }
+        />
       </form>
     </Modal>
   );
@@ -232,6 +391,7 @@ export default function Deliverables({
   taskId,
   onChanged = () => {},
 }) {
+  const { confirm, notify } = useInteractions();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedPage = Number(searchParams.get('page') || 0);
   const page =
@@ -283,6 +443,7 @@ export default function Deliverables({
       else if (type === 'FILE') await uploadDeliverable(team.id, input, file);
       else await createDeliverable(team.id, input);
       setEditing(undefined);
+      notify(editing ? '산출물을 수정했습니다.' : '산출물을 등록했습니다.');
       resource.reload();
       onChanged();
     } catch (requestError) {
@@ -293,15 +454,19 @@ export default function Deliverables({
   };
   const remove = async (deliverable) => {
     if (
-      !window.confirm(
-        `“${deliverable.title}”을 완전히 삭제할까요? 파일도 함께 삭제됩니다.`,
-      )
+      !(await confirm({
+        title: '산출물 삭제',
+        message: `“${deliverable.title}”을 완전히 삭제합니다. 파일도 함께 삭제되며 복구할 수 없습니다.`,
+        label: '산출물 삭제',
+        danger: true,
+      }))
     )
       return;
     setBusy(true);
     setError(null);
     try {
       await deleteDeliverable(deliverable.id, deliverable.version);
+      notify('산출물을 삭제했습니다.');
       resource.reload();
       onChanged();
     } catch (requestError) {
@@ -329,7 +494,14 @@ export default function Deliverables({
   return (
     <section className="stack deliverables-section">
       <div className="section-heading">
-        <h2>{taskId == null ? '산출물 관리' : '연결 산출물'}</h2>
+        {taskId == null ? (
+          <div>
+            <h1>산출물 관리</h1>
+            <p>팀 공용 자료와 작업에 연결된 최신 산출물을 확인하세요.</p>
+          </div>
+        ) : (
+          <h2>연결 산출물</h2>
+        )}
         {canCreate && (
           <button
             className="primary-button"
@@ -384,17 +556,33 @@ export default function Deliverables({
                       <h3>{deliverable.title}</h3>
                     </div>
                     <span className="role-badge">
-                      {deliverable.type} ·{' '}
-                      {categoryLabels[deliverable.category]}
+                      {
+                        { TEXT: '문서', FILE: '파일', URL: '링크' }[
+                          deliverable.type
+                        ]
+                      }{' '}
+                      ·{' '}
+                      {categoryLabels[deliverable.category] ||
+                        {
+                          RESEARCH: '조사·분석',
+                          PRESENTATION: '발표',
+                          OPERATION: '행사·운영',
+                        }[deliverable.category] ||
+                        deliverable.category}
                     </span>
                   </div>
                   <p className="field-help">
                     {deliverable.taskId == null
                       ? '팀 공용'
                       : `작업 연결${taskMap.get(deliverable.taskId) ? ` · ${taskMap.get(deliverable.taskId).title}` : ''}`}{' '}
-                    · 등록 {memberName(members, deliverable.authorId)} · 수정{' '}
-                    {formatDate(deliverable.updatedAt)}
                   </p>
+                  <details className="deliverable-record">
+                    <summary>등록·수정 정보</summary>
+                    <p className="field-help">
+                      등록 {memberName(members, deliverable.authorId)} · 수정{' '}
+                      {formatDate(deliverable.updatedAt)}
+                    </p>
+                  </details>
                   {deliverable.description && (
                     <p className="preserve-lines">{deliverable.description}</p>
                   )}
@@ -457,7 +645,49 @@ export default function Deliverables({
             })}
           </div>
         ) : (
-          <EmptyState>등록된 산출물이 없습니다.</EmptyState>
+          <EmptyState>
+            <p>
+              {page > 0
+                ? '이 페이지에 산출물이 없습니다.'
+                : selectedTaskId != null
+                  ? '이 작업에 연결된 산출물이 없습니다.'
+                  : '아직 등록된 산출물이 없습니다.'}
+            </p>
+            <span>
+              {page > 0
+                ? '이전 페이지로 돌아가 등록된 자료를 확인하세요.'
+                : canCreate
+                  ? '팀 공용 자료나 담당 작업의 결과를 문서·파일로 남겨주세요.'
+                  : '팀원이 등록한 최신 자료가 이곳에 표시됩니다.'}
+            </span>
+            {page > 0 ? (
+              <button
+                className="secondary-button"
+                onClick={() => setPage(page - 1)}
+              >
+                이전 자료 보기
+              </button>
+            ) : selectedTaskId != null && taskId == null ? (
+              <button
+                className="secondary-button"
+                onClick={() => setScope('ALL')}
+              >
+                전체 산출물 보기
+              </button>
+            ) : (
+              canCreate && (
+                <button
+                  className="primary-button"
+                  onClick={() => {
+                    setError(null);
+                    setEditing(null);
+                  }}
+                >
+                  첫 산출물 등록
+                </button>
+              )
+            )}
+          </EmptyState>
         )}
       </ResourceState>
       <div className="pagination">
@@ -501,6 +731,40 @@ export default function Deliverables({
             ((editing?.taskId ?? taskId) != null && !canModifyTeamWork(team))
           }
           error={error}
+          onLoadLatest={
+            editing
+              ? async () => {
+                  const [latestPage, context] = await Promise.all([
+                    listDeliverables(team.id, {
+                      taskId: selectedTaskId,
+                      page,
+                      size: 20,
+                    }),
+                    getTeamWorkContext(team.id),
+                  ]);
+                  const deliverable = latestPage.find(
+                    (item) => item.id === editing.id,
+                  );
+                  if (!deliverable)
+                    throw new Error(
+                      '현재 페이지에서 산출물을 찾지 못했습니다. 입력은 유지됩니다. 창을 닫고 목록에서 위치를 다시 확인해 주세요.',
+                    );
+                  const task =
+                    deliverable.taskId == null
+                      ? null
+                      : (await getTask(deliverable.taskId)).task;
+                  return {
+                    deliverable,
+                    permissions: deliverablePermissions(
+                      deliverable,
+                      task,
+                      context.team,
+                      user.id,
+                    ),
+                  };
+                }
+              : undefined
+          }
           onClose={() => setEditing(undefined)}
           onSave={save}
         />

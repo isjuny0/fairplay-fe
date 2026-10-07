@@ -1,6 +1,7 @@
 import Icon from './Icon.jsx';
 import { useSearchParams } from 'react-router';
 import { listApprovals } from '../api/approvals.js';
+import { listTasks } from '../api/tasks.js';
 import useResource from '../hooks/useResource.js';
 import { formatDate, memberName } from '../lib/domain.js';
 import TaskDetail from './TaskDetail.jsx';
@@ -8,6 +9,7 @@ import { EmptyState, ResourceState } from './ui.jsx';
 
 export default function Approvals({
   team,
+  space,
   user,
   members,
   taskId,
@@ -31,12 +33,14 @@ export default function Approvals({
     () => listApprovals(team.id, status),
     [team.id, status, taskId],
   );
+  const taskResource = useResource(() => listTasks(team.id), [team.id]);
   if (taskId != null)
     return (
       <TaskDetail
         key={taskId}
         taskId={taskId}
         team={team}
+        space={space}
         user={user}
         members={members}
         onBack={onTaskBack}
@@ -84,7 +88,11 @@ export default function Approvals({
                       }[approval.status]
                     }
                   </span>
-                  <strong>작업 #{approval.taskId}</strong>
+                  <strong>
+                    {taskResource.data?.find(
+                      (task) => task.id === approval.taskId,
+                    )?.title || `작업 #${approval.taskId}`}
+                  </strong>
                   <small>
                     요청자 {memberName(members, approval.requesterId)} ·{' '}
                     {formatDate(approval.requestedAt)}

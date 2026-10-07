@@ -27,6 +27,28 @@ export const createTeamDeletionRequest = (teamId) =>
   apiRequest(`/api/teams/${teamId}/deletion-requests`, { method: 'POST' });
 export const getTeamDeletionRequest = (teamId) =>
   apiRequest(`/api/teams/${teamId}/deletion-request`);
+export async function getTeamWorkContext(teamId) {
+  const [team, members, deletion] = await Promise.all([
+    getTeam(teamId),
+    getTeamMembers(teamId),
+    getTeamDeletionRequest(teamId).catch((error) => {
+      if (
+        error.status === 404 &&
+        error.code === 'TEAM_DELETION_REQUEST_NOT_FOUND'
+      )
+        return null;
+      throw error;
+    }),
+  ]);
+  return {
+    team: {
+      ...team,
+      workFrozen: Boolean(deletion?.workFrozen),
+      workStateUnknown: false,
+    },
+    members,
+  };
+}
 export const updateTeamDeletionConsent = (requestId, agree) =>
   apiRequest(`/api/team-deletion-requests/${requestId}/consent`, {
     method: 'PUT',

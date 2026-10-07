@@ -4,6 +4,16 @@ export const statusLabels = {
   PENDING_APPROVAL: '승인 대기',
   DONE: '완료',
 };
+export const expectedWorkloadOptions = [
+  { weight: 1, label: '1시간 미만의 작업' },
+  { weight: 2, label: '1시간 이상 ~ 3시간 미만의 작업' },
+  { weight: 3, label: '3시간 이상 ~ 6시간 미만의 작업' },
+  { weight: 5, label: '6시간 이상 ~ 12시간 미만의 작업' },
+  { weight: 8, label: '12시간 이상의 작업' },
+];
+export const formatExpectedWorkload = (weight) =>
+  expectedWorkloadOptions.find((option) => option.weight === weight)?.label ||
+  '예상 작업량 확인 필요';
 export const buildingLabels = {
   NOT_CONFIGURED: '기간 미설정',
   SCHEDULED: '시작 전',
@@ -14,9 +24,9 @@ export const buildingLabels = {
 export const categoryLabels = {
   PLANNING: '기획',
   POLICY: '정책',
-  DESIGN: '설계',
-  DEVELOPMENT: '개발',
-  TEST: '테스트',
+  DESIGN: '디자인·설계',
+  DEVELOPMENT: '제작·구현',
+  TEST: '검증',
   OTHER: '기타',
 };
 export const completionBlockLabels = {

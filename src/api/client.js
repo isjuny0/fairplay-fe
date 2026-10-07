@@ -1,3 +1,4 @@
+import { previewRequest } from '../mock/preview.js';
 const apiBaseUrl = (import.meta.env?.VITE_API_BASE_URL || '').replace(
   /\/$/,
   '',
@@ -41,6 +42,13 @@ export async function apiRequest(
   { method = 'GET', body, responseType = 'json' } = {},
   retryCsrf = true,
 ) {
+  if (
+    globalThis.window &&
+    (window.location?.pathname === '/preview' ||
+      window.location?.pathname?.startsWith('/preview/'))
+  ) {
+    return previewRequest(path, { method, body, responseType });
+  }
   const headers = {};
   if (!['GET', 'HEAD'].includes(method)) {
     const csrf = csrfToken || (await refreshCsrfToken());

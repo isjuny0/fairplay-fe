@@ -274,7 +274,7 @@ async function workspace(
     }
     if (path === '/api/tasks/10') {
       if (method === 'PATCH') {
-        if (conflict)
+        if (conflict || request.postDataJSON().expectedVersion !== task.version)
           return respond(
             {
               code: 'VERSION_CONFLICT',
@@ -389,9 +389,10 @@ async function workspace(
     setDeletionConflict: () => {
       deletionConflict = true;
     },
-    setConflict: () => {
-      conflict = true;
+    setConflict: (value = true) => {
+      conflict = value;
     },
+    changeTask: (fields) => { task = { ...task, ...fields }; },
     expire: () => {
       expired = true;
     },
@@ -415,6 +416,52 @@ async function workspace(
     },
   };
 }
+
+for (const [label, weight] of [
+  ['1시간 미만의 작업', 1],
+  ['1시간 이상 ~ 3시간 미만의 작업', 2],
+  ['3시간 이상 ~ 6시간 미만의 작업', 3],
+  ['6시간 이상 ~ 12시간 미만의 작업', 5],
+  ['12시간 이상의 작업', 8],
+])
+  test(`예상 작업량 ${label} 선택은 숫자 가중치 ${weight}로 저장된다`, async ({ page }) => {
+    const { requests } = await workspace(page);
+    await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+    await page.getByRole('button', { name: '새 작업 만들기', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    const workload = dialog.getByLabel('예상 작업량', { exact: true });
+    await expect(workload).toHaveValue('3');
+    await expect(workload.locator('option')).toHaveText([
+      '1시간 미만의 작업',
+      '1시간 이상 ~ 3시간 미만의 작업',
+      '3시간 이상 ~ 6시간 미만의 작업',
+      '6시간 이상 ~ 12시간 미만의 작업',
+      '12시간 이상의 작업',
+    ]);
+    await workload.selectOption({ label });
+    await dialog.getByLabel('작업 제목').fill('예상 작업량 확인');
+    await dialog.getByLabel('작업 설명', { exact: true }).fill('팀과 합의한 작업 범위입니다.');
+    await dialog.getByLabel('마감 (한국 시간)').fill('2030-12-01T18:00');
+    await dialog.getByLabel('담당자 · 팀원').check();
+    await dialog.getByLabel('완료 승인자', { exact: true }).selectOption('leader');
+    await dialog.getByRole('button', { name: '저장', exact: true }).click();
+    await expect(page.getByRole('heading', { name: '예상 작업량 확인' })).toBeVisible();
+    const request = requests.find(({ method, path }) =>
+      method === 'POST' && path === '/api/teams/1/tasks');
+    expect(JSON.parse(request.body).weight).toBe(weight);
+    await expect(page.getByText(`예상 작업량: ${label}`, { exact: false })).toBeVisible();
+    await page.getByRole('button', { name: '작업 수정', exact: true }).click();
+    await expect(dialog.getByLabel('예상 작업량', { exact: true })).toHaveValue(String(weight));
+    const changedLabel = weight === 8 ? '1시간 미만의 작업' : '12시간 이상의 작업';
+    await dialog.getByLabel('예상 작업량', { exact: true }).selectOption({ label: changedLabel });
+    await dialog.getByRole('button', { name: '저장', exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    const update = requests.find(({ method, path }) =>
+      method === 'PATCH' && path === '/api/tasks/10');
+    expect(JSON.parse(update.body)).toMatchObject({ weight: weight === 8 ? 1 : 8, expectedVersion: 0 });
+    await page.reload();
+    await expect(page.getByText(`예상 작업량: ${changedLabel}`, { exact: false })).toBeVisible();
+  });
 
 test('담당자가 작업을 생성하고 버전으로 완료 요청하면 수정이 잠긴다', async ({
   page,
@@ -476,6 +523,7 @@ test('지정 승인자가 사유를 입력해 반려하면 이력과 작업 수�
     .getByLabel('반려 사유')
     .fill('탈퇴 후 게시글 처리 테스트를 보완해 주세요.');
   await page.getByRole('button', { name: '반려', exact: true }).click();
+  await page.getByText('완료 요청 이력 · 1건', { exact: true }).click();
   await expect(
     page.getByText('반려 사유: 탈퇴 후 게시글 처리 테스트를 보완해 주세요.'),
   ).toBeVisible();
@@ -499,8 +547,8 @@ test('지정 승인자가 승인하면 완료 상태가 되고 수정·등록이
   state.setPending();
   await page.getByRole('button', { name: '승인 검토', exact: true }).click();
   await page.getByRole('button', { name: '작업 검토', exact: true }).click();
-  page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: '완료 승인', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: '승인 확정', exact: true }).click();
   await expect(page.getByText('완료', { exact: true })).toBeVisible();
   await expect(
     page.getByRole('button', { name: '작업 수정', exact: true }),
@@ -634,8 +682,9 @@ test('관리자는 스페이스 생성 후 팀 빌딩 기간을 지정하고 코
     expectedVersion: 0,
     teamBuildingOpensAt: '2026-10-05T10:00:00+09:00',
   });
+  await page.getByLabel('코드 유효 기간', { exact: true }).selectOption('custom');
   await page.getByLabel('유효 기간 (분)').fill('60');
-  await page.getByRole('button', { name: '최초 발급', exact: true }).click();
+  await page.getByRole('button', { name: '참여 코드 발급', exact: true }).click();
   await expect(page.getByText('A1B2C3D4', { exact: true })).toBeVisible();
   expect(
     JSON.parse(
@@ -644,8 +693,8 @@ test('관리자는 스페이스 생성 후 팀 빌딩 기간을 지정하고 코
       ).body,
     ),
   ).toEqual({ expirationMinutes: 60 });
-  page.once('dialog', (confirmation) => confirmation.accept());
   await page.getByRole('button', { name: '철회', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: '코드 철회', exact: true }).click();
   await expect(
     page.getByText('유효한 참여 코드가 없습니다.', { exact: true }),
   ).toBeVisible();
@@ -700,6 +749,12 @@ test('모바일·태블릿·데스크톱에서 팀 탐색과 작업 생성 폼�
       .getByRole('button', { name: '새 작업 만들기', exact: true })
       .click();
     const dialog = page.getByRole('dialog');
+    if (width <= 600) {
+      await dialog.getByLabel('작업 제목', { exact: true }).fill('반응형 입력 검증');
+      await dialog.getByLabel('작업 설명', { exact: true }).fill('각 화면 폭에서 담당·승인 설정을 확인합니다.');
+      await dialog.getByLabel('마감 (한국 시간)', { exact: true }).fill('2030-12-01T18:00');
+      await dialog.getByRole('button', { name: '다음: 담당·승인', exact: true }).click();
+    }
     await expect(
       dialog.getByLabel('완료 승인자', { exact: true }),
     ).toBeVisible();
@@ -709,6 +764,7 @@ test('모바일·태블릿·데스크톱에서 팀 탐색과 작업 생성 폼�
       ),
     ).toBe(true);
     await dialog.getByRole('button', { name: '닫기', exact: true }).click();
+    if (width <= 600) await page.getByRole('button', { name: '버리고 닫기', exact: true }).click();
   }
 });
 
@@ -1122,6 +1178,7 @@ test('다른 팀원의 삭제 요청을 확인하면 이미 열린 작업 수정
     ),
   ).toHaveLength(0);
   await dialog.getByRole('button', { name: '취소', exact: true }).click();
+  await page.getByRole('button', { name: '버리고 닫기', exact: true }).click();
   await page.getByRole('button', { name: '팀 설정', exact: true }).click();
   await expect(page.getByText('0 / 2명 동의', { exact: true })).toBeVisible();
 });
@@ -1187,17 +1244,17 @@ test('작업 보드의 상태·내 작업 필터는 새로고침과 상세 복�
 }) => {
   await workspace(page);
   await page.getByRole('button', { name: '작업 보드', exact: true }).click();
-  await page.getByRole('combobox').selectOption('IN_PROGRESS');
+  await page.getByLabel('작업 상태', { exact: true }).selectOption('IN_PROGRESS');
   await page.getByLabel('내 담당 작업만').check();
   await page.reload();
-  await expect(page.getByRole('combobox')).toHaveValue('IN_PROGRESS');
+  await expect(page.getByLabel('작업 상태', { exact: true })).toHaveValue('IN_PROGRESS');
   await expect(page.getByLabel('내 담당 작업만')).toBeChecked();
   await page
     .getByRole('button', { name: '회원 탈퇴 구현', exact: true })
     .click();
   await page.reload();
   await page.getByRole('button', { name: '← 목록으로', exact: true }).click();
-  await expect(page.getByRole('combobox')).toHaveValue('IN_PROGRESS');
+  await expect(page.getByLabel('작업 상태', { exact: true })).toHaveValue('IN_PROGRESS');
   await expect(page.getByLabel('내 담당 작업만')).toBeChecked();
   expect(new URL(page.url()).searchParams.get('mine')).toBe('1');
 });
@@ -1207,9 +1264,9 @@ test('승인 상태 필터와 산출물 작업 범위·페이지는 주소에서
 }) => {
   await workspace(page);
   await page.goto('/spaces/1/teams/1/approvals?status=REJECTED');
-  await expect(page.getByRole('combobox')).toHaveValue('REJECTED');
+  await expect(page.getByRole('main').getByRole('combobox')).toHaveValue('REJECTED');
   await page.reload();
-  await expect(page.getByRole('combobox')).toHaveValue('REJECTED');
+  await expect(page.getByRole('main').getByRole('combobox')).toHaveValue('REJECTED');
   await page.goto('/spaces/1/teams/1/deliverables?taskId=10&page=2');
   await expect(page.getByLabel('작업별 조회')).toHaveValue('10');
   await expect(page.getByText('3 페이지', { exact: true })).toBeVisible();
@@ -1349,4 +1406,142 @@ test('로그아웃 후 브라우저 뒤로가기로 보호된 화면이 복원�
   await expect(
     page.getByRole('heading', { name: '삼위일체 팀', exact: true }),
   ).toHaveCount(0);
+});
+
+for (const failureCode of ['JOIN_CODE_ALREADY_EXISTS', 'FORBIDDEN'])
+  test(`참여 코드 발급은 ${failureCode === 'JOIN_CODE_ALREADY_EXISTS' ? '만료 코드 충돌만 재발급' : '권한 오류에서 재발급하지 않음'}`, async ({ page }) => {
+    await workspace(page, { manager: true, userId: 'manager' });
+    let issued = false;
+    const operations = [];
+    await page.route('**/api/spaces/1/join-code', async (route) => {
+      if (route.request().method() === 'GET') {
+        return route.fulfill({ status: issued ? 200 : 404, json: issued ? { code: 'F1E2D3C4', createdAt: '2026-10-07T10:00:00+09:00', expiresAt: '2026-10-10T10:00:00+09:00' } : { code: 'JOIN_CODE_NOT_FOUND' } });
+      }
+      operations.push({ path: 'create', body: route.request().postDataJSON() });
+      return route.fulfill({ status: failureCode === 'FORBIDDEN' ? 403 : 409, json: { code: failureCode, message: failureCode === 'FORBIDDEN' ? '관리 권한이 없습니다.' : '이미 발급된 코드가 있습니다.' } });
+    });
+    await page.route('**/api/spaces/1/join-code/rotate', async (route) => {
+      issued = true;
+      operations.push({ path: 'rotate', body: route.request().postDataJSON() });
+      return route.fulfill({ status: 200, json: { code: 'F1E2D3C4' } });
+    });
+    await page.goto('/spaces/1/settings');
+    await page.getByLabel('코드 유효 기간', { exact: true }).selectOption('4320');
+    await page.getByRole('button', { name: '참여 코드 발급', exact: true }).click();
+    if (failureCode === 'JOIN_CODE_ALREADY_EXISTS') {
+      await expect(page.getByText('F1E2D3C4', { exact: true })).toBeVisible();
+      expect(operations).toEqual([{ path: 'create', body: { expirationMinutes: 4320 } }, { path: 'rotate', body: { expirationMinutes: 4320 } }]);
+    } else {
+      await expect(page.getByRole('alert')).toContainText('관리 권한이 없습니다.');
+      expect(operations).toEqual([{ path: 'create', body: { expirationMinutes: 4320 } }]);
+    }
+  });
+
+test('다른 작업 정보를 저장해도 미저장 수행 설명을 보존한다', async ({ page }) => {
+  const state = await workspace(page);
+  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await page.getByRole('button', { name: '회원 탈퇴 구현', exact: true }).click();
+  await page.getByLabel('내 수행 설명', { exact: true }).fill('아직 저장하지 않은 개인 수행 기록입니다.');
+  await page.getByRole('button', { name: '작업 수정', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('작업 제목', { exact: true }).fill('회원 탈퇴 구현 수정');
+  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: '회원 탈퇴 구현 수정', exact: true })).toBeVisible();
+  await expect(page.getByLabel('내 수행 설명', { exact: true })).toHaveValue('아직 저장하지 않은 개인 수행 기록입니다.');
+  expect(state.requests.some(({ method, path }) => method === 'PATCH' && path === '/api/tasks/10')).toBe(true);
+});
+
+test('빈 스페이스 목록에서 참여 코드 입력을 시작하고 코드 오류를 항목에서 확인한다', async ({ page }) => {
+  const { requests } = await workspace(page);
+  await page.route('**/api/spaces', (route) => route.request().method() === 'GET' ? route.fulfill({ json: [] }) : route.fallback());
+  await page.goto('/main');
+  await page.getByRole('button', { name: '참여 코드 입력', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '코드로 참여' });
+  await dialog.getByLabel('참여 코드', { exact: true }).fill('1234ZZZZ');
+  await dialog.getByRole('button', { name: '참여', exact: true }).click();
+  await expect(dialog.getByLabel('참여 코드', { exact: true })).toBeFocused();
+  await expect(dialog.getByText('숫자 0–9와 영문 A–F로 된 8자리 참여 코드를 입력해 주세요.')).toBeVisible();
+  expect(requests.filter(({ path, method }) => path === '/api/spaces/join' && method === 'POST')).toHaveLength(0);
+});
+
+test('빈 작업 목록은 생성 가능한 팀에만 첫 작업 등록을 제공한다', async ({ page }) => {
+  await workspace(page, { memberCount: 1 });
+  await page.route('**/api/teams/1/tasks', (route) => route.request().method() === 'GET' ? route.fulfill({ json: [] }) : route.fallback());
+  await page.goto('/spaces/1/teams/1/tasks');
+  await expect(page.getByText('아직 등록된 작업이 없습니다.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '첫 작업 만들기', exact: true })).toHaveCount(0);
+  await expect(page.getByText('승인된 팀원이 2명 이상 모이면 작업을 만들 수 있습니다.', { exact: true })).toBeVisible();
+});
+
+test('작업 충돌은 내 입력과 최신 내용을 비교한 뒤 확인한 버전으로만 다시 저장한다', async ({ page }) => {
+  const state = await workspace(page);
+  await page.goto('/spaces/1/teams/1/tasks/10');
+  await page.getByRole('button', { name: '작업 수정', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '작업 수정' });
+  await dialog.getByLabel('작업 제목', { exact: true }).fill('내가 작성한 제목');
+  state.changeTask({ title: '팀원이 수정한 최신 제목', version: 2 });
+  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await expect(dialog.getByRole('button', { name: '다시 저장', exact: true })).toBeDisabled();
+  await dialog.getByRole('button', { name: '최신 내용 확인', exact: true }).click();
+  await expect(dialog.getByText('팀원이 수정한 최신 제목', { exact: true })).toBeVisible();
+  await expect(dialog.getByLabel('작업 제목', { exact: true })).toHaveValue('내가 작성한 제목');
+  await dialog.getByRole('button', { name: '내 입력으로 다시 저장', exact: true }).click();
+  await page.getByRole('dialog', { name: '최신 작업에 내 입력 반영' }).getByRole('button', { name: '취소', exact: true }).click();
+  expect(state.requests.filter(request => request.method === 'PATCH' && request.path === '/api/tasks/10')).toHaveLength(1);
+  state.changeTask({ version: 3, title: '다시 변경된 서버 제목' });
+  await dialog.getByRole('button', { name: '내 입력으로 다시 저장', exact: true }).click();
+  await page.getByRole('dialog', { name: '최신 작업에 내 입력 반영' }).getByRole('button', { name: '내 입력으로 저장', exact: true }).click();
+  await expect(dialog.getByRole('button', { name: '다시 저장', exact: true })).toBeDisabled();
+  await dialog.getByRole('button', { name: '최신 내용 확인', exact: true }).click();
+  await expect(dialog.getByText('다시 변경된 서버 제목', { exact: true })).toBeVisible();
+  await dialog.getByRole('button', { name: '내 입력으로 다시 저장', exact: true }).click();
+  await page.getByRole('dialog', { name: '최신 작업에 내 입력 반영' }).getByRole('button', { name: '내 입력으로 저장', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: '내가 작성한 제목', exact: true })).toBeVisible();
+  const versions = state.requests.filter(request => request.method === 'PATCH' && request.path === '/api/tasks/10').map(request => JSON.parse(request.body).expectedVersion);
+  expect(versions).toEqual([0, 2, 3]);
+});
+
+for (const changedState of ['PENDING_APPROVAL', 'DONE']) test(`최신 작업이 ${changedState}로 바뀌면 충돌 입력을 보존하고 재저장을 막는다`, async ({ page }) => {
+  const state = await workspace(page);
+  await page.goto('/spaces/1/teams/1/tasks/10');
+  await page.getByRole('button', { name: '작업 수정', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '작업 수정' });
+  await dialog.getByLabel('작업 제목', { exact: true }).fill('보존할 입력');
+  state.changeTask({ status: changedState, version: 1 });
+  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await dialog.getByRole('button', { name: '최신 내용 확인', exact: true }).click();
+  await expect(dialog.getByRole('button', { name: '내 입력으로 다시 저장', exact: true })).toBeDisabled();
+  await expect(dialog.getByLabel('작업 제목', { exact: true })).toHaveValue('보존할 입력');
+  expect(state.requests.filter(request => request.method === 'PATCH' && request.path === '/api/tasks/10')).toHaveLength(1);
+});
+
+test('충돌 후 현재 담당자·리더 권한을 잃으면 내 입력으로 재저장할 수 없다', async ({ page }) => {
+  const state = await workspace(page);
+  await page.goto('/spaces/1/teams/1/tasks/10');
+  await page.getByRole('button', { name: '작업 수정', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '작업 수정' });
+  await dialog.getByLabel('작업 제목', { exact: true }).fill('유지할 제목');
+  state.changeTask({ assignees: [{ userId: 'leader', allocationPercent: 100 }], completionReviewerId: 'member', version: 1 });
+  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await dialog.getByRole('button', { name: '최신 내용 확인', exact: true }).click();
+  await expect(dialog.getByRole('button', { name: '내 입력으로 다시 저장', exact: true })).toBeDisabled();
+  await expect(dialog.getByLabel('작업 제목', { exact: true })).toHaveValue('유지할 제목');
+  expect(state.requests.filter(request => request.method === 'PATCH' && request.path === '/api/tasks/10')).toHaveLength(1);
+});
+
+test('충돌의 최신 조회가 실패하면 입력을 보존하고 확인 없이 재저장하지 않는다', async ({ page }) => {
+  const state = await workspace(page);
+  await page.goto('/spaces/1/teams/1/tasks/10');
+  await page.getByRole('button', { name: '작업 수정', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '작업 수정' });
+  await dialog.getByLabel('작업 제목', { exact: true }).fill('보존할 초안');
+  state.setConflict();
+  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await page.route('**/api/tasks/10', (route) => route.request().method() === 'GET' ? route.fulfill({ status: 503, json: { code: 'TEMPORARILY_UNAVAILABLE', message: '최신 조회를 잠시 사용할 수 없습니다.' } }) : route.fallback());
+  await dialog.getByRole('button', { name: '최신 내용 확인', exact: true }).click();
+  await expect(dialog.getByText('최신 조회를 잠시 사용할 수 없습니다.', { exact: true })).toBeVisible();
+  await expect(dialog.getByLabel('작업 제목', { exact: true })).toHaveValue('보존할 초안');
+  await expect(dialog.getByRole('button', { name: '다시 저장', exact: true })).toBeDisabled();
 });

@@ -6,10 +6,12 @@ import {
   reviewTeamApplication,
 } from '../api/teams.js';
 import useResource from '../hooks/useResource.js';
+import { useInteractions } from '../hooks/useInteractions.js';
 import { formatDate, isApprovedMember, memberRole } from '../lib/domain.js';
 import { EmptyState, ErrorNotice, ResourceState } from './ui.jsx';
 
 export default function TeamMembers({ team, user, onChanged }) {
+  const { notify } = useInteractions();
   const isLeader = isApprovedMember(team) && team.leaderId === user.id;
   const resource = useResource(
     async () => ({
@@ -25,6 +27,7 @@ export default function TeamMembers({ team, user, onChanged }) {
     setError(null);
     try {
       await action();
+      notify('팀원 상태를 변경했습니다.');
       resource.reload();
       onChanged();
     } catch (requestError) {
@@ -84,7 +87,7 @@ export default function TeamMembers({ team, user, onChanged }) {
             </section>
             {isLeader && (
               <section className="panel">
-                <h2>가입 신청</h2>
+                <h2>가입 신청 · {resource.data.applications.length}건</h2>
                 {resource.data.applications.length ? (
                   <ul className="clean-list">
                     {resource.data.applications.map((application) => (

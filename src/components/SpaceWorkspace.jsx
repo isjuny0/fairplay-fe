@@ -1,19 +1,27 @@
 import Icon from './Icon.jsx';
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import useAppNavigate from '../hooks/useAppNavigate.js';
 import { getSpace } from '../api/spaces.js';
 import {
   createTeam,
   getTeam,
+  getTeamMembers,
   listTeams,
   requestTeamJoin,
 } from '../api/teams.js';
 import useResource from '../hooks/useResource.js';
+import { useInteractions } from '../hooks/useInteractions.js';
+import SpaceGuide from './SpaceGuide.jsx';
 import { buildingLabels, formatDate, isApprovedMember } from '../lib/domain.js';
 import SpaceSettings from './SpaceSettings.jsx';
 import TeamWorkspace from './TeamWorkspace.jsx';
 import UnavailablePage from './UnavailablePage.jsx';
 import { spacePath, teamMenuPath } from '../lib/routes.js';
+import ManagerDashboard from './ManagerDashboard.jsx';
+import RoundManagement from './RoundManagement.jsx';
+import ReportReview from './ReportReview.jsx';
+import MemberContributions from './MemberContributions.jsx';
+import WorkspaceNavigation from './WorkspaceNavigation.jsx';
 import {
   EmptyState,
   ErrorNotice,
@@ -30,17 +38,29 @@ export default function SpaceWorkspace({
   user,
   view,
   teamMenu,
+  targetUserId,
   onBack,
 }) {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
+  const { clearChanges, notify } = useInteractions();
   const resource = useResource(async () => {
     const [space, teams] = await Promise.all([
       getSpace(spaceId),
       listTeams(spaceId),
     ]);
+    const details = await Promise.all(teams.map((team) => getTeam(team.id)));
     return {
       space,
-      teams: await Promise.all(teams.map((team) => getTeam(team.id))),
+      teams: details,
+      teamContexts:
+        space.myRole === 'MANAGER'
+          ? await Promise.all(
+              details.map(async (team) => ({
+                team,
+                members: await getTeamMembers(team.id),
+              })),
+            )
+          : [],
     };
   }, [spaceId]);
   const menu = view === 'settings' ? '스페이스 관리' : '팀 목록';
@@ -51,8 +71,38 @@ export default function SpaceWorkspace({
   const space = resource.data?.space;
   const teams = resource.data?.teams || [];
   const isManager = space?.myRole === 'MANAGER';
+  const managerContext = {
+    space,
+    user,
+    manager: true,
+    teamContexts: resource.data?.teamContexts || [],
+  };
+  const managerView = [
+    'settings',
+    'dashboard',
+    'rounds',
+    'reports',
+    'contributions',
+  ].includes(view);
   const team = teams.find((item) => item.id === teamId);
   const joinedTeam = teams.find(isApprovedMember);
+  const teamRole = !team
+    ? ''
+    : team.leaderId === user.id
+      ? '리더'
+      : team.deputyId === user.id
+        ? '부리더'
+        : isApprovedMember(team)
+          ? '팀원'
+          : '관리자 조회';
+  const contentLayout =
+    view === 'dashboard' ||
+    (view === 'team' &&
+      ['팀 홈', '작업 보드', '승인 검토', '팀원 관리'].includes(teamMenu))
+      ? 'content-wide'
+      : view === 'settings' || (view === 'team' && teamMenu === '팀 설정')
+        ? 'content-settings'
+        : 'content-reading';
   const buildingOpen =
     space?.teamBuildingStatus === 'OPEN' &&
     new Date(space.teamBuildingOpensAt) <= new Date() &&
@@ -62,6 +112,7 @@ export default function SpaceWorkspace({
     setError(null);
     try {
       await requestTeamJoin(target.id);
+      notify('팀 가입을 신청했습니다. 가입 승인 후 작업을 시작할 수 있습니다.');
       resource.reload();
     } catch (requestError) {
       setError(requestError);
@@ -76,6 +127,8 @@ export default function SpaceWorkspace({
     try {
       const created = await createTeam(spaceId, name.trim());
       setCreating(false);
+      clearChanges();
+      notify('팀을 생성했습니다. 팀원을 모집해 작업을 시작하세요.');
       resource.reload();
       navigate(teamMenuPath(spaceId, created.id, '팀 홈'));
     } catch (requestError) {
@@ -86,58 +139,90 @@ export default function SpaceWorkspace({
   };
   return (
     <div className="workspace">
-      <aside className="sidebar">
-        <nav aria-label="스페이스 메뉴">
-          <button className="nav-item" onClick={onBack}>
-            <Icon name="back" />내 스페이스
-          </button>
-          <div className="sidebar-space">
-            <span className="space-symbol">
-              <Icon name="grid" />
-            </span>
-            <div>
-              <span className="eyebrow">현재 스페이스</span>
-              <strong>{space?.name || '스페이스'}</strong>
-            </div>
-          </div>
-          <p className="nav-section">프로젝트</p>
-          <button
-            className={`nav-item ${menu === '팀 목록' && teamId == null ? 'active' : ''}`}
-            onClick={() => navigate(spacePath(spaceId))}
-          >
-            <Icon name="users" />팀 목록
-          </button>
-          {isManager && (
-            <button
-              className={`nav-item ${menu === '스페이스 관리' ? 'active' : ''}`}
-              onClick={() => navigate(`${spacePath(spaceId)}/settings`)}
-            >
-              <Icon name="settings" />
-              스페이스 관리
-            </button>
-          )}
-          {joinedTeam && (
-            <button
-              className={`nav-item ${teamId === joinedTeam.id ? 'active' : ''}`}
-              onClick={() =>
-                navigate(teamMenuPath(spaceId, joinedTeam.id, '팀 홈'))
-              }
-            >
-              <Icon name="home" />
-              <span className="nav-team-name">내 팀 · {joinedTeam.name}</span>
-            </button>
-          )}
-        </nav>
-      </aside>
-      <main className="main-content">
+      <WorkspaceNavigation
+        space={space}
+        spaceId={spaceId}
+        teams={teams}
+        team={team}
+        view={view}
+        teamMenu={teamMenu}
+        teamRole={teamRole}
+        user={user}
+        onBack={onBack}
+      />
+      <main className={`main-content ${contentLayout}`}>
         <ResourceState resource={resource}>
           {space && (
             <>
-              {view === 'settings' && !isManager ? (
+              <nav className="workspace-breadcrumb" aria-label="현재 위치">
+                <button onClick={() => navigate(spacePath(spaceId))}>
+                  {space.name}
+                </button>
+                {team && (
+                  <>
+                    <span aria-hidden="true">/</span>
+                    <button
+                      onClick={() =>
+                        navigate(
+                          teamMenuPath(
+                            spaceId,
+                            team.id,
+                            isApprovedMember(team) ? '팀 홈' : '팀원 관리',
+                          ),
+                        )
+                      }
+                    >
+                      {team.name}
+                    </button>
+                  </>
+                )}
+                <span aria-hidden="true">/</span>
+                <span aria-current="page">
+                  {view === 'team'
+                    ? taskId
+                      ? teamMenu === '승인 검토'
+                        ? '승인 검토 상세'
+                        : '작업 상세'
+                      : teamMenu
+                    : {
+                        teams: '팀 목록',
+                        dashboard: '관리자 대시보드',
+                        rounds: '평가 회차 관리',
+                        reports: '리포트 검토·공개',
+                        settings: '스페이스 관리',
+                        contributions: '팀원 수행 상세',
+                      }[view]}
+                </span>
+                {team && (
+                  <span className="role-badge breadcrumb-role">{teamRole}</span>
+                )}
+              </nav>
+              {managerView && !isManager ? (
                 <UnavailablePage
                   title="스페이스 관리 권한이 없습니다."
                   description="스페이스 관리자만 이 화면을 사용할 수 있습니다."
                 />
+              ) : view === 'dashboard' ? (
+                <ManagerDashboard context={managerContext} />
+              ) : view === 'rounds' ? (
+                <RoundManagement context={managerContext} />
+              ) : view === 'reports' ? (
+                <ReportReview context={managerContext} />
+              ) : view === 'contributions' && team ? (
+                <MemberContributions
+                  context={{
+                    ...managerContext,
+                    team,
+                    members:
+                      managerContext.teamContexts.find(
+                        (entry) => entry.team.id === team.id,
+                      )?.members || [],
+                  }}
+                  targetUserId={targetUserId}
+                  onBack={() => navigate(`${spacePath(spaceId)}/dashboard`)}
+                />
+              ) : view === 'contributions' ? (
+                <UnavailablePage title="팀을 열 수 없습니다." />
               ) : view === 'team' && !team && resource.loading ? (
                 <p role="status">팀을 불러오는 중…</p>
               ) : view === 'team' &&
@@ -161,7 +246,6 @@ export default function SpaceWorkspace({
                   menu={teamMenu}
                   taskId={taskId}
                   onChanged={resource.reload}
-                  onBack={() => navigate(spacePath(spaceId))}
                   onRemoved={() => {
                     navigate(spacePath(spaceId), { replace: true });
                     resource.reload();
@@ -189,6 +273,19 @@ export default function SpaceWorkspace({
                       <Icon name="plus" />팀 만들기
                     </button>
                   </div>
+                  <SpaceGuide
+                    space={space}
+                    teams={teams}
+                    joinedTeam={joinedTeam}
+                    buildingOpen={buildingOpen}
+                    navigate={navigate}
+                    onReload={resource.reload}
+                    onCreateTeam={() => {
+                      setError(null);
+                      setName('');
+                      setCreating(true);
+                    }}
+                  />
                   <section className="panel building-panel">
                     <h2>
                       <Icon name="calendar" />
@@ -211,7 +308,12 @@ export default function SpaceWorkspace({
                   </section>
                   <ErrorNotice error={error} onRetry={resource.reload} />
                   {teams.length ? (
-                    <ul className="team-list">
+                    <ul
+                      className="team-list"
+                      id="space-team-list"
+                      tabIndex={-1}
+                      aria-label="가입할 팀 목록"
+                    >
                       {teams.map((item) => (
                         <li
                           className={`team-card ${isApprovedMember(item) ? 'is-joined' : ''}`}
@@ -230,6 +332,18 @@ export default function SpaceWorkspace({
                                 REJECTED: '가입 신청 반려',
                               }[item.myMembershipStatus] || '미가입'}
                             </p>
+                            {!isManager &&
+                              !isApprovedMember(item) &&
+                              !item.canApply &&
+                              item.myMembershipStatus !== 'PENDING' && (
+                                <p className="field-help">
+                                  {!buildingOpen
+                                    ? '팀 빌딩 기간에만 가입을 신청할 수 있습니다.'
+                                    : joinedTeam
+                                      ? '이미 다른 팀에 소속되어 있습니다.'
+                                      : '현재 팀 가입 신청 조건을 충족하지 않습니다.'}
+                                </p>
+                              )}
                           </div>
                           <div className="team-action">
                             {isApprovedMember(item) || isManager ? (
@@ -290,6 +404,7 @@ export default function SpaceWorkspace({
             title="팀 만들기"
             busy={busy}
             onClose={() => setCreating(false)}
+            dirty={Boolean(name)}
           >
             <form onSubmit={submit}>
               <Field label="팀 이름">
