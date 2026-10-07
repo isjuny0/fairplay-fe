@@ -14,9 +14,9 @@ export const buildingLabels = {
 export const categoryLabels = {
   PLANNING: '기획',
   POLICY: '정책',
-  DESIGN: '설계',
-  DEVELOPMENT: '개발',
-  TEST: '테스트',
+  DESIGN: '디자인·설계',
+  DEVELOPMENT: '제작·구현',
+  TEST: '검증',
   OTHER: '기타',
 };
 export const completionBlockLabels = {

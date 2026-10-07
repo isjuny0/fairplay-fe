@@ -8,6 +8,7 @@ import { EmptyState, ResourceState } from './ui.jsx';
 
 export default function Approvals({
   team,
+  space,
   user,
   members,
   taskId,
@@ -37,6 +38,7 @@ export default function Approvals({
         key={taskId}
         taskId={taskId}
         team={team}
+        space={space}
         user={user}
         members={members}
         onBack={onTaskBack}

@@ -3,6 +3,9 @@ export const teamMenuPaths = {
   '작업 보드': 'tasks',
   산출물: 'deliverables',
   '승인 검토': 'approvals',
+  '동료 평가': 'peer-evaluations',
+  '중간 피드백': 'mid-feedback',
+  '기여도 리포트': 'reports',
   '팀원 관리': 'members',
   '팀 설정': 'settings',
 };

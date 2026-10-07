@@ -21,6 +21,7 @@ import {
   statusLabels,
   teamWorkBlocked,
 } from '../lib/domain.js';
+import AiEvaluation from './AiEvaluation.jsx';
 import ApprovalDecision from './ApprovalDecision.jsx';
 import Deliverables from './Deliverables.jsx';
 import TaskForm from './TaskForm.jsx';
@@ -67,7 +68,14 @@ function OwnContribution({ task, contribution, busy, blocked, onSave }) {
   );
 }
 
-export default function TaskDetail({ taskId, team, user, members, onBack }) {
+export default function TaskDetail({
+  taskId,
+  team,
+  space,
+  user,
+  members,
+  onBack,
+}) {
   const resource = useResource(async () => {
     const [detail, history] = await Promise.all([
       getTask(taskId),
@@ -298,6 +306,30 @@ export default function TaskDetail({ taskId, team, user, members, onBack }) {
                     onChanged={resource.reload}
                   />
                 )}
+                {(isAssignee(task, user.id) ||
+                  history.some(
+                    (approval) =>
+                      approval.status === 'APPROVED' &&
+                      approval.reviewerId === user.id,
+                  )) &&
+                  ['DONE', 'IN_PROGRESS', 'PENDING_APPROVAL'].includes(
+                    task.status,
+                  ) && (
+                    <AiEvaluation
+                      context={{
+                        task,
+                        team,
+                        space,
+                        user,
+                        members,
+                        manager: false,
+                        approval: history.find(
+                          (approval) => approval.status === 'APPROVED',
+                        ),
+                      }}
+                      onChanged={resource.reload}
+                    />
+                  )}
                 <section className="panel">
                   <h2>완료 요청 이력</h2>
                   <p className="field-help">

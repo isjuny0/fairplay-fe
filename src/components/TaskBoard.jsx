@@ -15,6 +15,7 @@ import { EmptyState, ResourceState } from './ui.jsx';
 
 export default function TaskBoard({
   team,
+  space,
   user,
   members,
   taskId,
@@ -64,6 +65,7 @@ export default function TaskBoard({
         key={taskId}
         taskId={taskId}
         team={team}
+        space={space}
         user={user}
         members={members}
         onBack={onTaskBack}

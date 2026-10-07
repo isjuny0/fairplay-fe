@@ -1,10 +1,11 @@
 import Icon from './Icon.jsx';
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import useAppNavigate from '../hooks/useAppNavigate.js';
 import { getSpace } from '../api/spaces.js';
 import {
   createTeam,
   getTeam,
+  getTeamMembers,
   listTeams,
   requestTeamJoin,
 } from '../api/teams.js';
@@ -14,6 +15,10 @@ import SpaceSettings from './SpaceSettings.jsx';
 import TeamWorkspace from './TeamWorkspace.jsx';
 import UnavailablePage from './UnavailablePage.jsx';
 import { spacePath, teamMenuPath } from '../lib/routes.js';
+import ManagerDashboard from './ManagerDashboard.jsx';
+import RoundManagement from './RoundManagement.jsx';
+import ReportReview from './ReportReview.jsx';
+import MemberContributions from './MemberContributions.jsx';
 import {
   EmptyState,
   ErrorNotice,
@@ -30,17 +35,28 @@ export default function SpaceWorkspace({
   user,
   view,
   teamMenu,
+  targetUserId,
   onBack,
 }) {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const resource = useResource(async () => {
     const [space, teams] = await Promise.all([
       getSpace(spaceId),
       listTeams(spaceId),
     ]);
+    const details = await Promise.all(teams.map((team) => getTeam(team.id)));
     return {
       space,
-      teams: await Promise.all(teams.map((team) => getTeam(team.id))),
+      teams: details,
+      teamContexts:
+        space.myRole === 'MANAGER'
+          ? await Promise.all(
+              details.map(async (team) => ({
+                team,
+                members: await getTeamMembers(team.id),
+              })),
+            )
+          : [],
     };
   }, [spaceId]);
   const menu = view === 'settings' ? '스페이스 관리' : '팀 목록';
@@ -51,6 +67,19 @@ export default function SpaceWorkspace({
   const space = resource.data?.space;
   const teams = resource.data?.teams || [];
   const isManager = space?.myRole === 'MANAGER';
+  const managerContext = {
+    space,
+    user,
+    manager: true,
+    teamContexts: resource.data?.teamContexts || [],
+  };
+  const managerView = [
+    'settings',
+    'dashboard',
+    'rounds',
+    'reports',
+    'contributions',
+  ].includes(view);
   const team = teams.find((item) => item.id === teamId);
   const joinedTeam = teams.find(isApprovedMember);
   const buildingOpen =
@@ -102,19 +131,35 @@ export default function SpaceWorkspace({
           </div>
           <p className="nav-section">프로젝트</p>
           <button
-            className={`nav-item ${menu === '팀 목록' && teamId == null ? 'active' : ''}`}
+            className={`nav-item ${view === 'teams' && teamId == null ? 'active' : ''}`}
             onClick={() => navigate(spacePath(spaceId))}
           >
             <Icon name="users" />팀 목록
           </button>
           {isManager && (
-            <button
-              className={`nav-item ${menu === '스페이스 관리' ? 'active' : ''}`}
-              onClick={() => navigate(`${spacePath(spaceId)}/settings`)}
-            >
-              <Icon name="settings" />
-              스페이스 관리
-            </button>
+            <>
+              {[
+                ['dashboard', '관리자 대시보드', 'grid'],
+                ['rounds', '평가 회차 관리', 'calendar'],
+                ['reports', '리포트 검토·공개', 'file'],
+              ].map(([segment, label, icon]) => (
+                <button
+                  className={`nav-item ${view === segment ? 'active' : ''}`}
+                  key={segment}
+                  onClick={() => navigate(`${spacePath(spaceId)}/${segment}`)}
+                >
+                  <Icon name={icon} />
+                  {label}
+                </button>
+              ))}
+              <button
+                className={`nav-item ${menu === '스페이스 관리' ? 'active' : ''}`}
+                onClick={() => navigate(`${spacePath(spaceId)}/settings`)}
+              >
+                <Icon name="settings" />
+                스페이스 관리
+              </button>
+            </>
           )}
           {joinedTeam && (
             <button
@@ -133,11 +178,32 @@ export default function SpaceWorkspace({
         <ResourceState resource={resource}>
           {space && (
             <>
-              {view === 'settings' && !isManager ? (
+              {managerView && !isManager ? (
                 <UnavailablePage
                   title="스페이스 관리 권한이 없습니다."
                   description="스페이스 관리자만 이 화면을 사용할 수 있습니다."
                 />
+              ) : view === 'dashboard' ? (
+                <ManagerDashboard context={managerContext} />
+              ) : view === 'rounds' ? (
+                <RoundManagement context={managerContext} />
+              ) : view === 'reports' ? (
+                <ReportReview context={managerContext} />
+              ) : view === 'contributions' && team ? (
+                <MemberContributions
+                  context={{
+                    ...managerContext,
+                    team,
+                    members:
+                      managerContext.teamContexts.find(
+                        (entry) => entry.team.id === team.id,
+                      )?.members || [],
+                  }}
+                  targetUserId={targetUserId}
+                  onBack={() => navigate(`${spacePath(spaceId)}/dashboard`)}
+                />
+              ) : view === 'contributions' ? (
+                <UnavailablePage title="팀을 열 수 없습니다." />
               ) : view === 'team' && !team && resource.loading ? (
                 <p role="status">팀을 불러오는 중…</p>
               ) : view === 'team' &&

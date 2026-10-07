@@ -1,3 +1,4 @@
+import { isPreviewPath } from '../mock/preview.js';
 import Icon from './Icon.jsx';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router';
@@ -50,6 +51,21 @@ function DeliverableForm({
     textOrUrl: initial?.textOrUrl || '',
     taskId: taskId ?? '',
   });
+  const targetContract = isPreviewPath(window.location.pathname);
+  const categories = targetContract
+    ? {
+        ...categoryLabels,
+        RESEARCH: '조사·분석',
+        PRESENTATION: '발표',
+        OPERATION: '행사·운영',
+      }
+    : categoryLabels;
+  const fileExtensions = targetContract
+    ? /\.(pdf|txt|md|hwp|hwpx|ppt|pptx|xls|xlsx)$/i
+    : /\.(pdf|png|jpe?g|txt|md)$/i;
+  const fileHelp = targetContract
+    ? 'TXT·MD·PDF·HWP·HWPX·PPT·PPTX·XLS·XLSX'
+    : 'PDF·PNG·JPEG·TXT·MD';
   const [file, setFile] = useState(null);
   const [validationError, setValidationError] = useState(null);
   const update = (name, value) =>
@@ -64,11 +80,10 @@ function DeliverableForm({
     }
     if (
       file &&
-      (file.size > 10 * 1024 * 1024 ||
-        !/\.(pdf|png|jpe?g|txt|md)$/i.test(file.name))
+      (file.size > 10 * 1024 * 1024 || !fileExtensions.test(file.name))
     ) {
       setValidationError(
-        new Error('PDF·PNG·JPEG·TXT·MD 파일을 10MiB 이하로 선택해 주세요.'),
+        new Error(`${fileHelp} 파일을 10MiB 이하로 선택해 주세요.`),
       );
       return;
     }
@@ -98,6 +113,12 @@ function DeliverableForm({
       busy={busy}
       onClose={onClose}
     >
+      {targetContract && (
+        <p className="mock-notice">
+          최신 명세의 자료 유형·분류를 미리보기로 제공합니다. 실제 서버 업로드는
+          현재 구현된 형식을 따릅니다.
+        </p>
+      )}
       <form onSubmit={submit}>
         <fieldset disabled={busy || blocked} className="form-fields">
           <Field label="제목">
@@ -113,7 +134,7 @@ function DeliverableForm({
               value={form.category}
               onChange={(event) => update('category', event.target.value)}
             >
-              {Object.entries(categoryLabels).map(([category, label]) => (
+              {Object.entries(categories).map(([category, label]) => (
                 <option key={category} value={category}>
                   {label}
                 </option>
@@ -139,7 +160,10 @@ function DeliverableForm({
                     setFile(null);
                   }}
                 >
-                  {['TEXT', 'URL', 'FILE'].map((type) => (
+                  {(targetContract
+                    ? ['TEXT', 'FILE']
+                    : ['TEXT', 'URL', 'FILE']
+                  ).map((type) => (
                     <option key={type}>{type}</option>
                   ))}
                 </select>
@@ -165,12 +189,16 @@ function DeliverableForm({
             (form.type === 'FILE' ? (
               <Field
                 label={initial ? '교체할 파일 (선택)' : '파일'}
-                help="PDF·PNG·JPEG·TXT·MD / 파일당 10MiB / 팀 전체 파일 1GiB"
+                help={`${fileHelp} / 파일당 10MiB / 팀 전체 파일 1GiB`}
               >
                 <input
                   type="file"
                   required={!initial}
-                  accept=".pdf,.png,.jpg,.jpeg,.txt,.md"
+                  accept={
+                    targetContract
+                      ? '.txt,.md,.pdf,.hwp,.hwpx,.ppt,.pptx,.xls,.xlsx'
+                      : '.pdf,.png,.jpg,.jpeg,.txt,.md'
+                  }
                   onChange={(event) => setFile(event.target.files[0] || null)}
                 />
               </Field>
@@ -385,7 +413,13 @@ export default function Deliverables({
                     </div>
                     <span className="role-badge">
                       {deliverable.type} ·{' '}
-                      {categoryLabels[deliverable.category]}
+                      {categoryLabels[deliverable.category] ||
+                        {
+                          RESEARCH: '조사·분석',
+                          PRESENTATION: '발표',
+                          OPERATION: '행사·운영',
+                        }[deliverable.category] ||
+                        deliverable.category}
                     </span>
                   </div>
                   <p className="field-help">

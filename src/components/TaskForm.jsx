@@ -104,7 +104,7 @@ export default function TaskForm({
           </Field>
           <Field
             label="작업 설명"
-            help="완료 조건과 공동 작업의 분담 내용을 함께 작성하세요."
+            help="무엇을 수행할지, 결과에 어떤 내용이 포함되어야 할지 적어주세요."
           >
             <textarea
               required
@@ -115,7 +115,10 @@ export default function TaskForm({
             />
           </Field>
           <div className="two-columns">
-            <Field label="가중치">
+            <Field
+              label="가중치"
+              help="같은 프로젝트 안에서 합의한 상대적인 작업 규모입니다."
+            >
               <select
                 value={form.weight}
                 onChange={(event) => update('weight', event.target.value)}

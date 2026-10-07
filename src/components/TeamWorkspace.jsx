@@ -1,10 +1,11 @@
 import Icon from './Icon.jsx';
 import { useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation } from 'react-router';
+import useAppNavigate from '../hooks/useAppNavigate.js';
 import { getTeamDeletionRequest, getTeamMembers } from '../api/teams.js';
 import { listTasks } from '../api/tasks.js';
 import useResource from '../hooks/useResource.js';
-import { isApprovedMember, memberName } from '../lib/domain.js';
+import { isApprovedMember } from '../lib/domain.js';
 import Approvals from './Approvals.jsx';
 import Deliverables from './Deliverables.jsx';
 import TaskBoard from './TaskBoard.jsx';
@@ -13,6 +14,10 @@ import TeamSettings from './TeamSettings.jsx';
 import UnavailablePage from './UnavailablePage.jsx';
 import { teamMenuPath } from '../lib/routes.js';
 import { ErrorNotice, ResourceState } from './ui.jsx';
+import TeamHome from './TeamHome.jsx';
+import PeerEvaluation from './PeerEvaluation.jsx';
+import MidFeedback from './MidFeedback.jsx';
+import ContributionReport from './ContributionReport.jsx';
 
 function TeamDeliverables({ team, user, members }) {
   const resource = useResource(
@@ -44,7 +49,7 @@ export default function TeamWorkspace({
   onBack,
   onRemoved,
 }) {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const location = useLocation();
   const navigateToMenu = (nextMenu) =>
     navigate(teamMenuPath(space.id, team.id, nextMenu));
@@ -92,10 +97,21 @@ export default function TeamWorkspace({
       approved && (deletionResource.loading || Boolean(deletionResource.error)),
   };
   const menus = approved
-    ? ['팀 홈', '작업 보드', '산출물', '승인 검토', '팀원 관리', '팀 설정']
+    ? [
+        '팀 홈',
+        '작업 보드',
+        '산출물',
+        '승인 검토',
+        '동료 평가',
+        '중간 피드백',
+        '기여도 리포트',
+        '팀원 관리',
+        '팀 설정',
+      ]
     : ['팀원 관리', '산출물'];
   const currentMenu = menus.includes(menu) ? menu : null;
   const members = resource.data || [];
+  const context = { space, team: workTeam, user, members, manager: false };
   const myRole =
     team.leaderId === user.id
       ? '리더'
@@ -175,74 +191,8 @@ export default function TeamWorkspace({
             description="승인된 팀원만 작업과 팀 설정을 사용할 수 있습니다. 조회 가능한 팀 메뉴를 선택해 주세요."
           />
         )}
-        {currentMenu === '팀 홈' && (
-          <section className="stack">
-            <div>
-              <span className="eyebrow">우리 팀의 작업 공간</span>
-              <h1>{team.name}</h1>
-              <p>
-                승인된 팀원 {team.approvedMemberCount}명 · 리더{' '}
-                {memberName(members, team.leaderId)}
-                {team.deputyId &&
-                  ` · 부리더 ${memberName(members, team.deputyId)}`}
-              </p>
-            </div>
-            <section className="next-action-card">
-              <div>
-                <span className="eyebrow">다음 단계</span>
-                <h2>
-                  {team.canCreateTask
-                    ? '함께 작업을 시작하세요'
-                    : '팀원을 먼저 모아 주세요'}
-                </h2>
-                <p>
-                  {team.canCreateTask
-                    ? '담당 작업을 확인하고, 산출물과 수행 내용을 기록하세요.'
-                    : '승인된 팀원이 2명 이상이어야 작업을 생성할 수 있습니다.'}
-                </p>
-              </div>
-              <button
-                className="primary-button"
-                onClick={() =>
-                  navigateToMenu(team.canCreateTask ? '작업 보드' : '팀원 관리')
-                }
-              >
-                {team.canCreateTask ? '작업 보드 열기' : '팀원 관리'}
-              </button>
-            </section>
-            <div className="quick-links">
-              {[
-                {
-                  label: '작업 보드',
-                  icon: 'board',
-                  description: '담당 작업의 진행 상태와 마감일을 확인하세요.',
-                },
-                {
-                  label: '산출물',
-                  icon: 'file',
-                  description: '프로젝트 자료와 작업 결과를 한곳에 모으세요.',
-                },
-                {
-                  label: '승인 검토',
-                  icon: 'check',
-                  description: '내게 요청된 완료 검토를 확인하세요.',
-                },
-              ].map(({ label, icon, description }) => (
-                <button
-                  className="quick-link"
-                  key={label}
-                  onClick={() => navigateToMenu(label)}
-                >
-                  <span className="space-symbol">
-                    <Icon name={icon} />
-                  </span>
-                  <strong>{label}</strong>
-                  <span>{description}</span>
-                  <Icon name="arrow" />
-                </button>
-              ))}
-            </div>
-          </section>
+        {currentMenu === '팀 홈' && approved && (
+          <TeamHome context={context} onNavigate={navigateToMenu} />
         )}
         {currentMenu === '팀원 관리' && (
           <TeamMembers
@@ -259,6 +209,7 @@ export default function TeamWorkspace({
             team={workTeam}
             user={user}
             members={members}
+            space={space}
             taskId={taskId}
             onOpenTask={navigateToTask}
             onTaskBack={navigateToTaskList}
@@ -272,6 +223,7 @@ export default function TeamWorkspace({
             team={workTeam}
             user={user}
             members={members}
+            space={space}
             taskId={taskId}
             onOpenTask={navigateToTask}
             onTaskBack={navigateToTaskList}
@@ -291,6 +243,15 @@ export default function TeamWorkspace({
               onChanged();
             }}
           />
+        )}
+        {currentMenu === '동료 평가' && approved && (
+          <PeerEvaluation context={context} />
+        )}
+        {currentMenu === '중간 피드백' && approved && (
+          <MidFeedback context={context} />
+        )}
+        {currentMenu === '기여도 리포트' && approved && (
+          <ContributionReport context={context} />
         )}
       </ResourceState>
     </section>

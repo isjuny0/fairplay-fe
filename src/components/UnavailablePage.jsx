@@ -1,10 +1,10 @@
-import { useNavigate } from 'react-router';
+import useAppNavigate from '../hooks/useAppNavigate.js';
 
 export default function UnavailablePage({
   title = '화면을 찾을 수 없습니다.',
   description = '주소를 확인하거나 내 스페이스에서 다시 선택해 주세요.',
 }) {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   return (
     <section className="stack">
       <h1>{title}</h1>
