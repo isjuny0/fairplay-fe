@@ -1,4 +1,8 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  useInteractions,
+  useUnsavedChanges,
+} from '../hooks/useInteractions.js';
 import { useSearchParams } from 'react-router';
 import { getRounds, requestPlanned } from '../api/planned.js';
 import useResource from '../hooks/useResource.js';
@@ -21,6 +25,8 @@ function PeerResponseForm({
   onSaved,
   context,
   round,
+  onStateChanged,
+  submitted,
 }) {
   const [scores, setScores] = useState(
     response?.scores ||
@@ -29,6 +35,15 @@ function PeerResponseForm({
   const [reason, setReason] = useState(response?.reason || '');
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(null);
+  const { notify } = useInteractions();
+  const changed =
+    Object.keys(peerCriteria).some(
+      (code) => Number(scores[code]) !== Number(response?.scores?.[code] || 0),
+    ) || reason.trim() !== (response?.reason || '').trim();
+  useEffect(() => {
+    onStateChanged(target.targetId, changed, busy);
+    return () => onStateChanged(target.targetId, false, false);
+  }, [target.targetId, changed, busy, onStateChanged]);
   return (
     <form
       className="panel peer-card"
@@ -59,6 +74,7 @@ function PeerResponseForm({
             },
           );
           onSaved();
+          notify(`${target.name}님의 평가를 저장했습니다.`);
         } catch (error) {
           setError(error);
         } finally {
@@ -68,8 +84,18 @@ function PeerResponseForm({
     >
       <div className="page-heading">
         <h2>{target.name}</h2>
-        <span className={`status-badge ${response ? 'task-state-done' : ''}`}>
-          {response ? '저장됨' : '작성 필요'}
+        <span
+          className={`status-badge ${!changed && response ? 'task-state-done' : ''}`}
+        >
+          {submitted
+            ? '제출 완료'
+            : busy
+              ? '저장 중'
+              : changed
+                ? '미저장 변경'
+                : response
+                  ? '저장됨'
+                  : '작성 필요'}
         </span>
       </div>
       {Object.entries(peerCriteria).map(([code, label]) => (
@@ -94,6 +120,9 @@ function PeerResponseForm({
               </label>
             ))}
           </div>
+          <p className="score-scale">
+            1점 · 기준 미달 <span>3점 · 기준 충족</span> 5점 · 기준 초과
+          </p>
           <details>
             <summary>점수별 행동 기준</summary>
             <p>1점 · {peerGuides[code][0]}</p>
@@ -119,6 +148,7 @@ function PeerResponseForm({
           onChange={(event) => setReason(event.target.value)}
         />
       </Field>
+      <p className="character-count">{reason.length} / 500자</p>
       <ErrorNotice error={error} />
       {!locked && (
         <button className="secondary-button" disabled={busy}>
@@ -142,12 +172,38 @@ function RoundResponses({ context, round, onSubmitted }) {
   const [confirming, setConfirming] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(null);
+  const [formStates, setFormStates] = useState({});
+  const [activeTargetId, setActiveTargetId] = useState(null);
+  const onStateChanged = useCallback((targetId, changed, saving) => {
+    setFormStates((current) => {
+      if (
+        Boolean(current[targetId]?.changed) === changed &&
+        Boolean(current[targetId]?.saving) === saving
+      )
+        return current;
+      return { ...current, [targetId]: { changed, saving } };
+    });
+  }, []);
+  const hasChanges = Object.values(formStates).some((state) => state.changed);
+  const saving = Object.values(formStates).some((state) => state.saving);
+  useUnsavedChanges(hasChanges);
   const targets = resource.data?.targets || [],
     responses = resource.data?.responses || [];
   const submitted =
     round.mySubmissionStatus === 'SUBMITTED' ||
     targets.some((target) => target.submittedAt);
   const locked = round.status !== 'OPEN' || submitted;
+  const currentTargetId = targets.some(
+    (target) => target.targetId === activeTargetId,
+  )
+    ? activeTargetId
+    : targets[0]?.targetId;
+  const readyToSubmit =
+    targets.length > 0 &&
+    responses.length === targets.length &&
+    !hasChanges &&
+    !saving &&
+    !resource.loading;
   return (
     <>
       <ResourceState resource={resource}>
@@ -168,19 +224,6 @@ function RoundResponses({ context, round, onSubmitted }) {
                       : '저장만으로 최종 제출되지 않습니다.'}
                   </p>
                 </div>
-                {!locked && (
-                  <button
-                    className="primary-button"
-                    disabled={
-                      !targets.length ||
-                      responses.length !== targets.length ||
-                      busy
-                    }
-                    onClick={() => setConfirming(true)}
-                  >
-                    최종 제출
-                  </button>
-                )}
               </div>
               <ProgressBar
                 value={
@@ -189,24 +232,83 @@ function RoundResponses({ context, round, onSubmitted }) {
                 label="내 평가 작성 진행률"
               />
             </section>
+            <div
+              className="peer-target-picker"
+              role="group"
+              aria-label="평가할 팀원 선택"
+            >
+              {targets.map((target) => (
+                <button
+                  key={target.targetId}
+                  className={
+                    currentTargetId === target.targetId ? 'active' : ''
+                  }
+                  aria-pressed={currentTargetId === target.targetId}
+                  onClick={() => setActiveTargetId(target.targetId)}
+                >
+                  {target.name}
+                  <span>
+                    {formStates[target.targetId]?.changed
+                      ? '미저장'
+                      : responses.some(
+                            (response) => response.targetId === target.targetId,
+                          )
+                        ? '저장됨'
+                        : '작성 필요'}
+                  </span>
+                </button>
+              ))}
+            </div>
             <div className="peer-grid">
               {targets.map((target) => {
                 const response = responses.find(
                   (response) => response.targetId === target.targetId,
                 );
                 return (
-                  <PeerResponseForm
-                    key={`${target.targetId}-${response?.updatedAt || 'new'}`}
-                    target={target}
-                    response={response}
-                    locked={locked}
-                    onSaved={resource.reload}
-                    context={context}
-                    round={round}
-                  />
+                  <div
+                    className={`peer-target ${currentTargetId === target.targetId ? 'is-active' : ''}`}
+                    key={target.targetId}
+                  >
+                    <PeerResponseForm
+                      key={`${target.targetId}-${response?.updatedAt || 'new'}`}
+                      target={target}
+                      response={response}
+                      locked={locked}
+                      onSaved={resource.reload}
+                      context={context}
+                      round={round}
+                      onStateChanged={onStateChanged}
+                      submitted={submitted}
+                    />
+                  </div>
                 );
               })}
             </div>
+            {!locked && (
+              <section className="peer-submit-bar" aria-label="평가 최종 제출">
+                <div>
+                  <strong>
+                    {responses.length} / {targets.length}명 저장
+                  </strong>
+                  <p>
+                    {hasChanges
+                      ? '미저장 변경 사항을 먼저 저장해 주세요.'
+                      : saving || resource.loading
+                        ? '저장 상태를 확인하고 있습니다.'
+                        : readyToSubmit
+                          ? '모든 평가를 저장했습니다. 최종 제출해 주세요.'
+                          : '모든 대상의 평가를 저장하면 제출할 수 있습니다.'}
+                  </p>
+                </div>
+                <button
+                  className="primary-button"
+                  disabled={!readyToSubmit || busy}
+                  onClick={() => setConfirming(true)}
+                >
+                  최종 제출
+                </button>
+              </section>
+            )}
           </>
         )}
       </ResourceState>
@@ -231,8 +333,9 @@ function RoundResponses({ context, round, onSubmitted }) {
             </button>
             <button
               className="primary-button"
-              disabled={busy}
+              disabled={busy || !readyToSubmit}
               onClick={async () => {
+                if (!readyToSubmit) return;
                 setBusy(true);
                 try {
                   await requestPlanned(
