@@ -10,6 +10,8 @@ import {
   requestTeamJoin,
 } from '../api/teams.js';
 import useResource from '../hooks/useResource.js';
+import { useInteractions } from '../hooks/useInteractions.js';
+import SpaceGuide from './SpaceGuide.jsx';
 import { buildingLabels, formatDate, isApprovedMember } from '../lib/domain.js';
 import SpaceSettings from './SpaceSettings.jsx';
 import TeamWorkspace from './TeamWorkspace.jsx';
@@ -40,6 +42,7 @@ export default function SpaceWorkspace({
   onBack,
 }) {
   const navigate = useAppNavigate();
+  const { clearChanges, notify } = useInteractions();
   const resource = useResource(async () => {
     const [space, teams] = await Promise.all([
       getSpace(spaceId),
@@ -109,6 +112,7 @@ export default function SpaceWorkspace({
     setError(null);
     try {
       await requestTeamJoin(target.id);
+      notify('팀 가입을 신청했습니다. 가입 승인 후 작업을 시작할 수 있습니다.');
       resource.reload();
     } catch (requestError) {
       setError(requestError);
@@ -123,6 +127,8 @@ export default function SpaceWorkspace({
     try {
       const created = await createTeam(spaceId, name.trim());
       setCreating(false);
+      clearChanges();
+      notify('팀을 생성했습니다. 팀원을 모집해 작업을 시작하세요.');
       resource.reload();
       navigate(teamMenuPath(spaceId, created.id, '팀 홈'));
     } catch (requestError) {
@@ -267,12 +273,19 @@ export default function SpaceWorkspace({
                       <Icon name="plus" />팀 만들기
                     </button>
                   </div>
-                  {joinedTeam && (
-                    <p className="field-help">
-                      현재 소속된 팀이 있습니다. 팀 목록의 ‘팀 열기’에서 작업을
-                      이어가세요.
-                    </p>
-                  )}
+                  <SpaceGuide
+                    space={space}
+                    teams={teams}
+                    joinedTeam={joinedTeam}
+                    buildingOpen={buildingOpen}
+                    navigate={navigate}
+                    onReload={resource.reload}
+                    onCreateTeam={() => {
+                      setError(null);
+                      setName('');
+                      setCreating(true);
+                    }}
+                  />
                   <section className="panel building-panel">
                     <h2>
                       <Icon name="calendar" />
@@ -295,7 +308,12 @@ export default function SpaceWorkspace({
                   </section>
                   <ErrorNotice error={error} onRetry={resource.reload} />
                   {teams.length ? (
-                    <ul className="team-list">
+                    <ul
+                      className="team-list"
+                      id="space-team-list"
+                      tabIndex={-1}
+                      aria-label="가입할 팀 목록"
+                    >
                       {teams.map((item) => (
                         <li
                           className={`team-card ${isApprovedMember(item) ? 'is-joined' : ''}`}

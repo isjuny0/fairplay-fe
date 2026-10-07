@@ -86,7 +86,7 @@ export async function previewRequest(
         ...(state.extraSpace ? [state.extraSpace] : []),
       ].map((space) => ({
         ...space,
-        role: context.manager ? 'MANAGER' : 'USER',
+        role: space.myRole,
       }));
     if (parts.length === 2 && method === 'POST') {
       state.extraSpace = {
@@ -106,7 +106,9 @@ export async function previewRequest(
             missing('SPACE_NOT_FOUND', '스페이스가 없습니다.');
     else if (parts[3] === 'teams') {
       if (method === 'GET')
-        return Object.values(state.teams).map((entry) => entry.team);
+        return Object.values(state.teams)
+          .filter((entry) => entry.team.spaceId === id)
+          .map((entry) => entry.team);
       const team = {
         ...previewTeams[0],
         id: Math.max(...Object.keys(state.teams).map(Number)) + 1,

@@ -18,6 +18,10 @@ import {
   toDateInput,
 } from '../lib/domain.js';
 import { ErrorNotice, Field, FormActions, ResourceState } from './ui.jsx';
+import {
+  collectFieldErrors,
+  focusFirstFieldError,
+} from '../lib/formValidation.js';
 
 export default function SpaceSettings({ space, onChanged }) {
   const codes = useResource(async () => {
@@ -38,6 +42,7 @@ export default function SpaceSettings({ space, onChanged }) {
   const [customDuration, setCustomDuration] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [periodErrors, setPeriodErrors] = useState({});
   const [notice, setNotice] = useState('');
   const { confirm } = useInteractions();
   useUnsavedChanges(
@@ -75,8 +80,15 @@ export default function SpaceSettings({ space, onChanged }) {
   };
   const savePeriod = (event) => {
     event.preventDefault();
-    if (opensAt >= closesAt) {
-      setError(new Error('종료 시각은 시작 시각보다 늦어야 합니다.'));
+    setError(null);
+    const errors = collectFieldErrors(event.currentTarget, {
+      ...(opensAt && closesAt && opensAt >= closesAt
+        ? { closesAt: '팀 빌딩 종료 시각을 시작 시각보다 늦게 지정해 주세요.' }
+        : {}),
+    });
+    setPeriodErrors(errors);
+    if (Object.keys(errors).length) {
+      focusFirstFieldError(event.currentTarget, errors);
       return;
     }
     run(
@@ -110,25 +122,33 @@ export default function SpaceSettings({ space, onChanged }) {
             팀 생성·가입 신청·가입 승인은 이 기간 안에서 가능합니다. 모든 시각은
             한국 시간입니다.
           </p>
-          <form onSubmit={savePeriod}>
+          <form onSubmit={savePeriod} noValidate>
             <fieldset
               className="form-fields"
               disabled={busy || space.teamBuildingStatus === 'LOCKED'}
             >
-              <Field label="팀 빌딩 시작">
+              <Field label="팀 빌딩 시작" error={periodErrors.opensAt}>
                 <input
+                  name="opensAt"
                   required
                   type="datetime-local"
                   value={opensAt}
-                  onChange={(event) => setOpensAt(event.target.value)}
+                  onChange={(event) => {
+                    setOpensAt(event.target.value);
+                    setPeriodErrors({});
+                  }}
                 />
               </Field>
-              <Field label="팀 빌딩 종료">
+              <Field label="팀 빌딩 종료" error={periodErrors.closesAt}>
                 <input
+                  name="closesAt"
                   required
                   type="datetime-local"
                   value={closesAt}
-                  onChange={(event) => setClosesAt(event.target.value)}
+                  onChange={(event) => {
+                    setClosesAt(event.target.value);
+                    setPeriodErrors({});
+                  }}
                 />
               </Field>
               <FormActions busy={busy} />

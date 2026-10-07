@@ -308,16 +308,25 @@ export default function ManagerDashboard({ context }) {
                             {member.missingContributionDescriptionCount}건
                           </dd>
                         </div>
-                        <div>
-                          <dt>현재 팀원 완료 비중</dt>
-                          <dd>
-                            {formatPercent(
-                              completedWorkShare(member, team.members),
-                              '완료 작업 없음',
-                            )}
-                          </dd>
-                        </div>
                       </dl>
+                      <details className="member-extra-facts">
+                        <summary>완료 비중·계산 기준</summary>
+                        <dl className="card-facts">
+                          <div>
+                            <dt>현재 팀원 완료 비중</dt>
+                            <dd>
+                              {formatPercent(
+                                completedWorkShare(member, team.members),
+                                '완료 작업 없음',
+                              )}
+                            </dd>
+                          </div>
+                        </dl>
+                        <p className="field-help">
+                          예상 작업량과 담당 비율을 반영한 현재 팀원의 완료 작업
+                          비중입니다. 최종 기여도 점수가 아닙니다.
+                        </p>
+                      </details>
                       <button
                         className="secondary-button"
                         onClick={() =>

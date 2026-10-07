@@ -7,6 +7,10 @@ import {
   toDateInput,
 } from '../lib/domain.js';
 import { ErrorNotice, Field, FormActions, Modal } from './ui.jsx';
+import {
+  collectFieldErrors,
+  focusFirstFieldError,
+} from '../lib/formValidation.js';
 
 export default function TaskForm({
   task,
@@ -29,8 +33,19 @@ export default function TaskForm({
   const [form, setForm] = useState(initialForm);
   const dirty = JSON.stringify(form) !== JSON.stringify(initialForm);
   const [error, setError] = useState(null);
-  const update = (name, value) =>
+  const [fieldErrors, setFieldErrors] = useState({});
+  const update = (name, value) => {
+    setFieldErrors((current) => ({
+      ...Object.fromEntries(
+        Object.entries(current).filter(
+          ([key]) => name !== 'assignees' || !key.startsWith('allocation-'),
+        ),
+      ),
+      [name]: undefined,
+      ...(name === 'assignees' ? { completionReviewerId: undefined } : {}),
+    }));
     setForm((current) => ({ ...current, [name]: value }));
+  };
   const candidates = reviewerCandidates(members, form.assignees);
   const selectedReviewer = candidates.some(
     (member) => member.userId === form.completionReviewerId,
@@ -64,17 +79,21 @@ export default function TaskForm({
       setError(new Error('승인된 팀원이 2명 이상 필요합니다.'));
       return;
     }
-    if (
-      !form.title.trim() ||
-      !form.description.trim() ||
-      total !== 100 ||
-      !selectedReviewer
-    ) {
-      setError(
-        new Error(
-          '제목·설명·승인자를 입력하고 담당 배분 합계를 100%로 맞춰 주세요.',
-        ),
-      );
+    const errors = collectFieldErrors(event.currentTarget, {
+      ...(!form.assignees.length
+        ? { assignees: '담당자를 한 명 이상 선택해 주세요.' }
+        : total !== 100
+          ? {
+              assignees: `현재 합계는 ${total}%입니다. 균등 배분을 누르거나 합계를 100%로 맞춰 주세요.`,
+            }
+          : {}),
+      ...(!selectedReviewer
+        ? { completionReviewerId: '목록에서 완료 승인자를 선택해 주세요.' }
+        : {}),
+    });
+    setFieldErrors(errors);
+    if (Object.keys(errors).length) {
+      focusFirstFieldError(event.currentTarget, errors);
       return;
     }
     onSave({
@@ -98,13 +117,14 @@ export default function TaskForm({
       editor
       dirty={dirty}
     >
-      <form onSubmit={submit}>
+      <form onSubmit={submit} noValidate>
         <fieldset className="form-fields" disabled={busy || blocked}>
           <div className="task-form-layout">
             <section className="task-form-section" aria-label="작업 내용 입력">
               <h3 className="form-section-title">작업 내용</h3>
-              <Field label="작업 제목">
+              <Field label="작업 제목" error={fieldErrors.title}>
                 <input
+                  name="title"
                   required
                   maxLength={100}
                   value={form.title}
@@ -113,9 +133,11 @@ export default function TaskForm({
               </Field>
               <Field
                 label="작업 설명"
+                error={fieldErrors.description}
                 help="무엇을 수행할지, 결과에 어떤 내용이 포함되어야 할지 적어주세요."
               >
                 <textarea
+                  name="description"
                   required
                   maxLength={1000}
                   rows={3}
@@ -146,8 +168,9 @@ export default function TaskForm({
                     ))}
                   </select>
                 </Field>
-                <Field label="마감 (한국 시간)">
+                <Field label="마감 (한국 시간)" error={fieldErrors.dueAt}>
                   <input
+                    name="dueAt"
                     required
                     type="datetime-local"
                     value={form.dueAt}
@@ -191,10 +214,17 @@ export default function TaskForm({
                     균등 배분
                   </button>
                 </div>
-                <p className={total === 100 ? 'field-help' : 'field-error'}>
-                  {total === 100
-                    ? '담당 비율 합계가 100%입니다.'
-                    : '담당자를 선택하고 비율 합계를 100%로 맞춰 주세요.'}
+                <p
+                  id="assignment-help"
+                  className={
+                    fieldErrors.assignees ? 'field-error' : 'field-help'
+                  }
+                  role={fieldErrors.assignees ? 'alert' : undefined}
+                >
+                  {fieldErrors.assignees ||
+                    (total === 100
+                      ? '담당 비율 합계가 100%입니다.'
+                      : '담당자를 선택하고 비율 합계를 100%로 맞춰 주세요.')}
                 </p>
                 <div className="assignment-inputs">
                   {members.map((member) => {
@@ -205,6 +235,9 @@ export default function TaskForm({
                       <div key={member.userId} className="allocation-row">
                         <label>
                           <input
+                            name="assignees"
+                            aria-describedby="assignment-help"
+                            aria-invalid={Boolean(fieldErrors.assignees)}
                             type="checkbox"
                             checked={Boolean(assignment)}
                             onChange={(event) =>
@@ -217,6 +250,15 @@ export default function TaskForm({
                           <label>
                             배분 %
                             <input
+                              name={`allocation-${member.userId}`}
+                              aria-invalid={Boolean(
+                                fieldErrors[`allocation-${member.userId}`],
+                              )}
+                              aria-describedby={
+                                fieldErrors[`allocation-${member.userId}`]
+                                  ? `allocation-error-${member.userId}`
+                                  : undefined
+                              }
                               aria-label={`${member.name} 배분율`}
                               type="number"
                               required
@@ -237,6 +279,15 @@ export default function TaskForm({
                                 )
                               }
                             />
+                            {fieldErrors[`allocation-${member.userId}`] && (
+                              <span
+                                id={`allocation-error-${member.userId}`}
+                                className="field-error"
+                                role="alert"
+                              >
+                                {fieldErrors[`allocation-${member.userId}`]}
+                              </span>
+                            )}
                           </label>
                         )}
                       </div>
@@ -246,9 +297,11 @@ export default function TaskForm({
               </div>
               <Field
                 label="완료 승인자"
+                error={fieldErrors.completionReviewerId}
                 help="비담당 리더 → 비담당 부리더 → 비담당 팀원 순서입니다. 전원 담당이면 리더·부리더를 선택할 수 있습니다."
               >
                 <select
+                  name="completionReviewerId"
                   required
                   value={selectedReviewer}
                   onChange={(event) =>

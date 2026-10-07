@@ -31,6 +31,26 @@ export default function TaskBoard({
     ? searchParams.get('status')
     : 'ALL';
   const onlyMine = searchParams.get('mine') === '1';
+  const query = searchParams.get('q') || '';
+  const sort = ['deadline', 'newest'].includes(searchParams.get('sort'))
+    ? searchParams.get('sort')
+    : 'deadline';
+  const setListOption = (key, value, replace = false) =>
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        if (value) next.set(key, value);
+        else next.delete(key);
+        return next;
+      },
+      { replace },
+    );
+  const clearFilters = () =>
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      for (const key of ['status', 'mine', 'q']) next.delete(key);
+      return next;
+    });
   const setFilter = (status) =>
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
@@ -76,13 +96,26 @@ export default function TaskBoard({
         onBack={onTaskBack}
       />
     );
-  const tasks =
-    resource.data?.filter(
+  const canCreate =
+    team.canCreateTask && members.length >= 2 && canModifyTeamWork(team);
+  const hasFilters = filter !== 'ALL' || onlyMine || Boolean(query.trim());
+  const tasks = (resource.data || [])
+    .filter(
       (task) =>
         (filter === 'ALL' || task.status === filter) &&
         (!onlyMine ||
-          task.assignees.some((assignment) => assignment.userId === user.id)),
-    ) || [];
+          task.assignees.some((assignment) => assignment.userId === user.id)) &&
+        task.title
+          .toLocaleLowerCase()
+          .includes(query.trim().toLocaleLowerCase()),
+    )
+    .sort((left, right) =>
+      sort === 'newest'
+        ? (Date.parse(right.createdAt) || 0) -
+            (Date.parse(left.createdAt) || 0) || right.id - left.id
+        : (Date.parse(left.dueAt) || Infinity) -
+            (Date.parse(right.dueAt) || Infinity) || right.id - left.id,
+    );
   return (
     <section className="stack">
       <div className="page-heading">
@@ -92,11 +125,7 @@ export default function TaskBoard({
         </div>
         <button
           className="primary-button"
-          disabled={
-            !team.canCreateTask ||
-            members.length < 2 ||
-            !canModifyTeamWork(team)
-          }
+          disabled={!canCreate}
           onClick={() => {
             setError(null);
             setCreating(true);
@@ -124,6 +153,9 @@ export default function TaskBoard({
                   (resource.data || []).filter(
                     (task) =>
                       (status === 'ALL' || task.status === status) &&
+                      task.title
+                        .toLocaleLowerCase()
+                        .includes(query.trim().toLocaleLowerCase()) &&
                       (!onlyMine ||
                         task.assignees.some(
                           (assignment) => assignment.userId === user.id,
@@ -141,9 +173,10 @@ export default function TaskBoard({
         </p>
       )}
       <div className="toolbar">
-        <label>
+        <label className="task-status-filter">
           상태{' '}
           <select
+            aria-label="작업 상태"
             value={filter}
             onChange={(event) => setFilter(event.target.value)}
           >
@@ -153,6 +186,33 @@ export default function TaskBoard({
                 {label}
               </option>
             ))}
+          </select>
+        </label>
+        <label className="task-search-filter">
+          제목 검색
+          <input
+            type="search"
+            aria-label="작업 제목 검색"
+            placeholder="작업 제목 입력"
+            value={query}
+            maxLength={100}
+            onChange={(event) => setListOption('q', event.target.value, true)}
+          />
+        </label>
+        <label>
+          정렬
+          <select
+            aria-label="작업 정렬"
+            value={sort}
+            onChange={(event) =>
+              setListOption(
+                'sort',
+                event.target.value === 'deadline' ? '' : event.target.value,
+              )
+            }
+          >
+            <option value="deadline">마감 빠른 순</option>
+            <option value="newest">최근 생성 순</option>
           </select>
         </label>
         <label>
@@ -169,6 +229,17 @@ export default function TaskBoard({
         </button>
       </div>
       <ResourceState resource={resource}>
+        <div className="list-summary">
+          <span>
+            {tasks.length}개 작업 · 전체 {resource.data?.length || 0}개 · 상태별{' '}
+            {sort === 'newest' ? '최근 생성 순' : '마감 빠른 순'}
+          </span>
+          {hasFilters && (
+            <button className="text-button" onClick={clearFilters}>
+              검색·필터 초기화
+            </button>
+          )}
+        </div>
         {tasks.length ? (
           <div className="task-columns">
             {Object.entries(statusLabels).map(
@@ -254,8 +325,37 @@ export default function TaskBoard({
           </div>
         ) : (
           <EmptyState>
-            <p>표시할 작업이 없습니다.</p>
-            <span>새 작업을 만들거나 필터를 변경하세요.</span>
+            <p>
+              {hasFilters
+                ? '조건에 맞는 작업이 없습니다.'
+                : '아직 등록된 작업이 없습니다.'}
+            </p>
+            <span>
+              {hasFilters
+                ? '검색어와 상태, 내 담당 작업 조건을 초기화해 전체 작업을 확인하세요.'
+                : canCreate
+                  ? '작업 내용을 정하고 담당자와 완료 승인자를 선택해 시작하세요.'
+                  : members.length < 2
+                    ? '승인된 팀원이 2명 이상 모이면 작업을 만들 수 있습니다.'
+                    : '현재 팀 상태에서는 새 작업을 만들 수 없습니다. 팀 설정에서 상태를 확인하세요.'}
+            </span>
+            {hasFilters ? (
+              <button className="secondary-button" onClick={clearFilters}>
+                전체 작업 보기
+              </button>
+            ) : (
+              canCreate && (
+                <button
+                  className="primary-button"
+                  onClick={() => {
+                    setError(null);
+                    setCreating(true);
+                  }}
+                >
+                  첫 작업 만들기
+                </button>
+              )
+            )}
           </EmptyState>
         )}
       </ResourceState>

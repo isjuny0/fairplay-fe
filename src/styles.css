@@ -2576,7 +2576,7 @@ details > summary {
   .mobile-status-tabs span {
     font-size: 12px;
   }
-  .mobile-status-tabs ~ .toolbar > label:first-child {
+  .mobile-status-tabs ~ .toolbar > .task-status-filter {
     display: none;
   }
   .task-columns {
@@ -3016,4 +3016,138 @@ details > summary {
 }
 .modal-editor .modal-body > form > .form-fields {
   flex: 1;
+}
+
+/* Keep the next action and the current list context visible. */
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+.empty-state > button {
+  justify-self: center;
+  margin-top: 12px;
+}
+.getting-started {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  justify-content: space-between;
+}
+.getting-started > div {
+  min-width: 0;
+}
+.getting-started > button {
+  flex-shrink: 0;
+}
+.getting-started h2 {
+  margin: 8px 0;
+}
+.getting-started p {
+  color: var(--text-muted, #62736a);
+  line-height: 1.7;
+  margin: 0;
+}
+.getting-started-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 0;
+  font-size: 13px;
+}
+.getting-started-steps li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.getting-started-steps span {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  background: #eaf2ed;
+  font-weight: 700;
+}
+.task-search-filter {
+  flex: 1 1 200px;
+  min-width: 0;
+  white-space: nowrap;
+}
+.task-search-filter input {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #d5dfd9;
+  border-radius: 6px;
+  font: inherit;
+  color: inherit;
+  background: #fff;
+}
+.list-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #62736a;
+}
+.text-button {
+  border: 0;
+  padding: 8px;
+  background: transparent;
+  color: #216a44;
+  text-decoration: underline;
+}
+.deliverable-record {
+  font-size: 13px;
+  color: #62736a;
+}
+.deliverable-record summary {
+  min-height: 32px;
+}
+.allocation-row .field-error {
+  max-width: 150px;
+}
+@media (max-width: 900px) {
+  .getting-started {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  .getting-started > button {
+    align-self: flex-start;
+  }
+}
+@media (max-width: 600px) {
+  .task-search-filter {
+    flex-basis: 100%;
+  }
+  .getting-started-steps {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .getting-started > button {
+    width: 100%;
+  }
+  .task-card-meta {
+    font-size: 12px;
+    gap: 5px;
+  }
+  .board-task-card {
+    gap: 10px;
+  }
+  .deliverable-record summary {
+    min-height: 44px;
+  }
+  .empty-actions {
+    flex-direction: column;
+  }
 }

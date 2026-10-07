@@ -14,6 +14,10 @@ import {
 import useResource from '../hooks/useResource.js';
 import { useInteractions } from '../hooks/useInteractions.js';
 import {
+  collectFieldErrors,
+  focusFirstFieldError,
+} from '../lib/formValidation.js';
+import {
   categoryLabels,
   canModifyTeamWork,
   deliverablePermissions,
@@ -69,28 +73,27 @@ function DeliverableForm({
     ? 'TXT·MD·PDF·HWP·HWPX·PPT·PPTX·XLS·XLSX'
     : 'PDF·PNG·JPEG·TXT·MD';
   const [file, setFile] = useState(null);
-  const [validationError, setValidationError] = useState(null);
-  const update = (name, value) =>
+  const [fieldErrors, setFieldErrors] = useState({});
+  const update = (name, value) => {
+    setFieldErrors((current) => ({
+      ...current,
+      [name]: undefined,
+      ...(name === 'type' ? { file: undefined, textOrUrl: undefined } : {}),
+    }));
     setForm((current) => ({ ...current, [name]: value }));
+  };
   const submit = (event) => {
     event.preventDefault();
     if (blocked) return;
-    setValidationError(null);
-    if (!form.title.trim()) {
-      setValidationError(new Error('제목을 입력해 주세요.'));
-      return;
-    }
-    if (
-      file &&
+    const errors = collectFieldErrors(event.currentTarget, {
+      ...(file &&
       (file.size > 10 * 1024 * 1024 || !fileExtensions.test(file.name))
-    ) {
-      setValidationError(
-        new Error(`${fileHelp} 파일을 10MiB 이하로 선택해 주세요.`),
-      );
-      return;
-    }
-    if (!initial && form.type === 'FILE' && !file) {
-      setValidationError(new Error('파일을 선택해 주세요.'));
+        ? { file: `${fileHelp} 형식의 10MiB 이하 파일을 선택해 주세요.` }
+        : {}),
+    });
+    setFieldErrors(errors);
+    if (Object.keys(errors).length) {
+      focusFirstFieldError(event.currentTarget, errors);
       return;
     }
     const input = { title: form.title.trim(), category: form.category };
@@ -125,10 +128,11 @@ function DeliverableForm({
           현재 구현된 형식을 따릅니다.
         </p>
       )}
-      <form onSubmit={submit}>
+      <form onSubmit={submit} noValidate>
         <fieldset disabled={busy || blocked} className="form-fields">
-          <Field label="제목">
+          <Field label="제목" error={fieldErrors.title}>
             <input
+              name="title"
               required
               maxLength={100}
               value={form.title}
@@ -206,9 +210,11 @@ function DeliverableForm({
             (form.type === 'FILE' ? (
               <Field
                 label={initial ? '교체할 파일 (선택)' : '파일'}
+                error={fieldErrors.file}
                 help={`${fileHelp} / 파일당 10MiB / 팀 전체 파일 1GiB`}
               >
                 <input
+                  name="file"
                   type="file"
                   required={!initial}
                   accept={
@@ -216,13 +222,23 @@ function DeliverableForm({
                       ? '.txt,.md,.pdf,.hwp,.hwpx,.ppt,.pptx,.xls,.xlsx'
                       : '.pdf,.png,.jpg,.jpeg,.txt,.md'
                   }
-                  onChange={(event) => setFile(event.target.files[0] || null)}
+                  onChange={(event) => {
+                    setFile(event.target.files[0] || null);
+                    setFieldErrors((current) => ({
+                      ...current,
+                      file: undefined,
+                    }));
+                  }}
                 />
               </Field>
             ) : (
-              <Field label={form.type === 'URL' ? 'URL' : '본문'}>
+              <Field
+                label={form.type === 'URL' ? 'URL' : '본문'}
+                error={fieldErrors.textOrUrl}
+              >
                 {form.type === 'URL' ? (
                   <input
+                    name="textOrUrl"
                     type="url"
                     required
                     maxLength={2000}
@@ -233,6 +249,7 @@ function DeliverableForm({
                   />
                 ) : (
                   <textarea
+                    name="textOrUrl"
                     required
                     maxLength={20000}
                     rows={6}
@@ -273,7 +290,7 @@ function DeliverableForm({
             확인해 주세요.
           </p>
         )}
-        <ErrorNotice error={validationError || error} />
+        <ErrorNotice error={error} />
         <FormActions busy={busy} disabled={blocked} onCancel={onClose} />
       </form>
     </Modal>
@@ -472,9 +489,14 @@ export default function Deliverables({
                     {deliverable.taskId == null
                       ? '팀 공용'
                       : `작업 연결${taskMap.get(deliverable.taskId) ? ` · ${taskMap.get(deliverable.taskId).title}` : ''}`}{' '}
-                    · 등록 {memberName(members, deliverable.authorId)} · 수정{' '}
-                    {formatDate(deliverable.updatedAt)}
                   </p>
+                  <details className="deliverable-record">
+                    <summary>등록·수정 정보</summary>
+                    <p className="field-help">
+                      등록 {memberName(members, deliverable.authorId)} · 수정{' '}
+                      {formatDate(deliverable.updatedAt)}
+                    </p>
+                  </details>
                   {deliverable.description && (
                     <p className="preserve-lines">{deliverable.description}</p>
                   )}
@@ -537,7 +559,49 @@ export default function Deliverables({
             })}
           </div>
         ) : (
-          <EmptyState>등록된 산출물이 없습니다.</EmptyState>
+          <EmptyState>
+            <p>
+              {page > 0
+                ? '이 페이지에 산출물이 없습니다.'
+                : selectedTaskId != null
+                  ? '이 작업에 연결된 산출물이 없습니다.'
+                  : '아직 등록된 산출물이 없습니다.'}
+            </p>
+            <span>
+              {page > 0
+                ? '이전 페이지로 돌아가 등록된 자료를 확인하세요.'
+                : canCreate
+                  ? '팀 공용 자료나 담당 작업의 결과를 문서·파일로 남겨주세요.'
+                  : '팀원이 등록한 최신 자료가 이곳에 표시됩니다.'}
+            </span>
+            {page > 0 ? (
+              <button
+                className="secondary-button"
+                onClick={() => setPage(page - 1)}
+              >
+                이전 자료 보기
+              </button>
+            ) : selectedTaskId != null && taskId == null ? (
+              <button
+                className="secondary-button"
+                onClick={() => setScope('ALL')}
+              >
+                전체 산출물 보기
+              </button>
+            ) : (
+              canCreate && (
+                <button
+                  className="primary-button"
+                  onClick={() => {
+                    setError(null);
+                    setEditing(null);
+                  }}
+                >
+                  첫 산출물 등록
+                </button>
+              )
+            )}
+          </EmptyState>
         )}
       </ResourceState>
       <div className="pagination">
