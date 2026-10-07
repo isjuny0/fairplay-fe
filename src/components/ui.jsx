@@ -110,6 +110,7 @@ export function Modal({
   busy,
   children,
   wide = false,
+  editor = false,
   dirty = false,
 }) {
   const dialog = useRef(null);
@@ -182,7 +183,7 @@ export function Modal({
     <div className="modal-backdrop">
       <section
         ref={dialog}
-        className={`modal real-modal ${wide ? 'modal-wide' : ''}`}
+        className={`modal real-modal ${wide ? 'modal-wide' : ''} ${editor ? 'modal-editor' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

@@ -1,4 +1,3 @@
-import Icon from './Icon.jsx';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router';
 import useAppNavigate from '../hooks/useAppNavigate.js';
@@ -6,6 +5,7 @@ import { getTeamDeletionRequest, getTeamMembers } from '../api/teams.js';
 import { listTasks } from '../api/tasks.js';
 import useResource from '../hooks/useResource.js';
 import { isApprovedMember } from '../lib/domain.js';
+import { availableTeamMenus } from '../lib/teamNavigation.js';
 import Approvals from './Approvals.jsx';
 import Deliverables from './Deliverables.jsx';
 import TaskBoard from './TaskBoard.jsx';
@@ -46,7 +46,6 @@ export default function TeamWorkspace({
   menu,
   taskId,
   onChanged,
-  onBack,
   onRemoved,
 }) {
   const navigate = useAppNavigate();
@@ -96,65 +95,12 @@ export default function TeamWorkspace({
     workStateUnknown:
       approved && (deletionResource.loading || Boolean(deletionResource.error)),
   };
-  const menus = approved
-    ? [
-        '팀 홈',
-        '작업 보드',
-        '산출물',
-        '승인 검토',
-        '동료 평가',
-        '중간 피드백',
-        '기여도 리포트',
-        '팀원 관리',
-        '팀 설정',
-      ]
-    : ['팀원 관리', '산출물'];
+  const menus = availableTeamMenus(team);
   const currentMenu = menus.includes(menu) ? menu : null;
   const members = resource.data || [];
   const context = { space, team: workTeam, user, members, manager: false };
-  const myRole =
-    team.leaderId === user.id
-      ? '리더'
-      : team.deputyId === user.id
-        ? '부리더'
-        : approved
-          ? '팀원'
-          : '관리자 조회';
   return (
     <section className="stack">
-      <div className="section-heading team-context">
-        <button className="secondary-button" onClick={onBack}>
-          <Icon name="back" />팀 목록
-        </button>
-        <span className="team-context-name">
-          {team.name}
-          <span className="role-badge">{myRole}</span>
-        </span>
-      </div>
-      <nav className="tab-bar" aria-label="팀 메뉴">
-        {menus.map((item) => (
-          <button
-            key={item}
-            className={currentMenu === item ? 'active' : ''}
-            aria-current={currentMenu === item ? 'page' : undefined}
-            onClick={() => navigateToMenu(item)}
-          >
-            <Icon
-              name={
-                {
-                  '팀 홈': 'home',
-                  '작업 보드': 'board',
-                  산출물: 'file',
-                  '승인 검토': 'check',
-                  '팀원 관리': 'users',
-                  '팀 설정': 'settings',
-                }[item]
-              }
-            />
-            {item}
-          </button>
-        ))}
-      </nav>
       <nav className="mobile-team-navigation" aria-label="모바일 팀 메뉴">
         {menus
           .filter((label) => ['팀 홈', '작업 보드', '산출물'].includes(label))
