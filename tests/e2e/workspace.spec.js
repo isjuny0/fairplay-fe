@@ -1236,17 +1236,17 @@ test('작업 보드의 상태·내 작업 필터는 새로고침과 상세 복�
 }) => {
   await workspace(page);
   await page.getByRole('button', { name: '작업 보드', exact: true }).click();
-  await page.getByRole('combobox').selectOption('IN_PROGRESS');
+  await page.getByRole('main').getByRole('combobox').selectOption('IN_PROGRESS');
   await page.getByLabel('내 담당 작업만').check();
   await page.reload();
-  await expect(page.getByRole('combobox')).toHaveValue('IN_PROGRESS');
+  await expect(page.getByRole('main').getByRole('combobox')).toHaveValue('IN_PROGRESS');
   await expect(page.getByLabel('내 담당 작업만')).toBeChecked();
   await page
     .getByRole('button', { name: '회원 탈퇴 구현', exact: true })
     .click();
   await page.reload();
   await page.getByRole('button', { name: '← 목록으로', exact: true }).click();
-  await expect(page.getByRole('combobox')).toHaveValue('IN_PROGRESS');
+  await expect(page.getByRole('main').getByRole('combobox')).toHaveValue('IN_PROGRESS');
   await expect(page.getByLabel('내 담당 작업만')).toBeChecked();
   expect(new URL(page.url()).searchParams.get('mine')).toBe('1');
 });
@@ -1256,9 +1256,9 @@ test('승인 상태 필터와 산출물 작업 범위·페이지는 주소에서
 }) => {
   await workspace(page);
   await page.goto('/spaces/1/teams/1/approvals?status=REJECTED');
-  await expect(page.getByRole('combobox')).toHaveValue('REJECTED');
+  await expect(page.getByRole('main').getByRole('combobox')).toHaveValue('REJECTED');
   await page.reload();
-  await expect(page.getByRole('combobox')).toHaveValue('REJECTED');
+  await expect(page.getByRole('main').getByRole('combobox')).toHaveValue('REJECTED');
   await page.goto('/spaces/1/teams/1/deliverables?taskId=10&page=2');
   await expect(page.getByLabel('작업별 조회')).toHaveValue('10');
   await expect(page.getByText('3 페이지', { exact: true })).toBeVisible();

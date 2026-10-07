@@ -231,3 +231,191 @@ test('모바일 관리자 카드는 표 가로 스크롤 없이 수행 상세를
     page.getByRole('heading', { name: '사용자 인터뷰 계획', exact: true }),
   ).toHaveCount(0);
 });
+
+test('데스크톱 팀 메뉴는 왼쪽에 묶이고 메뉴 이동과 새로고침에서 현재 위치를 유지한다', async ({
+  page,
+}) => {
+  await openPreview(page, '/spaces/1/teams/1');
+  const sidebar = page.getByRole('navigation', {
+    name: '스페이스 메뉴',
+    exact: true,
+  });
+  const teamMenus = sidebar.getByRole('navigation', {
+    name: '팀 메뉴',
+    exact: true,
+  });
+  await expect(teamMenus.getByRole('button')).toHaveCount(9);
+  await expect(teamMenus.getByText('작업', { exact: true })).toBeVisible();
+  await expect(teamMenus.getByText('평가', { exact: true })).toBeVisible();
+  await expect(teamMenus.getByText('팀 관리', { exact: true })).toBeVisible();
+  await expect(page.locator('.tab-bar')).toHaveCount(0);
+  await teamMenus.getByRole('button', { name: '산출물', exact: true }).click();
+  await expect(page).toHaveURL(/teams\/1\/deliverables$/);
+  await page.reload();
+  await expect(
+    page.getByRole('navigation', { name: '현재 위치' }),
+  ).toContainText(/삼위일체\s*\/\s*산출물/);
+  await expect(
+    teamMenus.getByRole('button', { name: '산출물', exact: true }),
+  ).toHaveAttribute('aria-current', 'page');
+});
+
+test('스페이스 선택은 현재 공간을 전환하고 뒤로가기로 이전 공간을 복원한다', async ({
+  page,
+}) => {
+  await openPreview(page, '/main');
+  await page
+    .getByRole('button', { name: '스페이스 만들기', exact: true })
+    .click();
+  const dialog = page.getByRole('dialog');
+  await dialog
+    .getByLabel('스페이스 이름', { exact: true })
+    .fill('두 번째 프로젝트');
+  await dialog
+    .getByLabel('프로젝트 시작 (한국 시간)', { exact: true })
+    .fill('2030-01-01T09:00');
+  await dialog
+    .getByLabel('프로젝트 종료 (한국 시간)', { exact: true })
+    .fill('2030-12-31T18:00');
+  await dialog.getByRole('button', { name: '만들기', exact: true }).click();
+  await expect(page).toHaveURL(/spaces\/3$/);
+  await expect(
+    page.getByRole('heading', { name: '두 번째 프로젝트', exact: true }),
+  ).toBeVisible();
+  await page.getByLabel('스페이스 선택', { exact: true }).selectOption('1');
+  await expect(page).toHaveURL(/spaces\/1$/);
+  await expect(
+    page.getByRole('heading', {
+      name: '2026 서비스 디자인 프로젝트',
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(/spaces\/3$/);
+  await expect(
+    page.getByRole('heading', { name: '두 번째 프로젝트', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByLabel('스페이스 선택', { exact: true })).toHaveValue(
+    '3',
+  );
+});
+
+test('관리자는 팀 선택으로 자료 조회에 진입하고 팀 작업 메뉴는 제공하지 않는다', async ({
+  page,
+}) => {
+  await openPreview(page, '/spaces/1/dashboard', 'manager');
+  await page.getByLabel('팀 선택', { exact: true }).selectOption('2');
+  await expect(page).toHaveURL(/teams\/2\/members$/);
+  await expect(
+    page.getByRole('heading', { name: '팀원 관리', exact: true }),
+  ).toBeVisible();
+  const sidebar = page.getByRole('navigation', {
+    name: '스페이스 메뉴',
+    exact: true,
+  });
+  await expect(
+    sidebar.getByRole('button', { name: '관리자 대시보드', exact: true }),
+  ).toBeVisible();
+  await expect(
+    sidebar.getByRole('button', { name: '작업 보드', exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    sidebar.getByRole('button', { name: '승인 검토', exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    sidebar.getByRole('button', { name: '팀 설정', exact: true }),
+  ).toHaveCount(0);
+  await sidebar.getByRole('button', { name: '산출물', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: '산출물 관리', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: '산출물 등록', exact: true }),
+  ).toHaveCount(0);
+});
+
+test('모바일 공간·팀 선택은 하나의 접힌 영역에 있고 작업 목록은 본문 폭을 사용한다', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openPreview(page, '/spaces/1');
+  await expect(page.getByLabel('팀 선택', { exact: true })).toBeHidden();
+  await page.getByRole('button', { name: /공간·팀 선택/ }).click();
+  await expect(page.getByLabel('스페이스 선택', { exact: true })).toBeVisible();
+  await page.getByLabel('팀 선택', { exact: true }).selectOption('1');
+  await expect(page).toHaveURL(/teams\/1$/);
+  await expect(page.getByLabel('팀 선택', { exact: true })).toBeHidden();
+  await page
+    .getByRole('navigation', { name: '모바일 팀 메뉴' })
+    .getByRole('button', { name: '작업 보드', exact: true })
+    .click();
+  await expect(page.getByRole('main').getByRole('combobox')).toHaveCount(0);
+  const columns = await page.locator('.task-columns').boundingBox();
+  const card = await page.locator('.board-task-card').first().boundingBox();
+  expect(card.width).toBeGreaterThanOrEqual(columns.width - 2);
+  await page.getByRole('button', { name: /공간·팀 선택/ }).click();
+  await expect(
+    page.getByRole('navigation', { name: '팀 메뉴', exact: true }),
+  ).toBeHidden();
+});
+
+test('데스크톱 홈과 작업 입력은 두 영역으로 배치하고 읽기 화면은 폭을 제한한다', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1800, height: 1000 });
+  await openPreview(page, '/spaces/1/teams/1');
+  const action = await page
+    .locator('.team-home-summary .next-action-panel')
+    .boundingBox();
+  const own = await page
+    .getByRole('region', { name: '본인 작업 현황' })
+    .boundingBox();
+  const progress = await page.locator('.progress-panel').boundingBox();
+  expect(Math.abs(action.y - own.y)).toBeLessThan(2);
+  expect(own.x).toBeGreaterThan(action.x + action.width);
+  expect(progress.y).toBeGreaterThanOrEqual(own.y + own.height);
+  const wide = await page.getByRole('main').boundingBox();
+  await page.getByRole('button', { name: '중간 피드백', exact: true }).click();
+  const reading = await page.getByRole('main').boundingBox();
+  expect(reading.width).toBeLessThan(wide.width);
+  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await page
+    .getByRole('button', { name: '새 작업 만들기', exact: true })
+    .click();
+  const content = page.getByRole('region', { name: '작업 내용 입력' });
+  const assignment = page.getByRole('region', { name: '담당·승인 설정 입력' });
+  const contentBox = await content.boundingBox();
+  const assignmentBox = await assignment.boundingBox();
+  expect(assignmentBox.x).toBeGreaterThan(contentBox.x + contentBox.width);
+  await page.setViewportSize({ width: 768, height: 900 });
+  const stackedContent = await content.boundingBox();
+  const stackedAssignment = await assignment.boundingBox();
+  expect(stackedAssignment.y).toBeGreaterThanOrEqual(
+    stackedContent.y + stackedContent.height,
+  );
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+
+test('데스크톱 작업 상세를 스크롤해도 작업 진행 버튼은 검토 영역에 남는다', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openPreview(page, '/spaces/1/teams/1/tasks/102');
+  const sidebar = page.getByRole('complementary', {
+    name: '작업 진행 및 검토',
+  });
+  await expect(
+    sidebar.getByRole('button', { name: '완료 요청', exact: true }),
+  ).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 700));
+  await expect
+    .poll(async () => (await sidebar.boundingBox()).y)
+    .toBeLessThanOrEqual(90);
+  await expect(
+    sidebar.getByRole('button', { name: '완료 요청', exact: true }),
+  ).toBeInViewport();
+});
