@@ -31,6 +31,8 @@ export default function TaskBoard({
     ? searchParams.get('status')
     : 'ALL';
   const onlyMine = searchParams.get('mine') === '1';
+  const onlyOverdue = searchParams.get('overdue') === '1';
+  const view = searchParams.get('view') === 'list' ? 'list' : 'board';
   const query = searchParams.get('q') || '';
   const sort = ['deadline', 'newest'].includes(searchParams.get('sort'))
     ? searchParams.get('sort')
@@ -48,7 +50,7 @@ export default function TaskBoard({
   const clearFilters = () =>
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
-      for (const key of ['status', 'mine', 'q']) next.delete(key);
+      for (const key of ['status', 'mine', 'q', 'overdue']) next.delete(key);
       return next;
     });
   const setFilter = (status) =>
@@ -98,11 +100,15 @@ export default function TaskBoard({
     );
   const canCreate =
     team.canCreateTask && members.length >= 2 && canModifyTeamWork(team);
-  const hasFilters = filter !== 'ALL' || onlyMine || Boolean(query.trim());
+  const hasFilters =
+    filter !== 'ALL' || onlyMine || onlyOverdue || Boolean(query.trim());
+  const isOverdue = (task) =>
+    task.status !== 'DONE' && new Date(task.dueAt) < new Date();
   const tasks = (resource.data || [])
     .filter(
       (task) =>
         (filter === 'ALL' || task.status === filter) &&
+        (!onlyOverdue || isOverdue(task)) &&
         (!onlyMine ||
           task.assignees.some((assignment) => assignment.userId === user.id)) &&
         task.title
@@ -135,7 +141,7 @@ export default function TaskBoard({
         </button>
       </div>
       <div
-        className="mobile-status-tabs"
+        className={`mobile-status-tabs ${view === 'list' ? 'list-status-tabs' : ''}`}
         role="group"
         aria-label="작업 상태 선택"
       >
@@ -153,6 +159,7 @@ export default function TaskBoard({
                   (resource.data || []).filter(
                     (task) =>
                       (status === 'ALL' || task.status === status) &&
+                      (!onlyOverdue || isOverdue(task)) &&
                       task.title
                         .toLocaleLowerCase()
                         .includes(query.trim().toLocaleLowerCase()) &&
@@ -173,6 +180,22 @@ export default function TaskBoard({
         </p>
       )}
       <div className="toolbar">
+        <div className="view-switch" role="group" aria-label="작업 보기 방식">
+          <button
+            aria-pressed={view === 'board'}
+            className={view === 'board' ? 'active' : ''}
+            onClick={() => setListOption('view', '')}
+          >
+            보드
+          </button>
+          <button
+            aria-pressed={view === 'list'}
+            className={view === 'list' ? 'active' : ''}
+            onClick={() => setListOption('view', 'list')}
+          >
+            목록
+          </button>
+        </div>
         <label className="task-status-filter">
           상태{' '}
           <select
@@ -223,6 +246,16 @@ export default function TaskBoard({
           />{' '}
           내 담당 작업만
         </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={onlyOverdue}
+            onChange={(event) =>
+              setListOption('overdue', event.target.checked ? '1' : '')
+            }
+          />{' '}
+          마감 지난 작업만
+        </label>
         <button className="secondary-button" onClick={resource.reload}>
           <Icon name="refresh" />
           새로고침
@@ -231,7 +264,8 @@ export default function TaskBoard({
       <ResourceState resource={resource}>
         <div className="list-summary">
           <span>
-            {tasks.length}개 작업 · 전체 {resource.data?.length || 0}개 · 상태별{' '}
+            {tasks.length}개 작업 · 전체 {resource.data?.length || 0}개 ·{' '}
+            {view === 'board' ? '상태별 ' : ''}
             {sort === 'newest' ? '최근 생성 순' : '마감 빠른 순'}
           </span>
           {hasFilters && (
@@ -240,7 +274,47 @@ export default function TaskBoard({
             </button>
           )}
         </div>
-        {tasks.length ? (
+        {tasks.length && view === 'list' ? (
+          <ul className="task-list-view" aria-label="정렬된 작업 목록">
+            {tasks.map((task) => (
+              <li className="panel task-list-item" key={task.id}>
+                <div className="task-list-main">
+                  <span
+                    className={`status-badge task-state-${task.status.toLowerCase()}`}
+                  >
+                    {statusLabels[task.status]}
+                  </span>
+                  <button
+                    className="task-title-button"
+                    onClick={() => onOpenTask(task.id)}
+                  >
+                    <h3>{task.title}</h3>
+                  </button>
+                  <p className="task-list-assignees">
+                    담당{' '}
+                    {task.assignees
+                      .map(
+                        (assignment) =>
+                          `${memberName(members, assignment.userId)} ${assignment.allocationPercent}%`,
+                      )
+                      .join(' · ')}
+                  </p>
+                </div>
+                <div className="task-list-deadline">
+                  <span>마감 {formatDate(task.dueAt)}</span>
+                  {isOverdue(task) && (
+                    <span className="is-overdue">마감 지남</span>
+                  )}
+                </div>
+                <details className="task-list-more">
+                  <summary>승인·작업량</summary>
+                  <p>승인 {memberName(members, task.completionReviewerId)}</p>
+                  <p>{formatExpectedWorkload(task.weight)}</p>
+                </details>
+              </li>
+            ))}
+          </ul>
+        ) : tasks.length ? (
           <div className="task-columns">
             {Object.entries(statusLabels).map(
               ([status, label]) =>
@@ -260,7 +334,11 @@ export default function TaskBoard({
                     </div>
                     <div className="task-column-list">
                       {!tasks.some((task) => task.status === status) && (
-                        <p className="column-empty">아직 작업이 없습니다</p>
+                        <p className="column-empty">
+                          {hasFilters
+                            ? '조건에 맞는 작업이 없습니다'
+                            : '아직 작업이 없습니다'}
+                        </p>
                       )}
                       {tasks
                         .filter((task) => task.status === status)
@@ -269,9 +347,6 @@ export default function TaskBoard({
                             <div className="board-card-top">
                               <span className="mobile-task-state">{label}</span>
                               <span className="task-number">#{task.id}</span>
-                              <span className="task-weight">
-                                {formatExpectedWorkload(task.weight)}
-                              </span>
                             </div>
                             <button
                               className="task-title-button"
@@ -279,6 +354,9 @@ export default function TaskBoard({
                             >
                               <h3>{task.title}</h3>
                             </button>
+                            <p className="task-workload-line">
+                              {formatExpectedWorkload(task.weight)}
+                            </p>
                             <dl className="task-card-meta">
                               <div>
                                 <dt>담당</dt>
@@ -332,7 +410,7 @@ export default function TaskBoard({
             </p>
             <span>
               {hasFilters
-                ? '검색어와 상태, 내 담당 작업 조건을 초기화해 전체 작업을 확인하세요.'
+                ? '검색어와 상태, 담당·마감 조건을 초기화해 전체 작업을 확인하세요.'
                 : canCreate
                   ? '작업 내용을 정하고 담당자와 완료 승인자를 선택해 시작하세요.'
                   : members.length < 2
@@ -361,6 +439,7 @@ export default function TaskBoard({
       </ResourceState>
       {creating && (
         <TaskForm
+          team={team}
           members={members}
           user={user}
           busy={busy}

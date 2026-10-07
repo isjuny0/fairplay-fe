@@ -401,6 +401,12 @@ export async function previewRequest(
       entry.tasks = entry.tasks.filter((item) => item.id !== id);
       result = null;
     } else {
+      if (body.expectedVersion !== task.version)
+        throw new MockError(
+          'VERSION_CONFLICT',
+          '다른 사용자가 먼저 작업을 수정했습니다.',
+          409,
+        );
       Object.assign(task, body);
       task.canRequestCompletion = task.status === 'IN_PROGRESS';
       task.completionBlockReason = task.canRequestCompletion
@@ -449,8 +455,17 @@ export async function previewRequest(
       );
       result = null;
     } else {
+      const metadata =
+        body instanceof FormData
+          ? JSON.parse(await body.get('metadata').text())
+          : body;
+      if (metadata.expectedVersion !== item.version)
+        throw new MockError(
+          'VERSION_CONFLICT',
+          '다른 사용자가 먼저 산출물을 수정했습니다.',
+          409,
+        );
       if (body instanceof FormData) {
-        const metadata = JSON.parse(await body.get('metadata').text());
         Object.assign(item, metadata);
         const file = body.get('file');
         item.file = {
@@ -459,7 +474,7 @@ export async function previewRequest(
           sizeBytes: file.size,
         };
         fileContents.set(id, file);
-      } else Object.assign(item, body);
+      } else Object.assign(item, metadata);
       item.version++;
       item.updatedAt = new Date().toISOString();
       result = item;

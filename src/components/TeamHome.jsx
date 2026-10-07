@@ -20,7 +20,7 @@ export default function TeamHome({ context, onNavigate }) {
         </div>
         <button
           className="primary-button"
-          onClick={() => onNavigate('작업 보드')}
+          onClick={() => onNavigate('작업 보드', { mine: '1' })}
         >
           내 작업 확인
         </button>
@@ -35,14 +35,25 @@ export default function TeamHome({ context, onNavigate }) {
                 <div className="action-summary">
                   <button
                     className="secondary-button"
-                    onClick={() => onNavigate('작업 보드')}
+                    onClick={() =>
+                      onNavigate('작업 보드', {
+                        mine: '1',
+                        status: 'PENDING_APPROVAL',
+                      })
+                    }
                   >
                     <span>내 승인 대기</span>
                     <strong>{summary.myPendingApprovalCount}건</strong>
                   </button>
                   <button
                     className="secondary-button"
-                    onClick={() => onNavigate('작업 보드')}
+                    onClick={() =>
+                      onNavigate('작업 보드', {
+                        mine: '1',
+                        overdue: '1',
+                        view: 'list',
+                      })
+                    }
                   >
                     <span>내 마감 지연</span>
                     <strong>{summary.myOverdueTaskCount}건</strong>

@@ -1,10 +1,21 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import useMobileLayout from '../hooks/useMobileLayout.js';
+import useSaveRecovery from '../hooks/useSaveRecovery.js';
+import { getTask } from '../api/tasks.js';
+import { getTeamWorkContext } from '../api/teams.js';
+import { useInteractions } from '../hooks/useInteractions.js';
+import SaveRecovery from './SaveRecovery.jsx';
 import {
   fromDateInput,
   expectedWorkloadOptions,
   memberRole,
   reviewerCandidates,
   toDateInput,
+  formatDate,
+  formatExpectedWorkload,
+  memberName,
+  canEditTask,
+  statusLabels,
 } from '../lib/domain.js';
 import { ErrorNotice, Field, FormActions, Modal } from './ui.jsx';
 import {
@@ -14,6 +25,7 @@ import {
 
 export default function TaskForm({
   task,
+  team,
   members,
   user,
   busy,
@@ -22,6 +34,9 @@ export default function TaskForm({
   onSave,
   onClose,
 }) {
+  const { confirm } = useInteractions();
+  const recovery = useSaveRecovery(serverError);
+  const editingMembers = recovery.latest?.members || members;
   const [initialForm] = useState({
     title: task?.title || '',
     description: task?.description || '',
@@ -31,6 +46,19 @@ export default function TaskForm({
     completionReviewerId: task?.completionReviewerId || '',
   });
   const [form, setForm] = useState(initialForm);
+  const mobile = useMobileLayout();
+  const [step, setStep] = useState(0);
+  const formElement = useRef(null);
+  const goToStep = (nextStep) => {
+    setStep(nextStep);
+    requestAnimationFrame(() => {
+      const heading = formElement.current?.querySelector(
+        `[data-step-title="${nextStep}"]`,
+      );
+      heading?.focus();
+      heading?.scrollIntoView({ block: 'start' });
+    });
+  };
   const dirty = JSON.stringify(form) !== JSON.stringify(initialForm);
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -46,7 +74,7 @@ export default function TaskForm({
     }));
     setForm((current) => ({ ...current, [name]: value }));
   };
-  const candidates = reviewerCandidates(members, form.assignees);
+  const candidates = reviewerCandidates(editingMembers, form.assignees);
   const selectedReviewer = candidates.some(
     (member) => member.userId === form.completionReviewerId,
   )
@@ -71,15 +99,22 @@ export default function TaskForm({
             (assignment) => assignment.userId !== member.userId,
           ),
     );
-  const submit = (event) => {
+  const canReapply =
+    !recovery.latest ||
+    (canEditTask(recovery.latest.task, recovery.latest.team, user.id) &&
+      form.assignees.every((assignment) =>
+        editingMembers.some((member) => member.userId === assignment.userId),
+      ));
+  const conflict = serverError?.code === 'VERSION_CONFLICT';
+  const submit = async (event) => {
     event.preventDefault();
-    if (blocked) return;
+    if (busy || recovery.loading || blocked) return;
     setError(null);
-    if (members.length < 2) {
+    if (editingMembers.length < 2) {
       setError(new Error('승인된 팀원이 2명 이상 필요합니다.'));
       return;
     }
-    const errors = collectFieldErrors(event.currentTarget, {
+    const allErrors = collectFieldErrors(event.currentTarget, {
       ...(!form.assignees.length
         ? { assignees: '담당자를 한 명 이상 선택해 주세요.' }
         : total !== 100
@@ -91,37 +126,98 @@ export default function TaskForm({
         ? { completionReviewerId: '목록에서 완료 승인자를 선택해 주세요.' }
         : {}),
     });
+    const errors =
+      mobile && step < 2
+        ? Object.fromEntries(
+            Object.entries(allErrors).filter(([name]) =>
+              step === 0
+                ? ['title', 'description', 'dueAt'].includes(name)
+                : !['title', 'description', 'dueAt'].includes(name),
+            ),
+          )
+        : allErrors;
     setFieldErrors(errors);
     if (Object.keys(errors).length) {
+      if (mobile && step === 2)
+        setStep(
+          ['title', 'description', 'dueAt'].some((name) => errors[name])
+            ? 0
+            : 1,
+        );
       focusFirstFieldError(event.currentTarget, errors);
       return;
     }
-    onSave({
-      title: form.title.trim(),
-      description: form.description.trim(),
-      weight: Number(form.weight),
-      dueAt: fromDateInput(form.dueAt),
-      assignees: form.assignees.map((assignment) => ({
-        userId: assignment.userId,
-        allocationPercent: Number(assignment.allocationPercent),
-      })),
-      completionReviewerId: selectedReviewer,
-    });
+    if (mobile && step < 2) {
+      goToStep(step + 1);
+      return;
+    }
+    if (!canReapply || (conflict && !recovery.latest)) return;
+    const version = recovery.latest?.task.version ?? task?.version;
+    if (
+      recovery.latest &&
+      !(await confirm({
+        title: '최신 작업에 내 입력 반영',
+        message:
+          '확인한 최신 작업에 현재 제목·설명·작업량·마감·담당 배분·승인자를 반영합니다. 다른 팀원의 수정 내용을 덮어쓸 수 있습니다. 비교한 내용을 확인하고 저장할까요?',
+        label: '내 입력으로 저장',
+      }))
+    )
+      return;
+    onSave(
+      {
+        title: form.title.trim(),
+        description: form.description.trim(),
+        weight: Number(form.weight),
+        dueAt: fromDateInput(form.dueAt),
+        assignees: form.assignees.map((assignment) => ({
+          userId: assignment.userId,
+          allocationPercent: Number(assignment.allocationPercent),
+        })),
+        completionReviewerId: selectedReviewer,
+      },
+      version,
+    );
   };
   return (
     <Modal
       title={task ? '작업 수정' : '새 작업 만들기'}
-      busy={busy}
+      busy={busy || recovery.loading}
       onClose={onClose}
       wide
       editor
       dirty={dirty}
     >
-      <form onSubmit={submit} noValidate>
-        <fieldset className="form-fields" disabled={busy || blocked}>
+      <form ref={formElement} onSubmit={submit} noValidate>
+        {mobile && (
+          <ol className="task-form-steps" aria-label="작업 입력 단계">
+            {['작업 내용', '담당·승인', '저장 전 확인'].map((label, index) => (
+              <li
+                key={label}
+                aria-current={step === index ? 'step' : undefined}
+              >
+                <span>{index + 1}</span>
+                {label}
+              </li>
+            ))}
+          </ol>
+        )}
+        <fieldset
+          className="form-fields"
+          disabled={busy || recovery.loading || blocked}
+        >
           <div className="task-form-layout">
-            <section className="task-form-section" aria-label="작업 내용 입력">
-              <h3 className="form-section-title">작업 내용</h3>
+            <section
+              hidden={mobile && step !== 0}
+              className="task-form-section"
+              aria-label="작업 내용 입력"
+            >
+              <h3
+                tabIndex={-1}
+                data-step-title="0"
+                className="form-section-title"
+              >
+                작업 내용
+              </h3>
               <Field label="작업 제목" error={fieldErrors.title}>
                 <input
                   name="title"
@@ -188,11 +284,18 @@ export default function TaskForm({
               </details>
             </section>
             <section
+              hidden={mobile && step !== 1}
               className="task-form-section assignment-form-section"
               aria-label="담당·승인 설정 입력"
             >
               <div>
-                <h3 className="form-section-title">담당·승인 설정</h3>
+                <h3
+                  tabIndex={-1}
+                  data-step-title="1"
+                  className="form-section-title"
+                >
+                  담당·승인 설정
+                </h3>
                 <div className="section-heading">
                   <h3>담당자와 배분 · 합계 {total}%</h3>
                   <button
@@ -227,7 +330,7 @@ export default function TaskForm({
                       : '담당자를 선택하고 비율 합계를 100%로 맞춰 주세요.')}
                 </p>
                 <div className="assignment-inputs">
-                  {members.map((member) => {
+                  {editingMembers.map((member) => {
                     const assignment = form.assignees.find(
                       (item) => item.userId === member.userId,
                     );
@@ -295,6 +398,23 @@ export default function TaskForm({
                   })}
                 </div>
               </div>
+              {form.assignees.some(
+                (assignment) =>
+                  !editingMembers.some(
+                    (member) => member.userId === assignment.userId,
+                  ),
+              ) && (
+                <p className="notice">
+                  현재 팀원이 아닌 담당자가 포함되어 있습니다.{' '}
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={() => update('assignees', [])}
+                  >
+                    담당 배분 다시 지정
+                  </button>
+                </p>
+              )}
               <Field
                 label="완료 승인자"
                 error={fieldErrors.completionReviewerId}
@@ -329,6 +449,76 @@ export default function TaskForm({
                   </p>
                 )}
             </section>
+            {mobile && step === 2 && (
+              <section
+                className="task-form-section task-form-review"
+                aria-label="작업 저장 전 요약"
+              >
+                <h3
+                  tabIndex={-1}
+                  data-step-title="2"
+                  className="form-section-title"
+                >
+                  저장 전 확인
+                </h3>
+                <dl className="review-facts">
+                  <div>
+                    <dt>작업 제목</dt>
+                    <dd>{form.title}</dd>
+                  </div>
+                  <div>
+                    <dt>작업 설명</dt>
+                    <dd className="preserve-lines">{form.description}</dd>
+                  </div>
+                  <div>
+                    <dt>예상 작업량</dt>
+                    <dd>{formatExpectedWorkload(form.weight)}</dd>
+                  </div>
+                  <div>
+                    <dt>마감 (한국 시간)</dt>
+                    <dd>
+                      {form.dueAt
+                        ? formatDate(fromDateInput(form.dueAt))
+                        : '미입력'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>담당 배분</dt>
+                    <dd>
+                      {form.assignees.map((assignment) => (
+                        <span key={assignment.userId}>
+                          {memberName(editingMembers, assignment.userId)}{' '}
+                          {assignment.allocationPercent}%<br />
+                        </span>
+                      ))}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>완료 승인자</dt>
+                    <dd>{memberName(editingMembers, selectedReviewer)}</dd>
+                  </div>
+                </dl>
+                <div className="heading-actions">
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => goToStep(0)}
+                  >
+                    작업 내용 수정
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => goToStep(1)}
+                  >
+                    담당·승인 수정
+                  </button>
+                </div>
+                <p className="field-help">
+                  아직 저장되지 않았습니다. 내용을 확인한 뒤 저장해 주세요.
+                </p>
+              </section>
+            )}
           </div>
         </fieldset>
         {blocked && (
@@ -338,7 +528,101 @@ export default function TaskForm({
           </p>
         )}
         <ErrorNotice error={error || serverError} />
-        <FormActions busy={busy} disabled={blocked} onCancel={onClose} />
+        <SaveRecovery
+          error={serverError}
+          recovery={recovery}
+          canReapply={canReapply}
+          onLoadLatest={
+            task
+              ? () =>
+                  recovery.refresh(async () => {
+                    const [detail, context] = await Promise.all([
+                      getTask(task.id),
+                      getTeamWorkContext(task.teamId),
+                    ]);
+                    if (detail.task.teamId !== team.id)
+                      throw new Error('현재 팀에 속한 작업이 아닙니다.');
+                    return { ...context, task: detail.task };
+                  })
+              : undefined
+          }
+          rows={
+            recovery.latest
+              ? [
+                  {
+                    label: '작업 제목',
+                    latest: recovery.latest.task.title,
+                    input: form.title.trim(),
+                  },
+                  {
+                    label: '작업 설명',
+                    latest: recovery.latest.task.description,
+                    input: form.description.trim(),
+                  },
+                  {
+                    label: '예상 작업량',
+                    latest: formatExpectedWorkload(recovery.latest.task.weight),
+                    input: formatExpectedWorkload(form.weight),
+                  },
+                  {
+                    label: '마감 (한국 시간)',
+                    latest: toDateInput(recovery.latest.task.dueAt),
+                    input: form.dueAt,
+                  },
+                  {
+                    label: '담당 배분',
+                    latest: recovery.latest.task.assignees
+                      .map(
+                        (assignment) =>
+                          `${memberName(editingMembers, assignment.userId)} ${assignment.allocationPercent}%`,
+                      )
+                      .join(' · '),
+                    input: form.assignees
+                      .map(
+                        (assignment) =>
+                          `${memberName(editingMembers, assignment.userId)} ${assignment.allocationPercent}%`,
+                      )
+                      .join(' · '),
+                  },
+                  {
+                    label: '완료 승인자',
+                    latest: memberName(
+                      editingMembers,
+                      recovery.latest.task.completionReviewerId,
+                    ),
+                    input: selectedReviewer
+                      ? memberName(editingMembers, selectedReviewer)
+                      : '미선택',
+                  },
+                ]
+              : []
+          }
+        >
+          {recovery.latest && (
+            <p>현재 작업 상태: {statusLabels[recovery.latest.task.status]}</p>
+          )}
+        </SaveRecovery>
+        <FormActions
+          busy={busy || recovery.loading}
+          disabled={
+            blocked ||
+            ((!mobile || step === 2) &&
+              ((conflict && !recovery.latest) || !canReapply))
+          }
+          onCancel={onClose}
+          label={
+            mobile && step < 2
+              ? step === 0
+                ? '다음: 담당·승인'
+                : '다음: 저장 전 확인'
+              : recovery.latest
+                ? '내 입력으로 다시 저장'
+                : serverError
+                  ? '다시 저장'
+                  : '저장'
+          }
+          onBack={mobile && step > 0 ? () => goToStep(step - 1) : undefined}
+        />
       </form>
     </Modal>
   );

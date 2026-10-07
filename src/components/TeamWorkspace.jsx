@@ -50,8 +50,11 @@ export default function TeamWorkspace({
 }) {
   const navigate = useAppNavigate();
   const location = useLocation();
-  const navigateToMenu = (nextMenu) =>
-    navigate(teamMenuPath(space.id, team.id, nextMenu));
+  const navigateToMenu = (nextMenu, filters) =>
+    navigate({
+      pathname: teamMenuPath(space.id, team.id, nextMenu),
+      search: filters ? new URLSearchParams(filters).toString() : '',
+    });
   const navigateToTask = (id) =>
     navigate({
       pathname: `${teamMenuPath(space.id, team.id, menu)}/${menu === '승인 검토' ? 'tasks/' : ''}${id}`,

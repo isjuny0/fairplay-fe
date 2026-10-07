@@ -13,6 +13,10 @@ import {
 } from '../api/deliverables.js';
 import useResource from '../hooks/useResource.js';
 import { useInteractions } from '../hooks/useInteractions.js';
+import useSaveRecovery from '../hooks/useSaveRecovery.js';
+import SaveRecovery from './SaveRecovery.jsx';
+import { getTask } from '../api/tasks.js';
+import { getTeamWorkContext } from '../api/teams.js';
 import {
   collectFieldErrors,
   focusFirstFieldError,
@@ -47,7 +51,15 @@ function DeliverableForm({
   error,
   onClose,
   onSave,
+  onLoadLatest,
 }) {
+  const { confirm } = useInteractions();
+  const recovery = useSaveRecovery(error);
+  const conflict = error?.code === 'VERSION_CONFLICT';
+  const canReapply =
+    !recovery.latest ||
+    (recovery.latest.permissions.metadata &&
+      (!permissions.content || recovery.latest.permissions.content));
   const [initialForm] = useState({
     title: initial?.title || '',
     description: initial?.description || '',
@@ -82,9 +94,9 @@ function DeliverableForm({
     }));
     setForm((current) => ({ ...current, [name]: value }));
   };
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault();
-    if (blocked) return;
+    if (busy || recovery.loading || blocked) return;
     const errors = collectFieldErrors(event.currentTarget, {
       ...(file &&
       (file.size > 10 * 1024 * 1024 || !fileExtensions.test(file.name))
@@ -96,11 +108,23 @@ function DeliverableForm({
       focusFirstFieldError(event.currentTarget, errors);
       return;
     }
+    if (!canReapply || (conflict && !recovery.latest)) return;
+    if (
+      recovery.latest &&
+      !(await confirm({
+        title: '최신 산출물에 내 입력 반영',
+        message:
+          '비교한 최신 산출물에 현재 입력을 저장합니다. 다른 팀원의 변경 내용을 덮어쓸 수 있으며, 파일을 선택했다면 최신 원본도 교체됩니다. 저장할까요?',
+        label: '내 입력으로 저장',
+      }))
+    )
+      return;
     const input = { title: form.title.trim(), category: form.category };
     if (!initial || permissions.content)
       input.description = form.description.trim() || null;
     if (initial) {
-      input.expectedVersion = initial.version;
+      input.expectedVersion =
+        recovery.latest?.deliverable.version ?? initial.version;
       if (permissions.content && initial.type !== 'FILE')
         input.textOrUrl = form.textOrUrl.trim();
     } else {
@@ -115,7 +139,7 @@ function DeliverableForm({
   return (
     <Modal
       title={initial ? '산출물 수정' : '산출물 등록'}
-      busy={busy}
+      busy={busy || recovery.loading}
       onClose={onClose}
       wide
       dirty={
@@ -129,7 +153,10 @@ function DeliverableForm({
         </p>
       )}
       <form onSubmit={submit} noValidate>
-        <fieldset disabled={busy || blocked} className="form-fields">
+        <fieldset
+          disabled={busy || recovery.loading || blocked}
+          className="form-fields"
+        >
           <Field label="제목" error={fieldErrors.title}>
             <input
               name="title"
@@ -291,7 +318,66 @@ function DeliverableForm({
           </p>
         )}
         <ErrorNotice error={error} />
-        <FormActions busy={busy} disabled={blocked} onCancel={onClose} />
+        <SaveRecovery
+          error={error}
+          recovery={recovery}
+          onLoadLatest={
+            onLoadLatest ? () => recovery.refresh(onLoadLatest) : undefined
+          }
+          canReapply={canReapply}
+          rows={
+            recovery.latest
+              ? [
+                  {
+                    label: '제목',
+                    latest: recovery.latest.deliverable.title,
+                    input: form.title.trim(),
+                  },
+                  {
+                    label: '분류',
+                    latest: categories[recovery.latest.deliverable.category],
+                    input: categories[form.category],
+                  },
+                  ...(!permissions.content
+                    ? []
+                    : [
+                        {
+                          label: '설명',
+                          latest: recovery.latest.deliverable.description || '',
+                          input: form.description.trim(),
+                        },
+                        form.type === 'FILE'
+                          ? {
+                              label: '원본 파일',
+                              latest:
+                                recovery.latest.deliverable.file
+                                  ?.originalFilename,
+                              input:
+                                file?.name ||
+                                '선택한 새 파일 없음 · 최신 원본 유지',
+                            }
+                          : {
+                              label: form.type === 'URL' ? 'URL' : '본문',
+                              latest: recovery.latest.deliverable.textOrUrl,
+                              input: form.textOrUrl.trim(),
+                            },
+                      ]),
+                ]
+              : []
+          }
+        />
+        <FormActions
+          busy={busy || recovery.loading}
+          disabled={blocked || (conflict && !recovery.latest) || !canReapply}
+          onCancel={onClose}
+          label={
+            recovery.latest
+              ? '내 입력으로 다시 저장'
+              : error
+                ? '다시 저장'
+                : '저장'
+          }
+        />
       </form>
     </Modal>
   );
@@ -645,6 +731,40 @@ export default function Deliverables({
             ((editing?.taskId ?? taskId) != null && !canModifyTeamWork(team))
           }
           error={error}
+          onLoadLatest={
+            editing
+              ? async () => {
+                  const [latestPage, context] = await Promise.all([
+                    listDeliverables(team.id, {
+                      taskId: selectedTaskId,
+                      page,
+                      size: 20,
+                    }),
+                    getTeamWorkContext(team.id),
+                  ]);
+                  const deliverable = latestPage.find(
+                    (item) => item.id === editing.id,
+                  );
+                  if (!deliverable)
+                    throw new Error(
+                      '현재 페이지에서 산출물을 찾지 못했습니다. 입력은 유지됩니다. 창을 닫고 목록에서 위치를 다시 확인해 주세요.',
+                    );
+                  const task =
+                    deliverable.taskId == null
+                      ? null
+                      : (await getTask(deliverable.taskId)).task;
+                  return {
+                    deliverable,
+                    permissions: deliverablePermissions(
+                      deliverable,
+                      task,
+                      context.team,
+                      user.id,
+                    ),
+                  };
+                }
+              : undefined
+          }
           onClose={() => setEditing(undefined)}
           onSave={save}
         />

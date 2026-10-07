@@ -150,7 +150,9 @@ export function Modal({
           ...dialog.current.querySelectorAll(
             'button, input, select, textarea, a[href]',
           ),
-        ].filter((element) => !element.disabled);
+        ].filter(
+          (element) => !element.disabled && element.getClientRects().length,
+        );
         const first = elements[0];
         const last = elements.at(-1);
         if (
@@ -213,10 +215,21 @@ export function FormActions({
   disabled = false,
   onCancel,
   label = '저장',
+  onBack,
 }) {
   const closeModal = useContext(ModalCloseContext);
   return (
     <div className="modal-actions">
+      {onBack && (
+        <button
+          type="button"
+          className="secondary-button"
+          disabled={busy}
+          onClick={onBack}
+        >
+          이전
+        </button>
+      )}
       {onCancel && (
         <button
           type="button"

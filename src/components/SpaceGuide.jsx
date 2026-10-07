@@ -14,6 +14,9 @@ export default function SpaceGuide({
   const pendingTeam = teams.find(
     (team) => team.myMembershipStatus === 'PENDING',
   );
+  const compact = isManager
+    ? Boolean(space.teamBuildingOpensAt && space.teamBuildingClosesAt)
+    : Boolean(joinedTeam && joinedTeam.approvedMemberCount >= 2);
   let title, description, action, onAction;
   if (isManager) {
     const periodConfigured = Boolean(
@@ -87,25 +90,40 @@ export default function SpaceGuide({
         ? `${formatDate(space.teamBuildingOpensAt)}부터 팀 생성과 가입 신청이 가능합니다.`
         : '현재 팀 생성과 가입 신청이 제한됩니다. 팀 빌딩 일정은 스페이스 관리자에게 확인하세요.';
   }
+  const explanation = (
+    <>
+      <p>{description}</p>
+      <ol className="getting-started-steps" aria-label="프로젝트 시작 순서">
+        {(isManager
+          ? ['팀 빌딩 기간 설정', '참여 코드 공유', '팀 진행 현황 확인']
+          : ['팀 가입·생성', '가입 승인·팀원 모집', '작업 수행']
+        ).map((step, index) => (
+          <li key={step}>
+            <span aria-hidden="true">{index + 1}</span>
+            {step}
+          </li>
+        ))}
+      </ol>
+    </>
+  );
   return (
-    <section className="panel getting-started" aria-label="다음 단계 안내">
+    <section
+      className={`panel getting-started ${compact ? 'getting-started-compact' : ''}`}
+      aria-label="다음 단계 안내"
+    >
       <div>
         <span className="eyebrow">
           {isManager ? '관리자 시작 안내' : '참여자 시작 안내'}
         </span>
         <h2>{title}</h2>
-        <p>{description}</p>
-        <ol className="getting-started-steps" aria-label="프로젝트 시작 순서">
-          {(isManager
-            ? ['팀 빌딩 기간 설정', '참여 코드 공유', '팀 진행 현황 확인']
-            : ['팀 가입·생성', '가입 승인·팀원 모집', '작업 수행']
-          ).map((step, index) => (
-            <li key={step}>
-              <span aria-hidden="true">{index + 1}</span>
-              {step}
-            </li>
-          ))}
-        </ol>
+        {compact ? (
+          <details className="guide-explanation">
+            <summary>시작 안내 펼쳐보기</summary>
+            {explanation}
+          </details>
+        ) : (
+          explanation
+        )}
       </div>
       {action && (
         <button className="primary-button" onClick={onAction}>

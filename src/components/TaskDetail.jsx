@@ -432,6 +432,7 @@ export default function TaskDetail({
       {editing && task && (
         <TaskForm
           task={task}
+          team={team}
           members={members}
           user={user}
           busy={busy}
@@ -441,10 +442,8 @@ export default function TaskDetail({
             setEditing(false);
             if (error?.status === 409) resource.reload();
           }}
-          onSave={(input) =>
-            mutate(() =>
-              updateTask(task.id, { ...input, expectedVersion: task.version }),
-            )
+          onSave={(input, expectedVersion) =>
+            mutate(() => updateTask(task.id, { ...input, expectedVersion }))
           }
         />
       )}
