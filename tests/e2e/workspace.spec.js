@@ -1236,17 +1236,17 @@ test('작업 보드의 상태·내 작업 필터는 새로고침과 상세 복�
 }) => {
   await workspace(page);
   await page.getByRole('button', { name: '작업 보드', exact: true }).click();
-  await page.getByRole('main').getByRole('combobox').selectOption('IN_PROGRESS');
+  await page.getByLabel('작업 상태', { exact: true }).selectOption('IN_PROGRESS');
   await page.getByLabel('내 담당 작업만').check();
   await page.reload();
-  await expect(page.getByRole('main').getByRole('combobox')).toHaveValue('IN_PROGRESS');
+  await expect(page.getByLabel('작업 상태', { exact: true })).toHaveValue('IN_PROGRESS');
   await expect(page.getByLabel('내 담당 작업만')).toBeChecked();
   await page
     .getByRole('button', { name: '회원 탈퇴 구현', exact: true })
     .click();
   await page.reload();
   await page.getByRole('button', { name: '← 목록으로', exact: true }).click();
-  await expect(page.getByRole('main').getByRole('combobox')).toHaveValue('IN_PROGRESS');
+  await expect(page.getByLabel('작업 상태', { exact: true })).toHaveValue('IN_PROGRESS');
   await expect(page.getByLabel('내 담당 작업만')).toBeChecked();
   expect(new URL(page.url()).searchParams.get('mine')).toBe('1');
 });
@@ -1442,4 +1442,26 @@ test('다른 작업 정보를 저장해도 미저장 수행 설명을 보존한�
   await expect(page.getByRole('heading', { name: '회원 탈퇴 구현 수정', exact: true })).toBeVisible();
   await expect(page.getByLabel('내 수행 설명', { exact: true })).toHaveValue('아직 저장하지 않은 개인 수행 기록입니다.');
   expect(state.requests.some(({ method, path }) => method === 'PATCH' && path === '/api/tasks/10')).toBe(true);
+});
+
+test('빈 스페이스 목록에서 참여 코드 입력을 시작하고 코드 오류를 항목에서 확인한다', async ({ page }) => {
+  const { requests } = await workspace(page);
+  await page.route('**/api/spaces', (route) => route.request().method() === 'GET' ? route.fulfill({ json: [] }) : route.fallback());
+  await page.goto('/main');
+  await page.getByRole('button', { name: '참여 코드 입력', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '코드로 참여' });
+  await dialog.getByLabel('참여 코드', { exact: true }).fill('1234ZZZZ');
+  await dialog.getByRole('button', { name: '참여', exact: true }).click();
+  await expect(dialog.getByLabel('참여 코드', { exact: true })).toBeFocused();
+  await expect(dialog.getByText('숫자 0–9와 영문 A–F로 된 8자리 참여 코드를 입력해 주세요.')).toBeVisible();
+  expect(requests.filter(({ path, method }) => path === '/api/spaces/join' && method === 'POST')).toHaveLength(0);
+});
+
+test('빈 작업 목록은 생성 가능한 팀에만 첫 작업 등록을 제공한다', async ({ page }) => {
+  await workspace(page, { memberCount: 1 });
+  await page.route('**/api/teams/1/tasks', (route) => route.request().method() === 'GET' ? route.fulfill({ json: [] }) : route.fallback());
+  await page.goto('/spaces/1/teams/1/tasks');
+  await expect(page.getByText('아직 등록된 작업이 없습니다.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '첫 작업 만들기', exact: true })).toHaveCount(0);
+  await expect(page.getByText('승인된 팀원이 2명 이상 모이면 작업을 만들 수 있습니다.', { exact: true })).toBeVisible();
 });
