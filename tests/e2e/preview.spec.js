@@ -52,6 +52,27 @@ for (const [path, heading, role] of [
     expect(errors).toEqual([]);
   });
 
+test('팀 홈과 관리자 현황은 가중치 숫자 대신 비율과 계산 기준을 보여준다', async ({ page }) => {
+  await preview(page);
+  await expect(page.getByText('완료 가중치', { exact: false })).toHaveCount(0);
+  await expect(page.getByText('예상 작업량을 반영한 진행률입니다.', { exact: false })).toBeVisible();
+  await page.getByLabel('미리보기 역할').selectOption('manager');
+  await page.goto('/preview/spaces/1/dashboard');
+  await expect(page.getByRole('columnheader', { name: '현재 팀원 완료 비중' })).toHaveCount(2);
+  await expect(page.getByRole('columnheader', { name: '승인된 배분 가중치' })).toHaveCount(0);
+  await expect(page.getByRole('row').filter({ has: page.getByRole('rowheader', { name: '김하늘', exact: true }) }))
+    .toContainText('80.00%');
+  await page.evaluate(() => {
+    const key = 'fairplay:mock:v1:preview:1';
+    const state = JSON.parse(localStorage.getItem(key));
+    for (const team of Object.values(state.teams))
+      for (const task of team.tasks) task.status = 'TODO';
+    localStorage.setItem(key, JSON.stringify(state));
+  });
+  await page.reload();
+  await expect(page.getByRole('cell', { name: '완료 작업 없음', exact: true })).toHaveCount(5);
+});
+
 test('대상별 평가를 저장하고 제출하면 새로고침 후에도 수정이 잠긴다', async ({
   page,
 }) => {

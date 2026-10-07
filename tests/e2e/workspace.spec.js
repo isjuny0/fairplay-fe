@@ -416,6 +416,52 @@ async function workspace(
   };
 }
 
+for (const [label, weight] of [
+  ['1시간 미만의 작업', 1],
+  ['1시간 이상 ~ 3시간 미만의 작업', 2],
+  ['3시간 이상 ~ 6시간 미만의 작업', 3],
+  ['6시간 이상 ~ 12시간 미만의 작업', 5],
+  ['12시간 이상의 작업', 8],
+])
+  test(`예상 작업량 ${label} 선택은 숫자 가중치 ${weight}로 저장된다`, async ({ page }) => {
+    const { requests } = await workspace(page);
+    await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+    await page.getByRole('button', { name: '새 작업 만들기', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    const workload = dialog.getByLabel('예상 작업량', { exact: true });
+    await expect(workload).toHaveValue('3');
+    await expect(workload.locator('option')).toHaveText([
+      '1시간 미만의 작업',
+      '1시간 이상 ~ 3시간 미만의 작업',
+      '3시간 이상 ~ 6시간 미만의 작업',
+      '6시간 이상 ~ 12시간 미만의 작업',
+      '12시간 이상의 작업',
+    ]);
+    await workload.selectOption({ label });
+    await dialog.getByLabel('작업 제목').fill('예상 작업량 확인');
+    await dialog.getByLabel('작업 설명', { exact: true }).fill('팀과 합의한 작업 범위입니다.');
+    await dialog.getByLabel('마감 (한국 시간)').fill('2030-12-01T18:00');
+    await dialog.getByLabel('담당자 · 팀원').check();
+    await dialog.getByLabel('완료 승인자', { exact: true }).selectOption('leader');
+    await dialog.getByRole('button', { name: '저장', exact: true }).click();
+    await expect(page.getByRole('heading', { name: '예상 작업량 확인' })).toBeVisible();
+    const request = requests.find(({ method, path }) =>
+      method === 'POST' && path === '/api/teams/1/tasks');
+    expect(JSON.parse(request.body).weight).toBe(weight);
+    await expect(page.getByText(`예상 작업량: ${label}`, { exact: false })).toBeVisible();
+    await page.getByRole('button', { name: '작업 수정', exact: true }).click();
+    await expect(dialog.getByLabel('예상 작업량', { exact: true })).toHaveValue(String(weight));
+    const changedLabel = weight === 8 ? '1시간 미만의 작업' : '12시간 이상의 작업';
+    await dialog.getByLabel('예상 작업량', { exact: true }).selectOption({ label: changedLabel });
+    await dialog.getByRole('button', { name: '저장', exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    const update = requests.find(({ method, path }) =>
+      method === 'PATCH' && path === '/api/tasks/10');
+    expect(JSON.parse(update.body)).toMatchObject({ weight: weight === 8 ? 1 : 8, expectedVersion: 0 });
+    await page.reload();
+    await expect(page.getByText(`예상 작업량: ${changedLabel}`, { exact: false })).toBeVisible();
+  });
+
 test('담당자가 작업을 생성하고 버전으로 완료 요청하면 수정이 잠긴다', async ({
   page,
 }) => {
