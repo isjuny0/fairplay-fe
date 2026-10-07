@@ -33,11 +33,8 @@ export default function MidFeedback({ context }) {
             .map((member) => (
               <div className="stack" key={member.userId}>
                 <section className="round-context">
-                  <strong>{member.name}님의 수신 평균</strong>
-                  <span>
-                    중간 평가 v{resource.data.roundVersion} ·{' '}
-                    {formatDate(resource.data.asOf)}
-                  </span>
+                  <strong>팀원들이 평가한 {member.name}님의 협업 평균</strong>
+                  <span>중간 평가 · {formatDate(resource.data.asOf)}</span>
                 </section>
                 <FeedbackCards member={member} />
               </div>

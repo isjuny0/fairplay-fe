@@ -116,7 +116,7 @@ export default function TeamSettings({
         </p>
       )}
       {!confirmation && <ErrorNotice error={error} />}
-      <section className="panel stack">
+      <section className="panel stack danger-zone">
         <div className="section-heading">
           <h2>팀 삭제 동의</h2>
           <button
@@ -127,6 +127,15 @@ export default function TeamSettings({
             현황 새로고침
           </button>
         </div>
+        <ol className="lifecycle-steps" aria-label="팀 삭제 진행 단계">
+          <li className={!requestActive ? 'active' : ''}>1. 삭제 요청</li>
+          <li className={request?.status === 'PENDING' ? 'active' : ''}>
+            2. 전원 동의
+          </li>
+          <li className={request?.status === 'READY' ? 'active' : ''}>
+            3. 리더 최종 삭제
+          </li>
+        </ol>
         <p>
           팀 삭제는 현재 팀원 전원의 동의가 필요합니다. 동의가 모이면 리더가
           최종 삭제합니다.
@@ -263,8 +272,13 @@ export default function TeamSettings({
           )}
         </ResourceState>
       </section>
-      <section className="panel stack">
+      <section className="panel stack danger-zone">
         <h2>팀 탈퇴</h2>
+        <ol className="handoff-checklist">
+          <li>담당 작업·승인 역할·팀 공용 산출물을 인계합니다.</li>
+          <li>리더라면 다음 리더를 직접 선택합니다.</li>
+          <li>탈퇴 조건을 확인한 뒤 팀에서 탈퇴합니다.</li>
+        </ol>
         <p>
           팀에서만 탈퇴하며 스페이스 소속과 계정은 유지됩니다.
           {isLeader && ' 리더는 다음 리더를 직접 지정해야 합니다.'}

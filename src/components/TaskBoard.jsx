@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { createTask, listTasks } from '../api/tasks.js';
 import useResource from '../hooks/useResource.js';
+import { useInteractions } from '../hooks/useInteractions.js';
 import {
   canModifyTeamWork,
   formatDate,
@@ -23,6 +24,7 @@ export default function TaskBoard({
   onOpenTask,
   onTaskBack,
 }) {
+  const { notify, clearChanges } = useInteractions();
   const resource = useResource(() => listTasks(team.id), [team.id, taskId]);
   const [searchParams, setSearchParams] = useSearchParams();
   const filter = Object.hasOwn(statusLabels, searchParams.get('status'))
@@ -53,6 +55,8 @@ export default function TaskBoard({
     try {
       const task = await createTask(team.id, input);
       setCreating(false);
+      clearChanges();
+      notify('작업을 생성했습니다.');
       onOpenTask(task.id);
     } catch (requestError) {
       setError(requestError);
@@ -101,6 +105,36 @@ export default function TaskBoard({
           <Icon name="plus" />새 작업 만들기
         </button>
       </div>
+      <div
+        className="mobile-status-tabs"
+        role="group"
+        aria-label="작업 상태 선택"
+      >
+        {[['ALL', '전체'], ...Object.entries(statusLabels)].map(
+          ([status, label]) => (
+            <button
+              key={status}
+              className={filter === status ? 'active' : ''}
+              aria-pressed={filter === status}
+              onClick={() => setFilter(status)}
+            >
+              {label}
+              <span>
+                {
+                  (resource.data || []).filter(
+                    (task) =>
+                      (status === 'ALL' || task.status === status) &&
+                      (!onlyMine ||
+                        task.assignees.some(
+                          (assignment) => assignment.userId === user.id,
+                        )),
+                  ).length
+                }
+              </span>
+            </button>
+          ),
+        )}
+      </div>
       {members.length < 2 && (
         <p className="notice">
           승인된 팀원이 2명 이상이어야 작업을 생성할 수 있습니다.
@@ -137,79 +171,86 @@ export default function TaskBoard({
       <ResourceState resource={resource}>
         {tasks.length ? (
           <div className="task-columns">
-            {Object.entries(statusLabels).map(([status, label]) => (
-              <section
-                className={`task-column task-state-${status.toLowerCase()}`}
-                key={status}
-              >
-                <div className="task-column-heading">
-                  <h2>
-                    <span className="status-dot" />
-                    {label}
-                  </h2>
-                  <span>
-                    {tasks.filter((task) => task.status === status).length}
-                  </span>
-                </div>
-                <div className="task-column-list">
-                  {!tasks.some((task) => task.status === status) && (
-                    <p className="column-empty">아직 작업이 없습니다</p>
-                  )}
-                  {tasks
-                    .filter((task) => task.status === status)
-                    .map((task) => (
-                      <article key={task.id} className="board-task-card">
-                        <div className="board-card-top">
-                          <span className="task-number">#{task.id}</span>
-                          <span className="task-weight">
-                            {formatExpectedWorkload(task.weight)}
-                          </span>
-                        </div>
-                        <button
-                          className="task-title-button"
-                          onClick={() => onOpenTask(task.id)}
-                        >
-                          <h3>{task.title}</h3>
-                        </button>
-                        <dl className="task-card-meta">
-                          <div>
-                            <dt>담당</dt>
-                            <dd>
-                              {task.assignees.map((assignment) => (
-                                <span
-                                  key={assignment.userId}
-                                  className={
-                                    assignment.userId === user.id
-                                      ? 'my-assignment'
-                                      : ''
-                                  }
-                                >
-                                  {memberName(members, assignment.userId)}{' '}
-                                  <b>{assignment.allocationPercent}%</b>
-                                </span>
-                              ))}
-                            </dd>
-                          </div>
-                          <div>
-                            <dt>승인</dt>
-                            <dd>
-                              {memberName(members, task.completionReviewerId)}
-                            </dd>
-                          </div>
-                        </dl>
-                        <div className="task-deadline">
-                          <Icon name="calendar" />
-                          <small>마감 {formatDate(task.dueAt)}</small>
-                        </div>
-                        {task.status !== 'DONE' &&
-                          new Date(task.dueAt) < new Date() && (
-                            <span className="is-overdue">마감 지남</span>
-                          )}
-                      </article>
-                    ))}
-                </div>
-              </section>
-            ))}
+            {Object.entries(statusLabels).map(
+              ([status, label]) =>
+                (filter === 'ALL' || filter === status) && (
+                  <section
+                    className={`task-column task-state-${status.toLowerCase()}`}
+                    key={status}
+                  >
+                    <div className="task-column-heading">
+                      <h2>
+                        <span className="status-dot" />
+                        {label}
+                      </h2>
+                      <span>
+                        {tasks.filter((task) => task.status === status).length}
+                      </span>
+                    </div>
+                    <div className="task-column-list">
+                      {!tasks.some((task) => task.status === status) && (
+                        <p className="column-empty">아직 작업이 없습니다</p>
+                      )}
+                      {tasks
+                        .filter((task) => task.status === status)
+                        .map((task) => (
+                          <article key={task.id} className="board-task-card">
+                            <div className="board-card-top">
+                              <span className="mobile-task-state">{label}</span>
+                              <span className="task-number">#{task.id}</span>
+                              <span className="task-weight">
+                                {formatExpectedWorkload(task.weight)}
+                              </span>
+                            </div>
+                            <button
+                              className="task-title-button"
+                              onClick={() => onOpenTask(task.id)}
+                            >
+                              <h3>{task.title}</h3>
+                            </button>
+                            <dl className="task-card-meta">
+                              <div>
+                                <dt>담당</dt>
+                                <dd>
+                                  {task.assignees.map((assignment) => (
+                                    <span
+                                      key={assignment.userId}
+                                      className={
+                                        assignment.userId === user.id
+                                          ? 'my-assignment'
+                                          : ''
+                                      }
+                                    >
+                                      {memberName(members, assignment.userId)}{' '}
+                                      <b>{assignment.allocationPercent}%</b>
+                                    </span>
+                                  ))}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt>승인</dt>
+                                <dd>
+                                  {memberName(
+                                    members,
+                                    task.completionReviewerId,
+                                  )}
+                                </dd>
+                              </div>
+                            </dl>
+                            <div className="task-deadline">
+                              <Icon name="calendar" />
+                              <small>마감 {formatDate(task.dueAt)}</small>
+                            </div>
+                            {task.status !== 'DONE' &&
+                              new Date(task.dueAt) < new Date() && (
+                                <span className="is-overdue">마감 지남</span>
+                              )}
+                          </article>
+                        ))}
+                    </div>
+                  </section>
+                ),
+            )}
           </div>
         ) : (
           <EmptyState>

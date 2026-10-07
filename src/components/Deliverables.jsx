@@ -12,6 +12,7 @@ import {
   uploadDeliverable,
 } from '../api/deliverables.js';
 import useResource from '../hooks/useResource.js';
+import { useInteractions } from '../hooks/useInteractions.js';
 import {
   categoryLabels,
   canModifyTeamWork,
@@ -43,7 +44,7 @@ function DeliverableForm({
   onClose,
   onSave,
 }) {
-  const [form, setForm] = useState({
+  const [initialForm] = useState({
     title: initial?.title || '',
     description: initial?.description || '',
     category: initial?.category || 'OTHER',
@@ -51,6 +52,7 @@ function DeliverableForm({
     textOrUrl: initial?.textOrUrl || '',
     taskId: taskId ?? '',
   });
+  const [form, setForm] = useState(initialForm);
   const targetContract = isPreviewPath(window.location.pathname);
   const categories = targetContract
     ? {
@@ -112,6 +114,10 @@ function DeliverableForm({
       title={initial ? '산출물 수정' : '산출물 등록'}
       busy={busy}
       onClose={onClose}
+      wide
+      dirty={
+        Boolean(file) || JSON.stringify(form) !== JSON.stringify(initialForm)
+      }
     >
       {targetContract && (
         <p className="mock-notice">
@@ -142,7 +148,10 @@ function DeliverableForm({
             </select>
           </Field>
           {(!initial || permissions.content) && (
-            <Field label="설명">
+            <Field
+              label="설명"
+              help="선택 사항입니다. 자료의 목적이나 확인할 내용을 적어주세요."
+            >
               <textarea
                 maxLength={2000}
                 value={form.description}
@@ -164,7 +173,15 @@ function DeliverableForm({
                     ? ['TEXT', 'FILE']
                     : ['TEXT', 'URL', 'FILE']
                   ).map((type) => (
-                    <option key={type}>{type}</option>
+                    <option key={type} value={type}>
+                      {
+                        {
+                          TEXT: '문서 작성',
+                          FILE: '파일 업로드',
+                          URL: '외부 링크',
+                        }[type]
+                      }
+                    </option>
                   ))}
                 </select>
               </Field>
@@ -233,6 +250,17 @@ function DeliverableForm({
               삭제됩니다.
             </p>
           )}
+          {file && (
+            <div className="file-selection" role="status">
+              <strong>{file.name}</strong>
+              <p>
+                {(file.size / 1024).toFixed(1)}KiB ·{' '}
+                {initial
+                  ? '저장하면 기존 파일이 삭제되고 이 파일로 교체됩니다.'
+                  : '저장하면 업로드됩니다.'}
+              </p>
+            </div>
+          )}
           {initial && !permissions.content && (
             <p className="notice">
               팀 공용 자료의 제목과 분류만 정리할 수 있습니다.
@@ -260,6 +288,7 @@ export default function Deliverables({
   taskId,
   onChanged = () => {},
 }) {
+  const { confirm, notify } = useInteractions();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedPage = Number(searchParams.get('page') || 0);
   const page =
@@ -311,6 +340,7 @@ export default function Deliverables({
       else if (type === 'FILE') await uploadDeliverable(team.id, input, file);
       else await createDeliverable(team.id, input);
       setEditing(undefined);
+      notify(editing ? '산출물을 수정했습니다.' : '산출물을 등록했습니다.');
       resource.reload();
       onChanged();
     } catch (requestError) {
@@ -321,15 +351,19 @@ export default function Deliverables({
   };
   const remove = async (deliverable) => {
     if (
-      !window.confirm(
-        `“${deliverable.title}”을 완전히 삭제할까요? 파일도 함께 삭제됩니다.`,
-      )
+      !(await confirm({
+        title: '산출물 삭제',
+        message: `“${deliverable.title}”을 완전히 삭제합니다. 파일도 함께 삭제되며 복구할 수 없습니다.`,
+        label: '산출물 삭제',
+        danger: true,
+      }))
     )
       return;
     setBusy(true);
     setError(null);
     try {
       await deleteDeliverable(deliverable.id, deliverable.version);
+      notify('산출물을 삭제했습니다.');
       resource.reload();
       onChanged();
     } catch (requestError) {
@@ -357,7 +391,14 @@ export default function Deliverables({
   return (
     <section className="stack deliverables-section">
       <div className="section-heading">
-        <h2>{taskId == null ? '산출물 관리' : '연결 산출물'}</h2>
+        {taskId == null ? (
+          <div>
+            <h1>산출물 관리</h1>
+            <p>팀 공용 자료와 작업에 연결된 최신 산출물을 확인하세요.</p>
+          </div>
+        ) : (
+          <h2>연결 산출물</h2>
+        )}
         {canCreate && (
           <button
             className="primary-button"
@@ -412,7 +453,12 @@ export default function Deliverables({
                       <h3>{deliverable.title}</h3>
                     </div>
                     <span className="role-badge">
-                      {deliverable.type} ·{' '}
+                      {
+                        { TEXT: '문서', FILE: '파일', URL: '링크' }[
+                          deliverable.type
+                        ]
+                      }{' '}
+                      ·{' '}
                       {categoryLabels[deliverable.category] ||
                         {
                           RESEARCH: '조사·분석',

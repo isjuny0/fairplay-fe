@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { ErrorNotice } from './ui.jsx';
 import { requestPlanned, getMidFeedback } from '../api/planned.js';
 import useResource from '../hooks/useResource.js';
@@ -11,6 +12,10 @@ import { FeedbackCards, MockNotice } from './PlanningUi.jsx';
 import { EmptyState, ResourceState } from './ui.jsx';
 
 export default function MemberContributions({ context, targetUserId, onBack }) {
+  const [params, setParams] = useSearchParams();
+  const statusFilter = Object.hasOwn(statusLabels, params.get('status'))
+    ? params.get('status')
+    : 'ALL';
   const [downloadError, setDownloadError] = useState(null);
   const downloadExample = (item) => {
     try {
@@ -64,64 +69,111 @@ export default function MemberContributions({ context, targetUserId, onBack }) {
       </div>
       <MockNotice />
       <ErrorNotice error={downloadError} />
+      {resource.data && (
+        <section className="panel">
+          <h2>담당 작업 요약</h2>
+          <div className="action-summary">
+            {Object.entries(statusLabels).map(([status, label]) => (
+              <span key={status}>
+                {label}{' '}
+                <strong>
+                  {
+                    resource.data.filter((task) => task.status === status)
+                      .length
+                  }
+                  건
+                </strong>
+              </span>
+            ))}
+          </div>
+          <label className="form-field">
+            <span className="field-label">조회할 작업 상태</span>
+            <select
+              value={statusFilter}
+              onChange={(event) =>
+                setParams(
+                  event.target.value === 'ALL'
+                    ? {}
+                    : { status: event.target.value },
+                )
+              }
+            >
+              <option value="ALL">전체 작업</option>
+              {Object.entries(statusLabels).map(([status, label]) => (
+                <option value={status} key={status}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </section>
+      )}
       <ResourceState resource={resource}>
         {resource.data?.length ? (
-          resource.data.map((task) => (
-            <section className="panel" key={task.taskId}>
-              <div className="page-heading">
-                <h2>{task.title}</h2>
-                <span
-                  className={`status-badge task-state-${task.status.toLowerCase()}`}
-                >
-                  {statusLabels[task.status]}
-                </span>
-              </div>
-              <p>
-                예상 작업량: {formatExpectedWorkload(task.weight)} · 본인 배분{' '}
-                {task.allocationPercent}% ·
-                마감 {formatDate(task.dueAt)}
-              </p>
-              <h3>본인이 작성한 수행 설명</h3>
-              <p className="preserve-lines">
-                {task.contributionDescription ||
-                  '아직 작성하지 않았습니다. 미작성만으로 수행 여부를 판단할 수 없습니다.'}
-              </p>
-              <h3>연결된 최신 산출물</h3>
-              {task.deliverableSummary.length ? (
-                task.deliverableSummary.map((item) => (
-                  <details className="read-only-deliverable" key={item.id}>
-                    <summary>
-                      {item.title} · {item.type}
-                    </summary>
-                    {item.type === 'FILE' ? (
-                      <>
-                        <p>{item.file.originalFilename} · 예시 파일</p>
-                        <button
-                          className="secondary-button"
-                          onClick={() => downloadExample(item)}
-                        >
-                          예시 파일 다운로드
-                        </button>
-                      </>
-                    ) : (
-                      <p className="preserve-lines">
-                        {item.textOrUrl || '현재 산출물 요약입니다.'}
-                      </p>
-                    )}
-                  </details>
-                ))
-              ) : (
-                <p>연결된 산출물이 없습니다.</p>
-              )}
-            </section>
-          ))
+          resource.data
+            .filter(
+              (task) => statusFilter === 'ALL' || task.status === statusFilter,
+            )
+            .map((task) => (
+              <section className="panel" key={task.taskId}>
+                <div className="page-heading">
+                  <h2>{task.title}</h2>
+                  <span
+                    className={`status-badge task-state-${task.status.toLowerCase()}`}
+                  >
+                    {statusLabels[task.status]}
+                  </span>
+                </div>
+                <p>
+                  예상 작업량: {formatExpectedWorkload(task.weight)} · 본인 배분{' '}
+                  {task.allocationPercent}% · 마감 {formatDate(task.dueAt)}
+                </p>
+                <h3>본인이 작성한 수행 설명</h3>
+                <p className="preserve-lines">
+                  {task.contributionDescription ||
+                    '아직 작성하지 않았습니다. 미작성만으로 수행 여부를 판단할 수 없습니다.'}
+                </p>
+                <h3>연결된 최신 산출물</h3>
+                {task.deliverableSummary.length ? (
+                  task.deliverableSummary.map((item) => (
+                    <details className="read-only-deliverable" key={item.id}>
+                      <summary>
+                        {item.title} ·{' '}
+                        {{ TEXT: '문서', FILE: '파일', URL: '링크' }[item.type]}
+                      </summary>
+                      {item.type === 'FILE' ? (
+                        <>
+                          <p>{item.file.originalFilename} · 예시 파일</p>
+                          <button
+                            className="secondary-button"
+                            onClick={() => downloadExample(item)}
+                          >
+                            예시 파일 다운로드
+                          </button>
+                        </>
+                      ) : (
+                        <p className="preserve-lines">
+                          {item.textOrUrl || '현재 산출물 요약입니다.'}
+                        </p>
+                      )}
+                    </details>
+                  ))
+                ) : (
+                  <p>연결된 산출물이 없습니다.</p>
+                )}
+              </section>
+            ))
         ) : (
           <EmptyState>현재 담당 작업이 없습니다.</EmptyState>
         )}
       </ResourceState>
+      {resource.data?.length > 0 &&
+        !resource.data.some(
+          (task) => statusFilter === 'ALL' || task.status === statusFilter,
+        ) && <EmptyState>선택한 상태의 담당 작업이 없습니다.</EmptyState>}
       {ownFeedback ? (
         <>
-          <h2>MID 수신 평균과 개선 안내</h2>
+          <h2>중간 평가 협업 평균과 개선 안내</h2>
           <FeedbackCards member={ownFeedback} />
         </>
       ) : (

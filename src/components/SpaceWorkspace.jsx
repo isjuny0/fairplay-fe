@@ -39,6 +39,7 @@ export default function SpaceWorkspace({
   onBack,
 }) {
   const navigate = useAppNavigate();
+  const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
   const resource = useResource(async () => {
     const [space, teams] = await Promise.all([
       getSpace(spaceId),
@@ -115,8 +116,25 @@ export default function SpaceWorkspace({
   };
   return (
     <div className="workspace">
-      <aside className="sidebar">
-        <nav aria-label="스페이스 메뉴">
+      <aside
+        className={`sidebar ${mobileNavigationOpen ? 'is-mobile-open' : ''}`}
+      >
+        <button
+          className="mobile-space-toggle"
+          aria-expanded={mobileNavigationOpen}
+          aria-controls="space-navigation"
+          onClick={() => setMobileNavigationOpen(!mobileNavigationOpen)}
+        >
+          <span>{space?.name || '스페이스'}</span>
+          <span>스페이스 메뉴 {mobileNavigationOpen ? '⌃' : '⌄'}</span>
+        </button>
+        <nav
+          id="space-navigation"
+          aria-label="스페이스 메뉴"
+          onClick={(event) => {
+            if (event.target.closest('button')) setMobileNavigationOpen(false);
+          }}
+        >
           <button className="nav-item" onClick={onBack}>
             <Icon name="back" />내 스페이스
           </button>
@@ -255,6 +273,12 @@ export default function SpaceWorkspace({
                       <Icon name="plus" />팀 만들기
                     </button>
                   </div>
+                  {joinedTeam && (
+                    <p className="field-help">
+                      현재 소속된 팀이 있습니다. 팀 목록의 ‘팀 열기’에서 작업을
+                      이어가세요.
+                    </p>
+                  )}
                   <section className="panel building-panel">
                     <h2>
                       <Icon name="calendar" />
@@ -296,6 +320,18 @@ export default function SpaceWorkspace({
                                 REJECTED: '가입 신청 반려',
                               }[item.myMembershipStatus] || '미가입'}
                             </p>
+                            {!isManager &&
+                              !isApprovedMember(item) &&
+                              !item.canApply &&
+                              item.myMembershipStatus !== 'PENDING' && (
+                                <p className="field-help">
+                                  {!buildingOpen
+                                    ? '팀 빌딩 기간에만 가입을 신청할 수 있습니다.'
+                                    : joinedTeam
+                                      ? '이미 다른 팀에 소속되어 있습니다.'
+                                      : '현재 팀 가입 신청 조건을 충족하지 않습니다.'}
+                                </p>
+                              )}
                           </div>
                           <div className="team-action">
                             {isApprovedMember(item) || isManager ? (
@@ -356,6 +392,7 @@ export default function SpaceWorkspace({
             title="팀 만들기"
             busy={busy}
             onClose={() => setCreating(false)}
+            dirty={Boolean(name)}
           >
             <form onSubmit={submit}>
               <Field label="팀 이름">

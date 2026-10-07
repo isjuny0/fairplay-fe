@@ -5,6 +5,7 @@ import { getCurrentUser, loginWithGoogle, logout } from './api/auth.js';
 import AppRoutes from './components/AppRoutes.jsx';
 import { loginReturnPath } from './lib/routes.js';
 import { ErrorNotice } from './components/ui.jsx';
+import { useInteractions } from './hooks/useInteractions.js';
 import {
   getPreviewUser,
   isPreviewPath,
@@ -28,6 +29,10 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [sessionNotice, setSessionNotice] = useState('');
+  const [previewSettingsOpen, setPreviewSettingsOpen] = useState(
+    () => window.innerWidth > 720,
+  );
+  const { confirmDiscard } = useInteractions();
   useEffect(() => {
     let active = true;
     setChecking(true);
@@ -72,6 +77,7 @@ export default function App() {
     }
   };
   const signOut = async () => {
+    if (!(await confirmDiscard())) return;
     if (preview) {
       setUser(null);
       navigate('/', { replace: true });
@@ -117,6 +123,11 @@ export default function App() {
             팀 프로젝트의 역할과 수행 과정을 기록하고, 기여도를 근거와 함께
             확인하세요.
           </p>
+          <ol className="login-benefits">
+            <li>작업을 나누고 수행 내용을 기록</li>
+            <li>산출물을 확인하고 완료 승인</li>
+            <li>협업을 돌아보고 기여도 확인</li>
+          </ol>
           <button
             className="google-button"
             disabled={busy || preview}
@@ -173,54 +184,68 @@ export default function App() {
             <span className="mock-tag">화면 미리보기</span>
             <span>모든 데이터는 예시이며 서버에 전송되지 않습니다.</span>
           </div>
-          <div className="preview-controls">
-            <label>
-              역할
-              <select
-                aria-label="미리보기 역할"
-                value={previewRole()}
-                onChange={(event) => {
-                  setPreviewRole(event.target.value);
-                  setUser(getPreviewUser());
+          <details
+            className="preview-settings"
+            open={previewSettingsOpen}
+            onToggle={(event) =>
+              setPreviewSettingsOpen(event.currentTarget.open)
+            }
+          >
+            <summary>미리보기 설정</summary>
+            <div className="preview-controls">
+              <label>
+                역할
+                <select
+                  aria-label="미리보기 역할"
+                  value={previewRole()}
+                  onChange={async (event) => {
+                    const nextRole = event.target.value;
+                    if (!(await confirmDiscard())) return;
+                    setPreviewRole(nextRole);
+                    setUser(getPreviewUser());
+                    setPreviewRevision((value) => value + 1);
+                    navigate('/preview/main');
+                  }}
+                >
+                  <option value="leader">팀 리더</option>
+                  <option value="participant">스페이스 참여자·팀 미가입</option>
+                  <option value="member">일반 담당자</option>
+                  <option value="reviewer">부리더·승인자</option>
+                  <option value="manager">스페이스 관리자</option>
+                </select>
+              </label>
+              <label>
+                상황
+                <select
+                  aria-label="미리보기 상황"
+                  value={scenario}
+                  onChange={async (event) => {
+                    const nextScenario = event.target.value;
+                    if (!(await confirmDiscard())) return;
+                    setScenario(nextScenario);
+                    resetPreview(nextScenario);
+                    setPreviewRevision((value) => value + 1);
+                  }}
+                >
+                  <option value="active">평가 진행 중</option>
+                  <option value="setup">평가 시작 전</option>
+                  <option value="building">팀 빌딩 진행 중</option>
+                  <option value="review">리포트 검토</option>
+                  <option value="published">리포트 공개 완료</option>
+                </select>
+              </label>
+              <button
+                className="secondary-button"
+                onClick={async () => {
+                  if (!(await confirmDiscard())) return;
+                  resetPreview(scenario);
                   setPreviewRevision((value) => value + 1);
-                  navigate('/preview/main');
                 }}
               >
-                <option value="leader">팀 리더</option>
-                <option value="participant">스페이스 참여자·팀 미가입</option>
-                <option value="member">일반 담당자</option>
-                <option value="reviewer">부리더·승인자</option>
-                <option value="manager">스페이스 관리자</option>
-              </select>
-            </label>
-            <label>
-              상황
-              <select
-                aria-label="미리보기 상황"
-                value={scenario}
-                onChange={(event) => {
-                  setScenario(event.target.value);
-                  resetPreview(event.target.value);
-                  setPreviewRevision((value) => value + 1);
-                }}
-              >
-                <option value="active">평가 진행 중</option>
-                <option value="setup">평가 시작 전</option>
-                <option value="building">팀 빌딩 진행 중</option>
-                <option value="review">리포트 검토</option>
-                <option value="published">리포트 공개 완료</option>
-              </select>
-            </label>
-            <button
-              className="secondary-button"
-              onClick={() => {
-                resetPreview(scenario);
-                setPreviewRevision((value) => value + 1);
-              }}
-            >
-              예시 초기화
-            </button>
-          </div>
+                예시 초기화
+              </button>
+            </div>
+          </details>
         </div>
       )}
       {error && <ErrorNotice error={error} />}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   assignCompletionReviewer,
   deleteTask,
@@ -8,6 +8,10 @@ import {
 } from '../api/tasks.js';
 import { getApprovalHistory, requestCompletion } from '../api/approvals.js';
 import useResource from '../hooks/useResource.js';
+import {
+  useInteractions,
+  useUnsavedChanges,
+} from '../hooks/useInteractions.js';
 import {
   canEditTask,
   canModifyTeamWork,
@@ -31,6 +35,10 @@ import { ErrorNotice, Field, ResourceState } from './ui.jsx';
 function OwnContribution({ task, contribution, busy, blocked, onSave }) {
   const [description, setDescription] = useState(contribution || '');
   const [error, setError] = useState(null);
+  useEffect(() => {
+    if (!isMutable(task)) setDescription(contribution || '');
+  }, [task.status, contribution]);
+  useUnsavedChanges(isMutable(task) && description !== (contribution || ''));
   return (
     <form
       onSubmit={(event) => {
@@ -60,6 +68,11 @@ function OwnContribution({ task, contribution, busy, blocked, onSave }) {
         />
       </Field>
       <ErrorNotice error={error} />
+      {isMutable(task) && description !== (contribution || '') && (
+        <p className="field-help" role="status">
+          저장하지 않은 수행 설명이 있습니다.
+        </p>
+      )}
       {isMutable(task) && (
         <button className="secondary-button" disabled={busy || blocked}>
           수행 설명 저장
@@ -92,12 +105,14 @@ export default function TaskDetail({
   const [error, setError] = useState(null);
   const [editing, setEditing] = useState(false);
   const [reviewerId, setReviewerId] = useState('');
+  const { confirm, confirmDiscard, notify } = useInteractions();
   const mutate = async (action) => {
     if (!canModifyTeamWork(team)) return;
     setBusy(true);
     setError(null);
     try {
       await action();
+      notify('작업 변경 사항을 저장했습니다.');
       setEditing(false);
       resource.reload();
     } catch (requestError) {
@@ -177,7 +192,7 @@ export default function TaskDetail({
                       </h3>
                       {contribution.userId === user.id ? (
                         <OwnContribution
-                          key={`${task.id}-${task.version}`}
+                          key={`${task.id}-${contribution.contributionDescription || ''}`}
                           task={task}
                           contribution={contribution.contributionDescription}
                           busy={busy}
@@ -214,21 +229,22 @@ export default function TaskDetail({
                 aria-label="작업 진행 및 검토"
               >
                 {isAssignee(task, user.id) && isMutable(task) && (
-                  <section className="panel stack">
+                  <section className="panel stack task-next-action">
                     <h2>작업 진행</h2>
                     <div className="heading-actions">
                       <button
                         className="secondary-button"
                         disabled={busy || !canModifyTeamWork(team)}
-                        onClick={() =>
+                        onClick={async () => {
+                          if (!(await confirmDiscard())) return;
                           mutate(() =>
                             updateTask(task.id, {
                               expectedVersion: task.version,
                               status:
                                 task.status === 'TODO' ? 'IN_PROGRESS' : 'TODO',
                             }),
-                          )
-                        }
+                          );
+                        }}
                       >
                         {task.status === 'TODO'
                           ? '작업 시작'
@@ -241,9 +257,12 @@ export default function TaskDetail({
                           !canModifyTeamWork(team) ||
                           !task.canRequestCompletion
                         }
-                        onClick={() =>
-                          mutate(() => requestCompletion(task.id, task.version))
-                        }
+                        onClick={async () => {
+                          if (!(await confirmDiscard())) return;
+                          mutate(() =>
+                            requestCompletion(task.id, task.version),
+                          );
+                        }}
                       >
                         완료 요청
                       </button>
@@ -332,8 +351,8 @@ export default function TaskDetail({
                       onChanged={resource.reload}
                     />
                   )}
-                <section className="panel">
-                  <h2>완료 요청 이력</h2>
+                <details className="panel">
+                  <summary>완료 요청 이력 · {history.length}건</summary>
                   <p className="field-help">
                     과거 작업 내용·파일 사본은 보관하지 않습니다. 현재 산출물과
                     요청 처리 이력을 확인하세요.
@@ -371,7 +390,7 @@ export default function TaskDetail({
                   ) : (
                     <p>완료 요청 이력이 없습니다.</p>
                   )}
-                </section>
+                </details>
               </aside>
             </div>
             {isMutable(task) &&
@@ -382,15 +401,20 @@ export default function TaskDetail({
                   disabled={busy || teamWorkBlocked(team)}
                   onClick={async () => {
                     if (
-                      !window.confirm(
-                        '작업과 연결된 산출물을 완전히 삭제할까요?',
-                      )
+                      !(await confirm({
+                        title: '작업 삭제',
+                        message:
+                          '작업과 연결된 산출물을 완전히 삭제합니다. 삭제한 자료는 복구할 수 없습니다.',
+                        label: '작업 삭제',
+                        danger: true,
+                      }))
                     )
                       return;
                     setBusy(true);
                     setError(null);
                     try {
                       await deleteTask(task.id, task.version);
+                      notify('작업을 삭제했습니다.');
                       onBack();
                     } catch (requestError) {
                       setError(requestError);

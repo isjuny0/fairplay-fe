@@ -125,24 +125,6 @@ export default function AiEvaluation({ context, onChanged }) {
                 {evaluation.reason ||
                   '평가가 완료되면 결과와 근거를 확인할 수 있습니다.'}
               </p>
-              {evaluation.criteria.map((criterion) => (
-                <section className="criterion-row" key={criterion.code}>
-                  <div>
-                    <h3>{criterionLabels[criterion.code]}</h3>
-                    <strong>
-                      {criterion.points} / {criterion.maxPoints}점 · 수준{' '}
-                      {criterion.level}/4
-                    </strong>
-                  </div>
-                  <p>{criterion.reason}</p>
-                  {criterion.evidence?.map((evidence, index) => (
-                    <Evidence key={index} evidence={evidence} />
-                  ))}
-                </section>
-              ))}
-              {evaluation.evidence.map((evidence, index) => (
-                <Evidence key={index} evidence={evidence} />
-              ))}
               {evaluation.unverified.length > 0 && (
                 <div className="notice-panel">
                   <h3>자료에서 확인하지 못한 내용</h3>
@@ -183,6 +165,27 @@ export default function AiEvaluation({ context, onChanged }) {
                   </div>
                 )}
               <details>
+                <summary>항목별 평가·원문 근거 보기</summary>
+                {evaluation.criteria.map((criterion) => (
+                  <section className="criterion-row" key={criterion.code}>
+                    <div>
+                      <h3>{criterionLabels[criterion.code]}</h3>
+                      <strong>
+                        {criterion.points} / {criterion.maxPoints}점 · 수준{' '}
+                        {criterion.level}/4
+                      </strong>
+                    </div>
+                    <p>{criterion.reason}</p>
+                    {criterion.evidence?.map((evidence, index) => (
+                      <Evidence key={index} evidence={evidence} />
+                    ))}
+                  </section>
+                ))}
+                {evaluation.evidence.map((evidence, index) => (
+                  <Evidence key={index} evidence={evidence} />
+                ))}
+              </details>
+              <details>
                 <summary>0~4 수준 안내</summary>
                 <p>
                   0 · 요구 결과를 충족하지 못함 / 1 · 주요 부분 부족 / 2 · 기본
@@ -194,8 +197,13 @@ export default function AiEvaluation({ context, onChanged }) {
                 인용·위치는 모델이 식별한 안내이며 서버 검증을 뜻하지 않습니다.{' '}
                 {context.task.status !== 'DONE' &&
                   '보완 전 진단 기록은 현재 원본의 검증 근거가 아닙니다.'}{' '}
-                {evaluation.model} · 기준 {evaluation.rubricVersion}
               </p>
+              <details>
+                <summary>평가 기준·모델 정보</summary>
+                <p>
+                  {evaluation.model} · 기준 {evaluation.rubricVersion}
+                </p>
+              </details>
             </>
           )}
         </ResourceState>

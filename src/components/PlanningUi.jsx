@@ -56,7 +56,7 @@ export function RoundPicker({ rounds, selected, onSelect }) {
 }
 export function FeedbackCards({ member }) {
   return (
-    <>
+    <div className="feedback-layout">
       <div className="metric-grid">
         {Object.entries(peerCriteria).map(([code, label]) => (
           <MetricCard
@@ -83,6 +83,6 @@ export function FeedbackCards({ member }) {
           제공하지 않습니다.
         </p>
       </section>
-    </>
+    </div>
   );
 }

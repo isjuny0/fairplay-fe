@@ -18,7 +18,7 @@ export default function TaskForm({
   onSave,
   onClose,
 }) {
-  const [form, setForm] = useState({
+  const [initialForm] = useState({
     title: task?.title || '',
     description: task?.description || '',
     weight: task?.weight || 3,
@@ -26,6 +26,8 @@ export default function TaskForm({
     assignees: task?.assignees.map((assignment) => ({ ...assignment })) || [],
     completionReviewerId: task?.completionReviewerId || '',
   });
+  const [form, setForm] = useState(initialForm);
+  const dirty = JSON.stringify(form) !== JSON.stringify(initialForm);
   const [error, setError] = useState(null);
   const update = (name, value) =>
     setForm((current) => ({ ...current, [name]: value }));
@@ -92,9 +94,12 @@ export default function TaskForm({
       title={task ? '작업 수정' : '새 작업 만들기'}
       busy={busy}
       onClose={onClose}
+      wide
+      dirty={dirty}
     >
       <form onSubmit={submit}>
         <fieldset className="form-fields" disabled={busy || blocked}>
+          <h3 className="form-section-title">작업 내용</h3>
           <Field label="작업 제목">
             <input
               required
@@ -110,19 +115,22 @@ export default function TaskForm({
             <textarea
               required
               maxLength={1000}
-              rows={5}
+              rows={3}
               value={form.description}
               onChange={(event) => update('description', event.target.value)}
             />
           </Field>
+          <p className="character-count">{form.description.length} / 1000자</p>
           <div className="two-columns">
             <Field
               label="예상 작업량"
-              help="준비·수행·검토에 필요한 시간을 예상해주세요. 여러 담당자의 예상 시간을 합산하고 대기 시간은 제외합니다."
+              help="모든 담당자의 준비·수행·검토 시간을 합산합니다. 대기 시간은 제외합니다."
             >
               <select
                 value={form.weight}
-                onChange={(event) => update('weight', event.target.value)}
+                onChange={(event) =>
+                  update('weight', Number(event.target.value))
+                }
               >
                 {expectedWorkloadOptions.map(({ weight, label }) => (
                   <option key={weight} value={weight}>
@@ -140,13 +148,42 @@ export default function TaskForm({
               />
             </Field>
           </div>
-          <p className="field-help">
-            예상 작업량과 담당 비율은 기여도 계산에 반영됩니다. 실제로 오래
-            걸렸다는 이유로 자동 증가하지 않으며, 작업 범위가 바뀌면 팀과
-            합의해 조정해주세요.
-          </p>
+          <details className="form-help">
+            <summary>예상 작업량과 담당 비율은 어떻게 사용되나요?</summary>
+            <p className="field-help">
+              예상 작업량과 담당 비율은 기여도 계산에 반영됩니다. 실제로 오래
+              걸렸다는 이유로 자동 증가하지 않으며, 작업 범위가 바뀌면 팀과
+              합의해 조정해주세요.
+            </p>
+          </details>
           <div>
-            <h3>담당자와 배분 · 합계 {total}%</h3>
+            <h3 className="form-section-title">담당·승인 설정</h3>
+            <div className="section-heading">
+              <h3>담당자와 배분 · 합계 {total}%</h3>
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={!form.assignees.length}
+                onClick={() =>
+                  update(
+                    'assignees',
+                    form.assignees.map((assignment, index) => ({
+                      ...assignment,
+                      allocationPercent:
+                        Math.floor(100 / form.assignees.length) +
+                        (index < 100 % form.assignees.length ? 1 : 0),
+                    })),
+                  )
+                }
+              >
+                균등 배분
+              </button>
+            </div>
+            <p className={total === 100 ? 'field-help' : 'field-error'}>
+              {total === 100
+                ? '담당 비율 합계가 100%입니다.'
+                : '담당자를 선택하고 비율 합계를 100%로 맞춰 주세요.'}
+            </p>
             <div className="assignment-inputs">
               {members.map((member) => {
                 const assignment = form.assignees.find(

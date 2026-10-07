@@ -1,10 +1,16 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { getReport, getReports, requestPlanned } from '../api/planned.js';
+import {
+  getReport,
+  getReports,
+  getRounds,
+  requestPlanned,
+} from '../api/planned.js';
 import useResource from '../hooks/useResource.js';
+import { useInteractions } from '../hooks/useInteractions.js';
 import { formatDate } from '../lib/domain.js';
 import { parseRouteId } from '../lib/routes.js';
-import { MetricCard, MockNotice, ProgressBar } from './PlanningUi.jsx';
+import { MockNotice, ProgressBar } from './PlanningUi.jsx';
 import { EmptyState, ErrorNotice, Modal, ResourceState } from './ui.jsx';
 
 function ReportDetail({ context, reportId }) {
@@ -17,6 +23,20 @@ function ReportDetail({ context, reportId }) {
     <ResourceState resource={resource}>
       {report && (
         <div className="stack">
+          {report.myDetails && (
+            <section className="report-own-result">
+              <div>
+                <span className="eyebrow">공개된 나의 최종 결과</span>
+                <h2>나의 최종 기여율</h2>
+                <p className="field-help">
+                  현재 작업 현황과 구분된 최종 평가 결과입니다.
+                </p>
+              </div>
+              <strong>
+                {Number(report.myDetails.totalPercent).toFixed(1)}%
+              </strong>
+            </section>
+          )}
           <section className="panel">
             <div className="page-heading">
               <div>
@@ -56,33 +76,31 @@ function ReportDetail({ context, reportId }) {
               홈의 현재 작업 현황과는 다른 집계입니다.
             </p>
           </section>
-          <section className="panel">
+          <details className="panel report-method">
+            <summary>계산 방식 보기</summary>
             <h2>어떻게 계산되나요?</h2>
-            <div className="metric-grid three">
-              <MetricCard
-                label="AI 작업 평가"
-                value="70%"
-                description="유효한 작업 품질 평가와 담당 배분"
-              />
-              <MetricCard
-                label="중간 동료 평가"
-                value="10%"
-                description="MID 수신 평가의 팀 내 비율"
-              />
-              <MetricCard
-                label="최종 동료 평가"
-                value="20%"
-                description="FINAL 수신 평가의 팀 내 비율"
-              />
+            <div
+              className="report-composition"
+              aria-label="AI 작업 평가 70%, 중간 동료 평가 10%, 최종 동료 평가 20%"
+            >
+              <span style={{ width: '70%' }}>70%</span>
+              <span style={{ width: '10%' }}>10%</span>
+              <span style={{ width: '20%' }}>20%</span>
             </div>
+            <ul className="clean-list composition-legend">
+              <li>AI 작업 평가 70% · 유효한 작업 품질과 담당 배분</li>
+              <li>중간 동료 평가 10% · 팀 내 협업 평가 비율</li>
+              <li>최종 동료 평가 20% · 팀 내 협업 평가 비율</li>
+            </ul>
             <p className="field-help">
               작업 집계 기준 {formatDate(report.cutoffAt)} · 정책{' '}
               {report.policyVersion}. 평가자·개별 동료 점수·사유 원문은 공개하지
               않습니다.
             </p>
-          </section>
+          </details>
           {report.myDetails && (
-            <section className="panel">
+            <details className="panel report-calculation">
+              <summary>나의 계산 근거 보기</summary>
               <h2>나의 계산 근거</h2>
               <div className="table-scroll">
                 <table className="data-table">
@@ -97,8 +115,8 @@ function ReportDetail({ context, reportId }) {
                   <tbody>
                     {[
                       ['AI 작업 평가', 'ai', 70],
-                      ['MID', 'mid', 10],
-                      ['FINAL', 'final', 20],
+                      ['중간 동료 평가', 'mid', 10],
+                      ['최종 동료 평가', 'final', 20],
                     ].map(([label, key, weight]) => (
                       <tr key={key}>
                         <th>{label}</th>
@@ -124,7 +142,12 @@ function ReportDetail({ context, reportId }) {
                 반올림 보정 {report.myDetails.roundingAdjustmentPercent}%p ·
                 최종 {Number(report.myDetails.totalPercent).toFixed(1)}%
               </p>
-            </section>
+              <p className="field-help">
+                기여분은 최종 기여율에 더해지는 퍼센트포인트(%p)입니다. 예: 팀
+                내 비율 80%에 반영 비중 70%를 곱하면 최종 기여율에 56%p가
+                반영됩니다.
+              </p>
+            </details>
           )}
         </div>
       )}
@@ -132,6 +155,18 @@ function ReportDetail({ context, reportId }) {
   );
 }
 export function ReportList({ context, manager = false }) {
+  const { notify } = useInteractions();
+  const readiness = useResource(async () => {
+    if (!manager) return null;
+    const [rounds, dashboard] = await Promise.all([
+      getRounds(context),
+      requestPlanned(
+        context,
+        `/api/spaces/${context.space.id}/manager-dashboard`,
+      ),
+    ]);
+    return { rounds, dashboard };
+  }, [manager, context.space.id, context.team.id]);
   const resource = useResource(
     () => getReports(context),
     [context.team.id, context.user.id],
@@ -145,6 +180,32 @@ export function ReportList({ context, manager = false }) {
     reports.find(
       (report) => report.id === parseRouteId(params.get('reportId')),
     ) || reports[0];
+  const closedRounds =
+    readiness.data &&
+    ['MID', 'FINAL'].every((type) =>
+      readiness.data.rounds.some(
+        (round) => round.type === type && round.status === 'CLOSED',
+      ),
+    );
+  const teamSubmissionComplete =
+    readiness.data &&
+    ['MID', 'FINAL'].every(
+      (type) =>
+        readiness.data.dashboard.missingPeerSubmissions
+          .find((round) => round.type === type)
+          ?.teams.find((team) => team.teamId === context.team.id)
+          ?.missingCount === 0,
+    );
+  const aiReviewCount = readiness.data?.dashboard.teams.find(
+    (team) => team.teamId === context.team.id,
+  )?.aiNeedsReviewCount;
+  const knownBlock =
+    readiness.loading ||
+    Boolean(readiness.error) ||
+    !closedRounds ||
+    !teamSubmissionComplete ||
+    context.team.approvedMemberCount < 2 ||
+    aiReviewCount > 0;
   const select = (id) => {
     const next = new URLSearchParams(params);
     next.set('reportId', String(id));
@@ -155,17 +216,39 @@ export function ReportList({ context, manager = false }) {
       <ErrorNotice error={error} />
       {manager && (
         <section className="panel">
+          <ol className="process-steps" aria-label="리포트 진행 단계">
+            <li className={!selected ? 'active' : ''}>1. 초안 생성</li>
+            <li className={selected?.status === 'DRAFT' ? 'active' : ''}>
+              2. 검토
+            </li>
+            <li className={selected?.status === 'PUBLISHED' ? 'active' : ''}>
+              3. 공개
+            </li>
+          </ol>
+          <ul className="readiness-list">
+            <li>{closedRounds ? '✓' : '○'} 중간·최종 평가 마감</li>
+            <li>
+              {teamSubmissionComplete ? '✓' : '○'} 우리 팀 필수 동료 평가 제출
+            </li>
+            <li>
+              {aiReviewCount == null
+                ? '확인 중'
+                : `AI 추가 확인 ${aiReviewCount}건`}{' '}
+              · 모든 AI 입력의 유효성은 초안 생성 시 최종 확인
+            </li>
+          </ul>
+          <ErrorNotice error={readiness.error} onRetry={readiness.reload} />
           <div className="page-heading">
             <div>
               <h2>{context.team.name} 리포트</h2>
               <p>
-                유효 AI 평가와 우리 팀 MID·FINAL 제출을 충족하면 현재 산식으로
-                계산합니다.
+                유효 AI 평가와 우리 팀 중간·최종 평가 제출을 충족하면 현재
+                산식으로 계산합니다.
               </p>
             </div>
             <button
-              className="primary-button"
-              disabled={busy}
+              className={selected ? 'secondary-button' : 'primary-button'}
+              disabled={busy || knownBlock}
               onClick={async () => {
                 setBusy(true);
                 setError(null);
@@ -175,6 +258,7 @@ export function ReportList({ context, manager = false }) {
                     `/api/teams/${context.team.id}/reports/draft`,
                     { method: 'POST' },
                   );
+                  notify('리포트 초안을 준비했습니다.');
                   select(report.id);
                   resource.reload();
                 } catch (error) {
@@ -220,7 +304,7 @@ export function ReportList({ context, manager = false }) {
               <section className="panel">
                 <h2>검토 후 팀원에게 공개</h2>
                 <p>
-                  스페이스 전체 MID·FINAL 필수 제출과 최신 입력 조건이
+                  스페이스 전체 중간·최종 평가 필수 제출과 최신 입력 조건이
                   필요합니다. 공개 결과는 불변입니다.
                 </p>
                 <button
@@ -280,7 +364,9 @@ export function ReportList({ context, manager = false }) {
                     { method: 'POST' },
                   );
                   setPublishing(null);
+                  notify('리포트를 팀원에게 공개했습니다.');
                   resource.reload();
+                  readiness.reload();
                 } catch (error) {
                   setError(error);
                 } finally {

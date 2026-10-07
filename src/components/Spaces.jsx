@@ -2,6 +2,7 @@ import Icon from './Icon.jsx';
 import { useState } from 'react';
 import { createSpace, joinSpace, listSpaces } from '../api/spaces.js';
 import useResource from '../hooks/useResource.js';
+import { useInteractions } from '../hooks/useInteractions.js';
 import { buildingLabels, fromDateInput } from '../lib/domain.js';
 import {
   EmptyState,
@@ -13,6 +14,7 @@ import {
 } from './ui.jsx';
 
 export default function Spaces({ onSelect }) {
+  const { notify, clearChanges } = useInteractions();
   const resource = useResource(listSpaces, []);
   const [modal, setModal] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -50,6 +52,12 @@ export default function Spaces({ onSelect }) {
             })
           : await joinSpace(form.code.trim().toUpperCase());
       setModal(null);
+      clearChanges();
+      notify(
+        modal === 'create'
+          ? '스페이스를 생성했습니다.'
+          : '스페이스에 참여했습니다.',
+      );
       resource.reload();
       onSelect(result.id ?? result.spaceId);
     } catch (requestError) {
@@ -118,6 +126,7 @@ export default function Spaces({ onSelect }) {
           title={modal === 'create' ? '스페이스 만들기' : '코드로 참여'}
           busy={busy}
           onClose={() => setModal(null)}
+          dirty={Object.values(form).some(Boolean)}
         >
           <form onSubmit={submit}>
             <fieldset disabled={busy} className="form-fields">
@@ -131,7 +140,10 @@ export default function Spaces({ onSelect }) {
                       onChange={(event) => update('name', event.target.value)}
                     />
                   </Field>
-                  <Field label="소개">
+                  <Field
+                    label="소개"
+                    help="선택 사항입니다. 프로젝트의 목적을 간단히 적어주세요."
+                  >
                     <textarea
                       maxLength={500}
                       value={form.description}
@@ -164,13 +176,21 @@ export default function Spaces({ onSelect }) {
                   </p>
                 </>
               ) : (
-                <Field label="참여 코드">
+                <Field
+                  label="참여 코드"
+                  help="관리자가 공유한 8자리 코드를 붙여넣으세요."
+                >
                   <input
                     required
                     pattern="[0-9A-Fa-f]{8}"
                     maxLength={8}
                     value={form.code}
-                    onChange={(event) => update('code', event.target.value)}
+                    onChange={(event) =>
+                      update(
+                        'code',
+                        event.target.value.replace(/\s/g, '').toUpperCase(),
+                      )
+                    }
                     placeholder="8자리 참여 코드"
                   />
                 </Field>

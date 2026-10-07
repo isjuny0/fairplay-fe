@@ -155,6 +155,48 @@ export default function TeamWorkspace({
           </button>
         ))}
       </nav>
+      <nav className="mobile-team-navigation" aria-label="모바일 팀 메뉴">
+        {menus
+          .filter((label) => ['팀 홈', '작업 보드', '산출물'].includes(label))
+          .map((label) => (
+            <button
+              key={label}
+              className={menu === label ? 'active' : ''}
+              aria-current={menu === label ? 'page' : undefined}
+              onClick={() => navigateToMenu(label)}
+            >
+              {label}
+            </button>
+          ))}
+        <details>
+          <summary
+            className={
+              !['팀 홈', '작업 보드', '산출물'].includes(menu) ? 'active' : ''
+            }
+          >
+            {!['팀 홈', '작업 보드', '산출물'].includes(menu) ? menu : '더보기'}{' '}
+            ⌄
+          </summary>
+          <div className="mobile-team-more">
+            {menus
+              .filter(
+                (label) => !['팀 홈', '작업 보드', '산출물'].includes(label),
+              )
+              .map((label) => (
+                <button
+                  key={label}
+                  className={menu === label ? 'active' : ''}
+                  onClick={(event) => {
+                    event.currentTarget.closest('details').open = false;
+                    navigateToMenu(label);
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+          </div>
+        </details>
+      </nav>
       {approved && currentMenu !== '팀 설정' && (
         <>
           <ErrorNotice
