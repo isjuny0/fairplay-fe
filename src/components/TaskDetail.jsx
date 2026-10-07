@@ -13,6 +13,7 @@ import {
   canModifyTeamWork,
   completionBlockLabels,
   formatDate,
+  formatExpectedWorkload,
   isAssignee,
   isMutable,
   isTeamEditor,
@@ -129,7 +130,8 @@ export default function TaskDetail({
                 </span>
                 <h1>{task.title}</h1>
                 <p>
-                  가중치 {task.weight} · 마감 {formatDate(task.dueAt)}
+                  예상 작업량: {formatExpectedWorkload(task.weight)} · 마감{' '}
+                  {formatDate(task.dueAt)}
                 </p>
               </div>
               {canEditTask(task, team, user.id) && (

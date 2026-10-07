@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { ErrorNotice } from './ui.jsx';
 import { requestPlanned, getMidFeedback } from '../api/planned.js';
 import useResource from '../hooks/useResource.js';
-import { formatDate, statusLabels } from '../lib/domain.js';
+import {
+  formatDate,
+  formatExpectedWorkload,
+  statusLabels,
+} from '../lib/domain.js';
 import { FeedbackCards, MockNotice } from './PlanningUi.jsx';
 import { EmptyState, ResourceState } from './ui.jsx';
 
@@ -73,7 +77,8 @@ export default function MemberContributions({ context, targetUserId, onBack }) {
                 </span>
               </div>
               <p>
-                가중치 {task.weight} · 본인 배분 {task.allocationPercent}% ·
+                예상 작업량: {formatExpectedWorkload(task.weight)} · 본인 배분{' '}
+                {task.allocationPercent}% ·
                 마감 {formatDate(task.dueAt)}
               </p>
               <h3>본인이 작성한 수행 설명</h3>

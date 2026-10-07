@@ -34,8 +34,8 @@ export default function TeamHome({ context, onNavigate }) {
                 <span className="eyebrow">현재 등록된 작업 기준</span>
                 <h2>팀 전체 진행률</h2>
                 <p>
-                  완료 가중치 {summary.teamDoneWeight} / 전체{' '}
-                  {summary.teamTotalWeight}
+                  예상 작업량을 반영한 진행률입니다. 실제 소요 시간이나
+                  최종 기여도 점수가 아닙니다.
                 </p>
               </div>
               <strong className="hero-number">
@@ -43,7 +43,7 @@ export default function TeamHome({ context, onNavigate }) {
               </strong>
               <ProgressBar
                 value={summary.teamProgressRate}
-                label="팀 가중치 진행률"
+                label="예상 작업량을 반영한 팀 진행률"
               />
             </section>
             <div className="metric-grid three">
@@ -51,7 +51,7 @@ export default function TeamHome({ context, onNavigate }) {
                 accent
                 label="내 담당 비중"
                 value={formatPercent(summary.myAssignedShare)}
-                description="전체 작업 중 내가 맡은 배분 가중치"
+                description="예상 작업량과 담당 비율을 반영한 내 몫"
               />
               <MetricCard
                 label="내 완료 기여율"

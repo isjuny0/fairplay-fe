@@ -3,7 +3,7 @@ import { requestPlanned } from '../api/planned.js';
 import useResource from '../hooks/useResource.js';
 import useAppNavigate from '../hooks/useAppNavigate.js';
 import { spacePath } from '../lib/routes.js';
-import { formatPercent } from '../lib/evaluation.js';
+import { completedWorkShare, formatPercent } from '../lib/evaluation.js';
 import { MetricCard, MockNotice } from './PlanningUi.jsx';
 import { EmptyState, Field, ResourceState } from './ui.jsx';
 
@@ -64,8 +64,8 @@ export default function ManagerDashboard({ context }) {
                 <div>
                   <h2>팀별 진행 현황</h2>
                   <p>
-                    완료율은 작업 개수 기준입니다. 팀 홈의 가중치 진행률과
-                    구분됩니다.
+                    완료율은 작업 개수 기준입니다. 팀 홈의 예상 작업량을
+                    반영한 진행률과 구분됩니다.
                   </p>
                 </div>
                 <Field label="조회할 팀">
@@ -171,7 +171,7 @@ export default function ManagerDashboard({ context }) {
                         <th>담당</th>
                         <th>진행</th>
                         <th>완료</th>
-                        <th>승인된 배분 가중치</th>
+                        <th>현재 팀원 완료 비중</th>
                         <th>공동 수행 설명 미작성</th>
                         <th>자료 확인</th>
                       </tr>
@@ -183,7 +183,12 @@ export default function ManagerDashboard({ context }) {
                           <td>{member.assignedTaskCount}</td>
                           <td>{member.inProgressTaskCount}</td>
                           <td>{member.doneTaskCount}</td>
-                          <td>{member.approvedWorkWeight}</td>
+                          <td>
+                            {formatPercent(
+                              completedWorkShare(member, team.members),
+                              '완료 작업 없음',
+                            )}
+                          </td>
                           <td>{member.missingContributionDescriptionCount}</td>
                           <td>
                             <button
@@ -204,6 +209,11 @@ export default function ManagerDashboard({ context }) {
                 </div>
               </section>
             ))}
+            <p className="field-help">
+              현재 팀원 완료 비중은 현재 팀원들의 완료 작업에서 각자가 맡은
+              몫을 예상 작업량과 담당 비율로 계산한 값입니다. 실제 시간이나
+              최종 기여도 점수가 아닙니다.
+            </p>
             <p className="field-help">
               장기 정체는 마지막 활동 후 48시간 이상 지난 진행 작업입니다.
               기록과 수치는 검토를 돕는 정보이며 무임승차 판정이 아닙니다.

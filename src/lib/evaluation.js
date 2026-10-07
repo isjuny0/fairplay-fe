@@ -6,6 +6,15 @@ export const roundStatusLabels = {
 };
 export const formatPercent = (value, empty = '계산할 작업 없음') =>
   value == null ? empty : `${Number(value).toFixed(2)}%`;
+export function completedWorkShare(member, members) {
+  const totalCompletedWeight = members.reduce(
+    (total, entry) => total + entry.approvedWorkWeight,
+    0,
+  );
+  return totalCompletedWeight > 0
+    ? (member.approvedWorkWeight / totalCompletedWeight) * 100
+    : null;
+}
 export const isLowScore = (scores) =>
   Object.values(scores).some((score) => [1, 2].includes(Number(score)));
 export function validatePeerResponse(scores, reason) {

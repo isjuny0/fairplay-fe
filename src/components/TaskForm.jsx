@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   fromDateInput,
+  expectedWorkloadOptions,
   memberRole,
   reviewerCandidates,
   toDateInput,
@@ -116,15 +117,17 @@ export default function TaskForm({
           </Field>
           <div className="two-columns">
             <Field
-              label="가중치"
-              help="같은 프로젝트 안에서 합의한 상대적인 작업 규모입니다."
+              label="예상 작업량"
+              help="준비·수행·검토에 필요한 시간을 예상해주세요. 여러 담당자의 예상 시간을 합산하고 대기 시간은 제외합니다."
             >
               <select
                 value={form.weight}
                 onChange={(event) => update('weight', event.target.value)}
               >
-                {[1, 2, 3, 5, 8].map((weight) => (
-                  <option key={weight}>{weight}</option>
+                {expectedWorkloadOptions.map(({ weight, label }) => (
+                  <option key={weight} value={weight}>
+                    {label}
+                  </option>
                 ))}
               </select>
             </Field>
@@ -137,6 +140,11 @@ export default function TaskForm({
               />
             </Field>
           </div>
+          <p className="field-help">
+            예상 작업량과 담당 비율은 기여도 계산에 반영됩니다. 실제로 오래
+            걸렸다는 이유로 자동 증가하지 않으며, 작업 범위가 바뀌면 팀과
+            합의해 조정해주세요.
+          </p>
           <div>
             <h3>담당자와 배분 · 합계 {total}%</h3>
             <div className="assignment-inputs">

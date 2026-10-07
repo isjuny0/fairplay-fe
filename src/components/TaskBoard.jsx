@@ -6,6 +6,7 @@ import useResource from '../hooks/useResource.js';
 import {
   canModifyTeamWork,
   formatDate,
+  formatExpectedWorkload,
   memberName,
   statusLabels,
 } from '../lib/domain.js';
@@ -161,7 +162,7 @@ export default function TaskBoard({
                         <div className="board-card-top">
                           <span className="task-number">#{task.id}</span>
                           <span className="task-weight">
-                            가중치 {task.weight}
+                            {formatExpectedWorkload(task.weight)}
                           </span>
                         </div>
                         <button
