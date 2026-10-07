@@ -274,7 +274,7 @@ async function workspace(
     }
     if (path === '/api/tasks/10') {
       if (method === 'PATCH') {
-        if (conflict)
+        if (conflict || request.postDataJSON().expectedVersion !== task.version)
           return respond(
             {
               code: 'VERSION_CONFLICT',
@@ -389,9 +389,10 @@ async function workspace(
     setDeletionConflict: () => {
       deletionConflict = true;
     },
-    setConflict: () => {
-      conflict = true;
+    setConflict: (value = true) => {
+      conflict = value;
     },
+    changeTask: (fields) => { task = { ...task, ...fields }; },
     expire: () => {
       expired = true;
     },
@@ -748,6 +749,12 @@ test('모바일·태블릿·데스크톱에서 팀 탐색과 작업 생성 폼�
       .getByRole('button', { name: '새 작업 만들기', exact: true })
       .click();
     const dialog = page.getByRole('dialog');
+    if (width <= 600) {
+      await dialog.getByLabel('작업 제목', { exact: true }).fill('반응형 입력 검증');
+      await dialog.getByLabel('작업 설명', { exact: true }).fill('각 화면 폭에서 담당·승인 설정을 확인합니다.');
+      await dialog.getByLabel('마감 (한국 시간)', { exact: true }).fill('2030-12-01T18:00');
+      await dialog.getByRole('button', { name: '다음: 담당·승인', exact: true }).click();
+    }
     await expect(
       dialog.getByLabel('완료 승인자', { exact: true }),
     ).toBeVisible();
@@ -757,6 +764,7 @@ test('모바일·태블릿·데스크톱에서 팀 탐색과 작업 생성 폼�
       ),
     ).toBe(true);
     await dialog.getByRole('button', { name: '닫기', exact: true }).click();
+    if (width <= 600) await page.getByRole('button', { name: '버리고 닫기', exact: true }).click();
   }
 });
 
@@ -1464,4 +1472,76 @@ test('빈 작업 목록은 생성 가능한 팀에만 첫 작업 등록을 제�
   await expect(page.getByText('아직 등록된 작업이 없습니다.', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '첫 작업 만들기', exact: true })).toHaveCount(0);
   await expect(page.getByText('승인된 팀원이 2명 이상 모이면 작업을 만들 수 있습니다.', { exact: true })).toBeVisible();
+});
+
+test('작업 충돌은 내 입력과 최신 내용을 비교한 뒤 확인한 버전으로만 다시 저장한다', async ({ page }) => {
+  const state = await workspace(page);
+  await page.goto('/spaces/1/teams/1/tasks/10');
+  await page.getByRole('button', { name: '작업 수정', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '작업 수정' });
+  await dialog.getByLabel('작업 제목', { exact: true }).fill('내가 작성한 제목');
+  state.changeTask({ title: '팀원이 수정한 최신 제목', version: 2 });
+  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await expect(dialog.getByRole('button', { name: '다시 저장', exact: true })).toBeDisabled();
+  await dialog.getByRole('button', { name: '최신 내용 확인', exact: true }).click();
+  await expect(dialog.getByText('팀원이 수정한 최신 제목', { exact: true })).toBeVisible();
+  await expect(dialog.getByLabel('작업 제목', { exact: true })).toHaveValue('내가 작성한 제목');
+  await dialog.getByRole('button', { name: '내 입력으로 다시 저장', exact: true }).click();
+  await page.getByRole('dialog', { name: '최신 작업에 내 입력 반영' }).getByRole('button', { name: '취소', exact: true }).click();
+  expect(state.requests.filter(request => request.method === 'PATCH' && request.path === '/api/tasks/10')).toHaveLength(1);
+  state.changeTask({ version: 3, title: '다시 변경된 서버 제목' });
+  await dialog.getByRole('button', { name: '내 입력으로 다시 저장', exact: true }).click();
+  await page.getByRole('dialog', { name: '최신 작업에 내 입력 반영' }).getByRole('button', { name: '내 입력으로 저장', exact: true }).click();
+  await expect(dialog.getByRole('button', { name: '다시 저장', exact: true })).toBeDisabled();
+  await dialog.getByRole('button', { name: '최신 내용 확인', exact: true }).click();
+  await expect(dialog.getByText('다시 변경된 서버 제목', { exact: true })).toBeVisible();
+  await dialog.getByRole('button', { name: '내 입력으로 다시 저장', exact: true }).click();
+  await page.getByRole('dialog', { name: '최신 작업에 내 입력 반영' }).getByRole('button', { name: '내 입력으로 저장', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: '내가 작성한 제목', exact: true })).toBeVisible();
+  const versions = state.requests.filter(request => request.method === 'PATCH' && request.path === '/api/tasks/10').map(request => JSON.parse(request.body).expectedVersion);
+  expect(versions).toEqual([0, 2, 3]);
+});
+
+for (const changedState of ['PENDING_APPROVAL', 'DONE']) test(`최신 작업이 ${changedState}로 바뀌면 충돌 입력을 보존하고 재저장을 막는다`, async ({ page }) => {
+  const state = await workspace(page);
+  await page.goto('/spaces/1/teams/1/tasks/10');
+  await page.getByRole('button', { name: '작업 수정', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '작업 수정' });
+  await dialog.getByLabel('작업 제목', { exact: true }).fill('보존할 입력');
+  state.changeTask({ status: changedState, version: 1 });
+  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await dialog.getByRole('button', { name: '최신 내용 확인', exact: true }).click();
+  await expect(dialog.getByRole('button', { name: '내 입력으로 다시 저장', exact: true })).toBeDisabled();
+  await expect(dialog.getByLabel('작업 제목', { exact: true })).toHaveValue('보존할 입력');
+  expect(state.requests.filter(request => request.method === 'PATCH' && request.path === '/api/tasks/10')).toHaveLength(1);
+});
+
+test('충돌 후 현재 담당자·리더 권한을 잃으면 내 입력으로 재저장할 수 없다', async ({ page }) => {
+  const state = await workspace(page);
+  await page.goto('/spaces/1/teams/1/tasks/10');
+  await page.getByRole('button', { name: '작업 수정', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '작업 수정' });
+  await dialog.getByLabel('작업 제목', { exact: true }).fill('유지할 제목');
+  state.changeTask({ assignees: [{ userId: 'leader', allocationPercent: 100 }], completionReviewerId: 'member', version: 1 });
+  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await dialog.getByRole('button', { name: '최신 내용 확인', exact: true }).click();
+  await expect(dialog.getByRole('button', { name: '내 입력으로 다시 저장', exact: true })).toBeDisabled();
+  await expect(dialog.getByLabel('작업 제목', { exact: true })).toHaveValue('유지할 제목');
+  expect(state.requests.filter(request => request.method === 'PATCH' && request.path === '/api/tasks/10')).toHaveLength(1);
+});
+
+test('충돌의 최신 조회가 실패하면 입력을 보존하고 확인 없이 재저장하지 않는다', async ({ page }) => {
+  const state = await workspace(page);
+  await page.goto('/spaces/1/teams/1/tasks/10');
+  await page.getByRole('button', { name: '작업 수정', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '작업 수정' });
+  await dialog.getByLabel('작업 제목', { exact: true }).fill('보존할 초안');
+  state.setConflict();
+  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await page.route('**/api/tasks/10', (route) => route.request().method() === 'GET' ? route.fulfill({ status: 503, json: { code: 'TEMPORARILY_UNAVAILABLE', message: '최신 조회를 잠시 사용할 수 없습니다.' } }) : route.fallback());
+  await dialog.getByRole('button', { name: '최신 내용 확인', exact: true }).click();
+  await expect(dialog.getByText('최신 조회를 잠시 사용할 수 없습니다.', { exact: true })).toBeVisible();
+  await expect(dialog.getByLabel('작업 제목', { exact: true })).toHaveValue('보존할 초안');
+  await expect(dialog.getByRole('button', { name: '다시 저장', exact: true })).toBeDisabled();
 });
