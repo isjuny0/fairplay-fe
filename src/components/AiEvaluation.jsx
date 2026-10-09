@@ -181,9 +181,6 @@ export default function AiEvaluation({ context, onChanged }) {
                     ))}
                   </section>
                 ))}
-                {evaluation.evidence.map((evidence, index) => (
-                  <Evidence key={index} evidence={evidence} />
-                ))}
               </details>
               <details>
                 <summary>0~4 수준 안내</summary>

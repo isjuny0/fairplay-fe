@@ -947,7 +947,6 @@ export async function plannedRequest(
         score: null,
         criteria: [],
         reason: null,
-        evidence: [],
         unverified: [],
         failureCode: null,
         retryCompletesAt: Date.now() + 2000,
@@ -1025,32 +1024,31 @@ export function exampleEvaluation(
               '조사 근거와 한계가 제시되어 있습니다.',
               '다음 작업에 활용할 수 있도록 정리되어 있습니다.',
             ][index],
-            evidence: [],
+            evidence:
+              index === 2
+                ? [
+                    {
+                      deliverableId: task.teamId * 1000 + 2,
+                      sourceType: 'TEXT',
+                      kind: 'TEXT_QUOTE',
+                      quote: '관찰과 해석을 구분해 기록합니다.',
+                      observation: null,
+                      location: {
+                        page: null,
+                        section: '기록 방식',
+                        slide: null,
+                        sheetName: null,
+                        cellRange: null,
+                      },
+                    },
+                  ]
+                : [],
           })),
     reason: dataFailure
       ? '자료에서 핵심 내용을 확인하지 못했습니다. 지정 승인자에게 자료 보완을 요청하세요.'
       : technicalFailure
         ? '평가 서비스 연결에 실패했습니다. 자료를 바꾸지 않고 다시 시도할 수 있습니다.'
         : '요구한 결과를 충족하며 일부 근거의 범위를 더 명확히 하면 좋겠습니다.',
-    evidence:
-      dataFailure || technicalFailure
-        ? []
-        : [
-            {
-              deliverableId: task.teamId * 1000 + 2,
-              sourceType: 'TEXT',
-              kind: 'TEXT_QUOTE',
-              quote: '관찰과 해석을 구분해 기록합니다.',
-              observation: null,
-              location: {
-                page: null,
-                section: '기록 방식',
-                slide: null,
-                sheetName: null,
-                cellRange: null,
-              },
-            },
-          ],
     unverified: [
       '실제 인터뷰 수행 여부는 제출된 자료만으로 확인할 수 없습니다.',
     ],
