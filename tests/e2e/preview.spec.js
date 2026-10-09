@@ -300,6 +300,13 @@ test('자료 보완 후 새 완료 요청을 승인하면 새 AI 결과와 이�
   await page.getByRole('button', { name: '완료 승인', exact: true }).click();
   await page.getByRole('dialog').getByRole('button', { name: '승인 확정', exact: true }).click();
   await expect(page.getByText('85 / 100', { exact: true })).toBeVisible();
+  await page.getByText('항목별 평가·원문 근거 보기', { exact: true }).click();
+  const evidenceCriterion = page.locator('.criterion-row').filter({
+    has: page.getByRole('heading', { name: '근거 뒷받침', exact: true }),
+  });
+  await expect(
+    evidenceCriterion.getByText('관찰과 해석을 구분해 기록합니다.', { exact: true }),
+  ).toBeVisible();
   expect(calls).toEqual([]);
 });
 test('팀 빌딩 상황에서는 가입 승인 및 미가입 참여자의 팀 생성 화면을 제공한다', async ({
