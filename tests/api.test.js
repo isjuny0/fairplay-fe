@@ -103,7 +103,11 @@ test('파일 업로드는 정확한 multipart 필드와 CSRF를 전송한다', a
     { taskId: null, title: '자료', description: null, category: 'OTHER' },
     new Blob(['text']),
   );
-  assert.deepEqual([...calls[1].body.keys()], ['title', 'category', 'file']);
+  assert.deepEqual([...calls[1].body.keys()], ['metadata', 'file']);
+  assert.equal(calls[1].body.get('metadata').type, 'application/json');
+  assert.deepEqual(JSON.parse(await calls[1].body.get('metadata').text()), {
+    taskId: null, title: '자료', description: null, category: 'OTHER',
+  });
   assert.equal(calls[1].headers['Content-Type'], undefined);
   assert.equal(calls[1].headers['X-CSRF-TOKEN'], 'token');
 });

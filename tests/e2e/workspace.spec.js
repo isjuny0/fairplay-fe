@@ -332,7 +332,7 @@ async function workspace(
         decidedAt: '2026-10-05T11:00:00+09:00',
       };
       task = { ...task, status: 'IN_PROGRESS', version: task.version + 1 };
-      return respond({ ...approvals[0], taskStatus: task.status });
+      return respond(approvals[0]);
     }
     if (path === '/api/approvals/20/approve') {
       approvals[0] = {
@@ -341,7 +341,7 @@ async function workspace(
         decidedAt: '2026-10-05T11:00:00+09:00',
       };
       task = { ...task, status: 'DONE', version: task.version + 1 };
-      return respond({ ...approvals[0], taskStatus: task.status });
+      return respond(approvals[0]);
     }
     if (path === '/api/teams/1/applications') return respond([]);
     if (path === '/api/teams/1/deliverables') return respond(deliverables);
@@ -629,6 +629,8 @@ test('파일 산출물을 multipart로 업로드하고 인증을 유지해 다�
     'multipart/form-data; boundary=',
   );
   expect(upload.body).toContain('name="file"; filename="design.md"');
+  expect(upload.body).toContain('name="metadata"');
+  expect(upload.body).toContain('application/json');
   expect(upload.body).not.toContain('name="type"');
   const downloadEvent = page.waitForEvent('download');
   await page.getByRole('button', { name: '파일 다운로드' }).click();

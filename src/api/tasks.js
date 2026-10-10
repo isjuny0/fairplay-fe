@@ -11,8 +11,3 @@ export const deleteTask = (taskId, expectedVersion) =>
   });
 export const updateContribution = (taskId, body) =>
   apiRequest(`/api/tasks/${taskId}/contribution`, { method: 'PATCH', body });
-export const assignCompletionReviewer = (taskId, body) =>
-  apiRequest(`/api/tasks/${taskId}/completion-reviewer`, {
-    method: 'PATCH',
-    body,
-  });
