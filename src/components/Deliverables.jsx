@@ -65,7 +65,7 @@ function DeliverableForm({
     description: initial?.description || '',
     category: initial?.category || 'OTHER',
     type: initial?.type || 'TEXT',
-    textOrUrl: initial?.textOrUrl || '',
+    text: initial?.text || '',
     taskId: taskId ?? '',
   });
   const [form, setForm] = useState(initialForm);
@@ -78,19 +78,15 @@ function DeliverableForm({
         OPERATION: '행사·운영',
       }
     : categoryLabels;
-  const fileExtensions = targetContract
-    ? /\.(pdf|txt|md|hwp|hwpx|ppt|pptx|xls|xlsx)$/i
-    : /\.(pdf|png|jpe?g|txt|md)$/i;
-  const fileHelp = targetContract
-    ? 'TXT·MD·PDF·HWP·HWPX·PPT·PPTX·XLS·XLSX'
-    : 'PDF·PNG·JPEG·TXT·MD';
+  const fileExtensions = /\.(txt|md|pdf|doc|docx|ppt|pptx|xls|xlsx)$/i;
+  const fileHelp = 'TXT, MD, PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX';
   const [file, setFile] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const update = (name, value) => {
     setFieldErrors((current) => ({
       ...current,
       [name]: undefined,
-      ...(name === 'type' ? { file: undefined, textOrUrl: undefined } : {}),
+      ...(name === 'type' ? { file: undefined, text: undefined } : {}),
     }));
     setForm((current) => ({ ...current, [name]: value }));
   };
@@ -126,12 +122,11 @@ function DeliverableForm({
       input.expectedVersion =
         recovery.latest?.deliverable.version ?? initial.version;
       if (permissions.content && initial.type !== 'FILE')
-        input.textOrUrl = form.textOrUrl.trim();
+        input.text = form.text.trim();
     } else {
       input.taskId = form.taskId === '' ? null : Number(form.taskId);
       if (form.type !== 'FILE') {
-        input.type = form.type;
-        input.textOrUrl = form.textOrUrl.trim();
+        input.text = form.text.trim();
       }
     }
     onSave(input, file, form.type);
@@ -200,16 +195,12 @@ function DeliverableForm({
                     setFile(null);
                   }}
                 >
-                  {(targetContract
-                    ? ['TEXT', 'FILE']
-                    : ['TEXT', 'URL', 'FILE']
-                  ).map((type) => (
+                  {['TEXT', 'FILE'].map((type) => (
                     <option key={type} value={type}>
                       {
                         {
                           TEXT: '문서 작성',
                           FILE: '파일 업로드',
-                          URL: '외부 링크',
                         }[type]
                       }
                     </option>
@@ -244,11 +235,7 @@ function DeliverableForm({
                   name="file"
                   type="file"
                   required={!initial}
-                  accept={
-                    targetContract
-                      ? '.txt,.md,.pdf,.hwp,.hwpx,.ppt,.pptx,.xls,.xlsx'
-                      : '.pdf,.png,.jpg,.jpeg,.txt,.md'
-                  }
+                  accept=".txt,.md,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
                   onChange={(event) => {
                     setFile(event.target.files[0] || null);
                     setFieldErrors((current) => ({
@@ -259,33 +246,15 @@ function DeliverableForm({
                 />
               </Field>
             ) : (
-              <Field
-                label={form.type === 'URL' ? 'URL' : '본문'}
-                error={fieldErrors.textOrUrl}
-              >
-                {form.type === 'URL' ? (
-                  <input
-                    name="textOrUrl"
-                    type="url"
-                    required
-                    maxLength={2000}
-                    value={form.textOrUrl}
-                    onChange={(event) =>
-                      update('textOrUrl', event.target.value)
-                    }
-                  />
-                ) : (
-                  <textarea
-                    name="textOrUrl"
-                    required
-                    maxLength={20000}
-                    rows={6}
-                    value={form.textOrUrl}
-                    onChange={(event) =>
-                      update('textOrUrl', event.target.value)
-                    }
-                  />
-                )}
+              <Field label="본문" error={fieldErrors.text}>
+                <textarea
+                  name="text"
+                  required
+                  maxLength={20000}
+                  rows={6}
+                  value={form.text}
+                  onChange={(event) => update('text', event.target.value)}
+                />
               </Field>
             ))}
           {initial && (
@@ -357,9 +326,9 @@ function DeliverableForm({
                                 '선택한 새 파일 없음 · 최신 원본 유지',
                             }
                           : {
-                              label: form.type === 'URL' ? 'URL' : '본문',
-                              latest: recovery.latest.deliverable.textOrUrl,
-                              input: form.textOrUrl.trim(),
+                              label: '본문',
+                              latest: recovery.latest.deliverable.text,
+                              input: form.text.trim(),
                             },
                       ]),
                 ]
@@ -557,7 +526,7 @@ export default function Deliverables({
                     </div>
                     <span className="role-badge">
                       {
-                        { TEXT: '문서', FILE: '파일', URL: '링크' }[
+                        { TEXT: '문서', FILE: '파일' }[
                           deliverable.type
                         ]
                       }{' '}
@@ -590,18 +559,9 @@ export default function Deliverables({
                     <details>
                       <summary>본문 보기</summary>
                       <p className="preserve-lines deliverable-body">
-                        {deliverable.textOrUrl}
+                        {deliverable.text}
                       </p>
                     </details>
-                  )}
-                  {deliverable.type === 'URL' && (
-                    <a
-                      href={deliverable.textOrUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      링크 열기 ↗
-                    </a>
                   )}
                   {deliverable.type === 'FILE' && (
                     <p>

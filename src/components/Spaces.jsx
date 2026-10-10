@@ -112,16 +112,16 @@ export default function Spaces({ onSelect }) {
         {resource.data?.length ? (
           <ul className="space-list">
             {resource.data.map((space) => (
-              <li key={space.spaceId}>
-                <button onClick={() => onSelect(space.spaceId)}>
+              <li key={space.id}>
+                <button onClick={() => onSelect(space.id)}>
                   <span className="space-card-top">
                     <span className="space-symbol">
                       <Icon name="grid" />
                     </span>
                     <span
-                      className={`role-badge ${space.role === 'MANAGER' ? 'role-manager' : ''}`}
+                      className={`role-badge ${space.myRole === 'MANAGER' ? 'role-manager' : ''}`}
                     >
-                      {space.role === 'MANAGER' ? '관리자' : '참여자'}
+                      {space.myRole === 'MANAGER' ? '관리자' : '참여자'}
                     </span>
                   </span>
                   <strong>{space.name}</strong>

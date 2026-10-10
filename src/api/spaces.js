@@ -16,10 +16,5 @@ export const createJoinCode = (id, expirationMinutes) =>
     method: 'POST',
     body: { expirationMinutes },
   });
-export const rotateJoinCode = (id, expirationMinutes) =>
-  apiRequest(`/api/spaces/${id}/join-code/rotate`, {
-    method: 'POST',
-    body: { expirationMinutes },
-  });
 export const revokeJoinCode = (id) =>
   apiRequest(`/api/spaces/${id}/join-code/revoke`, { method: 'POST' });

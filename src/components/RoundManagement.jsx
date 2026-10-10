@@ -15,7 +15,7 @@ import {
 } from './ui.jsx';
 
 export default function RoundManagement({ context }) {
-  const { confirm, notify } = useInteractions();
+  const { notify } = useInteractions();
   const resource = useResource(() => getRounds(context), [context.space.id]);
   const submissions = useResource(
     () =>
@@ -50,30 +50,18 @@ export default function RoundManagement({ context }) {
     setForm(nextForm);
     setInitialForm(nextForm);
   };
-  const act = async (round, action) => {
-    if (
-      action === 'close' &&
-      !(await confirm({
-        title: `${roundLabels[round.type]} 마감`,
-        message:
-          round.type === 'FINAL'
-            ? '평가 작성을 마감합니다. 최초 마감이면 작업 집계 기준 시각도 고정됩니다. 재개방해도 집계 기간은 늘어나지 않습니다.'
-            : '평가 작성을 마감합니다. 제출된 응답은 수정할 수 없습니다.',
-        label: '마감 확정',
-      }))
-    )
-      return;
+  const openRound = async (round) => {
     setBusy(true);
     setError(null);
     try {
       await requestPlanned(
         context,
-        `/api/evaluation-rounds/${round.id}/${action}`,
+        `/api/evaluation-rounds/${round.id}/open`,
         { method: 'POST' },
       );
       resource.reload();
       notify(
-        `${roundLabels[round.type]}를 ${action === 'open' ? '시작' : '마감'}했습니다.`,
+        `${roundLabels[round.type]}를 시작했습니다.`,
       );
     } catch (error) {
       setError(error);
@@ -102,21 +90,6 @@ export default function RoundManagement({ context }) {
       )
         return '설정한 시작 시각부터 마감 시각 전까지만 시작할 수 있습니다.';
     }
-    if (
-      round.status === 'OPEN' &&
-      new Date(round.closesAt) > new Date() &&
-      submissions.data?.missingPeerSubmissions.find(
-        (entry) => entry.roundId === round.id,
-      )?.missingCount > 0
-    )
-      return '기한 전 마감은 모든 참여자의 제출 후 가능합니다.';
-    if (
-      round.status === 'CLOSED' &&
-      submissions.data?.teams.some(
-        (team) => team.reportStatus === 'PUBLISHED',
-      )
-    )
-      return '공개된 리포트가 있어 재개방할 수 없습니다.';
     return null;
   };
   return (
@@ -226,28 +199,16 @@ export default function RoundManagement({ context }) {
                       <button
                         className="primary-button"
                         disabled={busy || Boolean(blockReason(round))}
-                        onClick={() => act(round, 'open')}
+                        onClick={() => openRound(round)}
                       >
                         {roundLabels[round.type]} 시작
                       </button>
                     </>
                   )}
                   {round.status === 'OPEN' && (
-                    <button
-                      className="secondary-button"
-                      disabled={busy || Boolean(blockReason(round))}
-                      onClick={() => act(round, 'close')}
-                    >
-                      {roundLabels[round.type]} 마감
-                    </button>
-                  )}
-                  {round.status === 'CLOSED' && (
-                    <button
-                      className="secondary-button"
-                      disabled={busy || Boolean(blockReason(round))}
-                      onClick={() => openForm('reopen', round)}
-                    >
-                      {roundLabels[round.type]} 재개방
+                    <button className="secondary-button" disabled={busy}
+                      onClick={() => openForm('edit', round)}>
+                      {roundLabels[round.type]} 마감 시각 수정
                     </button>
                   )}
                 </div>
@@ -255,8 +216,8 @@ export default function RoundManagement({ context }) {
                   {round.status === 'DRAFT'
                     ? '일정 대기 상태입니다. 기간과 참여 조건이 충족되면 평가를 시작할 수 있습니다.'
                     : round.status === 'OPEN'
-                      ? '기한 전에는 전원 제출 시에만 마감합니다. 기한이 지나면 미제출이 있어도 마감합니다.'
-                      : '공개 리포트가 있으면 재개방할 수 없습니다. 이미 제출된 응답은 수정되지 않습니다.'}
+                      ? '설정된 마감 시각에 자동으로 종료합니다. 종료 전에는 마감 시각을 수정할 수 있습니다.'
+                      : '마감된 회차는 일정 수정·추가 제출을 허용하지 않습니다.'}
                 </p>
               </section>
             ))}
@@ -273,9 +234,7 @@ export default function RoundManagement({ context }) {
           title={
             editing.kind === 'create'
               ? '평가 회차 만들기'
-              : editing.kind === 'reopen'
-                ? '평가 회차 재개방'
-                : '평가 일정 수정'
+              : '평가 일정 수정'
           }
           busy={busy}
           onClose={() => setEditing(null)}
@@ -304,18 +263,9 @@ export default function RoundManagement({ context }) {
                     `/api/evaluation-rounds/${editing.round.id}`,
                     {
                       method: 'PATCH',
-                      body: { ...body, expectedVersion: editing.round.version },
-                    },
-                  );
-                else
-                  await requestPlanned(
-                    context,
-                    `/api/evaluation-rounds/${editing.round.id}/reopen`,
-                    {
-                      method: 'POST',
                       body: {
-                        closesAt: body.closesAt,
-                        expectedVersion: editing.round.version,
+                        ...(editing.round.status === 'DRAFT' ? { opensAt: body.opensAt } : {}),
+                        closesAt: body.closesAt, expectedVersion: editing.round.version,
                       },
                     },
                   );
@@ -350,24 +300,18 @@ export default function RoundManagement({ context }) {
                   ))}
               </select>
             </Field>
-            {editing.kind !== 'reopen' && (
-              <Field label="평가 시작 시각">
+            <Field label="평가 시작 시각">
                 <input
                   required
                   type="datetime-local"
-                  disabled={busy}
+                  disabled={busy || editing.round?.status === 'OPEN'}
                   value={form.opensAt}
                   onChange={(event) =>
                     setForm({ ...form, opensAt: event.target.value })
                   }
                 />
-              </Field>
-            )}
-            <Field
-              label={
-                editing.kind === 'reopen' ? '새 마감 시각' : '평가 마감 시각'
-              }
-            >
+            </Field>
+            <Field label="평가 마감 시각">
               <input
                 required
                 type="datetime-local"
