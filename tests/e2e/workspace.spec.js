@@ -23,7 +23,6 @@ function deletionRequest(overrides = {}) {
     members: members.map((member) => ({
       userId: member.userId,
       name: member.name,
-      consented: false,
       consentedAt: null,
       decision: 'UNANSWERED',
     })),
@@ -128,7 +127,7 @@ async function workspace(
     }
     if (path === '/api/spaces')
       return respond(
-        method === 'POST' ? space : [{ ...space, role: space.myRole }],
+        method === 'POST' ? space : [space],
       );
     if (path === '/api/spaces/1') return respond(space);
     if (path === '/api/spaces/1/team-building-period') {
@@ -221,14 +220,13 @@ async function workspace(
         member.userId === userId
           ? {
               ...member,
-              consented: agree,
               decision: agree ? 'AGREED' : 'REJECTED',
               consentedAt: agree ? '2026-10-06T11:00:00+09:00' : null,
             }
           : member,
       );
       deletion.agreedCount = deletion.members.filter(
-        (member) => member.consented,
+        (member) => member.decision === 'AGREED',
       ).length;
       deletion.myConsented = agree;
       deletion.status = agree
@@ -790,7 +788,6 @@ function readyDeletion() {
     members: members.map((member) => ({
       userId: member.userId,
       name: member.name,
-      consented: true,
       consentedAt: '2026-10-06T11:00:00+09:00',
       decision: 'AGREED',
     })),
@@ -1410,34 +1407,21 @@ test('로그아웃 후 브라우저 뒤로가기로 보호된 화면이 복원�
   ).toHaveCount(0);
 });
 
-for (const failureCode of ['JOIN_CODE_ALREADY_EXISTS', 'FORBIDDEN'])
-  test(`참여 코드 발급은 ${failureCode === 'JOIN_CODE_ALREADY_EXISTS' ? '만료 코드 충돌만 재발급' : '권한 오류에서 재발급하지 않음'}`, async ({ page }) => {
-    await workspace(page, { manager: true, userId: 'manager' });
-    let issued = false;
-    const operations = [];
-    await page.route('**/api/spaces/1/join-code', async (route) => {
-      if (route.request().method() === 'GET') {
-        return route.fulfill({ status: issued ? 200 : 404, json: issued ? { code: 'F1E2D3C4', createdAt: '2026-10-07T10:00:00+09:00', expiresAt: '2026-10-10T10:00:00+09:00' } : { code: 'JOIN_CODE_NOT_FOUND' } });
-      }
-      operations.push({ path: 'create', body: route.request().postDataJSON() });
-      return route.fulfill({ status: failureCode === 'FORBIDDEN' ? 403 : 409, json: { code: failureCode, message: failureCode === 'FORBIDDEN' ? '관리 권한이 없습니다.' : '이미 발급된 코드가 있습니다.' } });
-    });
-    await page.route('**/api/spaces/1/join-code/rotate', async (route) => {
-      issued = true;
-      operations.push({ path: 'rotate', body: route.request().postDataJSON() });
-      return route.fulfill({ status: 200, json: { code: 'F1E2D3C4' } });
-    });
-    await page.goto('/spaces/1/settings');
-    await page.getByLabel('코드 유효 기간', { exact: true }).selectOption('4320');
-    await page.getByRole('button', { name: '참여 코드 발급', exact: true }).click();
-    if (failureCode === 'JOIN_CODE_ALREADY_EXISTS') {
-      await expect(page.getByText('F1E2D3C4', { exact: true })).toBeVisible();
-      expect(operations).toEqual([{ path: 'create', body: { expirationMinutes: 4320 } }, { path: 'rotate', body: { expirationMinutes: 4320 } }]);
-    } else {
-      await expect(page.getByRole('alert')).toContainText('관리 권한이 없습니다.');
-      expect(operations).toEqual([{ path: 'create', body: { expirationMinutes: 4320 } }]);
-    }
+test('참여 코드 발급 권한 오류를 표시하고 요청을 반복하지 않는다', async ({ page }) => {
+  await workspace(page, { manager: true, userId: 'manager' });
+  const operations = [];
+  await page.route('**/api/spaces/1/join-code', async (route) => {
+    if (route.request().method() === 'GET')
+      return route.fulfill({ status: 404, json: { code: 'JOIN_CODE_NOT_FOUND' } });
+    operations.push(route.request().postDataJSON());
+    return route.fulfill({ status: 403, json: { code: 'FORBIDDEN', message: '관리 권한이 없습니다.' } });
   });
+  await page.goto('/spaces/1/settings');
+  await page.getByLabel('코드 유효 기간', { exact: true }).selectOption('4320');
+  await page.getByRole('button', { name: '참여 코드 발급', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('관리 권한이 없습니다.');
+  expect(operations).toEqual([{ expirationMinutes: 4320 }]);
+});
 
 test('다른 작업 정보를 저장해도 미저장 수행 설명을 보존한다', async ({ page }) => {
   const state = await workspace(page);

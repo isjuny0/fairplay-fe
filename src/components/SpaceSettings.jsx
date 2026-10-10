@@ -3,7 +3,6 @@ import {
   createJoinCode,
   getJoinCode,
   revokeJoinCode,
-  rotateJoinCode,
   updateTeamBuildingPeriod,
 } from '../api/spaces.js';
 import useResource from '../hooks/useResource.js';
@@ -49,16 +48,7 @@ export default function SpaceSettings({ space, onChanged }) {
     opensAt !== toDateInput(space.teamBuildingOpensAt) ||
       closesAt !== toDateInput(space.teamBuildingClosesAt),
   );
-  const issueCode = async () => {
-    if (codes.data) return rotateJoinCode(space.id, Number(minutes));
-    try {
-      return await createJoinCode(space.id, Number(minutes));
-    } catch (error) {
-      // 조회에서 숨겨진 만료 코드가 남아 있으면 같은 발급 요청으로 교체한다.
-      if (error.code !== 'JOIN_CODE_ALREADY_EXISTS') throw error;
-      return rotateJoinCode(space.id, Number(minutes));
-    }
-  };
+  const issueCode = () => createJoinCode(space.id, Number(minutes));
   useEffect(() => {
     setOpensAt(toDateInput(space.teamBuildingOpensAt));
     setClosesAt(toDateInput(space.teamBuildingClosesAt));

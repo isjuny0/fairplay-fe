@@ -91,7 +91,7 @@ export default function WorkspaceNavigation({
               }}
             >
               {!(spaces.data || []).some(
-                (item) => (item.spaceId ?? item.id) === spaceId,
+                (item) => item.id === spaceId,
               ) && (
                 <option value={spaceId}>
                   {space?.name || '현재 스페이스'}
@@ -99,8 +99,8 @@ export default function WorkspaceNavigation({
               )}
               {(spaces.data || []).map((item) => (
                 <option
-                  key={item.spaceId ?? item.id}
-                  value={item.spaceId ?? item.id}
+                  key={item.id}
+                  value={item.id}
                 >
                   {item.name}
                 </option>
