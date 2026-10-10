@@ -284,16 +284,10 @@ function makeReport(state, entry, status = 'DRAFT') {
       ) / 10,
   }));
   return {
-    id:
-      entry.team.id * 10000 +
-      state.reports.filter((report) => report.teamId === entry.team.id).length +
-      1,
+    id: entry.team.id * 10000 + 1,
     teamId: entry.team.id,
     status,
-    version:
-      state.reports.filter((report) => report.teamId === entry.team.id).length +
-      1,
-    policyVersion: '70-10-20-v1',
+    version: 0,
     inputHash: reportInput(state, entry),
     cutoffAt: state.rounds.find((round) => round.type === 'FINAL').workCutoffAt,
     totalPercent: 100,
@@ -319,7 +313,7 @@ function makeReport(state, entry, status = 'DRAFT') {
     ),
   };
 }
-const publicReport = ({ details, ...report }) => report;
+const publicReport = ({ details, inputHash, members, ...report }) => report;
 function feedback(state, teamId, context) {
   const mid = state.rounds.find((round) => round.type === 'MID');
   if (!mid) fail('ROUND_NOT_FOUND', '중간 평가 회차가 아직 없습니다.', 404);
@@ -397,33 +391,37 @@ function dashboard(state, context, teamFilter) {
           'NEEDS_REVIEW',
     ).length,
     deliverableCount: deliverables.length,
-    latestReportId:
+    reportId:
       state.reports.find((report) => report.teamId === team.id)?.id || null,
-    latestReportStatus:
+    reportStatus:
       state.reports.find((report) => report.teamId === team.id)?.status || null,
-    members: members.map((member) => {
-      const ownTasks = tasks.filter((task) =>
-        task.assignees.some(
-          (assignment) => assignment.userId === member.userId,
-        ),
-      );
-      return {
-        userId: member.userId,
-        name: member.name,
-        assignedTaskCount: ownTasks.length,
-        todoTaskCount: count(ownTasks, 'TODO'),
-        inProgressTaskCount: count(ownTasks, 'IN_PROGRESS'),
-        pendingApprovalCount: count(ownTasks, 'PENDING_APPROVAL'),
-        doneTaskCount: count(ownTasks, 'DONE'),
-        overdueTaskCount: overdue(ownTasks),
-        approvedWorkWeight: workSummary(team.id, member.userId, tasks)
-          .myDoneWeight,
-        missingContributionDescriptionCount: ownTasks.filter(
-          (task) =>
-            task.assignees.length > 1 && !task.contributions?.[member.userId],
-        ).length,
-      };
-    }),
+    ...(teamFilter
+      ? {
+          members: members.map((member) => {
+            const ownTasks = tasks.filter((task) =>
+              task.assignees.some(
+                (assignment) => assignment.userId === member.userId,
+              ),
+            );
+            return {
+              userId: member.userId,
+              name: member.name,
+              assignedTaskCount: ownTasks.length,
+              todoTaskCount: count(ownTasks, 'TODO'),
+              inProgressTaskCount: count(ownTasks, 'IN_PROGRESS'),
+              pendingApprovalCount: count(ownTasks, 'PENDING_APPROVAL'),
+              doneTaskCount: count(ownTasks, 'DONE'),
+              overdueTaskCount: overdue(ownTasks),
+              approvedWorkWeight: workSummary(team.id, member.userId, tasks)
+                .myDoneWeight,
+              missingContributionDescriptionCount: ownTasks.filter(
+                (task) =>
+                  task.assignees.length > 1 && !task.contributions?.[member.userId],
+              ).length,
+            };
+          }),
+        }
+      : {}),
   }));
   const aggregate = (key) =>
     teams.reduce((total, team) => total + team[key], 0);
@@ -732,17 +730,25 @@ export async function plannedRequest(
           ),
         }));
     }
-    if (segments[3] === 'reports') {
-      if (method === 'GET')
-        result = state.reports
-          .filter(
-            (report) =>
-              report.teamId === id &&
-              (context.manager || report.status === 'PUBLISHED'),
-          )
-          .map(publicReport);
-      else {
+    if (
+      (segments[3] === 'report' && method === 'GET') ||
+      (segments[3] === 'reports' && segments[4] === 'draft' && method === 'POST')
+    ) {
+      if (method === 'GET') {
+        const report = state.reports.find(
+          (report) =>
+            report.teamId === id &&
+            (context.manager || report.status === 'PUBLISHED'),
+        );
+        result = report ? publicReport(report) : null;
+      } else {
         requireManager();
+        const existing = state.reports.find((report) => report.teamId === id);
+        if (existing?.status === 'PUBLISHED')
+          fail(
+            'REPORT_ALREADY_PUBLISHED',
+            '공개된 리포트는 재계산할 수 없습니다.',
+          );
         if (entry.members.length < 2)
           fail('TEAM_TOO_SMALL', '승인 팀원 2명 이상이 필요합니다.');
         if (
@@ -774,16 +780,17 @@ export async function plannedRequest(
             'REPORT_INPUT_INCOMPLETE',
             '필수 동료 평가 제출과 유효 AI 평가가 필요합니다. 자료 보완 또는 평가 대기 작업을 먼저 확인해 주세요.',
           );
-        const existing = state.reports.find(
-          (report) =>
-            report.teamId === id &&
-            report.inputHash === reportInput(state, entry),
-        );
-        if (existing) result = { ...publicReport(existing), reused: true };
-        else {
-          const report = makeReport(state, entry);
-          state.reports.push(report);
-          result = { ...publicReport(report), reused: false };
+        const calculated = makeReport(state, entry);
+        if (existing) {
+          Object.assign(existing, calculated, {
+            id: existing.id,
+            createdAt: existing.createdAt,
+            version: existing.version + 1,
+          });
+          result = publicReport(existing);
+        } else {
+          state.reports.push(calculated);
+          result = publicReport(calculated);
         }
       }
     }
@@ -800,6 +807,11 @@ export async function plannedRequest(
       fail('FORBIDDEN', '다른 팀의 리포트는 볼 수 없습니다.', 403);
     if (method === 'POST') {
       requireManager();
+      if (!Number.isInteger(body?.expectedVersion) || body.expectedVersion < 0)
+        fail('INVALID_REQUEST', '조회한 리포트 버전이 필요합니다.', 400);
+      if (report.status === 'PUBLISHED') return publicReport(report);
+      if (body.expectedVersion !== report.version)
+        fail('VERSION_CONFLICT', '초안이 갱신되었습니다. 다시 검토해 주세요.');
       if (
         state.rounds.length !== 2 ||
         state.rounds.some(
@@ -815,17 +827,19 @@ export async function plannedRequest(
         report.inputHash !== reportInput(state, state.teams[report.teamId])
       )
         fail(
-          'REPORT_INPUT_CHANGED',
+          'REPORT_INPUT_STALE',
           '리포트 생성 이후 입력이 변경되었습니다. 최신 초안을 다시 생성해 주세요.',
         );
       report.status = 'PUBLISHED';
-      report.publishedAt ||= now();
-      result = { id, status: report.status, publishedAt: report.publishedAt };
+      report.publishedAt = now();
+      report.version++;
+      result = publicReport(report);
     } else {
       if (!context.manager && report.status !== 'PUBLISHED')
         fail('REPORT_NOT_PUBLISHED', '아직 공개되지 않은 리포트입니다.', 403);
       result = {
         ...publicReport(report),
+        members: report.members,
         myDetails: report.details[context.user.id] || null,
       };
     }

@@ -251,8 +251,7 @@ export async function previewRequest(
       let fields = body;
       if (body instanceof FormData) {
         const file = body.get('file');
-        fields = Object.fromEntries(body.entries());
-        delete fields.file;
+        fields = JSON.parse(await body.get('metadata').text());
         fields = {
           ...fields,
           type: 'FILE',
@@ -393,9 +392,6 @@ export async function previewRequest(
     } else if (parts[3] === 'contribution') {
       task.contributions ||= {};
       task.contributions[context.user.id] = body.contributionDescription;
-      result = task;
-    } else if (parts[3] === 'completion-reviewer') {
-      task.completionReviewerId = body.reviewerId;
       result = task;
     } else if (method === 'DELETE') {
       entry.tasks = entry.tasks.filter((item) => item.id !== id);

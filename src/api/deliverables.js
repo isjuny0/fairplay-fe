@@ -11,8 +11,10 @@ export const createDeliverable = (teamId, body) =>
   apiRequest(`/api/teams/${teamId}/deliverables`, { method: 'POST', body });
 export const uploadDeliverable = (teamId, input, file) => {
   const body = new FormData();
-  for (const [name, value] of Object.entries(input))
-    if (value != null) body.append(name, value);
+  body.append(
+    'metadata',
+    new Blob([JSON.stringify(input)], { type: 'application/json' }),
+  );
   body.append('file', file);
   return apiRequest(`/api/teams/${teamId}/deliverables/files`, {
     method: 'POST',

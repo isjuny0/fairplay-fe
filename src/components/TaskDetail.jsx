@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import {
-  assignCompletionReviewer,
   deleteTask,
   getTask,
   updateContribution,
@@ -280,8 +279,8 @@ export default function TaskDetail({
                       onSubmit={(event) => {
                         event.preventDefault();
                         mutate(() =>
-                          assignCompletionReviewer(task.id, {
-                            reviewerId,
+                          updateTask(task.id, {
+                            completionReviewerId: reviewerId,
                             expectedVersion: task.version,
                           }),
                         );
