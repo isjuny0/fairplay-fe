@@ -11,7 +11,7 @@ import {
   resetMockState,
   plannedRequest,
 } from '../src/mock/planned.js';
-import { previewContext, setPreviewRole } from '../src/mock/preview.js';
+import { previewRequest, previewContext, setPreviewRole } from '../src/mock/preview.js';
 
 const storage = new Map();
 globalThis.localStorage = {
@@ -66,7 +66,7 @@ test('저점 사유는 대상당 10~500자이며 미선택 값을 저점으로 �
     ),
   );
 });
-test('평가 저장과 최종 제출을 구분하고 재개방 후에도 제출 응답은 잠긴다', async () => {
+test('평가 저장과 최종 제출을 구분하고 제출 응답은 잠긴다', async () => {
   const leader = context('leader');
   const targets = await plannedRequest(
     leader,
@@ -100,26 +100,7 @@ test('평가 저장과 최종 제출을 구분하고 재개방 후에도 제출 
     ),
     { code: 'PEER_ALREADY_SUBMITTED' },
   );
-  const reopened = await plannedRequest(
-    context('manager'),
-    '/api/evaluation-rounds/11/reopen',
-    {
-      method: 'POST',
-      body: { closesAt: new Date(Date.now() + 86400000).toISOString() },
-    },
-  );
-  assert.equal(reopened.status, 'OPEN');
-  await assert.rejects(
-    plannedRequest(
-      leader,
-      `/api/evaluation-rounds/11/responses/${targets[0].targetId}`,
-      { method: 'PUT', body: { scores } },
-    ),
-    { code: 'PEER_ALREADY_SUBMITTED' },
-  );
-  await assert.rejects(plannedRequest(leader, '/api/teams/1/mid-feedback'), {
-    code: 'MID_FEEDBACK_NOT_READY',
-  });
+
 });
 test('일반 사용자에게 관리자 집계·타 팀 리포트·관리자 권한만으로 본인 현황을 제공하지 않는다', async () => {
   await assert.rejects(
@@ -171,15 +152,9 @@ test('팀당 초안 하나를 재계산하고 공개 후 본인 계산만 제공
     plannedRequest(manager, '/api/teams/1/reports/draft', { method: 'POST' }),
     { code: 'REPORT_ALREADY_PUBLISHED' },
   );
-  await assert.rejects(
-    plannedRequest(manager, '/api/evaluation-rounds/12/reopen', {
-      method: 'POST',
-      body: { closesAt: new Date(Date.now() + 86400000).toISOString() },
-    }),
-    { code: 'ROUND_ALREADY_PUBLISHED' },
-  );
+
 });
-test('공개는 다른 팀 미제출도 차단하고 초안 입력 변경은 최신 버전을 요구한다', async () => {
+test('리포트 공개는 스페이스 전체의 필수 제출을 확인한다', async () => {
   const manager = context('manager');
   resetMockState(manager, 'review');
   const state = getMockState(manager);
@@ -191,17 +166,11 @@ test('공개는 다른 팀 미제출도 차단하고 초안 입력 변경은 최
   );
   state.submitted[`12:${state.teams[2].members[0].userId}`] =
     new Date().toISOString();
-  state.teams[1].tasks[0].version++;
   saveMockState(manager, state);
-  await assert.rejects(
-    plannedRequest(manager, '/api/reports/10001/publish', { method: 'POST', body: { expectedVersion: 0 } }),
-    { code: 'REPORT_INPUT_STALE' },
-  );
-  const fresh = await plannedRequest(manager, '/api/teams/1/reports/draft', {
-    method: 'POST',
+  const published = await plannedRequest(manager, '/api/reports/10001/publish', {
+    method: 'POST', body: { expectedVersion: 0 },
   });
-  assert.equal(fresh.id, 10001);
-  assert.equal(fresh.version, 1);
+  assert.equal(published.status, 'PUBLISHED');
 });
 test('AI 점수 결측은 리포트 생성 차단이며 기술 실패는 현재 담당자만 재시도한다', async () => {
   const manager = context('manager');
@@ -267,7 +236,7 @@ test('관리자 기본 조회는 팀 요약만 제공하고 팀 선택 조회에
   assert.equal(selected.totalTeamCount, all.totalTeamCount);
 });
 
-test('리포트 공개는 검토한 초안 버전과 현재 입력을 확인하고 공개 후 결과를 고정한다', async () => {
+test('리포트 공개는 검토한 초안 버전을 확인하고 공개 후 결과를 고정한다', async () => {
   const manager = context('manager');
   resetMockState(manager, 'review');
   const initial = await plannedRequest(manager, '/api/teams/1/report');
@@ -288,4 +257,40 @@ test('리포트 공개는 검토한 초안 버전과 현재 입력을 확인하�
   assert.deepEqual(await plannedRequest(manager, `/api/reports/${published.id}/publish`, {
     method: 'POST', body: { expectedVersion: calculated.version },
   }), published);
+});
+
+
+test('OPEN 마감 시각만 수정할 수 있고 기한 도달 시 마감 기준을 고정한다', async () => {
+  const manager = context('manager');
+  const state = getMockState(manager);
+  const final = state.rounds.find((round) => round.type === 'FINAL');
+  const closesAt = new Date(Date.now() + 86400000).toISOString();
+  const changed = await plannedRequest(manager, '/api/evaluation-rounds/12', {
+    method: 'PATCH', body: { closesAt, expectedVersion: final.version },
+  });
+  assert.equal(changed.closesAt, closesAt);
+  await assert.rejects(plannedRequest(manager, '/api/evaluation-rounds/12', {
+    method: 'PATCH', body: { opensAt: final.opensAt, closesAt, expectedVersion: changed.version },
+  }), { code: 'INVALID_REQUEST' });
+  final.closesAt = new Date(Date.now() - 1000).toISOString();
+  saveMockState(manager, state);
+  const closed = (await plannedRequest(manager, '/api/spaces/1/evaluation-rounds'))[1];
+  assert.equal(closed.status, 'CLOSED');
+  assert.equal(closed.closedAt, final.closesAt);
+  assert.equal(closed.workCutoffAt, final.closesAt);
+  await assert.rejects(plannedRequest(manager, '/api/evaluation-rounds/12', {
+    method: 'PATCH', body: { closesAt, expectedVersion: closed.version },
+  }), { code: 'INVALID_ROUND_STATE' });
+});
+
+test('FINAL 기한 이후 업무 변경을 차단하고 담당자의 기술 실패 재시도는 허용한다', async () => {
+  const member = context('member');
+  const state = getMockState(member);
+  state.rounds[1].closesAt = new Date(Date.now() - 1000).toISOString();
+  saveMockState(member, state);
+  await assert.rejects(previewRequest('/api/tasks/101', {
+    method: 'PATCH', body: { title: '제목 수정', expectedVersion: 1 },
+  }), { code: 'TASK_WORK_CLOSED' });
+  const result = await previewRequest('/api/tasks/106/ai-evaluation/retry', { method: 'POST' });
+  assert.equal(result.status, 'PENDING');
 });

@@ -6,6 +6,7 @@ import {
 } from './fixtures.js';
 import {
   getMockState,
+  requireWorkBeforeFinalDeadline,
   saveMockState,
   plannedRequest,
   resetMockState,
@@ -74,6 +75,11 @@ export async function previewRequest(
   const url = new URL(path, 'https://preview.local');
   const parts = url.pathname.split('/').filter(Boolean);
   const id = Number(parts[2]);
+  const technicalRetry = parts[1] === 'tasks' && parts[3] === 'ai-evaluation' && parts[4] === 'retry';
+  if (method !== 'GET' && !technicalRetry && (['tasks', 'deliverables', 'approvals'].includes(parts[1]) ||
+      (parts[1] === 'teams' && ['tasks', 'deliverables'].includes(parts[3])))) {
+    requireWorkBeforeFinalDeadline(state);
+  }
   let result;
   if (path === '/api/me') return context.user;
   if (path === '/api/auth/csrf')
@@ -86,13 +92,12 @@ export async function previewRequest(
         ...(state.extraSpace ? [state.extraSpace] : []),
       ].map((space) => ({
         ...space,
-        role: space.myRole,
+        myRole: space.myRole,
       }));
     if (parts.length === 2 && method === 'POST') {
       state.extraSpace = {
         ...body,
         id: 3,
-        spaceId: 3,
         myRole: 'MANAGER',
         teamBuildingStatus: 'NOT_CONFIGURED',
         version: 0,
@@ -138,7 +143,7 @@ export async function previewRequest(
       } else {
         state.joinCode = {
           spaceId: id,
-          code: 'PLAY2026',
+          code: crypto.randomUUID().replaceAll('-', '').slice(0, 8).toUpperCase(),
           createdAt: new Date().toISOString(),
           expiresAt: new Date(
             Date.now() + (body.expirationMinutes || 1440) * 60000,
@@ -217,7 +222,8 @@ export async function previewRequest(
         userId: context.user.id,
         name: context.user.name,
         status: 'PENDING',
-        canApprove: true,
+        canApprove: false,
+        decidedAt: null,
         requestedAt: new Date().toISOString(),
       };
       state.applications.push(application);
@@ -248,7 +254,7 @@ export async function previewRequest(
             (Number(url.searchParams.get('page') || 0) + 1) * 20,
           );
       }
-      let fields = body;
+      let fields = { ...body, type: 'TEXT' };
       if (body instanceof FormData) {
         const file = body.get('file');
         fields = JSON.parse(await body.get('metadata').text());
@@ -306,7 +312,6 @@ export async function previewRequest(
         workFrozen: true,
         members: entry.members.map((member) => ({
           ...member,
-          consented: false,
           consentedAt: null,
           decision: 'UNANSWERED',
         })),
@@ -323,6 +328,8 @@ export async function previewRequest(
       state.applications?.find((item) => item.id === id) ||
       missing('TEAM_APPLICATION_NOT_FOUND', '가입 신청이 없습니다.');
     application.status = body.status;
+    application.decidedAt = new Date().toISOString();
+    application.canApprove = false;
     if (body.status === 'APPROVED') {
       const entry = state.teams[application.teamId];
       entry.members.push({
@@ -483,16 +490,15 @@ export async function previewRequest(
       (member) => member.userId === context.user.id,
     );
     if (member) {
-      member.consented = body.agree;
       member.decision = body.agree ? 'AGREED' : 'REJECTED';
-      member.consentedAt = new Date().toISOString();
+      member.consentedAt = body.agree ? new Date().toISOString() : null;
     }
     if (!body.agree) {
       deletion.status = 'CANCELLED';
       deletion.workFrozen = false;
     }
     deletion.agreedCount = deletion.members.filter(
-      (member) => member.consented,
+      (member) => member.decision === 'AGREED',
     ).length;
     deletion.myConsented = body.agree;
     if (deletion.agreedCount === deletion.requiredCount)

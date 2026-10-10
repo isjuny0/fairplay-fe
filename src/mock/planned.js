@@ -79,9 +79,9 @@ export function getMockState(context) {
     if (round.status === 'OPEN' && new Date(round.closesAt) <= new Date()) {
       round.status = 'CLOSED';
       round.seeded = true;
-      round.closedAt = now();
+      round.closedAt = round.closesAt;
       round.version++;
-      if (round.type === 'FINAL') round.workCutoffAt ||= now();
+      if (round.type === 'FINAL') round.workCutoffAt = round.closesAt;
     }
   }
   memoryStates.set(key, state);
@@ -122,9 +122,11 @@ export function resetMockState(context, scenario = 'active') {
   }
   if (scenario === 'published' || scenario === 'review') {
     state.rounds.forEach((round) => {
+      if (new Date(round.closesAt) > new Date()) round.closesAt = new Date(Date.now() - 1000).toISOString();
       round.status = 'CLOSED';
-      round.closedAt = now();
-      if (round.type === 'FINAL') round.workCutoffAt = now();
+      round.closedAt = round.closesAt;
+      round.version++;
+      if (round.type === 'FINAL') round.workCutoffAt = round.closesAt;
       seedSubmittedRound(state, round);
     });
     for (const entry of Object.values(state.teams)) {
@@ -194,35 +196,17 @@ function seedSubmittedRound(state, round) {
   }
   round.seeded = true;
 }
+
+export function requireWorkBeforeFinalDeadline(state) {
+  const final = state.rounds.find((round) => round.type === 'FINAL');
+  if (final && final.status !== 'DRAFT' && new Date(final.closesAt) <= new Date())
+    fail('TASK_WORK_CLOSED', '최종 평가 마감 이후에는 작업과 산출물을 변경할 수 없습니다.');
+}
+
 function allSubmitted(state, round, entries = Object.values(state.teams)) {
   return entries
     .flatMap((entry) => entry.members)
     .every((member) => state.submitted[responseKey(round.id, member.userId)]);
-}
-function reportInput(state, entry) {
-  const input = JSON.stringify({
-    rounds: state.rounds.map((round) => [
-      round.id,
-      round.version,
-      round.workCutoffAt,
-    ]),
-    tasks: entry.tasks.map((task) => [
-      task.id,
-      task.version,
-      task.status,
-      state.ai[task.id]?.status,
-      state.ai[task.id]?.score,
-    ]),
-    responses: state.rounds.map((round) =>
-      entry.members.map(
-        (member) => state.responses[responseKey(round.id, member.userId)],
-      ),
-    ),
-  });
-  let hash = 2166136261;
-  for (let index = 0; index < input.length; index++)
-    hash = Math.imul(hash ^ input.charCodeAt(index), 16777619);
-  return `mock-${(hash >>> 0).toString(16)}`;
 }
 function makeReport(state, entry, status = 'DRAFT') {
   const done = entry.tasks.filter((task) => task.status === 'DONE');
@@ -288,7 +272,6 @@ function makeReport(state, entry, status = 'DRAFT') {
     teamId: entry.team.id,
     status,
     version: 0,
-    inputHash: reportInput(state, entry),
     cutoffAt: state.rounds.find((round) => round.type === 'FINAL').workCutoffAt,
     totalPercent: 100,
     createdAt: now(),
@@ -313,7 +296,7 @@ function makeReport(state, entry, status = 'DRAFT') {
     ),
   };
 }
-const publicReport = ({ details, inputHash, members, ...report }) => report;
+const publicReport = ({ details, members, ...report }) => report;
 function feedback(state, teamId, context) {
   const mid = state.rounds.find((round) => round.type === 'MID');
   if (!mid) fail('ROUND_NOT_FOUND', '중간 평가 회차가 아직 없습니다.', 404);
@@ -595,16 +578,13 @@ export async function plannedRequest(
           '회차가 변경되었습니다. 최신 정보를 확인해 주세요.',
         );
       if (method === 'PATCH') {
-        if (round.status !== 'DRAFT')
-          fail(
-            'INVALID_ROUND_STATE',
-            '일정 대기 상태에서만 일정을 수정할 수 있습니다.',
-          );
-        validateSchedule(state, context, { ...body, type: round.type });
-        Object.assign(round, {
-          opensAt: body.opensAt,
-          closesAt: body.closesAt,
-        });
+        if (!['DRAFT', 'OPEN'].includes(round.status))
+          fail('INVALID_ROUND_STATE', '마감된 회차의 일정은 수정할 수 없습니다.');
+        if (round.status === 'OPEN' && Object.hasOwn(body, 'opensAt'))
+          fail('INVALID_REQUEST', '작성 중에는 마감 시각만 수정할 수 있습니다.', 400);
+        const schedule = { opensAt: round.opensAt, ...body, type: round.type };
+        validateSchedule(state, context, schedule);
+        Object.assign(round, { opensAt: schedule.opensAt, closesAt: schedule.closesAt });
       } else if (segments[3] === 'open') {
         if (round.status !== 'DRAFT')
           fail('INVALID_ROUND_STATE', '일정 대기 회차만 시작할 수 있습니다.');
@@ -638,40 +618,8 @@ export async function plannedRequest(
             '중간 평가 마감 후 최종 평가를 시작할 수 있습니다.',
           );
         round.status = 'OPEN';
-      } else if (segments[3] === 'close') {
-        if (round.status !== 'OPEN')
-          fail('INVALID_ROUND_STATE', '작성 중인 회차만 마감할 수 있습니다.');
-        if (
-          new Date(round.closesAt) > new Date() &&
-          !Object.values(state.teams)
-            .flatMap((team) => team.members)
-            .every((member) => state.submitted[responseKey(id, member.userId)])
-        )
-          fail(
-            'ROUND_SUBMISSIONS_INCOMPLETE',
-            '기한 전에는 모든 참여자가 제출해야 마감할 수 있습니다.',
-          );
-        round.status = 'CLOSED';
-        round.seeded = true;
-        round.closedAt = now();
-        if (round.type === 'FINAL') round.workCutoffAt ||= now();
-      } else if (segments[3] === 'reopen') {
-        if (round.status !== 'CLOSED')
-          fail('INVALID_ROUND_STATE', '마감된 회차만 재개방할 수 있습니다.');
-        if (state.reports.some((report) => report.status === 'PUBLISHED'))
-          fail(
-            'ROUND_ALREADY_PUBLISHED',
-            '공개된 리포트가 있어 재개방할 수 없습니다.',
-          );
-        if (new Date(body.closesAt) <= new Date())
-          fail(
-            'INVALID_ROUND_WINDOW',
-            '새 마감은 현재보다 미래여야 합니다.',
-            400,
-          );
-        round.status = 'OPEN';
-        round.closedAt = null;
-        round.closesAt = body.closesAt;
+      } else {
+        fail('NOT_FOUND', '지원하지 않는 요청입니다.', 404);
       }
       round.version++;
       result = roundResponse(state, round, context);
@@ -822,14 +770,6 @@ export async function plannedRequest(
           'REPORT_PUBLICATION_BLOCKED',
           '스페이스의 모든 필수 평가 제출이 완료되어야 공개할 수 있습니다.',
         );
-      if (
-        report.status !== 'PUBLISHED' &&
-        report.inputHash !== reportInput(state, state.teams[report.teamId])
-      )
-        fail(
-          'REPORT_INPUT_STALE',
-          '리포트 생성 이후 입력이 변경되었습니다. 최신 초안을 다시 생성해 주세요.',
-        );
       report.status = 'PUBLISHED';
       report.publishedAt = now();
       report.version++;
@@ -876,6 +816,7 @@ export async function plannedRequest(
       });
     const evaluation = state.ai[id];
     if (segments[3] === 'rework') {
+      requireWorkBeforeFinalDeadline(state);
       if (!reviewer || context.manager)
         fail(
           'FORBIDDEN',
