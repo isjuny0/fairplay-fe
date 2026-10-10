@@ -83,7 +83,7 @@ export default function Spaces({ onSelect }) {
           : '스페이스에 참여했습니다.',
       );
       resource.reload();
-      onSelect(result.id ?? result.spaceId);
+      onSelect(result.id);
     } catch (requestError) {
       setError(requestError);
     } finally {

@@ -163,9 +163,7 @@ export default function RoundManagement({ context }) {
                     <dd>
                       {round.type === 'MID'
                         ? '해당 없음 · 최종 평가에서 고정'
-                        : round.workCutoffAt
-                          ? formatDate(round.workCutoffAt)
-                          : '아직 고정되지 않음'}
+                        : formatDate(round.closesAt)}
                     </dd>
                   </div>
                 </dl>

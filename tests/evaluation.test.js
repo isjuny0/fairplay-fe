@@ -116,43 +116,28 @@ test('일반 사용자에게 관리자 집계·타 팀 리포트·관리자 권�
   assert.equal(feedback.members.length, 1);
   assert.equal(feedback.members[0].userId, leader.user.id);
   resetMockState(leader, 'published');
-  await assert.rejects(plannedRequest(leader, '/api/reports/20001'), {
+  await assert.rejects(plannedRequest(leader, '/api/teams/2/report'), {
     status: 403,
   });
 });
-test('팀당 초안 하나를 재계산하고 공개 후 본인 계산만 제공한다', async () => {
+test('리포트는 팀당 한 번 생성하고 공개 후 본인 계산만 제공한다', async () => {
   const leader = context('leader');
   resetMockState(leader, 'review');
   assert.equal(await plannedRequest(leader, '/api/teams/1/report'), null);
-  await assert.rejects(plannedRequest(leader, '/api/reports/10001'), {
-    code: 'REPORT_NOT_PUBLISHED',
-  });
   const manager = context('manager');
-  const draft = await plannedRequest(manager, '/api/teams/1/reports/draft', {
-    method: 'POST',
-  });
-  assert.equal(draft.id, 10001);
-  assert.equal(draft.version, 1);
-  await plannedRequest(manager, '/api/reports/10001/publish', {
-    method: 'POST', body: { expectedVersion: draft.version },
-  });
-  const result = await plannedRequest(leader, '/api/reports/10001');
+  const report = await plannedRequest(manager, '/api/teams/1/report', { method: 'POST' });
+  assert.equal(report.id, 10001);
+  assert.equal(report.status, 'UNPUBLISHED');
+  assert.equal(report.myDetails, null);
+  assert.deepEqual(await plannedRequest(manager, '/api/teams/1/report', { method: 'POST' }), report);
+  await plannedRequest(manager, '/api/reports/10001/publish', { method: 'POST' });
+  const result = await plannedRequest(leader, '/api/teams/1/report');
   assert.equal(result.totalPercent, 100);
-  assert.equal(
-    result.myDetails.totalPercent,
-    result.members.find((member) => member.userId === leader.user.id)
-      .contributionPercent,
-  );
+  assert.equal(result.myDetails.totalPercent,
+    result.members.find((member) => member.userId === leader.user.id).contributionPercent);
   assert.equal(result.details, undefined);
-  assert.equal(
-    (await plannedRequest(manager, '/api/reports/10001')).myDetails,
-    null,
-  );
-  await assert.rejects(
-    plannedRequest(manager, '/api/teams/1/reports/draft', { method: 'POST' }),
-    { code: 'REPORT_ALREADY_PUBLISHED' },
-  );
-
+  assert.equal((await plannedRequest(manager, '/api/teams/1/report')).myDetails, null);
+  assert.equal((await plannedRequest(manager, '/api/teams/1/report', { method: 'POST' })).status, 'PUBLISHED');
 });
 test('리포트 공개는 스페이스 전체의 필수 제출을 확인한다', async () => {
   const manager = context('manager');
@@ -161,14 +146,14 @@ test('리포트 공개는 스페이스 전체의 필수 제출을 확인한다',
   delete state.submitted[`12:${state.teams[2].members[0].userId}`];
   saveMockState(manager, state);
   await assert.rejects(
-    plannedRequest(manager, '/api/reports/10001/publish', { method: 'POST', body: { expectedVersion: 0 } }),
+    plannedRequest(manager, '/api/reports/10001/publish', { method: 'POST' }),
     { code: 'REPORT_PUBLICATION_BLOCKED' },
   );
   state.submitted[`12:${state.teams[2].members[0].userId}`] =
     new Date().toISOString();
   saveMockState(manager, state);
   const published = await plannedRequest(manager, '/api/reports/10001/publish', {
-    method: 'POST', body: { expectedVersion: 0 },
+    method: 'POST',
   });
   assert.equal(published.status, 'PUBLISHED');
 });
@@ -176,10 +161,11 @@ test('AI 점수 결측은 리포트 생성 차단이며 기술 실패는 현재 
   const manager = context('manager');
   resetMockState(manager, 'review');
   const state = getMockState(manager);
+  state.reports = [];
   state.ai[105].score = null;
   saveMockState(manager, state);
   await assert.rejects(
-    plannedRequest(manager, '/api/teams/1/reports/draft', { method: 'POST' }),
+    plannedRequest(manager, '/api/teams/1/report', { method: 'POST' }),
     { code: 'REPORT_INPUT_INCOMPLETE' },
   );
   resetMockState(context('leader'));
@@ -236,29 +222,26 @@ test('관리자 기본 조회는 팀 요약만 제공하고 팀 선택 조회에
   assert.equal(selected.totalTeamCount, all.totalTeamCount);
 });
 
-test('리포트 공개는 검토한 초안 버전을 확인하고 공개 후 결과를 고정한다', async () => {
+test('관리자 생성·공개 요청은 같은 결과를 반환하고 계산 결과를 유지한다', async () => {
   const manager = context('manager');
   resetMockState(manager, 'review');
-  const initial = await plannedRequest(manager, '/api/teams/1/report');
-  const calculated = await plannedRequest(manager, '/api/teams/1/reports/draft', { method: 'POST' });
-  assert.deepEqual(Object.keys(calculated).sort(), [
-    'id', 'teamId', 'status', 'version', 'cutoffAt', 'totalPercent',
-    'createdAt', 'publishedAt',
+  const state = getMockState(manager);
+  state.reports = [];
+  saveMockState(manager, state);
+  const report = await plannedRequest(manager, '/api/teams/1/report', { method: 'POST' });
+  assert.deepEqual(Object.keys(report).sort(), [
+    'id', 'teamId', 'status', 'cutoffAt', 'totalPercent', 'createdAt',
+    'publishedAt', 'members', 'myDetails',
   ].sort());
-  assert.equal(calculated.id, initial.id);
-  assert.equal(calculated.createdAt, initial.createdAt);
-  await assert.rejects(plannedRequest(manager, `/api/reports/${initial.id}/publish`, {
-    method: 'POST', body: { expectedVersion: initial.version },
-  }), { code: 'VERSION_CONFLICT' });
-  const published = await plannedRequest(manager, `/api/reports/${calculated.id}/publish`, {
-    method: 'POST', body: { expectedVersion: calculated.version },
-  });
+  const result = await plannedRequest(manager, '/api/teams/1/report', { method: 'POST' });
+  assert.deepEqual(result, report);
+  const published = await plannedRequest(manager, `/api/reports/${report.id}/publish`, { method: 'POST' });
   assert.equal(published.status, 'PUBLISHED');
-  assert.deepEqual(await plannedRequest(manager, `/api/reports/${published.id}/publish`, {
-    method: 'POST', body: { expectedVersion: calculated.version },
-  }), published);
+  assert.deepEqual(published.members, report.members);
+  assert.equal(published.createdAt, report.createdAt);
+  assert.deepEqual(await plannedRequest(manager, `/api/reports/${report.id}/publish`, { method: 'POST' }), published);
+  assert.deepEqual(await plannedRequest(manager, '/api/teams/1/report', { method: 'POST' }), published);
 });
-
 
 test('OPEN 마감 시각만 수정할 수 있고 기한 도달 시 마감 기준을 고정한다', async () => {
   const manager = context('manager');
@@ -276,8 +259,7 @@ test('OPEN 마감 시각만 수정할 수 있고 기한 도달 시 마감 기준
   saveMockState(manager, state);
   const closed = (await plannedRequest(manager, '/api/spaces/1/evaluation-rounds'))[1];
   assert.equal(closed.status, 'CLOSED');
-  assert.equal(closed.closedAt, final.closesAt);
-  assert.equal(closed.workCutoffAt, final.closesAt);
+  assert.equal(closed.closesAt, final.closesAt);
   await assert.rejects(plannedRequest(manager, '/api/evaluation-rounds/12', {
     method: 'PATCH', body: { closesAt, expectedVersion: closed.version },
   }), { code: 'INVALID_ROUND_STATE' });

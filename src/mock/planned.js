@@ -15,7 +15,7 @@ const now = () => new Date().toISOString();
 const clone = (value) => structuredClone(value);
 const memoryStates = new Map();
 export const mockKey = (context) =>
-  `fairplay:mock:v1:${context.preview ? 'preview' : context.user.id}:${context.space.id}`;
+  `fairplay:mock:v3:${context.preview ? 'preview' : context.user.id}:${context.space.id}`;
 export function getMockState(context) {
   const key = mockKey(context);
   let state = memoryStates.get(key);
@@ -43,8 +43,6 @@ export function getMockState(context) {
           version: 1,
           opensAt: new Date(timestamp - 15 * 86400000).toISOString(),
           closesAt: new Date(timestamp - 8 * 86400000).toISOString(),
-          closedAt: new Date(timestamp - 8 * 86400000).toISOString(),
-          workCutoffAt: null,
         },
         {
           id: context.space.id * 10 + 2,
@@ -54,8 +52,6 @@ export function getMockState(context) {
           version: 1,
           opensAt: new Date(timestamp - 86400000).toISOString(),
           closesAt: new Date(timestamp + 7 * 86400000).toISOString(),
-          closedAt: null,
-          workCutoffAt: null,
         },
       ],
     };
@@ -79,9 +75,9 @@ export function getMockState(context) {
     if (round.status === 'OPEN' && new Date(round.closesAt) <= new Date()) {
       round.status = 'CLOSED';
       round.seeded = true;
-      round.closedAt = round.closesAt;
+
       round.version++;
-      if (round.type === 'FINAL') round.workCutoffAt = round.closesAt;
+
     }
   }
   memoryStates.set(key, state);
@@ -124,9 +120,9 @@ export function resetMockState(context, scenario = 'active') {
     state.rounds.forEach((round) => {
       if (new Date(round.closesAt) > new Date()) round.closesAt = new Date(Date.now() - 1000).toISOString();
       round.status = 'CLOSED';
-      round.closedAt = round.closesAt;
+
       round.version++;
-      if (round.type === 'FINAL') round.workCutoffAt = round.closesAt;
+
       seedSubmittedRound(state, round);
     });
     for (const entry of Object.values(state.teams)) {
@@ -139,7 +135,7 @@ export function resetMockState(context, scenario = 'active') {
         makeReport(
           state,
           entry,
-          scenario === 'published' ? 'PUBLISHED' : 'DRAFT',
+          scenario === 'published' ? 'PUBLISHED' : 'UNPUBLISHED',
         ),
       );
     }
@@ -169,7 +165,7 @@ function seedSubmittedRound(state, round) {
   for (const entry of Object.values(state.teams)) {
     for (const member of entry.members) {
       const key = responseKey(round.id, member.userId);
-      const submittedAt = round.closedAt || now();
+      const submittedAt = round.closesAt;
       state.responses[key] ||= Object.fromEntries(
         entry.members
           .filter((target) => target.userId !== member.userId)
@@ -208,7 +204,7 @@ function allSubmitted(state, round, entries = Object.values(state.teams)) {
     .flatMap((entry) => entry.members)
     .every((member) => state.submitted[responseKey(round.id, member.userId)]);
 }
-function makeReport(state, entry, status = 'DRAFT') {
+function makeReport(state, entry, status = 'UNPUBLISHED') {
   const done = entry.tasks.filter((task) => task.status === 'DONE');
   const rawAi = entry.members.map((member) =>
     done.reduce(
@@ -271,8 +267,7 @@ function makeReport(state, entry, status = 'DRAFT') {
     id: entry.team.id * 10000 + 1,
     teamId: entry.team.id,
     status,
-    version: 0,
-    cutoffAt: state.rounds.find((round) => round.type === 'FINAL').workCutoffAt,
+    cutoffAt: state.rounds.find((round) => round.type === 'FINAL').closesAt,
     totalPercent: 100,
     createdAt: now(),
     publishedAt: status === 'PUBLISHED' ? now() : null,
@@ -296,7 +291,10 @@ function makeReport(state, entry, status = 'DRAFT') {
     ),
   };
 }
-const publicReport = ({ details, members, ...report }) => report;
+const publicReport = ({ details, ...report }, context) => ({
+  ...report,
+  myDetails: details[context.user.id] || null,
+});
 function feedback(state, teamId, context) {
   const mid = state.rounds.find((round) => round.type === 'MID');
   if (!mid) fail('ROUND_NOT_FOUND', '중간 평가 회차가 아직 없습니다.', 404);
@@ -313,7 +311,6 @@ function feedback(state, teamId, context) {
     );
   return {
     roundId: mid.id,
-    roundVersion: mid.version,
     teamId,
     asOf: now(),
     members: entry.members
@@ -492,8 +489,6 @@ export async function plannedRequest(
         version: 0,
         opensAt: body.opensAt,
         closesAt: body.closesAt,
-        closedAt: null,
-        workCutoffAt: null,
       };
       state.rounds.push(round);
       result = roundResponse(state, round, context);
@@ -679,8 +674,8 @@ export async function plannedRequest(
         }));
     }
     if (
-      (segments[3] === 'report' && method === 'GET') ||
-      (segments[3] === 'reports' && segments[4] === 'draft' && method === 'POST')
+      segments[3] === 'report' && segments.length === 4 &&
+      ['GET', 'POST'].includes(method)
     ) {
       if (method === 'GET') {
         const report = state.reports.find(
@@ -688,15 +683,11 @@ export async function plannedRequest(
             report.teamId === id &&
             (context.manager || report.status === 'PUBLISHED'),
         );
-        result = report ? publicReport(report) : null;
+        result = report ? publicReport(report, context) : null;
       } else {
         requireManager();
         const existing = state.reports.find((report) => report.teamId === id);
-        if (existing?.status === 'PUBLISHED')
-          fail(
-            'REPORT_ALREADY_PUBLISHED',
-            '공개된 리포트는 재계산할 수 없습니다.',
-          );
+        if (existing) return clone(publicReport(existing, context));
         if (entry.members.length < 2)
           fail('TEAM_TOO_SMALL', '승인 팀원 2명 이상이 필요합니다.');
         if (
@@ -712,7 +703,7 @@ export async function plannedRequest(
           );
         if (
           !state.rounds.every((round) => allSubmitted(state, round, [entry])) ||
-          !state.rounds.find((round) => round.type === 'FINAL')?.workCutoffAt ||
+          !state.rounds.find((round) => round.type === 'FINAL')?.closesAt ||
           entry.tasks.some(
             (task) => state.ai[task.id]?.rework && task.status !== 'DONE',
           ) ||
@@ -729,17 +720,8 @@ export async function plannedRequest(
             '필수 동료 평가 제출과 유효 AI 평가가 필요합니다. 자료 보완 또는 평가 대기 작업을 먼저 확인해 주세요.',
           );
         const calculated = makeReport(state, entry);
-        if (existing) {
-          Object.assign(existing, calculated, {
-            id: existing.id,
-            createdAt: existing.createdAt,
-            version: existing.version + 1,
-          });
-          result = publicReport(existing);
-        } else {
-          state.reports.push(calculated);
-          result = publicReport(calculated);
-        }
+        state.reports.push(calculated);
+        result = publicReport(calculated, context);
       }
     }
   } else if (segments[1] === 'reports') {
@@ -753,36 +735,23 @@ export async function plannedRequest(
         context.team?.id !== report.teamId)
     )
       fail('FORBIDDEN', '다른 팀의 리포트는 볼 수 없습니다.', 403);
-    if (method === 'POST') {
-      requireManager();
-      if (!Number.isInteger(body?.expectedVersion) || body.expectedVersion < 0)
-        fail('INVALID_REQUEST', '조회한 리포트 버전이 필요합니다.', 400);
-      if (report.status === 'PUBLISHED') return publicReport(report);
-      if (body.expectedVersion !== report.version)
-        fail('VERSION_CONFLICT', '초안이 갱신되었습니다. 다시 검토해 주세요.');
-      if (
-        state.rounds.length !== 2 ||
-        state.rounds.some(
-          (round) => round.status !== 'CLOSED' || !allSubmitted(state, round),
-        )
+    if (method !== 'POST' || segments[3] !== 'publish' || segments.length !== 4)
+      fail('NOT_FOUND', '지원하지 않는 요청입니다.', 404);
+    requireManager();
+    if (report.status === 'PUBLISHED') return clone(publicReport(report, context));
+    if (
+      state.rounds.length !== 2 ||
+      state.rounds.some(
+        (round) => round.status !== 'CLOSED' || !allSubmitted(state, round),
       )
-        fail(
-          'REPORT_PUBLICATION_BLOCKED',
-          '스페이스의 모든 필수 평가 제출이 완료되어야 공개할 수 있습니다.',
-        );
-      report.status = 'PUBLISHED';
-      report.publishedAt = now();
-      report.version++;
-      result = publicReport(report);
-    } else {
-      if (!context.manager && report.status !== 'PUBLISHED')
-        fail('REPORT_NOT_PUBLISHED', '아직 공개되지 않은 리포트입니다.', 403);
-      result = {
-        ...publicReport(report),
-        members: report.members,
-        myDetails: report.details[context.user.id] || null,
-      };
-    }
+    )
+      fail(
+        'REPORT_PUBLICATION_BLOCKED',
+        '스페이스의 모든 필수 평가 제출이 완료되어야 공개할 수 있습니다.',
+      );
+    report.status = 'PUBLISHED';
+    report.publishedAt = now();
+    result = publicReport(report, context);
   } else if (segments[1] === 'tasks') {
     const task =
       context.task ||
@@ -877,7 +846,7 @@ export async function plannedRequest(
       const nextVersion = task.version + 1;
       if (mockTask) {
         mockTask.status = 'IN_PROGRESS';
-        mockTask.canRequestCompletion = true;
+
         mockTask.completionBlockReason = null;
         mockTask.version++;
       }
@@ -970,7 +939,6 @@ export function exampleEvaluation(
             'CLARITY_USABILITY',
           ].map((code, index) => ({
             code,
-            level: [4, 3, 3, 3][index],
             maxPoints: [40, 30, 20, 10][index],
             points: [40, 22.5, 15, 7.5][index],
             reason: [
