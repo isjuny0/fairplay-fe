@@ -228,6 +228,7 @@ test('모바일 관리자 카드는 표 가로 스크롤 없이 수행 상세를
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openPreview(page, '/spaces/1/dashboard', 'manager');
+  await page.getByLabel('조회할 팀').selectOption('1');
   await expect(page.getByRole('table')).toHaveCount(0);
   await page
     .getByRole('button', { name: '김하늘 수행 상세', exact: true })

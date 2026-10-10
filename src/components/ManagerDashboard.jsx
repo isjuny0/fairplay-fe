@@ -159,9 +159,9 @@ export default function ManagerDashboard({ context }) {
                           </td>
                           <td>{team.deliverableCount}</td>
                           <td>
-                            {team.latestReportStatus === 'PUBLISHED'
+                            {team.reportStatus === 'PUBLISHED'
                               ? '공개'
-                              : team.latestReportStatus === 'DRAFT'
+                              : team.reportStatus === 'DRAFT'
                                 ? '초안'
                                 : '미생성'}
                           </td>
@@ -209,9 +209,9 @@ export default function ManagerDashboard({ context }) {
                       <summary>산출물·리포트 상태</summary>
                       <p>
                         산출물 {team.deliverableCount}개 · 리포트{' '}
-                        {team.latestReportStatus === 'PUBLISHED'
+                        {team.reportStatus === 'PUBLISHED'
                           ? '공개'
-                          : team.latestReportStatus === 'DRAFT'
+                          : team.reportStatus === 'DRAFT'
                             ? '초안'
                             : '미생성'}
                       </p>
@@ -242,7 +242,7 @@ export default function ManagerDashboard({ context }) {
                 <p>평가 회차가 없습니다.</p>
               )}
             </section>
-            {dashboard.teams.map((team) => (
+            {dashboard.teams.filter((team) => team.members).map((team) => (
               <section className="panel" key={team.teamId}>
                 <h2>{team.teamName} · 팀원 수행 현황</h2>
                 <div className="table-scroll desktop-data-table">

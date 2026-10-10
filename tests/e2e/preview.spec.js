@@ -59,7 +59,9 @@ test('팀 홈과 관리자 현황은 가중치 숫자 대신 비율과 계산 �
   await expect(page.getByText('예상 작업량을 반영한 진행률입니다.', { exact: false })).toBeVisible();
   await page.getByLabel('미리보기 역할').selectOption('manager');
   await page.goto('/preview/spaces/1/dashboard');
-  await expect(page.getByRole('columnheader', { name: '현재 팀원 완료 비중' })).toHaveCount(2);
+  await expect(page.getByRole('columnheader', { name: '현재 팀원 완료 비중' })).toHaveCount(0);
+  await page.getByLabel('조회할 팀').selectOption('1');
+  await expect(page.getByRole('columnheader', { name: '현재 팀원 완료 비중' })).toHaveCount(1);
   await expect(page.getByRole('columnheader', { name: '승인된 배분 가중치' })).toHaveCount(0);
   await expect(page.getByRole('row').filter({ has: page.getByRole('rowheader', { name: '김하늘', exact: true }) }))
     .toContainText('80.00%');
@@ -71,7 +73,7 @@ test('팀 홈과 관리자 현황은 가중치 숫자 대신 비율과 계산 �
     localStorage.setItem(key, JSON.stringify(state));
   });
   await page.reload();
-  await expect(page.getByRole('cell', { name: '완료 작업 없음', exact: true })).toHaveCount(5);
+  await expect(page.getByRole('cell', { name: '완료 작업 없음', exact: true })).toHaveCount(3);
 });
 
 test('대상별 평가를 저장하고 제출하면 새로고침 후에도 수정이 잠긴다', async ({
@@ -131,7 +133,7 @@ test('관리자가 리포트를 공개하면 팀원은 본인 계산 근거를 �
     scenario: 'review',
     path: '/spaces/1/reports',
   });
-  await page.getByRole('button', { name: '초안 생성', exact: true }).click();
+  await page.getByRole('button', { name: '초안 재계산', exact: true }).click();
   await page.getByRole('button', { name: '리포트 공개', exact: true }).click();
   await page
     .getByRole('dialog')
@@ -176,6 +178,7 @@ test('팀원 직접 관리자 주소 접근은 차단하고 관리자는 수행 
   ).toBeVisible();
   await page.getByLabel('미리보기 역할').selectOption('manager');
   await page.goto('/preview/spaces/1/dashboard');
+  await page.getByLabel('조회할 팀').selectOption('1');
   await page.getByRole('button', { name: '김하늘 수행 상세' }).click();
   await page.getByText('인터뷰 결과 기록 파일 · 파일', { exact: true }).click();
   const downloaded = page.waitForEvent('download');

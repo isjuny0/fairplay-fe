@@ -16,7 +16,7 @@ export const getRounds = (context) =>
   requestPlanned(context, `/api/spaces/${context.space.id}/evaluation-rounds`);
 export const getMidFeedback = (context) =>
   requestPlanned(context, `/api/teams/${context.team.id}/mid-feedback`);
-export const getReports = (context) =>
-  requestPlanned(context, `/api/teams/${context.team.id}/reports`);
+export const getTeamReport = (context) =>
+  requestPlanned(context, `/api/teams/${context.team.id}/report`);
 export const getReport = (context, id) =>
   requestPlanned(context, `/api/reports/${id}`);

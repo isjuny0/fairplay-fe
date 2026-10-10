@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router';
 import { MockNotice } from './PlanningUi.jsx';
-import { ReportList } from './ContributionReport.jsx';
+import { TeamReport } from './ContributionReport.jsx';
 import { EmptyState, Field } from './ui.jsx';
 
 export default function ReportReview({ context }) {
@@ -34,7 +34,7 @@ export default function ReportReview({ context }) {
               ))}
             </select>
           </Field>
-          <ReportList
+          <TeamReport
             key={entry.team.id}
             manager
             context={{ ...context, team: entry.team, members: entry.members }}

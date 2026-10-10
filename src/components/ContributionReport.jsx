@@ -1,15 +1,13 @@
 import { useState } from 'react';
-import { useSearchParams } from 'react-router';
 import {
   getReport,
-  getReports,
+  getTeamReport,
   getRounds,
   requestPlanned,
 } from '../api/planned.js';
 import useResource from '../hooks/useResource.js';
 import { useInteractions } from '../hooks/useInteractions.js';
 import { formatDate } from '../lib/domain.js';
-import { parseRouteId } from '../lib/routes.js';
 import { MockNotice, ProgressBar } from './PlanningUi.jsx';
 import { EmptyState, ErrorNotice, Modal, ResourceState } from './ui.jsx';
 
@@ -45,7 +43,7 @@ function ReportDetail({ context, reportId }) {
                     ? '공개된 최종 결과'
                     : '관리자 검토용 초안'}
                 </span>
-                <h2>팀 기여도 리포트 · v{report.version}</h2>
+                <h2>팀 기여도 리포트</h2>
                 <p>
                   {report.status === 'PUBLISHED'
                     ? `공개 ${formatDate(report.publishedAt)}`
@@ -93,8 +91,8 @@ function ReportDetail({ context, reportId }) {
               <li>최종 동료 평가 20% · 팀 내 협업 평가 비율</li>
             </ul>
             <p className="field-help">
-              작업 집계 기준 {formatDate(report.cutoffAt)} · 정책{' '}
-              {report.policyVersion}. 평가자·개별 동료 점수·사유 원문은 공개하지
+              작업 집계 기준 {formatDate(report.cutoffAt)}. 평가자·개별 동료
+              점수·사유 원문은 공개하지
               않습니다.
             </p>
           </details>
@@ -154,7 +152,7 @@ function ReportDetail({ context, reportId }) {
     </ResourceState>
   );
 }
-export function ReportList({ context, manager = false }) {
+export function TeamReport({ context, manager = false }) {
   const { notify } = useInteractions();
   const readiness = useResource(async () => {
     if (!manager) return null;
@@ -168,18 +166,13 @@ export function ReportList({ context, manager = false }) {
     return { rounds, dashboard };
   }, [manager, context.space.id, context.team.id]);
   const resource = useResource(
-    () => getReports(context),
+    () => getTeamReport(context),
     [context.team.id, context.user.id],
   );
-  const [params, setParams] = useSearchParams();
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(null),
     [publishing, setPublishing] = useState(null);
-  const reports = resource.data || [];
-  const selected =
-    reports.find(
-      (report) => report.id === parseRouteId(params.get('reportId')),
-    ) || reports[0];
+  const selected = resource.data;
   const closedRounds =
     readiness.data &&
     ['MID', 'FINAL'].every((type) =>
@@ -206,11 +199,6 @@ export function ReportList({ context, manager = false }) {
     !teamSubmissionComplete ||
     context.team.approvedMemberCount < 2 ||
     aiReviewCount > 0;
-  const select = (id) => {
-    const next = new URLSearchParams(params);
-    next.set('reportId', String(id));
-    setParams(next);
-  };
   return (
     <div className="stack">
       <ErrorNotice error={error} />
@@ -248,18 +236,17 @@ export function ReportList({ context, manager = false }) {
             </div>
             <button
               className={selected ? 'secondary-button' : 'primary-button'}
-              disabled={busy || knownBlock}
+              disabled={busy || knownBlock || selected?.status === 'PUBLISHED'}
               onClick={async () => {
                 setBusy(true);
                 setError(null);
                 try {
-                  const report = await requestPlanned(
+                  await requestPlanned(
                     context,
                     `/api/teams/${context.team.id}/reports/draft`,
                     { method: 'POST' },
                   );
                   notify('리포트 초안을 준비했습니다.');
-                  select(report.id);
                   resource.reload();
                 } catch (error) {
                   setError(error);
@@ -268,34 +255,21 @@ export function ReportList({ context, manager = false }) {
                 }
               }}
             >
-              초안 생성
+              {selected?.status === 'DRAFT' ? '초안 재계산' : '초안 생성'}
             </button>
           </div>
           <p className="field-help">
-            같은 입력이면 기존 리포트를 재사용합니다. 점수를 수동으로 변경하는
-            기능은 없습니다.
+            공개 전에는 같은 초안을 최신 입력으로 재계산합니다. 공개한 결과는
+            변경할 수 없습니다.
           </p>
         </section>
       )}
       <ResourceState resource={resource}>
-        {reports.length ? (
+        {selected ? (
           <>
-            <div className="round-tabs" role="group" aria-label="리포트 선택">
-              {reports.map((report) => (
-                <button
-                  className={selected?.id === report.id ? 'active' : ''}
-                  aria-pressed={selected?.id === report.id}
-                  key={report.id}
-                  onClick={() => select(report.id)}
-                >
-                  <strong>v{report.version}</strong>
-                  <span>{report.status === 'PUBLISHED' ? '공개' : '초안'}</span>
-                </button>
-              ))}
-            </div>
             {selected && (
               <ReportDetail
-                key={`${selected.id}-${selected.status}`}
+                key={`${selected.id}-${selected.version}`}
                 context={context}
                 reportId={selected.id}
               />
@@ -339,7 +313,7 @@ export function ReportList({ context, manager = false }) {
           onClose={() => setPublishing(null)}
         >
           <p>
-            {context.team.name}의 v{publishing.version} 결과를 공개합니다.
+            {context.team.name}의 검토한 결과를 공개합니다.
             팀원은 전체 최종 비율과 자신의 계산 근거를 보게 됩니다.
           </p>
           <ErrorNotice error={error} />
@@ -361,7 +335,10 @@ export function ReportList({ context, manager = false }) {
                   await requestPlanned(
                     context,
                     `/api/reports/${publishing.id}/publish`,
-                    { method: 'POST' },
+                    {
+                      method: 'POST',
+                      body: { expectedVersion: publishing.version },
+                    },
                   );
                   setPublishing(null);
                   notify('리포트를 팀원에게 공개했습니다.');
@@ -391,7 +368,7 @@ export default function ContributionReport({ context }) {
         <p>관리자가 공개한 팀 결과와 본인의 계산 근거를 확인하세요.</p>
       </div>
       <MockNotice />
-      <ReportList context={context} />
+      <TeamReport context={context} />
     </section>
   );
 }

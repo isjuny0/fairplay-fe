@@ -113,7 +113,7 @@ export default function RoundManagement({ context }) {
     if (
       round.status === 'CLOSED' &&
       submissions.data?.teams.some(
-        (team) => team.latestReportStatus === 'PUBLISHED',
+        (team) => team.reportStatus === 'PUBLISHED',
       )
     )
       return '공개된 리포트가 있어 재개방할 수 없습니다.';
