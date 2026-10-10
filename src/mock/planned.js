@@ -15,7 +15,7 @@ const now = () => new Date().toISOString();
 const clone = (value) => structuredClone(value);
 const memoryStates = new Map();
 export const mockKey = (context) =>
-  `fairplay:mock:v2:${context.preview ? 'preview' : context.user.id}:${context.space.id}`;
+  `fairplay:mock:v3:${context.preview ? 'preview' : context.user.id}:${context.space.id}`;
 export function getMockState(context) {
   const key = mockKey(context);
   let state = memoryStates.get(key);
@@ -311,7 +311,6 @@ function feedback(state, teamId, context) {
     );
   return {
     roundId: mid.id,
-    roundVersion: mid.version,
     teamId,
     asOf: now(),
     members: entry.members
@@ -940,7 +939,6 @@ export function exampleEvaluation(
             'CLARITY_USABILITY',
           ].map((code, index) => ({
             code,
-            level: [4, 3, 3, 3][index],
             maxPoints: [40, 30, 20, 10][index],
             points: [40, 22.5, 15, 7.5][index],
             reason: [
