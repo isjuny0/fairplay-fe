@@ -8,9 +8,9 @@ import {
   toDateInput,
 } from '../src/lib/domain.js';
 const members = [
-  { userId: 'leader', isLeader: true },
-  { userId: 'deputy', isDeputy: true },
-  { userId: 'member' },
+  { userId: 'leader', role: 'LEADER' },
+  { userId: 'deputy', role: 'DEPUTY' },
+  { userId: 'member', role: 'MEMBER' },
 ];
 const team = {
   myMembershipStatus: 'APPROVED',

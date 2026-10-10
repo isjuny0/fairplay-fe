@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 
 const members = [
-  { userId: 'leader', name: '리더', isLeader: true, isDeputy: false },
-  { userId: 'member', name: '담당자', isLeader: false, isDeputy: false },
+  { userId: 'leader', name: '리더', role: 'LEADER' },
+  { userId: 'member', name: '담당자', role: 'MEMBER' },
 ];
 
 function deletionRequest(overrides = {}) {
@@ -13,9 +13,6 @@ function deletionRequest(overrides = {}) {
     version: 0,
     requestedBy: 'leader',
     requestedAt: '2026-10-06T10:00:00+09:00',
-    requiredCount: 2,
-    agreedCount: 0,
-    myConsented: false,
     canDelete: false,
     taskCount: 1,
     deliverableCount: 2,
@@ -209,7 +206,6 @@ async function workspace(
     if (path === '/api/teams/1/deletion-requests') {
       deletion = deletionRequest({
         id: (deletion?.id || 39) + 1,
-        requiredCount: memberCount,
         members: deletionRequest().members.slice(0, memberCount),
       });
       return respond(deletion, 201);
@@ -225,12 +221,11 @@ async function workspace(
             }
           : member,
       );
-      deletion.agreedCount = deletion.members.filter(
+      const agreedCount = deletion.members.filter(
         (member) => member.decision === 'AGREED',
       ).length;
-      deletion.myConsented = agree;
       deletion.status = agree
-        ? deletion.agreedCount === deletion.requiredCount
+        ? agreedCount === deletion.members.length
           ? 'READY'
           : 'PENDING'
         : 'CANCELLED';
@@ -782,8 +777,6 @@ function readyDeletion() {
   return deletionRequest({
     status: 'READY',
     version: 7,
-    agreedCount: 2,
-    myConsented: true,
     canDelete: true,
     members: members.map((member) => ({
       userId: member.userId,

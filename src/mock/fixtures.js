@@ -11,8 +11,7 @@ export const previewMembers = Object.entries(previewUsers)
   .map(([role, user]) => ({
     userId: user.id,
     name: user.name,
-    isLeader: role === 'leader',
-    isDeputy: role === 'reviewer',
+    role: role === 'leader' ? 'LEADER' : role === 'reviewer' ? 'DEPUTY' : 'MEMBER',
   }));
 
 export const previewSpace = {

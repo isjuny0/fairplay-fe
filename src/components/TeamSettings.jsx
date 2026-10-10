@@ -37,6 +37,9 @@ export default function TeamSettings({
   const [error, setError] = useState(null);
   const request = deletionResource.data;
   const isLeader = team.leaderId === user.id;
+  const requiredCount = request?.members.length ?? 0;
+  const agreedCount = request?.members.filter((member) => member.decision === 'AGREED').length ?? 0;
+  const myConsented = request?.members.find((member) => member.userId === user.id)?.decision === 'AGREED';
   const membershipLocked = Boolean(space.membershipLockedAt);
   const requestActive = ['PENDING', 'READY'].includes(request?.status);
   const requestUnavailable =
@@ -150,7 +153,7 @@ export default function TeamSettings({
                   {deletionStatusLabels[request.status]}
                 </span>
                 <strong>
-                  {request.agreedCount} / {request.requiredCount}명 동의
+                  {agreedCount} / {requiredCount}명 동의
                 </strong>
               </div>
               <p className="field-help">
@@ -216,18 +219,18 @@ export default function TeamSettings({
                       busy ||
                       requestUnavailable ||
                       membershipLocked ||
-                      request.myConsented
+                      myConsented
                     }
                     onClick={agree}
                   >
-                    {request.myConsented ? '내 동의 완료' : '팀 삭제에 동의'}
+                    {myConsented ? '내 동의 완료' : '팀 삭제에 동의'}
                   </button>
                   <button
                     className="secondary-button danger"
                     disabled={busy || requestUnavailable}
                     onClick={() => openConfirmation('oppose')}
                   >
-                    {request.myConsented
+                    {myConsented
                       ? '동의 철회 및 요청 취소'
                       : '삭제 반대 및 요청 취소'}
                   </button>

@@ -58,7 +58,7 @@ export const canEditTask = (task, team, userId) =>
   canModifyTeamWork(team) &&
   (isAssignee(task, userId) || isTeamEditor(team, userId));
 export const memberRole = (member) =>
-  member.isLeader ? '리더' : member.isDeputy ? '부리더' : '팀원';
+  ({ LEADER: '리더', DEPUTY: '부리더', MEMBER: '팀원' })[member.role];
 export const memberName = (members, userId) =>
   members.find((member) => member.userId === userId)?.name || '팀원';
 export function reviewerCandidates(members, assignees) {
@@ -69,13 +69,13 @@ export function reviewerCandidates(members, assignees) {
   return members
     .filter((member) =>
       allAssigned
-        ? member.isLeader || member.isDeputy
+        ? ['LEADER', 'DEPUTY'].includes(member.role)
         : !assignedIds.has(member.userId),
     )
     .sort(
       (left, right) =>
-        (left.isLeader ? 0 : left.isDeputy ? 1 : 2) -
-        (right.isLeader ? 0 : right.isDeputy ? 1 : 2),
+        (['LEADER', 'DEPUTY', 'MEMBER'].indexOf(left.role)) -
+        (['LEADER', 'DEPUTY', 'MEMBER'].indexOf(right.role)),
     );
 }
 export function deliverablePermissions(deliverable, task, team, userId) {
