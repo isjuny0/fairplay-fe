@@ -34,6 +34,7 @@ export const previewTeams = [
     id: 1,
     spaceId: 1,
     name: '삼위일체',
+    createdAt: '2026-10-01T00:00:00Z',
     leaderId: previewUsers.leader.id,
     deputyId: previewUsers.reviewer.id,
     approvedMemberCount: 3,
@@ -43,6 +44,7 @@ export const previewTeams = [
     id: 2,
     spaceId: 1,
     name: '파도',
+    createdAt: '2026-10-01T00:00:00Z',
     leaderId: '00000000-0000-4000-8000-000000000005',
     deputyId: null,
     approvedMemberCount: 2,
@@ -134,7 +136,7 @@ export function exampleTasks(team, members) {
         ],
       ),
     ),
-    canRequestCompletion: states[index] === 'IN_PROGRESS',
+
     completionBlockReason:
       states[index] === 'IN_PROGRESS' ? null : 'INVALID_TASK_STATE',
   }));

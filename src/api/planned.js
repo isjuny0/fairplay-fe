@@ -18,5 +18,3 @@ export const getMidFeedback = (context) =>
   requestPlanned(context, `/api/teams/${context.team.id}/mid-feedback`);
 export const getTeamReport = (context) =>
   requestPlanned(context, `/api/teams/${context.team.id}/report`);
-export const getReport = (context, id) =>
-  requestPlanned(context, `/api/reports/${id}`);

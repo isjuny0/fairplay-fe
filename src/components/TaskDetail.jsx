@@ -254,7 +254,7 @@ export default function TaskDetail({
                         disabled={
                           busy ||
                           !canModifyTeamWork(team) ||
-                          !task.canRequestCompletion
+                          task.completionBlockReason !== null
                         }
                         onClick={async () => {
                           if (!(await confirmDiscard())) return;
@@ -266,7 +266,7 @@ export default function TaskDetail({
                         완료 요청
                       </button>
                     </div>
-                    {!task.canRequestCompletion && (
+                    {task.completionBlockReason !== null && (
                       <p className="field-help">
                         {completionBlockLabels[task.completionBlockReason]}
                       </p>

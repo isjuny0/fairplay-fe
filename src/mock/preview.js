@@ -65,6 +65,27 @@ const missing = (code, message) => {
 };
 const fileContents = new Map();
 
+function teamDetail(entry, context, state) {
+  const membership = entry.members.some((member) => member.userId === context.user.id)
+    ? 'APPROVED'
+    : state.applications?.find((item) => item.teamId === entry.team.id && item.userId === context.user.id)?.status || null;
+  return {
+    id: entry.team.id,
+    spaceId: entry.team.spaceId,
+    name: entry.team.name,
+    leaderId: entry.team.leaderId,
+    deputyId: entry.team.deputyId,
+    createdAt: entry.team.createdAt,
+    myMembershipStatus: membership,
+    approvedMemberCount: entry.members.length,
+    teamBuildingStatus: context.space.teamBuildingStatus,
+    canApply: context.space.teamBuildingStatus === 'OPEN' &&
+      (membership === null || membership === 'REJECTED') &&
+      !Object.values(state.teams).some((team) => team.members.some((member) => member.userId === context.user.id)),
+    canCreateTask: membership === 'APPROVED' && entry.members.length >= 2,
+  };
+}
+
 export async function previewRequest(
   path,
   { method = 'GET', body = {}, responseType } = {},
@@ -119,7 +140,9 @@ export async function previewRequest(
         id: Math.max(...Object.keys(state.teams).map(Number)) + 1,
         spaceId: id,
         name: body.name,
+        createdAt: new Date().toISOString(),
         leaderId: context.user.id,
+        deputyId: null,
         approvedMemberCount: 1,
       };
       state.teams[team.id] = {
@@ -130,7 +153,7 @@ export async function previewRequest(
         tasks: [],
         deliverables: [],
       };
-      result = team;
+      result = teamDetail(state.teams[team.id], context, state);
     } else if (parts[3] === 'join-code') {
       if (method === 'GET')
         return (
@@ -162,33 +185,7 @@ export async function previewRequest(
       if (method === 'DELETE') {
         delete state.teams[id];
         result = null;
-      } else
-        return {
-          ...entry.team,
-          myMembershipStatus: entry.members.some(
-            (member) => member.userId === context.user.id,
-          )
-            ? 'APPROVED'
-            : state.applications?.find(
-                (item) => item.teamId === id && item.userId === context.user.id,
-              )?.status || null,
-          deletionPending:
-            state.deletion?.teamId === id &&
-            ['PENDING', 'READY'].includes(state.deletion.status),
-          canCreateTask: entry.members.length >= 2 && !context.manager,
-          canApply:
-            context.space.teamBuildingStatus === 'OPEN' &&
-            !entry.members.some(
-              (member) => member.userId === context.user.id,
-            ) &&
-            !state.applications?.some(
-              (item) =>
-                item.teamId === id &&
-                item.userId === context.user.id &&
-                item.status === 'PENDING',
-            ),
-          teamBuildingStatus: context.space.teamBuildingStatus,
-        };
+      } else return teamDetail(entry, context, state);
     } else if (parts[3] === 'members' && parts[4] !== 'me')
       return entry.members;
     else if (parts[3] === 'members' && parts[4] === 'me') {
@@ -209,7 +206,7 @@ export async function previewRequest(
       entry.members.forEach((member) => {
         member.isDeputy = member.userId === body.userId;
       });
-      result = entry.team;
+      result = teamDetail(entry, context, state);
     } else if (parts[3] === 'applications') {
       state.applications ||= [];
       if (method === 'GET')
@@ -239,7 +236,7 @@ export async function previewRequest(
         updatedAt: new Date().toISOString(),
         lastActivityAt: new Date().toISOString(),
         status: 'TODO',
-        canRequestCompletion: false,
+
         completionBlockReason: 'INVALID_TASK_STATE',
       };
       entry.tasks.push(task);
@@ -411,8 +408,8 @@ export async function previewRequest(
           409,
         );
       Object.assign(task, body);
-      task.canRequestCompletion = task.status === 'IN_PROGRESS';
-      task.completionBlockReason = task.canRequestCompletion
+
+      task.completionBlockReason = task.status === 'IN_PROGRESS'
         ? null
         : 'INVALID_TASK_STATE';
       result = task;

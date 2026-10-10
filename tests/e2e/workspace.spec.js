@@ -54,7 +54,7 @@ async function workspace(
     version: 0,
     completionReviewerId: 'leader',
     assignees: [{ userId: 'member', allocationPercent: 100 }],
-    canRequestCompletion: true,
+
   };
   let approvals = [];
   let deliverables = [];
@@ -263,7 +263,7 @@ async function workspace(
           ...task,
           ...request.postDataJSON(),
           status: 'TODO',
-          canRequestCompletion: false,
+
           completionBlockReason: 'INVALID_TASK_STATE',
         };
         return respond(task, 201);
@@ -285,8 +285,8 @@ async function workspace(
           ...request.postDataJSON(),
           version: task.version + 1,
         };
-        task.canRequestCompletion = task.status === 'IN_PROGRESS';
-        task.completionBlockReason = task.canRequestCompletion
+
+        task.completionBlockReason = task.status === 'IN_PROGRESS'
           ? null
           : 'INVALID_TASK_STATE';
         return respond(task);
@@ -318,7 +318,7 @@ async function workspace(
         ...task,
         status: 'PENDING_APPROVAL',
         version: task.version + 1,
-        canRequestCompletion: false,
+
       };
       return respond(approvals[0], 201);
     }

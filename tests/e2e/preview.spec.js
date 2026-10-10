@@ -66,7 +66,7 @@ test('팀 홈과 관리자 현황은 가중치 숫자 대신 비율과 계산 �
   await expect(page.getByRole('row').filter({ has: page.getByRole('rowheader', { name: '김하늘', exact: true }) }))
     .toContainText('80.00%');
   await page.evaluate(() => {
-    const key = 'fairplay:mock:v1:preview:1';
+    const key = 'fairplay:mock:v2:preview:1';
     const state = JSON.parse(localStorage.getItem(key));
     for (const team of Object.values(state.teams))
       for (const task of team.tasks) task.status = 'TODO';
@@ -133,7 +133,7 @@ test('관리자가 리포트를 공개하면 팀원은 본인 계산 근거를 �
     scenario: 'review',
     path: '/spaces/1/reports',
   });
-  await page.getByRole('button', { name: '초안 재계산', exact: true }).click();
+  await expect(page.getByRole('button', { name: '생성 완료', exact: true })).toBeDisabled();
   await page.getByRole('button', { name: '리포트 공개', exact: true }).click();
   await page
     .getByRole('dialog')
