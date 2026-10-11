@@ -6,6 +6,7 @@ import AppRoutes from './components/AppRoutes.jsx';
 import { loginReturnPath } from './lib/routes.js';
 import { ErrorNotice } from './components/ui.jsx';
 import { useInteractions } from './hooks/useInteractions.js';
+import { HeaderContext } from './components/HeaderContext.js';
 import {
   getPreviewUser,
   isPreviewPath,
@@ -28,6 +29,10 @@ export default function App() {
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [headerContext, setHeaderContext] = useState(null);
+  const currentHeader = headerContext?.pathname === location.pathname
+    ? headerContext
+    : { scope: '워크스페이스', title: location.pathname.endsWith('/main') ? '내 스페이스' : '공간 불러오는 중', detail: '팀 프로젝트를 함께 만들어가는 공간' };
   const [sessionNotice, setSessionNotice] = useState('');
   const [previewSettingsOpen, setPreviewSettingsOpen] = useState(
     () => window.innerWidth > 720,
@@ -120,7 +125,9 @@ export default function App() {
           <span className="logo-mark">F</span>
           <h1>Fairplay</h1>
           <p className="login-description">
-            팀 프로젝트의 역할과 수행 과정을 기록하고, 기여도를 근거와 함께
+            팀 프로젝트의 역할과 수행 과정을 기록하고,
+            <br />
+            기여도를 근거와 함께
             확인하세요.
           </p>
           <ol className="login-benefits">
@@ -154,6 +161,7 @@ export default function App() {
       </main>
     );
   return (
+    <HeaderContext.Provider value={setHeaderContext}>
     <div className="app-shell">
       <header className="topbar">
         <div className="topbar-brand">
@@ -165,8 +173,22 @@ export default function App() {
             Fairplay
           </button>
         </div>
-        <div className="context-info">
-          <span className="context-dot" />팀 프로젝트 공간
+        <div className="context-info" aria-label="현재 화면 정보">
+          <span className="context-dot" aria-hidden="true" />
+          <div className="header-context-copy">
+            {headerContext?.pathname === location.pathname && (
+              <>
+                {currentHeader.detail.split(' / ').map((part, index) => (
+                  <span className="header-context-part" key={`${index}-${part}`}>
+                    {index > 0 && <span className="header-context-divider" aria-hidden="true">/</span>}
+                    <span>{part}</span>
+                  </span>
+                ))}
+                <span className="header-context-divider" aria-hidden="true">/</span>
+              </>
+            )}
+            <strong>{currentHeader.title}</strong>
+          </div>
         </div>
         <div className="profile-area">
           <span className="profile-avatar" aria-hidden="true">
@@ -255,5 +277,6 @@ export default function App() {
         prefix={prefix}
       />
     </div>
+    </HeaderContext.Provider>
   );
 }

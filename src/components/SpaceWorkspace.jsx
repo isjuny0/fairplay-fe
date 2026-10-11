@@ -1,5 +1,7 @@
 import Icon from './Icon.jsx';
-import { useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
+import { useLocation } from 'react-router';
+import { HeaderContext } from './HeaderContext.js';
 import useAppNavigate from '../hooks/useAppNavigate.js';
 import { getSpace } from '../api/spaces.js';
 import {
@@ -42,6 +44,8 @@ export default function SpaceWorkspace({
   onBack,
 }) {
   const navigate = useAppNavigate();
+  const location = useLocation();
+  const setHeaderContext = useContext(HeaderContext);
   const { clearChanges, notify } = useInteractions();
   const resource = useResource(async () => {
     const [space, teams] = await Promise.all([
@@ -85,6 +89,23 @@ export default function SpaceWorkspace({
     'contributions',
   ].includes(view);
   const team = teams.find((item) => item.id === teamId);
+  useEffect(() => {
+    if (!setHeaderContext || !space) return;
+    const titles = {
+      settings: '스페이스 관리', dashboard: '스페이스 대시보드',
+      rounds: '평가 회차 관리', reports: '리포트 검토·공개',
+      contributions: '팀원 수행 상세', teams: '팀 목록',
+    };
+    setHeaderContext({
+      pathname: location.pathname,
+      scope: managerView ? '관리 공간' : view === 'team' ? '팀 공간' : '스페이스',
+      title: view === 'team'
+        ? taskId ? teamMenu === '승인 검토' ? '승인 검토 상세' : '작업 상세' : teamMenu
+        : titles[view] || '팀 목록',
+      detail: [space.name, team?.name].filter(Boolean).join(' / '),
+      manager: managerView,
+    });
+  }, [setHeaderContext, location.pathname, space, team, view, teamMenu, taskId, managerView]);
   const joinedTeam = teams.find(isApprovedMember);
   const teamRole = !team
     ? ''

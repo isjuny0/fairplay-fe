@@ -14,6 +14,10 @@ export const expectedWorkloadOptions = [
 export const formatExpectedWorkload = (weight) =>
   expectedWorkloadOptions.find((option) => option.weight === weight)?.label ||
   '예상 작업량 확인 필요';
+// 카드에서도 이상·미만 조건을 그대로 표시합니다.
+export const formatBoardWorkload = (weight) =>
+  formatExpectedWorkload(weight)
+    .replace('의 작업', '');
 export const buildingLabels = {
   NOT_CONFIGURED: '기간 미설정',
   SCHEDULED: '시작 전',
