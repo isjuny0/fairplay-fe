@@ -4,6 +4,8 @@ import {
   canEditTask,
   deliverablePermissions,
   fromDateInput,
+  formatBoardWorkload,
+  formatExpectedWorkload,
   reviewerCandidates,
   toDateInput,
 } from '../src/lib/domain.js';
@@ -12,6 +14,14 @@ const members = [
   { userId: 'deputy', isDeputy: true },
   { userId: 'member' },
 ];
+test('카드 작업량은 이상·미만 조건을 생략하지 않고 표시한다', () => {
+  assert.equal(formatBoardWorkload(1), '1시간 미만');
+  assert.equal(formatBoardWorkload(2), '1시간 이상 ~ 3시간 미만');
+  assert.equal(formatBoardWorkload(3), '3시간 이상 ~ 6시간 미만');
+  assert.equal(formatBoardWorkload(5), '6시간 이상 ~ 12시간 미만');
+  assert.equal(formatBoardWorkload(8), '12시간 이상');
+  assert.equal(formatExpectedWorkload(2), '1시간 이상 ~ 3시간 미만의 작업');
+});
 const team = {
   myMembershipStatus: 'APPROVED',
   leaderId: 'leader',

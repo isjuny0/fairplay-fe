@@ -7,6 +7,7 @@ import { useInteractions } from '../hooks/useInteractions.js';
 import {
   canModifyTeamWork,
   formatDate,
+  formatBoardWorkload,
   formatExpectedWorkload,
   memberName,
   statusLabels,
@@ -123,7 +124,7 @@ export default function TaskBoard({
             (Date.parse(right.dueAt) || Infinity) || right.id - left.id,
     );
   return (
-    <section className="stack">
+    <section className="stack task-board-page">
       <div className="page-heading">
         <div>
           <h1>작업 보드</h1>
@@ -354,8 +355,12 @@ export default function TaskBoard({
                             >
                               <h3>{task.title}</h3>
                             </button>
-                            <p className="task-workload-line">
-                              {formatExpectedWorkload(task.weight)}
+                            <p
+                              className="task-workload-line"
+                              title={formatExpectedWorkload(task.weight)}
+                              aria-label={formatExpectedWorkload(task.weight)}
+                            >
+                              {formatBoardWorkload(task.weight)}
                             </p>
                             <dl className="task-card-meta">
                               <div>
