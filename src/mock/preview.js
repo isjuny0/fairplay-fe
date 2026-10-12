@@ -31,14 +31,12 @@ export function previewContext() {
     {
       userId: previewTeams[1].leaderId,
       name: '최유진',
-      isLeader: true,
-      isDeputy: false,
+      role: 'LEADER',
     },
     {
       userId: '00000000-0000-4000-8000-000000000006',
       name: '윤도현',
-      isLeader: false,
-      isDeputy: false,
+      role: 'MEMBER',
     },
   ];
   return {
@@ -64,6 +62,27 @@ const missing = (code, message) => {
   throw new MockError(code, message, 404);
 };
 const fileContents = new Map();
+
+function teamDetail(entry, context, state) {
+  const membership = entry.members.some((member) => member.userId === context.user.id)
+    ? 'APPROVED'
+    : state.applications?.find((item) => item.teamId === entry.team.id && item.userId === context.user.id)?.status || null;
+  return {
+    id: entry.team.id,
+    spaceId: entry.team.spaceId,
+    name: entry.team.name,
+    leaderId: entry.team.leaderId,
+    deputyId: entry.team.deputyId,
+    createdAt: entry.team.createdAt,
+    myMembershipStatus: membership,
+    approvedMemberCount: entry.members.length,
+    teamBuildingStatus: context.space.teamBuildingStatus,
+    canApply: context.space.teamBuildingStatus === 'OPEN' &&
+      (membership === null || membership === 'REJECTED') &&
+      !Object.values(state.teams).some((team) => team.members.some((member) => member.userId === context.user.id)),
+    canCreateTask: membership === 'APPROVED' && entry.members.length >= 2,
+  };
+}
 
 export async function previewRequest(
   path,
@@ -119,18 +138,20 @@ export async function previewRequest(
         id: Math.max(...Object.keys(state.teams).map(Number)) + 1,
         spaceId: id,
         name: body.name,
+        createdAt: new Date().toISOString(),
         leaderId: context.user.id,
+        deputyId: null,
         approvedMemberCount: 1,
       };
       state.teams[team.id] = {
         team,
         members: [
-          { userId: context.user.id, name: context.user.name, isLeader: true },
+          { userId: context.user.id, name: context.user.name, role: 'LEADER' },
         ],
         tasks: [],
         deliverables: [],
       };
-      result = team;
+      result = teamDetail(state.teams[team.id], context, state);
     } else if (parts[3] === 'join-code') {
       if (method === 'GET')
         return (
@@ -162,41 +183,17 @@ export async function previewRequest(
       if (method === 'DELETE') {
         delete state.teams[id];
         result = null;
-      } else
-        return {
-          ...entry.team,
-          myMembershipStatus: entry.members.some(
-            (member) => member.userId === context.user.id,
-          )
-            ? 'APPROVED'
-            : state.applications?.find(
-                (item) => item.teamId === id && item.userId === context.user.id,
-              )?.status || null,
-          deletionPending:
-            state.deletion?.teamId === id &&
-            ['PENDING', 'READY'].includes(state.deletion.status),
-          canCreateTask: entry.members.length >= 2 && !context.manager,
-          canApply:
-            context.space.teamBuildingStatus === 'OPEN' &&
-            !entry.members.some(
-              (member) => member.userId === context.user.id,
-            ) &&
-            !state.applications?.some(
-              (item) =>
-                item.teamId === id &&
-                item.userId === context.user.id &&
-                item.status === 'PENDING',
-            ),
-          teamBuildingStatus: context.space.teamBuildingStatus,
-        };
+      } else return teamDetail(entry, context, state);
     } else if (parts[3] === 'members' && parts[4] !== 'me')
       return entry.members;
     else if (parts[3] === 'members' && parts[4] === 'me') {
       const nextLeaderId = url.searchParams.get('nextLeaderId');
       if (entry.team.leaderId === context.user.id && nextLeaderId) {
         entry.team.leaderId = nextLeaderId;
+        if (entry.team.deputyId === nextLeaderId) entry.team.deputyId = null;
         entry.members.forEach((member) => {
-          member.isLeader = member.userId === nextLeaderId;
+          member.role = member.userId === nextLeaderId ? 'LEADER'
+            : member.userId === entry.team.deputyId ? 'DEPUTY' : 'MEMBER';
         });
       }
       entry.members = entry.members.filter(
@@ -207,9 +204,10 @@ export async function previewRequest(
     } else if (parts[3] === 'deputy') {
       entry.team.deputyId = body.userId;
       entry.members.forEach((member) => {
-        member.isDeputy = member.userId === body.userId;
+        member.role = member.userId === entry.team.leaderId ? 'LEADER'
+          : member.userId === body.userId ? 'DEPUTY' : 'MEMBER';
       });
-      result = entry.team;
+      result = teamDetail(entry, context, state);
     } else if (parts[3] === 'applications') {
       state.applications ||= [];
       if (method === 'GET')
@@ -239,7 +237,7 @@ export async function previewRequest(
         updatedAt: new Date().toISOString(),
         lastActivityAt: new Date().toISOString(),
         status: 'TODO',
-        canRequestCompletion: false,
+
         completionBlockReason: 'INVALID_TASK_STATE',
       };
       entry.tasks.push(task);
@@ -290,12 +288,15 @@ export async function previewRequest(
             approval.reviewerId === context.user.id &&
             approval.status === status,
         );
-    } else if (parts[3] === 'deletion-request')
-      return (
-        state.deletion ||
-        missing('TEAM_DELETION_REQUEST_NOT_FOUND', '삭제 요청이 없습니다.')
-      );
-    else if (parts[3] === 'deletion-requests') {
+    } else if (parts[3] === 'deletion-request') {
+      const deletion = state.deletion ||
+        missing('TEAM_DELETION_REQUEST_NOT_FOUND', '삭제 요청이 없습니다.');
+      return {
+        ...deletion,
+        canDelete: deletion.status === 'READY' && entry.team.leaderId === context.user.id
+          && !context.space.membershipLockedAt,
+      };
+    } else if (parts[3] === 'deletion-requests') {
       state.deletion = {
         id: 50,
         teamId: id,
@@ -303,9 +304,6 @@ export async function previewRequest(
         version: 0,
         requestedBy: context.user.id,
         requestedAt: new Date().toISOString(),
-        requiredCount: entry.members.length,
-        agreedCount: 0,
-        myConsented: false,
         canDelete: false,
         taskCount: entry.tasks.length,
         deliverableCount: entry.deliverables.length,
@@ -335,8 +333,7 @@ export async function previewRequest(
       entry.members.push({
         userId: application.userId,
         name: application.name,
-        isLeader: false,
-        isDeputy: false,
+        role: 'MEMBER',
       });
       entry.team.approvedMemberCount = entry.members.length;
     }
@@ -411,8 +408,8 @@ export async function previewRequest(
           409,
         );
       Object.assign(task, body);
-      task.canRequestCompletion = task.status === 'IN_PROGRESS';
-      task.completionBlockReason = task.canRequestCompletion
+
+      task.completionBlockReason = task.status === 'IN_PROGRESS'
         ? null
         : 'INVALID_TASK_STATE';
       result = task;
@@ -497,13 +494,14 @@ export async function previewRequest(
       deletion.status = 'CANCELLED';
       deletion.workFrozen = false;
     }
-    deletion.agreedCount = deletion.members.filter(
+    const agreedCount = deletion.members.filter(
       (member) => member.decision === 'AGREED',
     ).length;
-    deletion.myConsented = body.agree;
-    if (deletion.agreedCount === deletion.requiredCount)
+    if (agreedCount === deletion.members.length)
       deletion.status = 'READY';
-    deletion.canDelete = deletion.agreedCount === deletion.requiredCount;
+    deletion.canDelete = deletion.status === 'READY'
+      && state.teams[deletion.teamId].team.leaderId === context.user.id
+      && !context.space.membershipLockedAt;
     deletion.version++;
     result = deletion;
   } else return plannedRequest(context, path, { method, body });

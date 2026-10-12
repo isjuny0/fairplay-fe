@@ -161,8 +161,8 @@ export default function ManagerDashboard({ context }) {
                           <td>
                             {team.reportStatus === 'PUBLISHED'
                               ? '공개'
-                              : team.reportStatus === 'DRAFT'
-                                ? '초안'
+                              : team.reportStatus === 'UNPUBLISHED'
+                                ? '비공개'
                                 : '미생성'}
                           </td>
                         </tr>
@@ -211,8 +211,8 @@ export default function ManagerDashboard({ context }) {
                         산출물 {team.deliverableCount}개 · 리포트{' '}
                         {team.reportStatus === 'PUBLISHED'
                           ? '공개'
-                          : team.reportStatus === 'DRAFT'
-                            ? '초안'
+                          : team.reportStatus === 'UNPUBLISHED'
+                            ? '비공개'
                             : '미생성'}
                       </p>
                     </details>

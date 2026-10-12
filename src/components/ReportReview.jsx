@@ -15,7 +15,7 @@ export default function ReportReview({ context }) {
         <span className="eyebrow">최종 결과 운영</span>
         <h1>리포트 검토·공개</h1>
         <p>
-          팀별 결과를 검토한 뒤 공개하세요. 공개 전 초안은 팀원에게 보이지
+          팀별 결과를 검토한 뒤 공개하세요. 공개 전 리포트는 팀원에게 보이지
           않습니다.
         </p>
       </div>

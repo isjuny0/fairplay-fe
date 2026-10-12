@@ -65,7 +65,7 @@ export default function TeamMembers({ team, user, onChanged }) {
                         {member.userId === user.id && ' · 나'}
                       </span>
                     </span>
-                    {isLeader && !member.isLeader && (
+                    {isLeader && member.role !== 'LEADER' && (
                       <button
                         className="secondary-button"
                         disabled={busy}
@@ -73,12 +73,12 @@ export default function TeamMembers({ team, user, onChanged }) {
                           run(() =>
                             assignTeamDeputy(
                               team.id,
-                              member.isDeputy ? null : member.userId,
+                              member.role === 'DEPUTY' ? null : member.userId,
                             ),
                           )
                         }
                       >
-                        {member.isDeputy ? '부리더 해제' : '부리더 지정'}
+                        {member.role === 'DEPUTY' ? '부리더 해제' : '부리더 지정'}
                       </button>
                     )}
                   </li>

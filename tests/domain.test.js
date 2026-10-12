@@ -10,9 +10,9 @@ import {
   toDateInput,
 } from '../src/lib/domain.js';
 const members = [
-  { userId: 'leader', isLeader: true },
-  { userId: 'deputy', isDeputy: true },
-  { userId: 'member' },
+  { userId: 'leader', role: 'LEADER' },
+  { userId: 'deputy', role: 'DEPUTY' },
+  { userId: 'member', role: 'MEMBER' },
 ];
 test('카드 작업량은 이상·미만 조건을 생략하지 않고 표시한다', () => {
   assert.equal(formatBoardWorkload(1), '1시간 미만');

@@ -171,8 +171,7 @@ export default function AiEvaluation({ context, onChanged }) {
                     <div>
                       <h3>{criterionLabels[criterion.code]}</h3>
                       <strong>
-                        {criterion.points} / {criterion.maxPoints}점 · 수준{' '}
-                        {criterion.level}/4
+                        {criterion.points ?? '평가 불가'} / {criterion.maxPoints}점
                       </strong>
                     </div>
                     <p>{criterion.reason}</p>
@@ -183,11 +182,10 @@ export default function AiEvaluation({ context, onChanged }) {
                 ))}
               </details>
               <details>
-                <summary>0~4 수준 안내</summary>
+                <summary>항목별 배점 안내</summary>
                 <p>
-                  0 · 요구 결과를 충족하지 못함 / 1 · 주요 부분 부족 / 2 · 기본
-                  기준 충족 / 3 · 대부분 충족 / 4 · 충분히 충족. 항목별 점수는
-                  수준과 40·30·20·10 배점을 반영합니다.
+                  요구 충족 40점, 정확성과 일관성 30점, 근거 뒷받침 20점,
+                  명확성과 활용성 10점으로 평가합니다. 합계는 100점입니다.
                 </p>
               </details>
               <p className="field-help">
