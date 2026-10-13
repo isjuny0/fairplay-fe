@@ -54,13 +54,13 @@ for (const width of [1440, 390]) {
     await page.goto('/preview/main');
     await expect(page.getByRole('heading', { name: '내 스페이스', exact: true })).toBeVisible();
     await expect(page.locator('html')).toHaveCSS('background-color', 'rgb(247, 248, 250)');
-    await expect(page.locator('body')).toHaveCSS('font-size', '14px');
+    await expect(page.locator('body')).toHaveCSS('font-size', '17px');
     await expect(page.getByRole('button', { name: 'Fairplay', exact: true })).toHaveCSS('font-weight', '400');
     const layout = await page.evaluate(() => ({
       heading: parseFloat(getComputedStyle(document.querySelector('h1')).fontSize),
       overflowing: document.documentElement.scrollWidth > window.innerWidth,
     }));
-    expect(layout.heading).toBeLessThanOrEqual(24);
+    expect(layout.heading).toBeLessThanOrEqual(27);
     expect(layout.overflowing).toBe(false);
   });
 }
@@ -72,7 +72,7 @@ test('로그인 미리보기에도 회색 배경과 흰 카드 적용', async ({
   await expect(page.locator('.login-card')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(page.locator('.login-page')).toHaveCSS('background-image', 'none');
   await expect(page.locator('.login-card h1')).toHaveCSS('font-weight', '400');
-  await expect(page.locator('.login-card h1')).toHaveCSS('font-size', '26px');
+  await expect(page.locator('.login-card h1')).toHaveCSS('font-size', '29px');
 });
 
 for (const width of [1920, 1440, 1280, 1024, 768, 390, 320]) {

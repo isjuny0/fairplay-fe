@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import { fillDateTime } from './helpers/dateTime.js';
+import { toDateInput } from '../../src/lib/domain.js';
 
 async function preview(
   page,
@@ -221,13 +223,14 @@ test('평가 시작 전 회차 생성·일정 수정·개방 화면을 사용할
   });
   await page.getByRole('button', { name: '평가 회차 만들기' }).click();
   const dialog = page.getByRole('dialog');
+  await fillDateTime(dialog, '평가 마감 시각', toDateInput(new Date(Date.now() + 7 * 86400000).toISOString()));
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
   await expect(
     page.getByRole('button', { name: '중간 평가 일정 수정' }),
   ).toBeVisible();
   await page.getByRole('button', { name: '중간 평가 시작' }).click();
   await expect(
-    page.getByRole('button', { name: '중간 평가 마감' }),
+    page.getByText('작성 중', { exact: true }),
   ).toBeVisible();
 });
 

@@ -1,4 +1,6 @@
 import { useRef, useState } from 'react';
+import DateTimeInput from './DateTimeInput.jsx';
+import { currentDateTime } from '../lib/dateTime.js';
 import useMobileLayout from '../hooks/useMobileLayout.js';
 import useSaveRecovery from '../hooks/useSaveRecovery.js';
 import { getTask } from '../api/tasks.js';
@@ -41,7 +43,7 @@ export default function TaskForm({
     title: task?.title || '',
     description: task?.description || '',
     weight: task?.weight || 3,
-    dueAt: toDateInput(task?.dueAt),
+    dueAt: toDateInput(task?.dueAt) || currentDateTime(),
     assignees: task?.assignees.map((assignment) => ({ ...assignment })) || [],
     completionReviewerId: task?.completionReviewerId || '',
   });
@@ -265,10 +267,9 @@ export default function TaskForm({
                   </select>
                 </Field>
                 <Field label="마감 (한국 시간)" error={fieldErrors.dueAt}>
-                  <input
+                  <DateTimeInput
                     name="dueAt"
                     required
-                    type="datetime-local"
                     value={form.dueAt}
                     onChange={(event) => update('dueAt', event.target.value)}
                   />

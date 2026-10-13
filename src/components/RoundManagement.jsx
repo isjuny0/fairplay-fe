@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import DateTimeInput from './DateTimeInput.jsx';
+import { currentDateTime } from '../lib/dateTime.js';
 import { getRounds, requestPlanned } from '../api/planned.js';
 import useResource from '../hooks/useResource.js';
 import { useInteractions } from '../hooks/useInteractions.js';
@@ -38,14 +40,11 @@ export default function RoundManagement({ context }) {
       type:
         round?.type ||
         (!rounds.some((round) => round.type === 'MID') ? 'MID' : 'FINAL'),
-      opensAt: toDateInput(
-        round?.opensAt || new Date(Date.now() - 60000).toISOString(),
-      ),
-      closesAt: toDateInput(
-        round?.closesAt && kind === 'edit'
-          ? round.closesAt
-          : new Date(Date.now() + 7 * 86400000).toISOString(),
-      ),
+      opensAt: toDateInput(round?.opensAt) || currentDateTime(),
+      closesAt:
+        kind === 'edit'
+          ? toDateInput(round?.closesAt) || currentDateTime()
+          : currentDateTime(),
     };
     setForm(nextForm);
     setInitialForm(nextForm);
@@ -54,15 +53,11 @@ export default function RoundManagement({ context }) {
     setBusy(true);
     setError(null);
     try {
-      await requestPlanned(
-        context,
-        `/api/evaluation-rounds/${round.id}/open`,
-        { method: 'POST' },
-      );
+      await requestPlanned(context, `/api/evaluation-rounds/${round.id}/open`, {
+        method: 'POST',
+      });
       resource.reload();
-      notify(
-        `${roundLabels[round.type]}를 시작했습니다.`,
-      );
+      notify(`${roundLabels[round.type]}를 시작했습니다.`);
     } catch (error) {
       setError(error);
     } finally {
@@ -204,8 +199,11 @@ export default function RoundManagement({ context }) {
                     </>
                   )}
                   {round.status === 'OPEN' && (
-                    <button className="secondary-button" disabled={busy}
-                      onClick={() => openForm('edit', round)}>
+                    <button
+                      className="secondary-button"
+                      disabled={busy}
+                      onClick={() => openForm('edit', round)}
+                    >
                       {roundLabels[round.type]} 마감 시각 수정
                     </button>
                   )}
@@ -230,9 +228,7 @@ export default function RoundManagement({ context }) {
       {editing && (
         <Modal
           title={
-            editing.kind === 'create'
-              ? '평가 회차 만들기'
-              : '평가 일정 수정'
+            editing.kind === 'create' ? '평가 회차 만들기' : '평가 일정 수정'
           }
           busy={busy}
           onClose={() => setEditing(null)}
@@ -262,8 +258,11 @@ export default function RoundManagement({ context }) {
                     {
                       method: 'PATCH',
                       body: {
-                        ...(editing.round.status === 'DRAFT' ? { opensAt: body.opensAt } : {}),
-                        closesAt: body.closesAt, expectedVersion: editing.round.version,
+                        ...(editing.round.status === 'DRAFT'
+                          ? { opensAt: body.opensAt }
+                          : {}),
+                        closesAt: body.closesAt,
+                        expectedVersion: editing.round.version,
                       },
                     },
                   );
@@ -299,20 +298,20 @@ export default function RoundManagement({ context }) {
               </select>
             </Field>
             <Field label="평가 시작 시각">
-                <input
-                  required
-                  type="datetime-local"
-                  disabled={busy || editing.round?.status === 'OPEN'}
-                  value={form.opensAt}
-                  onChange={(event) =>
-                    setForm({ ...form, opensAt: event.target.value })
-                  }
-                />
+              <DateTimeInput
+                name="opensAt"
+                required
+                disabled={busy || editing.round?.status === 'OPEN'}
+                value={form.opensAt}
+                onChange={(event) =>
+                  setForm({ ...form, opensAt: event.target.value })
+                }
+              />
             </Field>
             <Field label="평가 마감 시각">
-              <input
+              <DateTimeInput
+                name="closesAt"
                 required
-                type="datetime-local"
                 disabled={busy}
                 value={form.closesAt}
                 onChange={(event) =>
