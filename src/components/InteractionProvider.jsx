@@ -65,7 +65,7 @@ export default function InteractionProvider({ children }) {
       title: '저장하지 않은 변경 사항',
       message: '저장하지 않은 입력이 있습니다. 변경 사항을 버리고 계속할까요?',
       label: '변경 사항 버리기',
-      danger: true,
+      neutral: true,
     });
     if (accepted) clearChanges();
     return accepted;
@@ -109,7 +109,7 @@ export default function InteractionProvider({ children }) {
               계속 작성
             </button>
             <button
-              className="primary-button danger"
+              className="secondary-button discard-button"
               onClick={() => {
                 clearChanges();
                 blocker.proceed();
@@ -134,7 +134,11 @@ export default function InteractionProvider({ children }) {
               취소
             </button>
             <button
-              className={`primary-button ${confirmation.danger ? 'danger' : ''}`}
+              className={
+                confirmation.neutral
+                  ? 'secondary-button discard-button'
+                  : `primary-button ${confirmation.danger ? 'danger' : ''}`
+              }
               onClick={() => finishConfirmation(true)}
             >
               {confirmation.label || '확인'}

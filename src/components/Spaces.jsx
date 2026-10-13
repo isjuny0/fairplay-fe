@@ -1,4 +1,6 @@
 import Icon from './Icon.jsx';
+import DateTimeInput from './DateTimeInput.jsx';
+import { currentDateTime } from '../lib/dateTime.js';
 import { useState } from 'react';
 import { createSpace, joinSpace, listSpaces } from '../api/spaces.js';
 import useResource from '../hooks/useResource.js';
@@ -24,6 +26,7 @@ export default function Spaces({ onSelect }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
+  const [initialForm, setInitialForm] = useState(null);
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -43,7 +46,16 @@ export default function Spaces({ onSelect }) {
     setError(null);
     setFieldErrors({});
     setModal(type);
-    setForm({ name: '', description: '', startAt: '', endAt: '', code: '' });
+    const current = currentDateTime();
+    const next = {
+      name: '',
+      description: '',
+      startAt: type === 'create' ? current : '',
+      endAt: type === 'create' ? current : '',
+      code: '',
+    };
+    setForm(next);
+    setInitialForm(next);
   };
   const submit = async (event) => {
     event.preventDefault();
@@ -161,7 +173,7 @@ export default function Spaces({ onSelect }) {
           title={modal === 'create' ? '스페이스 만들기' : '코드로 참여'}
           busy={busy}
           onClose={() => setModal(null)}
-          dirty={Object.values(form).some(Boolean)}
+          dirty={JSON.stringify(form) !== JSON.stringify(initialForm)}
         >
           <form onSubmit={submit} noValidate>
             <fieldset disabled={busy} className="form-fields">
@@ -192,10 +204,9 @@ export default function Spaces({ onSelect }) {
                     label="프로젝트 시작 (한국 시간)"
                     error={fieldErrors.startAt}
                   >
-                    <input
+                    <DateTimeInput
                       name="startAt"
                       required
-                      type="datetime-local"
                       value={form.startAt}
                       onChange={(event) =>
                         update('startAt', event.target.value)
@@ -206,10 +217,9 @@ export default function Spaces({ onSelect }) {
                     label="프로젝트 종료 (한국 시간)"
                     error={fieldErrors.endAt}
                   >
-                    <input
+                    <DateTimeInput
                       name="endAt"
                       required
-                      type="datetime-local"
                       value={form.endAt}
                       onChange={(event) => update('endAt', event.target.value)}
                     />

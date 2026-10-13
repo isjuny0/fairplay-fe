@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import DateTimeInput from './DateTimeInput.jsx';
+import { currentDateTime } from '../lib/dateTime.js';
 import {
   createJoinCode,
   getJoinCode,
@@ -31,12 +33,13 @@ export default function SpaceSettings({ space, onChanged }) {
       throw error;
     }
   }, [space.id]);
-  const [opensAt, setOpensAt] = useState(
-    toDateInput(space.teamBuildingOpensAt),
-  );
-  const [closesAt, setClosesAt] = useState(
-    toDateInput(space.teamBuildingClosesAt),
-  );
+  const [defaultDateTime] = useState(currentDateTime);
+  const initialOpensAt =
+    toDateInput(space.teamBuildingOpensAt) || defaultDateTime;
+  const initialClosesAt =
+    toDateInput(space.teamBuildingClosesAt) || defaultDateTime;
+  const [opensAt, setOpensAt] = useState(initialOpensAt);
+  const [closesAt, setClosesAt] = useState(initialClosesAt);
   const [minutes, setMinutes] = useState(1440);
   const [customDuration, setCustomDuration] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -44,14 +47,11 @@ export default function SpaceSettings({ space, onChanged }) {
   const [periodErrors, setPeriodErrors] = useState({});
   const [notice, setNotice] = useState('');
   const { confirm } = useInteractions();
-  useUnsavedChanges(
-    opensAt !== toDateInput(space.teamBuildingOpensAt) ||
-      closesAt !== toDateInput(space.teamBuildingClosesAt),
-  );
+  useUnsavedChanges(opensAt !== initialOpensAt || closesAt !== initialClosesAt);
   const issueCode = () => createJoinCode(space.id, Number(minutes));
   useEffect(() => {
-    setOpensAt(toDateInput(space.teamBuildingOpensAt));
-    setClosesAt(toDateInput(space.teamBuildingClosesAt));
+    setOpensAt(toDateInput(space.teamBuildingOpensAt) || defaultDateTime);
+    setClosesAt(toDateInput(space.teamBuildingClosesAt) || defaultDateTime);
   }, [space.version, space.teamBuildingOpensAt, space.teamBuildingClosesAt]);
   const run = async (action, message) => {
     setBusy(true);
@@ -118,10 +118,9 @@ export default function SpaceSettings({ space, onChanged }) {
               disabled={busy || space.teamBuildingStatus === 'LOCKED'}
             >
               <Field label="팀 빌딩 시작" error={periodErrors.opensAt}>
-                <input
+                <DateTimeInput
                   name="opensAt"
                   required
-                  type="datetime-local"
                   value={opensAt}
                   onChange={(event) => {
                     setOpensAt(event.target.value);
@@ -130,10 +129,9 @@ export default function SpaceSettings({ space, onChanged }) {
                 />
               </Field>
               <Field label="팀 빌딩 종료" error={periodErrors.closesAt}>
-                <input
+                <DateTimeInput
                   name="closesAt"
                   required
-                  type="datetime-local"
                   value={closesAt}
                   onChange={(event) => {
                     setClosesAt(event.target.value);

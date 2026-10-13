@@ -1,3 +1,4 @@
+import { fillDateTime } from './helpers/dateTime.js';
 import { expect, test } from '@playwright/test';
 
 const members = [
@@ -434,7 +435,7 @@ for (const [label, weight] of [
     await workload.selectOption({ label });
     await dialog.getByLabel('작업 제목').fill('예상 작업량 확인');
     await dialog.getByLabel('작업 설명', { exact: true }).fill('팀과 합의한 작업 범위입니다.');
-    await dialog.getByLabel('마감 (한국 시간)').fill('2030-12-01T18:00');
+    await fillDateTime(dialog, '마감 (한국 시간)', '2030-12-01T18:00');
     await dialog.getByLabel('담당자 · 팀원').check();
     await dialog.getByLabel('완료 승인자', { exact: true }).selectOption('leader');
     await dialog.getByRole('button', { name: '저장', exact: true }).click();
@@ -469,7 +470,7 @@ test('담당자가 작업을 생성하고 버전으로 완료 요청하면 수�
   await dialog
     .getByLabel('작업 설명', { exact: true })
     .fill('완료 조건과 담당 범위를 정의합니다.');
-  await dialog.getByLabel('마감 (한국 시간)').fill('2030-12-01T18:00');
+  await fillDateTime(dialog, '마감 (한국 시간)', '2030-12-01T18:00');
   await dialog.getByLabel('담당자 · 팀원').check();
   await dialog
     .getByLabel('완료 승인자', { exact: true })
@@ -655,8 +656,8 @@ test('관리자는 스페이스 생성 후 팀 빌딩 기간을 지정하고 코
     .click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('스페이스 이름').fill('프로젝트 스페이스');
-  await dialog.getByLabel('프로젝트 시작 (한국 시간)').fill('2026-01-01T00:00');
-  await dialog.getByLabel('프로젝트 종료 (한국 시간)').fill('2030-12-31T23:00');
+  await fillDateTime(dialog, '프로젝트 시작 (한국 시간)', '2026-01-01T00:00');
+  await fillDateTime(dialog, '프로젝트 종료 (한국 시간)', '2030-12-31T23:00');
   await dialog.getByRole('button', { name: '만들기', exact: true }).click();
   await page
     .getByRole('button', { name: '스페이스 관리', exact: true })
@@ -665,10 +666,10 @@ test('관리자는 스페이스 생성 후 팀 빌딩 기간을 지정하고 코
     ({ path, method }) => path === '/api/spaces' && method === 'POST',
   );
   expect(JSON.parse(creation.body)).not.toHaveProperty('teamBuildingOpensAt');
-  await page.getByLabel('팀 빌딩 시작').fill('2026-10-05T10:00');
-  await page.getByLabel('팀 빌딩 종료').fill('2026-10-31T18:00');
+  await fillDateTime(page, '팀 빌딩 시작', '2026-10-05T10:00');
+  await fillDateTime(page, '팀 빌딩 종료', '2026-10-31T18:00');
   await page.getByRole('button', { name: '저장', exact: true }).click();
-  await expect(page.getByLabel('팀 빌딩 시작')).toHaveValue('2026-10-05T10:00');
+  await expect(page.getByLabel('팀 빌딩 시작 날짜')).toHaveValue('2026-10-05');
   expect(
     JSON.parse(
       requests.find(({ path }) => path.endsWith('/team-building-period')).body,
@@ -747,7 +748,7 @@ test('모바일·태블릿·데스크톱에서 팀 탐색과 작업 생성 폼�
     if (width <= 600) {
       await dialog.getByLabel('작업 제목', { exact: true }).fill('반응형 입력 검증');
       await dialog.getByLabel('작업 설명', { exact: true }).fill('각 화면 폭에서 담당·승인 설정을 확인합니다.');
-      await dialog.getByLabel('마감 (한국 시간)', { exact: true }).fill('2030-12-01T18:00');
+      await fillDateTime(dialog, '마감 (한국 시간)', '2030-12-01T18:00');
       await dialog.getByRole('button', { name: '다음: 담당·승인', exact: true }).click();
     }
     await expect(

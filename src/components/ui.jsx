@@ -53,10 +53,11 @@ export function EmptyState({ children }) {
 }
 export function Field({ label, children, help, error }) {
   const fieldId = useId();
+  const Container = children.type?.compositeField ? 'div' : 'label';
   const [validationMessage, setValidationMessage] = useState('');
   const fieldError = error || validationMessage;
   return (
-    <label className="form-field">
+    <Container className="form-field">
       <span className="field-label">
         <span id={`${fieldId}-label`}>{label}</span>
         {children.props.required && (
@@ -66,6 +67,7 @@ export function Field({ label, children, help, error }) {
         )}
       </span>
       {cloneElement(children, {
+        ...(children.type?.compositeField ? { labelText: label } : {}),
         'aria-labelledby': `${fieldId}-label`,
         'aria-describedby':
           [help && `${fieldId}-help`, fieldError && `${fieldId}-error`]
@@ -101,7 +103,7 @@ export function Field({ label, children, help, error }) {
           {fieldError}
         </span>
       )}
-    </label>
+    </Container>
   );
 }
 export function Modal({
@@ -129,7 +131,7 @@ export function Modal({
         message:
           '저장하지 않은 변경 사항이 있습니다. 입력 내용을 버리고 닫을까요?',
         label: '버리고 닫기',
-        danger: true,
+        neutral: true,
       }))
     )
       return;
