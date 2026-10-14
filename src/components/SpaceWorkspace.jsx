@@ -226,7 +226,7 @@ export default function SpaceWorkspace({
               ) : view === 'dashboard' ? (
                 <ManagerDashboard context={managerContext} />
               ) : view === 'rounds' ? (
-                <RoundManagement context={managerContext} />
+                <RoundManagement context={managerContext} onChanged={resource.reload} />
               ) : view === 'reports' ? (
                 <ReportReview context={managerContext} />
               ) : view === 'contributions' && team ? (

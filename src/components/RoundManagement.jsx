@@ -1,12 +1,17 @@
 import { useState } from 'react';
 import DateTimeInput from './DateTimeInput.jsx';
 import { currentDateTime } from '../lib/dateTime.js';
-import { getRounds, requestPlanned } from '../api/planned.js';
+import {
+  listEvaluationRounds,
+  createEvaluationRound,
+  updateEvaluationRound,
+  openEvaluationRound,
+} from '../api/evaluations.js';
+import { getManagerDashboard } from '../api/dashboard.js';
 import useResource from '../hooks/useResource.js';
 import { useInteractions } from '../hooks/useInteractions.js';
 import { formatDate, fromDateInput, toDateInput } from '../lib/domain.js';
 import { roundLabels, roundStatusLabels } from '../lib/evaluation.js';
-import { MockNotice } from './PlanningUi.jsx';
 import {
   EmptyState,
   ErrorNotice,
@@ -16,15 +21,14 @@ import {
   ResourceState,
 } from './ui.jsx';
 
-export default function RoundManagement({ context }) {
+export default function RoundManagement({ context, onChanged }) {
   const { notify } = useInteractions();
-  const resource = useResource(() => getRounds(context), [context.space.id]);
+  const resource = useResource(
+    () => listEvaluationRounds(context.space.id),
+    [context.space.id],
+  );
   const submissions = useResource(
-    () =>
-      requestPlanned(
-        context,
-        `/api/spaces/${context.space.id}/manager-dashboard`,
-      ),
+    () => getManagerDashboard(context.space.id),
     [context.space.id, resource.data],
   );
   const [editing, setEditing] = useState(null),
@@ -53,9 +57,8 @@ export default function RoundManagement({ context }) {
     setBusy(true);
     setError(null);
     try {
-      await requestPlanned(context, `/api/evaluation-rounds/${round.id}/open`, {
-        method: 'POST',
-      });
+      await openEvaluationRound(round.id);
+      onChanged?.();
       resource.reload();
       notify(`${roundLabels[round.type]}를 시작했습니다.`);
     } catch (error) {
@@ -103,7 +106,6 @@ export default function RoundManagement({ context }) {
           평가 회차 만들기
         </button>
       </div>
-      <MockNotice />
       <ol className="process-steps" aria-label="평가 진행 순서">
         <li>1. 일정 설정</li>
         <li>2. 평가 시작·작성</li>
@@ -122,11 +124,18 @@ export default function RoundManagement({ context }) {
           있으면 시작할 수 없습니다.
         </p>
         <p className="field-help">
-          최초 최종 평가 마감 시 작업 집계 기준 시각을 고정합니다. 재개방은
-          미제출 보완이며 집계 기간을 늘리지 않습니다.
+          최종 평가의 마감 시각부터 작업 변경이 제한됩니다. 마감 후 일정
+          수정·추가 제출·재개방은 제공하지 않습니다.
         </p>
       </section>
-      <ErrorNotice error={error} />
+      <button
+        className="secondary-button"
+        disabled={busy}
+        onClick={resource.reload}
+      >
+        회차·제출 현황 새로고침
+      </button>
+      <ErrorNotice error={submissions.error || error} />
       <ResourceState resource={resource}>
         {rounds.length ? (
           <div className="two-column">
@@ -175,7 +184,9 @@ export default function RoundManagement({ context }) {
                         )?.team.name || '팀'}
                       </span>
                       <strong>
-                        {team.submittedCount}/{team.requiredCount}명 제출
+                        {round.status === 'DRAFT'
+                          ? '참여자 고정 전'
+                          : `${team.submittedCount}/${team.requiredCount}명 제출`}
                       </strong>
                     </p>
                   ))}
@@ -246,26 +257,15 @@ export default function RoundManagement({ context }) {
                   closesAt: fromDateInput(form.closesAt),
                 };
                 if (editing.kind === 'create')
-                  await requestPlanned(
-                    context,
-                    `/api/spaces/${context.space.id}/evaluation-rounds`,
-                    { method: 'POST', body },
-                  );
-                else if (editing.kind === 'edit')
-                  await requestPlanned(
-                    context,
-                    `/api/evaluation-rounds/${editing.round.id}`,
-                    {
-                      method: 'PATCH',
-                      body: {
-                        ...(editing.round.status === 'DRAFT'
-                          ? { opensAt: body.opensAt }
-                          : {}),
-                        closesAt: body.closesAt,
-                        expectedVersion: editing.round.version,
-                      },
-                    },
-                  );
+                  await createEvaluationRound(context.space.id, body);
+                else
+                  await updateEvaluationRound(editing.round.id, {
+                    ...(editing.round.status === 'DRAFT'
+                      ? { opensAt: body.opensAt }
+                      : {}),
+                    closesAt: body.closesAt,
+                    expectedVersion: editing.round.version,
+                  });
                 setEditing(null);
                 notify('평가 일정을 저장했습니다.');
                 resource.reload();
@@ -323,7 +323,7 @@ export default function RoundManagement({ context }) {
             <FormActions
               busy={busy}
               onCancel={() => setEditing(null)}
-              label={editing.kind === 'reopen' ? '재개방' : '저장'}
+              label="저장"
             />
           </form>
         </Modal>

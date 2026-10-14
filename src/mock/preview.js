@@ -1,3 +1,4 @@
+import { previewAiReview, invalidateReview } from './aiReviews.js';
 import {
   previewUsers,
   previewMembers,
@@ -64,9 +65,14 @@ const missing = (code, message) => {
 const fileContents = new Map();
 
 function teamDetail(entry, context, state) {
-  const membership = entry.members.some((member) => member.userId === context.user.id)
+  const membership = entry.members.some(
+    (member) => member.userId === context.user.id,
+  )
     ? 'APPROVED'
-    : state.applications?.find((item) => item.teamId === entry.team.id && item.userId === context.user.id)?.status || null;
+    : state.applications?.find(
+        (item) =>
+          item.teamId === entry.team.id && item.userId === context.user.id,
+      )?.status || null;
   return {
     id: entry.team.id,
     spaceId: entry.team.spaceId,
@@ -77,9 +83,12 @@ function teamDetail(entry, context, state) {
     myMembershipStatus: membership,
     approvedMemberCount: entry.members.length,
     teamBuildingStatus: context.space.teamBuildingStatus,
-    canApply: context.space.teamBuildingStatus === 'OPEN' &&
+    canApply:
+      context.space.teamBuildingStatus === 'OPEN' &&
       (membership === null || membership === 'REJECTED') &&
-      !Object.values(state.teams).some((team) => team.members.some((member) => member.userId === context.user.id)),
+      !Object.values(state.teams).some((team) =>
+        team.members.some((member) => member.userId === context.user.id),
+      ),
     canCreateTask: membership === 'APPROVED' && entry.members.length >= 2,
   };
 }
@@ -94,10 +103,34 @@ export async function previewRequest(
   const url = new URL(path, 'https://preview.local');
   const parts = url.pathname.split('/').filter(Boolean);
   const id = Number(parts[2]);
-  const technicalRetry = parts[1] === 'tasks' && parts[3] === 'ai-evaluation' && parts[4] === 'retry';
-  if (method !== 'GET' && !technicalRetry && (['tasks', 'deliverables', 'approvals'].includes(parts[1]) ||
-      (parts[1] === 'teams' && ['tasks', 'deliverables'].includes(parts[3])))) {
+  if (
+    method !== 'GET' &&
+    (['tasks', 'deliverables', 'approvals'].includes(parts[1]) ||
+      (parts[1] === 'teams' && ['tasks', 'deliverables'].includes(parts[3])))
+  ) {
     requireWorkBeforeFinalDeadline(state);
+  }
+  if (
+    (parts[1] === 'spaces' &&
+      ['evaluation-rounds', 'manager-dashboard'].includes(parts[3])) ||
+    parts[1] === 'evaluation-rounds' ||
+    (parts[1] === 'teams' &&
+      ['my-work-summary', 'mid-feedback'].includes(parts[3]))
+  ) {
+    const entry =
+      parts[1] === 'teams'
+        ? state.teams[id]
+        : Object.values(state.teams).find((entry) =>
+            entry.members.some((member) => member.userId === context.user.id),
+          );
+    return plannedRequest(
+      {
+        ...context,
+        ...(entry ? { team: entry.team, members: entry.members } : {}),
+      },
+      path,
+      { method, body },
+    );
   }
   let result;
   if (path === '/api/me') return context.user;
@@ -164,7 +197,11 @@ export async function previewRequest(
       } else {
         state.joinCode = {
           spaceId: id,
-          code: crypto.randomUUID().replaceAll('-', '').slice(0, 8).toUpperCase(),
+          code: crypto
+            .randomUUID()
+            .replaceAll('-', '')
+            .slice(0, 8)
+            .toUpperCase(),
           createdAt: new Date().toISOString(),
           expiresAt: new Date(
             Date.now() + (body.expirationMinutes || 1440) * 60000,
@@ -192,8 +229,12 @@ export async function previewRequest(
         entry.team.leaderId = nextLeaderId;
         if (entry.team.deputyId === nextLeaderId) entry.team.deputyId = null;
         entry.members.forEach((member) => {
-          member.role = member.userId === nextLeaderId ? 'LEADER'
-            : member.userId === entry.team.deputyId ? 'DEPUTY' : 'MEMBER';
+          member.role =
+            member.userId === nextLeaderId
+              ? 'LEADER'
+              : member.userId === entry.team.deputyId
+                ? 'DEPUTY'
+                : 'MEMBER';
         });
       }
       entry.members = entry.members.filter(
@@ -204,8 +245,12 @@ export async function previewRequest(
     } else if (parts[3] === 'deputy') {
       entry.team.deputyId = body.userId;
       entry.members.forEach((member) => {
-        member.role = member.userId === entry.team.leaderId ? 'LEADER'
-          : member.userId === body.userId ? 'DEPUTY' : 'MEMBER';
+        member.role =
+          member.userId === entry.team.leaderId
+            ? 'LEADER'
+            : member.userId === body.userId
+              ? 'DEPUTY'
+              : 'MEMBER';
       });
       result = teamDetail(entry, context, state);
     } else if (parts[3] === 'applications') {
@@ -278,6 +323,7 @@ export async function previewRequest(
       };
       if (body instanceof FormData) fileContents.set(item.id, body.get('file'));
       entry.deliverables.push(item);
+      invalidateReview(state, item.taskId);
       result = item;
     } else if (parts[3] === 'approvals') {
       const status = url.searchParams.get('status') || 'PENDING';
@@ -289,12 +335,15 @@ export async function previewRequest(
             approval.status === status,
         );
     } else if (parts[3] === 'deletion-request') {
-      const deletion = state.deletion ||
+      const deletion =
+        state.deletion ||
         missing('TEAM_DELETION_REQUEST_NOT_FOUND', '삭제 요청이 없습니다.');
       return {
         ...deletion,
-        canDelete: deletion.status === 'READY' && entry.team.leaderId === context.user.id
-          && !context.space.membershipLockedAt,
+        canDelete:
+          deletion.status === 'READY' &&
+          entry.team.leaderId === context.user.id &&
+          !context.space.membershipLockedAt,
       };
     } else if (parts[3] === 'deletion-requests') {
       state.deletion = {
@@ -345,12 +394,11 @@ export async function previewRequest(
     const task =
       entry?.tasks.find((task) => task.id === id) ||
       missing('TASK_NOT_FOUND', '작업이 없습니다.');
-    if (parts[3] === 'ai-evaluation' || parts[3] === 'rework')
-      return plannedRequest(
-        { ...context, team: entry.team, members: entry.members, task },
-        path,
-        { method, body },
-      );
+    if (parts[3] === 'ai-review') {
+      const review = previewAiReview(state, context, entry, task, method);
+      saveMockState(context, state);
+      return structuredClone(review);
+    }
     if (parts.length === 3 && method === 'GET')
       return {
         task,
@@ -407,11 +455,15 @@ export async function previewRequest(
           '다른 사용자가 먼저 작업을 수정했습니다.',
           409,
         );
+      if (
+        (body.title != null && body.title !== task.title) ||
+        (body.description != null && body.description !== task.description)
+      )
+        invalidateReview(state, task.id);
       Object.assign(task, body);
 
-      task.completionBlockReason = task.status === 'IN_PROGRESS'
-        ? null
-        : 'INVALID_TASK_STATE';
+      task.completionBlockReason =
+        task.status === 'IN_PROGRESS' ? null : 'INVALID_TASK_STATE';
       result = task;
     }
     task.version++;
@@ -450,6 +502,7 @@ export async function previewRequest(
         new Blob(['미리보기 산출물입니다.'], { type: 'text/plain' })
       );
     if (method === 'DELETE') {
+      invalidateReview(state, item.taskId);
       entry.deliverables = entry.deliverables.filter(
         (deliverable) => deliverable.id !== id,
       );
@@ -465,6 +518,11 @@ export async function previewRequest(
           '다른 사용자가 먼저 산출물을 수정했습니다.',
           409,
         );
+      if (
+        body instanceof FormData ||
+        (metadata.text != null && metadata.text !== item.text)
+      )
+        invalidateReview(state, item.taskId);
       if (body instanceof FormData) {
         Object.assign(item, metadata);
         const file = body.get('file');
@@ -497,11 +555,11 @@ export async function previewRequest(
     const agreedCount = deletion.members.filter(
       (member) => member.decision === 'AGREED',
     ).length;
-    if (agreedCount === deletion.members.length)
-      deletion.status = 'READY';
-    deletion.canDelete = deletion.status === 'READY'
-      && state.teams[deletion.teamId].team.leaderId === context.user.id
-      && !context.space.membershipLockedAt;
+    if (agreedCount === deletion.members.length) deletion.status = 'READY';
+    deletion.canDelete =
+      deletion.status === 'READY' &&
+      state.teams[deletion.teamId].team.leaderId === context.user.id &&
+      !context.space.membershipLockedAt;
     deletion.version++;
     result = deletion;
   } else return plannedRequest(context, path, { method, body });

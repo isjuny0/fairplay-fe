@@ -25,7 +25,7 @@ import {
   statusLabels,
   teamWorkBlocked,
 } from '../lib/domain.js';
-import AiEvaluation from './AiEvaluation.jsx';
+import AiReview from './AiReview.jsx';
 import ApprovalDecision from './ApprovalDecision.jsx';
 import Deliverables from './Deliverables.jsx';
 import TaskForm from './TaskForm.jsx';
@@ -222,6 +222,24 @@ export default function TaskDetail({
                   taskId={task.id}
                   onChanged={resource.reload}
                 />
+                {(isAssignee(task, user.id) ||
+                  user.id ===
+                    (task.status === 'PENDING_APPROVAL'
+                      ? history.find(
+                          (approval) => approval.status === 'PENDING',
+                        )?.reviewerId
+                      : task.completionReviewerId)) && (
+                  <AiReview
+                    context={{
+                      task,
+                      team,
+                      space,
+                      user,
+                      members,
+                      manager: false,
+                    }}
+                  />
+                )}
               </div>
               <aside
                 className="stack task-review-sidebar"
@@ -326,30 +344,6 @@ export default function TaskDetail({
                     onChanged={resource.reload}
                   />
                 )}
-                {(isAssignee(task, user.id) ||
-                  history.some(
-                    (approval) =>
-                      approval.status === 'APPROVED' &&
-                      approval.reviewerId === user.id,
-                  )) &&
-                  ['DONE', 'IN_PROGRESS', 'PENDING_APPROVAL'].includes(
-                    task.status,
-                  ) && (
-                    <AiEvaluation
-                      context={{
-                        task,
-                        team,
-                        space,
-                        user,
-                        members,
-                        manager: false,
-                        approval: history.find(
-                          (approval) => approval.status === 'APPROVED',
-                        ),
-                      }}
-                      onChanged={resource.reload}
-                    />
-                  )}
                 <details className="panel">
                   <summary>완료 요청 이력 · {history.length}건</summary>
                   <p className="field-help">

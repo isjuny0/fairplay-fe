@@ -1,12 +1,12 @@
 import useResource from '../hooks/useResource.js';
-import { getMyWorkSummary } from '../api/planned.js';
+import { getMyWorkSummary } from '../api/teams.js';
 import { formatPercent } from '../lib/evaluation.js';
 import { ResourceState } from './ui.jsx';
-import { MetricCard, MockNotice, ProgressBar } from './PlanningUi.jsx';
+import { MetricCard, ProgressBar } from './PlanningUi.jsx';
 
 export default function TeamHome({ context, onNavigate }) {
   const resource = useResource(
-    () => getMyWorkSummary(context),
+    () => getMyWorkSummary(context.team.id),
     [context.team.id, context.user.id],
   );
   const summary = resource.data;
@@ -25,7 +25,6 @@ export default function TeamHome({ context, onNavigate }) {
           내 작업 확인
         </button>
       </div>
-      <MockNotice />
       <ResourceState resource={resource}>
         {summary && (
           <>

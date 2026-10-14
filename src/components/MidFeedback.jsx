@@ -1,12 +1,12 @@
-import { getMidFeedback } from '../api/planned.js';
+import { getMidFeedback } from '../api/evaluations.js';
 import useResource from '../hooks/useResource.js';
 import { formatDate } from '../lib/domain.js';
-import { FeedbackCards, MockNotice } from './PlanningUi.jsx';
+import { FeedbackCards } from './PlanningUi.jsx';
 import { EmptyState, ResourceState } from './ui.jsx';
 
 export default function MidFeedback({ context }) {
   const resource = useResource(
-    () => getMidFeedback(context),
+    () => getMidFeedback(context.team.id),
     [context.team.id, context.user.id],
   );
   return (
@@ -16,7 +16,6 @@ export default function MidFeedback({ context }) {
         <h1>중간 피드백</h1>
         <p>최종 평가 전에 내 협업 방식을 돌아보고 다음 작업을 준비하세요.</p>
       </div>
-      <MockNotice />
       {resource.error?.code === 'MID_FEEDBACK_NOT_READY' ||
       resource.error?.code === 'ROUND_NOT_FOUND' ? (
         <EmptyState>

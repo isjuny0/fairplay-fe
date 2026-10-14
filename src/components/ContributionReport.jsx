@@ -1,9 +1,5 @@
 import { useState } from 'react';
-import {
-  getTeamReport,
-  getRounds,
-  requestPlanned,
-} from '../api/planned.js';
+import { getTeamReport, getRounds, requestPlanned } from '../api/planned.js';
 import useResource from '../hooks/useResource.js';
 import { useInteractions } from '../hooks/useInteractions.js';
 import { formatDate } from '../lib/domain.js';
@@ -22,9 +18,7 @@ function ReportDetail({ context, report }) {
               현재 작업 현황과 구분된 최종 평가 결과입니다.
             </p>
           </div>
-          <strong>
-            {Number(report.myDetails.totalPercent).toFixed(1)}%
-          </strong>
+          <strong>{Number(report.myDetails.totalPercent).toFixed(1)}%</strong>
         </section>
       )}
       <section className="panel">
@@ -62,8 +56,8 @@ function ReportDetail({ context, report }) {
           </div>
         ))}
         <p className="field-help">
-          최종 기여율 합계 {Number(report.totalPercent).toFixed(1)}% · 팀
-          홈의 현재 작업 현황과는 다른 집계입니다.
+          최종 기여율 합계 {Number(report.totalPercent).toFixed(1)}% · 팀 홈의
+          현재 작업 현황과는 다른 집계입니다.
         </p>
       </section>
       <details className="panel report-method">
@@ -84,8 +78,7 @@ function ReportDetail({ context, report }) {
         </ul>
         <p className="field-help">
           작업 집계 기준 {formatDate(report.cutoffAt)}. 평가자·개별 동료
-          점수·사유 원문은 공개하지
-          않습니다.
+          점수·사유 원문은 공개하지 않습니다.
         </p>
       </details>
       {report.myDetails && (
@@ -111,9 +104,9 @@ function ReportDetail({ context, report }) {
                   <tr key={key}>
                     <th>{label}</th>
                     <td>
-                      {Number(
-                        report.myDetails[`${key}RatioPercent`],
-                      ).toFixed(1)}
+                      {Number(report.myDetails[`${key}RatioPercent`]).toFixed(
+                        1,
+                      )}
                       %
                     </td>
                     <td>{weight}%</td>
@@ -129,13 +122,12 @@ function ReportDetail({ context, report }) {
             </table>
           </div>
           <p>
-            반올림 보정 {report.myDetails.roundingAdjustmentPercent}%p ·
-            최종 {Number(report.myDetails.totalPercent).toFixed(1)}%
+            반올림 보정 {report.myDetails.roundingAdjustmentPercent}%p · 최종{' '}
+            {Number(report.myDetails.totalPercent).toFixed(1)}%
           </p>
           <p className="field-help">
-            기여분은 최종 기여율에 더해지는 퍼센트포인트(%p)입니다. 예: 팀
-            내 비율 80%에 반영 비중 70%를 곱하면 최종 기여율에 56%p가
-            반영됩니다.
+            기여분은 최종 기여율에 더해지는 퍼센트포인트(%p)입니다. 예: 팀 내
+            비율 80%에 반영 비중 70%를 곱하면 최종 기여율에 56%p가 반영됩니다.
           </p>
         </details>
       )}
@@ -179,16 +171,12 @@ export function TeamReport({ context, manager = false }) {
           ?.teams.find((team) => team.teamId === context.team.id)
           ?.missingCount === 0,
     );
-  const aiReviewCount = readiness.data?.dashboard.teams.find(
-    (team) => team.teamId === context.team.id,
-  )?.aiNeedsReviewCount;
   const knownBlock =
     readiness.loading ||
     Boolean(readiness.error) ||
     !closedRounds ||
     !teamSubmissionComplete ||
-    context.team.approvedMemberCount < 2 ||
-    aiReviewCount > 0;
+    context.team.approvedMemberCount < 2;
   return (
     <div className="stack">
       <ErrorNotice error={error} />
@@ -207,12 +195,6 @@ export function TeamReport({ context, manager = false }) {
             <li>{closedRounds ? '✓' : '○'} 중간·최종 평가 마감</li>
             <li>
               {teamSubmissionComplete ? '✓' : '○'} 우리 팀 필수 동료 평가 제출
-            </li>
-            <li>
-              {aiReviewCount == null
-                ? '확인 중'
-                : `AI 추가 확인 ${aiReviewCount}건`}{' '}
-              · 모든 AI 입력의 유효성은 리포트 생성 시 최종 확인
             </li>
           </ul>
           <ErrorNotice error={readiness.error} onRetry={readiness.reload} />
@@ -249,25 +231,21 @@ export function TeamReport({ context, manager = false }) {
             </button>
           </div>
           <p className="field-help">
-            확정된 입력으로 한 번 생성한 결과를 검토하고 공개합니다.
-            생성된 계산 결과는 변경할 수 없습니다.
+            확정된 입력으로 한 번 생성한 결과를 검토하고 공개합니다. 생성된 계산
+            결과는 변경할 수 없습니다.
           </p>
         </section>
       )}
       <ResourceState resource={resource}>
         {selected ? (
           <>
-            {selected && (
-              <ReportDetail
-                context={context}
-                report={selected}
-              />
-            )}
+            {selected && <ReportDetail context={context} report={selected} />}
             {manager && selected?.status === 'UNPUBLISHED' && (
               <section className="panel">
                 <h2>검토 후 팀원에게 공개</h2>
                 <p>
-                  스페이스 전체 중간·최종 평가 필수 제출 완료가 필요합니다. 공개 결과는 불변입니다.
+                  스페이스 전체 중간·최종 평가 필수 제출 완료가 필요합니다. 공개
+                  결과는 불변입니다.
                 </p>
                 <button
                   className="primary-button"
@@ -301,8 +279,8 @@ export function TeamReport({ context, manager = false }) {
           onClose={() => setPublishing(null)}
         >
           <p>
-            {context.team.name}의 검토한 결과를 공개합니다.
-            팀원은 전체 최종 비율과 자신의 계산 근거를 보게 됩니다.
+            {context.team.name}의 검토한 결과를 공개합니다. 팀원은 전체 최종
+            비율과 자신의 계산 근거를 보게 됩니다.
           </p>
           <ErrorNotice error={error} />
           <div className="heading-actions">

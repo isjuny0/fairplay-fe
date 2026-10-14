@@ -77,7 +77,6 @@ export function getMockState(context) {
       round.seeded = true;
 
       round.version++;
-
     }
   }
   memoryStates.set(key, state);
@@ -118,7 +117,8 @@ export function resetMockState(context, scenario = 'active') {
   }
   if (scenario === 'published' || scenario === 'review') {
     state.rounds.forEach((round) => {
-      if (new Date(round.closesAt) > new Date()) round.closesAt = new Date(Date.now() - 1000).toISOString();
+      if (new Date(round.closesAt) > new Date())
+        round.closesAt = new Date(Date.now() - 1000).toISOString();
       round.status = 'CLOSED';
 
       round.version++;
@@ -195,8 +195,15 @@ function seedSubmittedRound(state, round) {
 
 export function requireWorkBeforeFinalDeadline(state) {
   const final = state.rounds.find((round) => round.type === 'FINAL');
-  if (final && final.status !== 'DRAFT' && new Date(final.closesAt) <= new Date())
-    fail('TASK_WORK_CLOSED', '최종 평가 마감 이후에는 작업과 산출물을 변경할 수 없습니다.');
+  if (
+    final &&
+    final.status !== 'DRAFT' &&
+    new Date(final.closesAt) <= new Date()
+  )
+    fail(
+      'TASK_WORK_CLOSED',
+      '최종 평가 마감 이후에는 작업과 산출물을 변경할 수 없습니다.',
+    );
 }
 
 function allSubmitted(state, round, entries = Object.values(state.teams)) {
@@ -348,33 +355,22 @@ function dashboard(state, context, teamFilter) {
     leaderName:
       members.find((member) => member.userId === team.leaderId)?.name || '리더',
     approvedMemberCount: members.length,
-    canProceedWithTasks: members.length >= 2,
+    hasMinimumMembers: members.length >= 2,
     pendingApplications: 0,
     totalTaskCount: tasks.length,
     todoTaskCount: count(tasks, 'TODO'),
     inProgressTaskCount: count(tasks, 'IN_PROGRESS'),
     pendingApprovalCount: count(tasks, 'PENDING_APPROVAL'),
     doneTaskCount: count(tasks, 'DONE'),
-    completionRate: tasks.length
-      ? Math.round((count(tasks, 'DONE') / tasks.length) * 10000) / 100
-      : null,
+    completionRate: workSummary(team.id, members[0]?.userId, tasks)
+      .teamProgressRate,
     overdueTaskCount: overdue(tasks),
     staleTaskCount: tasks.filter(
       (task) =>
         task.status === 'IN_PROGRESS' &&
         Date.now() - new Date(task.lastActivityAt).getTime() >= 48 * 3600000,
     ).length,
-    aiNeedsReviewCount: tasks.filter(
-      (task) =>
-        task.status === 'DONE' &&
-        (state.ai[task.id] || exampleEvaluation(task, task.id)).status ===
-          'NEEDS_REVIEW',
-    ).length,
     deliverableCount: deliverables.length,
-    reportId:
-      state.reports.find((report) => report.teamId === team.id)?.id || null,
-    reportStatus:
-      state.reports.find((report) => report.teamId === team.id)?.status || null,
     ...(teamFilter
       ? {
           members: members.map((member) => {
@@ -396,7 +392,8 @@ function dashboard(state, context, teamFilter) {
                 .myDoneWeight,
               missingContributionDescriptionCount: ownTasks.filter(
                 (task) =>
-                  task.assignees.length > 1 && !task.contributions?.[member.userId],
+                  task.assignees.length > 1 &&
+                  !task.contributions?.[member.userId],
               ).length,
             };
           }),
@@ -416,7 +413,6 @@ function dashboard(state, context, teamFilter) {
     overdueTaskCount: aggregate('overdueTaskCount'),
     staleTaskCount: aggregate('staleTaskCount'),
     pendingApprovalCount: aggregate('pendingApprovalCount'),
-    aiNeedsReviewCount: aggregate('aiNeedsReviewCount'),
     teams,
     missingPeerSubmissions: state.rounds.map((round) => {
       const teamSubmissions = entries.map((entry) => {
@@ -574,12 +570,22 @@ export async function plannedRequest(
         );
       if (method === 'PATCH') {
         if (!['DRAFT', 'OPEN'].includes(round.status))
-          fail('INVALID_ROUND_STATE', '마감된 회차의 일정은 수정할 수 없습니다.');
+          fail(
+            'INVALID_ROUND_STATE',
+            '마감된 회차의 일정은 수정할 수 없습니다.',
+          );
         if (round.status === 'OPEN' && Object.hasOwn(body, 'opensAt'))
-          fail('INVALID_REQUEST', '작성 중에는 마감 시각만 수정할 수 있습니다.', 400);
+          fail(
+            'INVALID_REQUEST',
+            '작성 중에는 마감 시각만 수정할 수 있습니다.',
+            400,
+          );
         const schedule = { opensAt: round.opensAt, ...body, type: round.type };
         validateSchedule(state, context, schedule);
-        Object.assign(round, { opensAt: schedule.opensAt, closesAt: schedule.closesAt });
+        Object.assign(round, {
+          opensAt: schedule.opensAt,
+          closesAt: schedule.closesAt,
+        });
       } else if (segments[3] === 'open') {
         if (round.status !== 'DRAFT')
           fail('INVALID_ROUND_STATE', '일정 대기 회차만 시작할 수 있습니다.');
@@ -674,7 +680,8 @@ export async function plannedRequest(
         }));
     }
     if (
-      segments[3] === 'report' && segments.length === 4 &&
+      segments[3] === 'report' &&
+      segments.length === 4 &&
       ['GET', 'POST'].includes(method)
     ) {
       if (method === 'GET') {
@@ -738,7 +745,8 @@ export async function plannedRequest(
     if (method !== 'POST' || segments[3] !== 'publish' || segments.length !== 4)
       fail('NOT_FOUND', '지원하지 않는 요청입니다.', 404);
     requireManager();
-    if (report.status === 'PUBLISHED') return clone(publicReport(report, context));
+    if (report.status === 'PUBLISHED')
+      return clone(publicReport(report, context));
     if (
       state.rounds.length !== 2 ||
       state.rounds.some(
@@ -752,137 +760,6 @@ export async function plannedRequest(
     report.status = 'PUBLISHED';
     report.publishedAt = now();
     result = publicReport(report, context);
-  } else if (segments[1] === 'tasks') {
-    const task =
-      context.task ||
-      Object.values(state.teams)
-        .flatMap((entry) => entry.tasks)
-        .find((task) => task.id === id);
-    if (!task) fail('TASK_NOT_FOUND', '작업이 없습니다.', 404);
-    const currentApproval = context.approval || {
-      id,
-      reviewerId: task.completionReviewerId,
-      status: 'APPROVED',
-    };
-    const assigned = task.assignees.some(
-      (assignment) => assignment.userId === context.user.id,
-    );
-    const reviewer = currentApproval.reviewerId === context.user.id;
-    if (!assigned && !reviewer && !context.manager)
-      fail(
-        'FORBIDDEN',
-        '담당자·고정 승인자·관리자만 AI 결과를 볼 수 있습니다.',
-        403,
-      );
-    if (!state.ai[id])
-      state.ai[id] = exampleEvaluation(task, currentApproval.id);
-    if (
-      state.ai[id].retryCompletesAt &&
-      Date.now() >= state.ai[id].retryCompletesAt
-    )
-      state.ai[id] = exampleEvaluation(task, currentApproval.id, {
-        successful: true,
-      });
-    const evaluation = state.ai[id];
-    if (segments[3] === 'rework') {
-      requireWorkBeforeFinalDeadline(state);
-      if (!reviewer || context.manager)
-        fail(
-          'FORBIDDEN',
-          '직전 완료 승인의 고정 승인자만 자료 보완을 허용할 수 있습니다.',
-          403,
-        );
-      if (body.expectedVersion !== task.version)
-        fail('VERSION_CONFLICT', '작업이 변경되었습니다.');
-      if (
-        state.teams[task.teamId]?.members.length < 2 ||
-        (state.deletion?.teamId === task.teamId &&
-          ['PENDING', 'READY'].includes(state.deletion.status))
-      )
-        fail(
-          'TEAM_WORK_BLOCKED',
-          '팀원 2명 이상이며 삭제 동의가 진행 중이 아니어야 합니다.',
-        );
-      if (
-        task.status !== 'DONE' ||
-        evaluation.status !== 'NEEDS_REVIEW' ||
-        ![
-          'EVALUATION_INPUT_INSUFFICIENT',
-          'INPUT_FORMAT_UNSUPPORTED',
-          'DOCUMENT_UNREADABLE',
-          'INPUT_LIMIT_EXCEEDED',
-        ].includes(evaluation.failureCode)
-      )
-        fail(
-          'TASK_REWORK_NOT_ALLOWED',
-          '자료 실패 상태의 완료 작업만 보완할 수 있습니다.',
-        );
-      if (
-        state.reports.some(
-          (report) =>
-            report.teamId === task.teamId && report.status === 'PUBLISHED',
-        )
-      )
-        fail(
-          'TASK_REWORK_BLOCKED_BY_REPORT',
-          '공개된 리포트의 작업은 변경할 수 없습니다.',
-        );
-      const mockTask = state.teams[task.teamId]?.tasks.find(
-        (entry) => entry.id === id,
-      );
-      if (context.preview) {
-        state.approvals ||= {};
-        state.approvals[id] ||= [
-          {
-            ...currentApproval,
-            taskId: id,
-            requesterId: task.assignees[0].userId,
-            requestedAt: task.updatedAt,
-            decidedAt: task.updatedAt,
-            reason: null,
-          },
-        ];
-      }
-      const nextVersion = task.version + 1;
-      if (mockTask) {
-        mockTask.status = 'IN_PROGRESS';
-
-        mockTask.completionBlockReason = null;
-        mockTask.version++;
-      }
-      evaluation.rework = true;
-      result = { ...task, status: 'IN_PROGRESS', version: nextVersion };
-    } else if (method === 'POST') {
-      if (!assigned || context.manager)
-        fail('FORBIDDEN', '현재 작업 담당자만 재시도할 수 있습니다.', 403);
-      if (
-        task.status !== 'DONE' ||
-        evaluation.status !== 'NEEDS_REVIEW' ||
-        !['UPSTREAM_UNAVAILABLE', 'OUTPUT_VALIDATION_FAILED'].includes(
-          evaluation.failureCode,
-        )
-      )
-        fail(
-          'AI_EVALUATION_NOT_RETRYABLE',
-          '종료된 기술 실패에서만 재시도할 수 있습니다.',
-        );
-      Object.assign(evaluation, {
-        status: 'PENDING',
-        score: null,
-        criteria: [],
-        reason: null,
-        unverified: [],
-        failureCode: null,
-        retryCompletesAt: Date.now() + 2000,
-      });
-      const { rework, retryCompletesAt, ...publicEvaluation } = evaluation;
-      result = publicEvaluation;
-    } else {
-      if (task.status !== 'DONE' && !state.ai[id]?.rework)
-        fail('AI_EVALUATION_NOT_FOUND', '승인 후 AI 평가가 예약됩니다.', 404);
-      const { rework, retryCompletesAt, ...publicEvaluation } = evaluation;
-      result = publicEvaluation;
-    }
   }
   if (result === undefined)
     fail('MOCK_NOT_SUPPORTED', '이 목업 동작은 아직 준비되지 않았습니다.', 400);

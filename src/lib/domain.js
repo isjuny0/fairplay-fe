@@ -16,8 +16,7 @@ export const formatExpectedWorkload = (weight) =>
   '예상 작업량 확인 필요';
 // 카드에서도 이상·미만 조건을 그대로 표시합니다.
 export const formatBoardWorkload = (weight) =>
-  formatExpectedWorkload(weight)
-    .replace('의 작업', '');
+  formatExpectedWorkload(weight).replace('의 작업', '');
 export const buildingLabels = {
   NOT_CONFIGURED: '기간 미설정',
   SCHEDULED: '시작 전',
@@ -34,6 +33,9 @@ export const categoryLabels = {
   OTHER: '기타',
 };
 export const completionBlockLabels = {
+  WORK_PERIOD_CLOSED:
+    '최종 평가 마감 이후에는 작업을 변경하거나 완료 요청할 수 없습니다.',
+  DELIVERABLE_REQUIRED: '완료 요청 전에 작업에 연결된 산출물이 필요합니다.',
   NOT_ASSIGNEE: '현재 담당자만 완료를 요청할 수 있습니다.',
   INVALID_TASK_STATE: '진행 중인 작업만 완료를 요청할 수 있습니다.',
   REVIEWER_UNAVAILABLE: '적격한 승인자를 다시 지정해 주세요.',
@@ -78,8 +80,8 @@ export function reviewerCandidates(members, assignees) {
     )
     .sort(
       (left, right) =>
-        (['LEADER', 'DEPUTY', 'MEMBER'].indexOf(left.role)) -
-        (['LEADER', 'DEPUTY', 'MEMBER'].indexOf(right.role)),
+        ['LEADER', 'DEPUTY', 'MEMBER'].indexOf(left.role) -
+        ['LEADER', 'DEPUTY', 'MEMBER'].indexOf(right.role),
     );
 }
 export function deliverablePermissions(deliverable, task, team, userId) {
