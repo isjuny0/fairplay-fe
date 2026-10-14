@@ -98,6 +98,7 @@ export default function SpaceWorkspace({
     };
     setHeaderContext({
       pathname: location.pathname,
+      spaceName: space.name,
       scope: managerView ? '관리 공간' : view === 'team' ? '팀 공간' : '스페이스',
       title: view === 'team'
         ? taskId ? teamMenu === '승인 검토' ? '승인 검토 상세' : '작업 상세' : teamMenu
@@ -176,12 +177,8 @@ export default function SpaceWorkspace({
           {space && (
             <>
               <nav className="workspace-breadcrumb" aria-label="현재 위치">
-                <button onClick={() => navigate(spacePath(spaceId))}>
-                  {space.name}
-                </button>
                 {team && (
                   <>
-                    <span aria-hidden="true">/</span>
                     <button
                       onClick={() =>
                         navigate(
@@ -195,9 +192,9 @@ export default function SpaceWorkspace({
                     >
                       {team.name}
                     </button>
+                    <span aria-hidden="true">/</span>
                   </>
                 )}
-                <span aria-hidden="true">/</span>
                 <span aria-current="page">
                   {view === 'team'
                     ? taskId

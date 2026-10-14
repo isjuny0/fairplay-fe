@@ -1,0 +1,828 @@
+/* Document-first workspace with Fairplay green accents. */
+:root {
+  color: #37352f;
+  background: #fff;
+  --brand: #245747;
+  --brand-dark: #1b4437;
+  --brand-light: #eaf3ee;
+  --text-muted: #787774;
+  --border: #e9e9e7;
+  --surface: #fff;
+  --radius-card: 6px;
+  --radius-control: 5px;
+  --header-height: 56px;
+}
+
+.app-shell,
+.login-page,
+.workspace:has(.task-board-page) {
+  background: #fff;
+}
+
+.task-board-page,
+.brand-button,
+.task-title-button,
+.task-board-page .task-title-button,
+.workspace-selectors select,
+.workspace-breadcrumb [aria-current='page'],
+.date-time-input input,
+.calendar-period button {
+  color: #37352f;
+}
+
+.topbar {
+  min-height: var(--header-height);
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  padding: 8px 24px;
+  border-bottom-color: var(--border);
+}
+
+.topbar .context-info {
+  position: relative;
+  justify-self: center;
+  max-width: min(640px, calc(100vw - 560px));
+  gap: 0;
+}
+.topbar .context-dot {
+  position: absolute;
+  left: -16px;
+}
+.topbar .header-context-copy {
+  display: block;
+  overflow: hidden;
+}
+.topbar .header-context-copy strong {
+  display: block;
+}
+.topbar .logo-mark {
+  width: 30px;
+  height: 30px;
+  font-size: 22px;
+}
+.topbar .logout-button {
+  min-height: 36px;
+  padding: 6px 10px;
+}
+.workspace {
+  min-height: calc(100vh - var(--header-height));
+}
+
+.logo-mark {
+  border-radius: 6px;
+}
+
+.context-dot {
+  background: #86ae9b;
+}
+
+.sidebar {
+  background: #f7f7f5;
+  border-right-color: var(--border);
+}
+
+.nav-item,
+.nav-section,
+.sidebar-space .eyebrow,
+.tab-bar button,
+.task-number,
+.task-board-page .task-number,
+.task-card-meta :is(dt, dd, b),
+.task-board-page .task-card-meta :is(dt, b),
+.task-deadline,
+.task-board-page .task-deadline,
+.space-card-footer,
+.task-list-assignees,
+.list-summary,
+.score-scale,
+.guide-explanation,
+.deliverable-record,
+.pagination,
+.required-label,
+.review-facts dt {
+  color: var(--text-muted);
+}
+
+.nav-item {
+  border-radius: 4px;
+}
+
+.nav-item:hover,
+.nav-item.active,
+.tab-bar button:hover,
+.secondary-button:hover:not(:disabled),
+.logout-button:hover:not(:disabled),
+.calendar-trigger:hover:not(:disabled),
+.calendar-panel button:hover,
+.time-picker-options button:hover,
+.google-button:hover:not(:disabled) {
+  background: #efefed;
+}
+
+.nav-item.active {
+  background: var(--brand-light);
+  color: var(--brand-dark);
+  font-weight: 600;
+}
+
+.profile-avatar,
+.member-avatar {
+  color: #57554f;
+  background: #eeede9;
+  border-color: var(--border);
+}
+
+.space-symbol,
+.team-symbol,
+.file-symbol {
+  color: var(--brand);
+  background: var(--brand-light);
+  border-radius: 6px;
+}
+
+.primary-button,
+.task-board-page .primary-button {
+  background: var(--brand);
+  border-color: var(--brand);
+  box-shadow: none;
+}
+
+.primary-button:hover:not(:disabled),
+.task-board-page .primary-button:hover:not(:disabled) {
+  background: var(--brand-dark);
+  border-color: var(--brand-dark);
+}
+
+/* True destructive actions remain distinct from ordinary discard/close. */
+.primary-button.danger {
+  background: #a32f38;
+  border-color: #a32f38;
+}
+
+.primary-button.danger:hover:not(:disabled) {
+  background: #83242c;
+  border-color: #83242c;
+}
+
+.secondary-button,
+.logout-button,
+.task-board-page .secondary-button,
+.google-button {
+  color: #57554f;
+  border-color: #d9d9d6;
+  box-shadow: none;
+}
+
+.primary-button,
+.secondary-button,
+.logout-button,
+.google-button,
+.view-switch,
+.round-tabs button,
+.score-options label,
+.action-summary button,
+.task-workload-line,
+.task-board-page .task-workload-line {
+  border-radius: var(--radius-control);
+}
+
+.secondary-button.discard-button,
+.main-content .secondary-button.discard-button {
+  color: #fff;
+  background: #57554f;
+  border-color: #57554f;
+}
+
+.secondary-button.discard-button:hover:not(:disabled),
+.main-content .secondary-button.discard-button:hover:not(:disabled) {
+  color: #fff;
+  background: #403e39;
+  border-color: #403e39;
+}
+
+.secondary-button.danger {
+  color: #b24242;
+}
+
+.secondary-button.danger:hover:not(:disabled) {
+  background: #fff2f2;
+  border-color: #e3b5b5;
+}
+
+.text-button {
+  color: var(--brand);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.panel,
+.team-card,
+.metric-card,
+.quick-link,
+.next-action-card,
+.space-list button,
+.space-list > button,
+.board-task-card,
+.task-board-page .board-task-card,
+.login-card {
+  border-color: var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: none;
+}
+
+.space-list button:hover,
+.quick-link:hover,
+.task-board-page .board-task-card:hover {
+  background: #fafaf9;
+  border-color: #c9c9c5;
+  box-shadow: none;
+}
+
+.team-card.is-joined,
+.metric-card.accent,
+.report-own-result {
+  border-color: #cfceca;
+}
+
+.building-panel,
+.guidance-panel,
+.next-action-panel,
+.ai-evidence {
+  border-left-color: #c9c8c3;
+}
+
+.field-label,
+.team-context-name,
+.toolbar label,
+.deliverable-card summary,
+.my-assignment,
+.task-board-page .my-assignment {
+  color: #57554f;
+}
+
+.my-assignment,
+.task-board-page .my-assignment {
+  color: var(--brand);
+}
+
+.progress-track,
+.round-context,
+.data-table thead th,
+.ai-evidence,
+.task-weight,
+.task-workload-line,
+.task-board-page .task-workload-line,
+.deliverable-card details,
+.deletion-scope,
+.process-steps li,
+.readiness-list li,
+.file-selection,
+.own-work-panel .metric-card,
+.time-picker-options,
+.calendar-trigger,
+.icon-button,
+.loading-placeholder > div {
+  background: #f7f7f5;
+}
+
+.consent-state:not(.consent-agreed, .consent-rejected) {
+  background: #f7f7f5;
+  color: var(--text-muted);
+}
+
+.toolbar,
+.mock-notice,
+.status-message,
+.deliverable-card details {
+  border-radius: var(--radius-card);
+}
+
+.preview-controls select,
+.toolbar select,
+.task-search-filter input,
+.form-field
+  :is(input:not([type='checkbox'], [type='radio']), select, textarea) {
+  color: #37352f;
+  border: 1px solid #d9d9d6;
+  border-radius: var(--radius-control);
+}
+
+.task-workload-line,
+.task-board-page .task-workload-line,
+.icon-button,
+.time-picker-options button,
+.calendar-panel button,
+.column-empty {
+  color: #787774;
+}
+
+.task-column {
+  background: #f7f7f5;
+  border-color: var(--border);
+  border-radius: 6px;
+}
+
+.task-board-page .task-column-heading > span,
+.view-switch .active {
+  background: #efefed;
+  color: #57554f;
+}
+
+.view-switch .active {
+  background: var(--brand-light);
+  color: var(--brand-dark);
+}
+
+.task-form-steps li[aria-current] {
+  color: var(--brand);
+}
+
+.task-form-steps li[aria-current] span,
+.getting-started-steps span {
+  background: var(--brand-light);
+  color: var(--brand);
+}
+
+.report-composition span {
+  background: #245747;
+}
+.report-composition span:nth-child(2) {
+  background: #abc7b7;
+  color: #1b4437;
+}
+.report-composition span:nth-child(3) {
+  background: #e0ece4;
+  color: #1b4437;
+}
+
+.preview-toolbar,
+.mock-notice {
+  background: #f7f7f5;
+  color: var(--text-muted);
+  border-color: var(--border);
+}
+
+.mock-tag {
+  background: #e9e9e7;
+  color: #57554f;
+  border-radius: 4px;
+}
+
+.modal-backdrop {
+  background: rgb(15 15 15 / 35%);
+}
+
+.modal,
+.calendar-panel,
+.time-picker-panel {
+  border-color: #dededb;
+  border-radius: 8px;
+  box-shadow: 0 8px 28px rgb(15 15 15 / 12%);
+}
+
+.calendar-panel button[aria-current='date'] {
+  box-shadow: inset 0 0 0 1px #a5a39d;
+}
+
+.calendar-panel button[aria-pressed='true'],
+.time-picker-options button[aria-pressed='true'] {
+  color: #fff;
+  background: var(--brand);
+}
+
+:focus-visible,
+.score-options label:focus-within {
+  outline-color: #76bca2;
+}
+
+.space-card-footer,
+.task-deadline,
+.task-board-page .task-deadline,
+.row-item,
+.deliverable-card .heading-actions {
+  border-color: var(--border);
+}
+
+.success-toast {
+  background: var(--brand-dark);
+}
+
+.loading-spinner {
+  border-color: #e9e9e7;
+  border-top-color: var(--brand);
+}
+
+/* State badges, status dots, error and deadline notices retain their semantic colors. */
+.status-badge.task-state-done,
+.approval-approved {
+  color: #356b4d;
+  background: #edf3ee;
+}
+
+.status-badge.task-state-todo {
+  color: #787774;
+  background: #efefed;
+}
+
+/* Page-level hierarchy: one workspace canvas, rather than a stack of large boxes. */
+.main-content {
+  padding: 36px clamp(24px, 3vw, 48px) 64px;
+}
+.workspace-breadcrumb {
+  margin-bottom: 20px;
+}
+.page-heading {
+  align-items: flex-end;
+  padding-bottom: 20px;
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--border);
+}
+.page-heading .eyebrow {
+  margin-bottom: 12px;
+}
+.main-content > .stack {
+  gap: 24px;
+}
+.main-content .stack > .panel:not(.danger-zone, .save-recovery, .empty-state) {
+  padding: 24px 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+}
+.main-content .stack > .panel:last-of-type {
+  border-bottom: 0;
+}
+.main-content .settings-grid > .panel:not(.danger-zone) {
+  padding: 24px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+}
+.section-heading {
+  align-items: flex-start;
+}
+.mock-notice {
+  padding: 8px 12px;
+}
+
+/* A gallery of spaces with a compact cover and consistent card contents. */
+.space-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 28px;
+}
+.space-list button {
+  padding: 0;
+  gap: 0;
+  min-height: 220px;
+  overflow: hidden;
+}
+.space-card-top {
+  min-height: 92px;
+  padding: 20px 24px;
+  background: #f3f6f3;
+  border-bottom: 1px solid var(--border);
+}
+.space-card-top .space-symbol {
+  background: #fff;
+}
+.space-list strong {
+  margin: 0;
+  padding: 22px 24px;
+}
+.space-card-footer {
+  margin: 0 24px;
+  padding: 16px 0;
+}
+.space-list button:hover .space-card-top {
+  background: #eaf3ee;
+}
+
+/* Team overview: metrics first, then next actions and team progress side by side. */
+.team-home-summary {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: 'work work' 'action progress';
+  align-items: stretch;
+}
+.team-home-summary .own-work-panel {
+  grid-area: work;
+  border: 0;
+  padding: 8px 0 24px;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+}
+.team-home-summary .next-action-panel {
+  grid-area: action;
+  border-left: 0;
+}
+.team-home-summary .progress-panel {
+  grid-area: progress;
+  padding: 24px;
+  gap: 12px;
+  background: #f7faf8;
+  border-color: #dbe7df;
+}
+.own-work-panel .metric-grid {
+  gap: 0;
+}
+.own-work-panel .metric-card {
+  background: #fff;
+  border: 0;
+  border-left: 1px solid var(--border);
+  border-radius: 0;
+  padding: 8px 24px;
+}
+.own-work-panel .metric-card:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+.own-work-panel .metric-card.accent {
+  background: #fff;
+}
+.own-work-panel .metric-card > span {
+  margin-bottom: 10px;
+}
+.team-home-summary .progress-panel p {
+  margin-bottom: 0;
+}
+.team-home .collaboration-panel {
+  border-top: 1px solid var(--border);
+}
+
+/* Board views feel like a database: controls on a rule, content on the canvas. */
+.task-board-page .toolbar {
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  gap: 12px;
+}
+.task-board-page .view-switch {
+  border: 0;
+  padding: 0;
+  margin-right: 8px;
+}
+.task-board-page .task-column-heading {
+  padding: 8px 0 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.task-board-page .board-task-card {
+  grid-template-rows: 24px minmax(48px, auto) 30px minmax(90px, auto) minmax(
+      72px,
+      auto
+    );
+  gap: 8px;
+}
+.task-board-page .list-summary {
+  margin-top: -8px;
+}
+.metric-grid > .metric-card {
+  border-top: 2px solid #c9dbcf;
+}
+.own-work-panel .metric-grid > .metric-card {
+  border-top: 0;
+}
+.data-table thead th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+/* Login introduces the product on the left and groups authentication on the right. */
+.login-card:has(.login-introduction) {
+  width: min(980px, 100%);
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0;
+  text-align: left;
+}
+.login-introduction {
+  padding: 48px;
+  background: #f7faf8;
+}
+.login-introduction .logo-mark {
+  margin: 0 0 24px;
+}
+.login-introduction h1 {
+  margin-bottom: 20px;
+}
+.login-introduction .login-description {
+  margin: 0;
+}
+.login-introduction .login-benefits {
+  margin: 28px 0 0;
+  text-align: left;
+  padding-left: 20px;
+}
+.login-actions {
+  padding: 48px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.login-actions h2 {
+  margin-bottom: 12px;
+}
+.login-actions > p {
+  margin-bottom: 28px;
+  word-break: keep-all;
+}
+.login-actions .google-button {
+  word-break: keep-all;
+}
+.login-actions .field-help {
+  margin: 24px 0 0;
+}
+.login-actions .preview-entry {
+  margin-top: 12px;
+}
+
+@media (min-width: 721px) {
+  .workspace-sidebar {
+    flex-basis: 220px;
+    width: 220px;
+    top: var(--header-height);
+    height: calc(100dvh - var(--header-height));
+    max-height: calc(100dvh - var(--header-height));
+    padding: 12px 10px 24px;
+  }
+  .sidebar nav {
+    gap: 2px;
+  }
+  .nav-item {
+    min-height: 38px;
+    padding: 7px 10px;
+  }
+  .workspace-selectors {
+    padding: 12px 4px 18px;
+    gap: 10px;
+  }
+  .workspace-selectors select {
+    min-height: 38px;
+    padding: 7px 26px 7px 10px;
+    background: transparent;
+  }
+  .workspace-selectors label > span {
+    font-size: var(--text-caption);
+    font-weight: 500;
+  }
+  .workspace-nav-group .nav-section {
+    margin: 16px 10px 4px;
+  }
+}
+@media (min-width: 721px) and (max-width: 1100px) {
+  .space-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 900px) {
+  .team-home-summary {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'work' 'action' 'progress';
+  }
+  .login-introduction {
+    padding: 32px;
+  }
+  .login-actions {
+    padding: 32px 24px;
+  }
+}
+@media (max-width: 720px) {
+  .topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 8px 16px;
+    gap: 12px;
+  }
+  .main-content {
+    padding: 24px 16px 40px;
+  }
+  .page-heading {
+    align-items: stretch;
+    padding-bottom: 16px;
+  }
+  .space-list {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .space-card-top {
+    min-height: 76px;
+    padding: 16px 20px;
+  }
+  .space-list strong {
+    padding: 20px;
+  }
+  .space-card-footer {
+    margin: 0 20px;
+  }
+  .own-work-panel .metric-card {
+    padding: 12px 0;
+    border-left: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .own-work-panel .metric-card:last-child {
+    border-bottom: 0;
+  }
+  .login-card:has(.login-introduction) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .login-introduction,
+  .login-actions {
+    padding: 28px 24px;
+  }
+  .login-introduction .login-benefits {
+    margin-top: 20px;
+  }
+}
+
+/* Compact time picker: one neutral palette, with the existing input anchor preserved. */
+.time-picker-panel {
+  width: min(var(--time-popup-width, 100%), 216px);
+  max-height: min(var(--picker-max-height, 420px), 240px);
+  padding: 10px;
+  border-radius: 6px;
+  background: #fff;
+  color: #37352f;
+  box-shadow: 0 4px 16px rgb(15 15 15 / 10%);
+}
+.time-picker-heading {
+  flex-wrap: nowrap;
+  gap: 6px;
+  padding: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.time-picker-heading > span {
+  font-size: 11px;
+  color: #787774;
+}
+.time-picker-columns {
+  grid-template-columns: minmax(0, 1fr) 10px minmax(0, 1fr);
+  gap: 4px;
+}
+.time-picker-column {
+  gap: 4px;
+}
+.time-picker-column > span {
+  font-size: 12px;
+  line-height: 1.3;
+}
+.time-picker-options {
+  height: clamp(40px, calc(var(--picker-max-height, 420px) - 120px), 112px);
+  gap: 2px;
+  padding: 2px;
+  border-color: #e9e9e7;
+  border-radius: 4px;
+  background: #fff;
+}
+.time-picker-options button {
+  min-height: 30px;
+  padding: 4px;
+  font-size: 14px;
+  line-height: 1.3;
+  border-radius: 3px;
+  color: #57554f;
+}
+.time-picker-options button:hover {
+  background: #efefed;
+}
+.time-picker-options button[aria-pressed='true'] {
+  color: #fff;
+  background: #37352f;
+}
+.time-picker-colon {
+  font-size: 16px;
+}
+.time-picker-footer {
+  bottom: -10px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+}
+.time-picker-footer > strong {
+  font-size: 14px;
+}
+.time-picker-footer .text-button {
+  min-height: 32px;
+  padding: 4px 0;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.time-picker-footer .primary-button {
+  grid-column: auto;
+  min-height: 32px;
+  padding: 5px 8px;
+  font-size: 13px;
+  white-space: nowrap;
+  background: #37352f;
+  border-color: #37352f;
+}
+.time-picker-footer .primary-button:hover:not(:disabled) {
+  background: #25241f;
+  border-color: #25241f;
+}
+.time-picker-panel :focus-visible {
+  outline-color: #8c8a84;
+}
