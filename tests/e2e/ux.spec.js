@@ -369,7 +369,7 @@ test('모바일 공간·팀 선택은 하나의 접힌 영역에 있고 작업 �
   ).toBeHidden();
 });
 
-test('데스크톱 홈과 작업 입력은 두 영역으로 배치하고 읽기 화면도 같은 본문 폭을 사용한다', async ({
+test('데스크톱 홈은 개인 지표 아래에 작업·진행률을 배치하고 입력·읽기 화면 폭을 유지한다', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1800, height: 1000 });
@@ -381,9 +381,10 @@ test('데스크톱 홈과 작업 입력은 두 영역으로 배치하고 읽기 
     .getByRole('region', { name: '본인 작업 현황' })
     .boundingBox();
   const progress = await page.locator('.progress-panel').boundingBox();
-  expect(Math.abs(action.y - own.y)).toBeLessThan(2);
-  expect(own.x).toBeGreaterThan(action.x + action.width);
-  expect(progress.y).toBeGreaterThanOrEqual(own.y + own.height);
+  expect(action.y).toBeGreaterThanOrEqual(own.y + own.height);
+  expect(Math.abs(action.y - progress.y)).toBeLessThan(2);
+  expect(progress.x).toBeGreaterThan(action.x + action.width);
+  expect(own.width).toBeGreaterThan(action.width);
   const wide = await page.getByRole('main').boundingBox();
   await page.getByRole('button', { name: '중간 피드백', exact: true }).click();
   const reading = await page.getByRole('main').boundingBox();
