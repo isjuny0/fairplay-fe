@@ -1,3 +1,14 @@
+import { getAiReview, requestAiReview } from '../src/api/aiReviews.js';
+import { getMyWorkSummary } from '../src/api/teams.js';
+import {
+  listEvaluationRounds,
+  openEvaluationRound,
+  getMyPeerResponses,
+  savePeerResponse,
+  submitPeerEvaluation,
+  getMidFeedback,
+} from '../src/api/evaluations.js';
+import { getManagerDashboard } from '../src/api/dashboard.js';
 import { afterEach, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { apiRequest, clearCsrfToken } from '../src/api/client.js';
@@ -106,7 +117,10 @@ test('파일 업로드는 정확한 multipart 필드와 CSRF를 전송한다', a
   assert.deepEqual([...calls[1].body.keys()], ['metadata', 'file']);
   assert.equal(calls[1].body.get('metadata').type, 'application/json');
   assert.deepEqual(JSON.parse(await calls[1].body.get('metadata').text()), {
-    taskId: null, title: '자료', description: null, category: 'OTHER',
+    taskId: null,
+    title: '자료',
+    description: null,
+    category: 'OTHER',
   });
   assert.equal(calls[1].headers['Content-Type'], undefined);
   assert.equal(calls[1].headers['X-CSRF-TOKEN'], 'token');
@@ -168,4 +182,87 @@ test('세션 만료를 앱에 전달한다', async () => {
   globalThis.fetch = async () => jsonResponse({ code: 'UNAUTHORIZED' }, 401);
   await assert.rejects(apiRequest('/api/me'));
   assert.equal(expired, true);
+});
+
+test('새 조회 API는 실제 경로에 쿠키를 보내며 목업 데이터를 반환하지 않는다', async () => {
+  await getMyWorkSummary(7);
+  await listEvaluationRounds(3);
+  await getMyPeerResponses(12);
+  await getMidFeedback(7);
+  await getManagerDashboard(3, 7);
+  await getAiReview(10);
+  assert.deepEqual(
+    calls.map((call) => call.url),
+    [
+      '/api/teams/7/my-work-summary',
+      '/api/spaces/3/evaluation-rounds',
+      '/api/evaluation-rounds/12/responses/me',
+      '/api/teams/7/mid-feedback',
+      '/api/spaces/3/manager-dashboard?teamId=7',
+      '/api/tasks/10/ai-review',
+    ],
+  );
+  assert.ok(
+    calls.every(
+      (call) => call.method === 'GET' && call.credentials === 'include',
+    ),
+  );
+});
+test('검토 요청·회차 개방·최종 제출은 본문 없이 CSRF를 전송한다', async () => {
+  await requestAiReview(10);
+  await openEvaluationRound(12);
+  await submitPeerEvaluation(12);
+  assert.deepEqual(
+    calls.slice(1).map((call) => call.url),
+    [
+      '/api/tasks/10/ai-review',
+      '/api/evaluation-rounds/12/open',
+      '/api/evaluation-rounds/12/submit',
+    ],
+  );
+  assert.ok(
+    calls
+      .slice(1)
+      .every(
+        (call) =>
+          call.body === undefined && call.headers['X-CSRF-TOKEN'] === 'token',
+      ),
+  );
+});
+test('동료 평가 저장은 고정 대상의 네 점수와 선택 사유를 PUT으로 전송한다', async () => {
+  const input = {
+    scores: {
+      taskExecution: 4,
+      responsibility: 4,
+      collaboration: 3,
+      communication: 5,
+    },
+    reason: null,
+  };
+  await savePeerResponse(12, '00000000-0000-4000-8000-000000000001', input);
+  assert.equal(calls[1].method, 'PUT');
+  assert.equal(
+    calls[1].url,
+    '/api/evaluation-rounds/12/responses/00000000-0000-4000-8000-000000000001',
+  );
+  assert.deepEqual(JSON.parse(calls[1].body), input);
+});
+test('AI 검토 비활성화는 실제 오류로 반환하고 자동으로 재요청하지 않는다', async () => {
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, ...options });
+    return url.endsWith('/csrf')
+      ? jsonResponse({ headerName: 'X-CSRF-TOKEN', token: 'token' })
+      : jsonResponse(
+          {
+            code: 'AI_REVIEW_UNAVAILABLE',
+            message: 'AI 검토를 사용할 수 없습니다.',
+          },
+          503,
+        );
+  };
+  await assert.rejects(requestAiReview(10), {
+    status: 503,
+    code: 'AI_REVIEW_UNAVAILABLE',
+  });
+  assert.equal(calls.filter((call) => call.method === 'POST').length, 1);
 });

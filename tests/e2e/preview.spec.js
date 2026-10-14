@@ -12,7 +12,8 @@ async function preview(
       apiCalls.push(request.url());
   });
   await page.goto('/preview/main');
-  if (!await page.getByLabel('미리보기 역할').isVisible()) await page.getByText('미리보기 설정', { exact: true }).click();
+  if (!(await page.getByLabel('미리보기 역할').isVisible()))
+    await page.getByText('미리보기 설정', { exact: true }).click();
   await page.getByLabel('미리보기 역할').selectOption(role);
   if (scenario !== 'active')
     await page.getByLabel('미리보기 상황').selectOption(scenario);
@@ -55,18 +56,33 @@ for (const [path, heading, role] of [
     expect(errors).toEqual([]);
   });
 
-test('팀 홈과 관리자 현황은 가중치 숫자 대신 비율과 계산 기준을 보여준다', async ({ page }) => {
+test('팀 홈과 관리자 현황은 가중치 숫자 대신 비율과 계산 기준을 보여준다', async ({
+  page,
+}) => {
   await preview(page);
   await expect(page.getByText('완료 가중치', { exact: false })).toHaveCount(0);
-  await expect(page.getByText('예상 작업량을 반영한 진행률입니다.', { exact: false })).toBeVisible();
+  await expect(
+    page.getByText('예상 작업량을 반영한 진행률입니다.', { exact: false }),
+  ).toBeVisible();
   await page.getByLabel('미리보기 역할').selectOption('manager');
   await page.goto('/preview/spaces/1/dashboard');
-  await expect(page.getByRole('columnheader', { name: '현재 팀원 완료 비중' })).toHaveCount(0);
+  await expect(
+    page.getByRole('columnheader', { name: '현재 팀원 완료 비중' }),
+  ).toHaveCount(0);
   await page.getByLabel('조회할 팀').selectOption('1');
-  await expect(page.getByRole('columnheader', { name: '현재 팀원 완료 비중' })).toHaveCount(1);
-  await expect(page.getByRole('columnheader', { name: '승인된 배분 가중치' })).toHaveCount(0);
-  await expect(page.getByRole('row').filter({ has: page.getByRole('rowheader', { name: '김하늘', exact: true }) }))
-    .toContainText('80.00%');
+  await expect(
+    page.getByRole('columnheader', { name: '현재 팀원 완료 비중' }),
+  ).toHaveCount(1);
+  await expect(
+    page.getByRole('columnheader', { name: '승인된 배분 가중치' }),
+  ).toHaveCount(0);
+  await expect(
+    page
+      .getByRole('row')
+      .filter({
+        has: page.getByRole('rowheader', { name: '김하늘', exact: true }),
+      }),
+  ).toContainText('80.00%');
   await page.evaluate(() => {
     const key = 'fairplay:mock:v3:preview:1';
     const state = JSON.parse(localStorage.getItem(key));
@@ -75,7 +91,9 @@ test('팀 홈과 관리자 현황은 가중치 숫자 대신 비율과 계산 �
     localStorage.setItem(key, JSON.stringify(state));
   });
   await page.reload();
-  await expect(page.getByRole('cell', { name: '완료 작업 없음', exact: true })).toHaveCount(3);
+  await expect(
+    page.getByRole('cell', { name: '완료 작업 없음', exact: true }),
+  ).toHaveCount(3);
 });
 
 test('대상별 평가를 저장하고 제출하면 새로고침 후에도 수정이 잠긴다', async ({
@@ -121,7 +139,10 @@ test('저점 사유 누락을 안내하고 공개 전 리포트는 팀원에게 
     .click();
   await expect(page.getByRole('alert')).toContainText('10~500자');
   await page.getByLabel('미리보기 상황').selectOption('review');
-  await page.getByRole('dialog').getByRole('button', { name: '변경 사항 버리기', exact: true }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: '변경 사항 버리기', exact: true })
+    .click();
   await page.goto('/preview/spaces/1/teams/1/reports');
   await expect(
     page.getByRole('heading', { name: '공개된 리포트가 없습니다.' }),
@@ -135,7 +156,9 @@ test('관리자가 리포트를 공개하면 팀원은 본인 계산 근거를 �
     scenario: 'review',
     path: '/spaces/1/reports',
   });
-  await expect(page.getByRole('button', { name: '생성 완료', exact: true })).toBeDisabled();
+  await expect(
+    page.getByRole('button', { name: '생성 완료', exact: true }),
+  ).toBeDisabled();
   await page.getByRole('button', { name: '리포트 공개', exact: true }).click();
   await page
     .getByRole('dialog')
@@ -156,19 +179,19 @@ test('관리자가 리포트를 공개하면 팀원은 본인 계산 근거를 �
   await expect(page.getByText('이지원 · 나', { exact: true })).toBeVisible();
   expect(calls).toEqual([]);
 });
-test('AI 기술 실패 재시도와 자료 보완 권한을 구분한다', async ({ page }) => {
-  await preview(page, { role: 'member', path: '/spaces/1/teams/1/tasks/106' });
-  await expect(page.getByText('점수 없음', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'AI 평가 다시 시도' }).click();
-  await expect(page.getByText('평가 대기', { exact: true })).toBeVisible();
+test('AI 검토는 담당자가 선택적으로 요청하고 지정 승인자는 조회만 한다', async ({
+  page,
+}) => {
+  await preview(page, { role: 'leader', path: '/spaces/1/teams/1/tasks/102' });
+  await page.getByRole('button', { name: 'AI 검토 요청', exact: true }).click();
+  await expect(page.getByText('검토 대기', { exact: true })).toBeVisible();
   await page.getByLabel('미리보기 역할').selectOption('reviewer');
-  await page.goto('/preview/spaces/1/teams/1/tasks/105');
-  await page.getByRole('button', { name: '자료 보완 허용' }).click();
+  await page.goto('/preview/spaces/1/teams/1/tasks/102');
   await expect(
-    page.getByText('진행 중', { exact: true }).first(),
+    page.getByRole('heading', { name: 'AI 검토', exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole('button', { name: '자료 보완 허용' }),
+    page.getByRole('button', { name: 'AI 검토 요청', exact: true }),
   ).toHaveCount(0);
 });
 test('팀원 직접 관리자 주소 접근은 차단하고 관리자는 수행 자료를 읽고 다운로드한다', async ({
@@ -223,15 +246,17 @@ test('평가 시작 전 회차 생성·일정 수정·개방 화면을 사용할
   });
   await page.getByRole('button', { name: '평가 회차 만들기' }).click();
   const dialog = page.getByRole('dialog');
-  await fillDateTime(dialog, '평가 마감 시각', toDateInput(new Date(Date.now() + 7 * 86400000).toISOString()));
+  await fillDateTime(
+    dialog,
+    '평가 마감 시각',
+    toDateInput(new Date(Date.now() + 7 * 86400000).toISOString()),
+  );
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
   await expect(
     page.getByRole('button', { name: '중간 평가 일정 수정' }),
   ).toBeVisible();
   await page.getByRole('button', { name: '중간 평가 시작' }).click();
-  await expect(
-    page.getByText('작성 중', { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByText('작성 중', { exact: true })).toBeVisible();
 });
 
 test('로그인 미리보기는 Google 요청 없이 화면 미리보기로 이동한다', async ({
@@ -280,39 +305,29 @@ test('실제 로그인 화면에서 인증 없이 미리보기를 시작할 수 
   expect(apiCalls.length).toBe(initialCalls);
 });
 
-test('자료 보완 후 새 완료 요청을 승인하면 새 AI 결과와 이전 승인 이력이 보인다', async ({
+test('미리보기 AI 검토는 피드백과 근거를 제공하고 완료 승인 후 추가 요청을 제공하지 않는다', async ({
   page,
 }) => {
   const calls = await preview(page, {
-    role: 'reviewer',
-    path: '/spaces/1/teams/1/tasks/105',
+    role: 'leader',
+    path: '/spaces/1/teams/1/tasks/102',
   });
-  await page.getByRole('button', { name: '자료 보완 허용' }).click();
-  await page.getByLabel('미리보기 역할').selectOption('leader');
-  await page.goto('/preview/spaces/1/teams/1/tasks/105');
-  await page.getByRole('button', { name: '산출물 등록', exact: true }).click();
-  const dialog = page.getByRole('dialog');
-  await dialog.getByLabel('제목', { exact: true }).fill('발표 자료 보완 기록');
-  await dialog
-    .getByLabel('본문', { exact: true })
-    .fill('조사 결과와 근거를 보완하여 발표 내용을 다시 정리했습니다.');
-  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await page.getByRole('button', { name: 'AI 검토 요청', exact: true }).click();
+  await expect(page.getByText('검토 대기', { exact: true })).toBeVisible();
+  await page.waitForTimeout(2100);
+  await page
+    .getByRole('button', { name: '검토 상태 확인', exact: true })
+    .click();
   await expect(
-    page.getByText('발표 자료 보완 기록', { exact: true }),
+    page.getByText('요구사항과 제출 자료의 연결을 확인한 예시 피드백입니다.'),
   ).toBeVisible();
-  await page.getByRole('button', { name: '완료 요청', exact: true }).click();
-  await page.getByLabel('미리보기 역할').selectOption('reviewer');
-  await page.goto('/preview/spaces/1/teams/1/approvals/tasks/105');
-  await page.getByRole('button', { name: '완료 승인', exact: true }).click();
-  await page.getByRole('dialog').getByRole('button', { name: '승인 확정', exact: true }).click();
-  await expect(page.getByText('85 / 100', { exact: true })).toBeVisible();
-  await page.getByText('항목별 평가·원문 근거 보기', { exact: true }).click();
-  const evidenceCriterion = page.locator('.criterion-row').filter({
-    has: page.getByRole('heading', { name: '근거 뒷받침', exact: true }),
-  });
   await expect(
-    evidenceCriterion.getByText('관찰과 해석을 구분해 기록합니다.', { exact: true }),
+    page.getByRole('heading', { name: '검토 한계', exact: true }),
   ).toBeVisible();
+  await page.goto('/preview/spaces/1/teams/1/tasks/101');
+  await expect(
+    page.getByRole('button', { name: 'AI 검토 요청', exact: true }),
+  ).toHaveCount(0);
   expect(calls).toEqual([]);
 });
 test('팀 빌딩 상황에서는 가입 승인 및 미가입 참여자의 팀 생성 화면을 제공한다', async ({
@@ -345,7 +360,8 @@ for (const width of [320, 768, 1440])
       '/spaces/1/teams/1/reports',
     ]) {
       await page.goto(`/preview${path}`);
-      if (!await page.getByLabel('미리보기 역할').isVisible()) await page.getByText('미리보기 설정', { exact: true }).click();
+      if (!(await page.getByLabel('미리보기 역할').isVisible()))
+        await page.getByText('미리보기 설정', { exact: true }).click();
       await expect(page.locator('h1')).toBeVisible();
       expect(
         await page.evaluate(
