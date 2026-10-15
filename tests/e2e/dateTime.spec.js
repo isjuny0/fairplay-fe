@@ -162,7 +162,7 @@ test('미저장 입력의 버리고 닫기 버튼은 중립 회색이며 기능�
     name: '버리고 닫기',
     exact: true,
   });
-  await expect(discard).toHaveCSS('background-color', 'rgb(92, 101, 113)');
+  await expect(discard).toHaveCSS('background-color', 'rgb(87, 85, 79)');
   await expect(discard).toHaveCSS('color', 'rgb(255, 255, 255)');
   await expect(discard).not.toHaveClass(/danger/);
   await discard.click();
@@ -186,6 +186,13 @@ for (const width of [1440, 390, 320]) {
     });
     const timeBox = await dialog.locator('.time-control').first().boundingBox();
     const pickerBox = await picker.boundingBox();
+    expect(pickerBox.width).toBeLessThanOrEqual(216);
+    expect(pickerBox.height).toBeLessThanOrEqual(240);
+    await expect(picker).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    await expect(picker.locator('.time-picker-options').first()).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    await expect(picker.locator('.time-picker-options [aria-pressed="true"]').first()).toHaveCSS('background-color', 'rgb(55, 53, 47)');
+    await expect(picker.getByRole('button', { name: '시간 적용', exact: true })).toHaveCSS('background-color', 'rgb(55, 53, 47)');
+    expect(await picker.evaluate(el => el.scrollWidth > el.clientWidth)).toBe(false);
     expect(Math.abs(pickerBox.x - timeBox.x)).toBeLessThanOrEqual(1);
     expect(pickerBox.y).toBeGreaterThanOrEqual(timeBox.y + timeBox.height);
     expect(pickerBox.y - timeBox.y - timeBox.height).toBeLessThanOrEqual(12);
@@ -300,7 +307,7 @@ test('공통 입력창의 글씨·높이·모서리와 페이지 제목 크기�
   for (const input of await fields.all()) {
     await expect(input).toHaveCSS('font-size', '17px');
     await expect(input).toHaveCSS('min-height', '46px');
-    await expect(input).toHaveCSS('border-radius', '9px');
+    await expect(input).toHaveCSS('border-radius', '5px');
   }
   await dialog.getByRole('button', { name: '취소', exact: true }).click();
   for (const path of [

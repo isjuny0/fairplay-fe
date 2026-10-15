@@ -29,6 +29,39 @@ export default function TeamHome({ context, onNavigate }) {
         {summary && (
           <>
             <div className="team-home-summary">
+              <section
+                className="panel own-work-panel"
+                aria-label="본인 작업 현황"
+              >
+                <h2>본인 작업 현황</h2>
+                <p className="field-help">
+                  현재 등록된 작업의 예상 작업량과 담당 비율을 기준으로
+                  계산합니다.
+                </p>
+                <div className="metric-grid three">
+                  <MetricCard
+                    accent
+                    label="팀 전체 작업 중 내 담당 비중"
+                    value={formatPercent(summary.myAssignedShare)}
+                    description="예상 작업량과 담당 비율을 반영한 내 몫"
+                  />
+                  <MetricCard
+                    label="팀 전체 작업 중 내 완료 비중"
+                    value={formatPercent(summary.myCompletedContributionRate)}
+                    description="예상 작업량과 담당 비율을 반영한 내 완료 분량"
+                  />
+                  <MetricCard
+                    label="내 담당 작업 완료율"
+                    value={formatPercent(
+                      summary.myTaskCompletionRate,
+                      summary.teamTotalWeight
+                        ? '담당 작업 없음'
+                        : '계산할 작업 없음',
+                    )}
+                    description="내가 맡은 분량 중 완료한 비중"
+                  />
+                </div>
+              </section>
               <section className="panel next-action-panel">
                 <h2>지금 확인할 작업</h2>
                 <div className="action-summary">
@@ -63,57 +96,24 @@ export default function TeamHome({ context, onNavigate }) {
                   확인하고 다음 행동을 정하세요.
                 </p>
               </section>
-              <section
-                className="panel own-work-panel"
-                aria-label="본인 작업 현황"
-              >
-                <h2>본인 작업 현황</h2>
-                <p className="field-help">
-                  현재 등록된 작업의 예상 작업량과 담당 비율을 기준으로
-                  계산합니다.
-                </p>
-                <div className="metric-grid three">
-                  <MetricCard
-                    accent
-                    label="팀 전체 작업 중 내 담당 비중"
-                    value={formatPercent(summary.myAssignedShare)}
-                    description="예상 작업량과 담당 비율을 반영한 내 몫"
-                  />
-                  <MetricCard
-                    label="팀 전체 작업 중 내 완료 비중"
-                    value={formatPercent(summary.myCompletedContributionRate)}
-                    description="예상 작업량과 담당 비율을 반영한 내 완료 분량"
-                  />
-                  <MetricCard
-                    label="내 담당 작업 완료율"
-                    value={formatPercent(
-                      summary.myTaskCompletionRate,
-                      summary.teamTotalWeight
-                        ? '담당 작업 없음'
-                        : '계산할 작업 없음',
-                    )}
-                    description="내가 맡은 분량 중 완료한 비중"
-                  />
+              <section className="panel progress-panel">
+                <div>
+                  <span className="eyebrow">현재 등록된 작업 기준</span>
+                  <h2>팀 전체 진행률</h2>
+                  <p>
+                    예상 작업량을 반영한 진행률입니다. 실제 소요 시간이나 최종
+                    기여도 점수가 아닙니다.
+                  </p>
                 </div>
+                <strong className="hero-number">
+                  {formatPercent(summary.teamProgressRate)}
+                </strong>
+                <ProgressBar
+                  value={summary.teamProgressRate}
+                  label="예상 작업량을 반영한 팀 진행률"
+                />
               </section>
             </div>
-            <section className="panel progress-panel">
-              <div>
-                <span className="eyebrow">현재 등록된 작업 기준</span>
-                <h2>팀 전체 진행률</h2>
-                <p>
-                  예상 작업량을 반영한 진행률입니다. 실제 소요 시간이나 최종
-                  기여도 점수가 아닙니다.
-                </p>
-              </div>
-              <strong className="hero-number">
-                {formatPercent(summary.teamProgressRate)}
-              </strong>
-              <ProgressBar
-                value={summary.teamProgressRate}
-                label="예상 작업량을 반영한 팀 진행률"
-              />
-            </section>
             <section className="panel collaboration-panel">
               <h2>함께 완성하는 과정</h2>
               <p>
