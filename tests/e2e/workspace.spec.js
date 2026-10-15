@@ -635,8 +635,11 @@ test('파일 산출물을 multipart로 업로드하고 인증을 유지해 다�
 });
 
 test('세션 만료 응답은 로그인 화면으로 돌아가 안내한다', async ({ page }) => {
-  const state = await workspace(page);
-  state.expire();
+  await workspace(page);
+  await page.route('**/api/teams/1/tasks', (route) => route.fulfill({
+    status: 401,
+    json: { code: 'UNAUTHORIZED', message: '로그인이 필요합니다.' },
+  }));
   await page.getByRole('button', { name: '작업', exact: true }).click();
   await expect(
     page.getByRole('button', { name: 'Google로 계속하기' }),
@@ -1216,7 +1219,9 @@ test('팀 메뉴와 작업 상세는 브라우저 뒤로가기·앞으로가기�
   await page
     .getByRole('button', { name: '회원 탈퇴 구현', exact: true })
     .click();
-  await expect(page).toHaveURL(/\/tasks\/10$/);
+  await expect(page).toHaveURL((url) =>
+    url.pathname.endsWith('/tasks/10') && url.searchParams.get('view') === 'board',
+  );
   await page.goBack();
   await expect(
     page.getByRole('heading', { name: '작업', exact: true }),
