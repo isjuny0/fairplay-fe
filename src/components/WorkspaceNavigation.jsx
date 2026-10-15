@@ -90,18 +90,13 @@ export default function WorkspaceNavigation({
                 navigate(spacePath(Number(event.target.value)));
               }}
             >
-              {!(spaces.data || []).some(
-                (item) => item.id === spaceId,
-              ) && (
+              {!(spaces.data || []).some((item) => item.id === spaceId) && (
                 <option value={spaceId}>
                   {space?.name || '현재 스페이스'}
                 </option>
               )}
               {(spaces.data || []).map((item) => (
-                <option
-                  key={item.id}
-                  value={item.id}
-                >
+                <option key={item.id} value={item.id}>
                   {item.name}
                 </option>
               ))}
@@ -145,7 +140,7 @@ export default function WorkspaceNavigation({
         </div>
         {navButton('팀 목록', 'users', spacePath(spaceId), view === 'teams')}
         {isManager && (
-          <div className="workspace-nav-group">
+          <div className="workspace-nav-group manager-workspace-navigation">
             <p className="nav-section">스페이스 운영</p>
             {[
               ['dashboard', '관리자 대시보드', 'grid'],

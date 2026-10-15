@@ -56,15 +56,31 @@ export default function TeamWorkspace({
       search: filters ? new URLSearchParams(filters).toString() : '',
     });
   const navigateToTask = (id) =>
-    navigate({
-      pathname: `${teamMenuPath(space.id, team.id, menu)}/${menu === '승인 검토' ? 'tasks/' : ''}${id}`,
-      search: location.search,
-    });
+    navigate(
+      {
+        pathname: `${teamMenuPath(space.id, team.id, menu)}/${menu === '승인 검토' ? 'tasks/' : ''}${id}`,
+        search: location.search,
+      },
+      {
+        state: {
+          taskList: {
+            pathname: teamMenuPath(space.id, team.id, menu),
+            search: location.search,
+            scrollY: window.scrollY,
+          },
+        },
+      },
+    );
   const navigateToTaskList = () =>
-    navigate({
-      pathname: teamMenuPath(space.id, team.id, menu),
-      search: location.search,
-    });
+    navigate(
+      {
+        pathname:
+          location.state?.taskList?.pathname ||
+          teamMenuPath(space.id, team.id, menu),
+        search: location.state?.taskList?.search ?? location.search,
+      },
+      { state: { restoreScrollY: location.state?.taskList?.scrollY } },
+    );
   const resource = useResource(
     () => getTeamMembers(team.id),
     [team.id, team.deputyId, team.approvedMemberCount],
@@ -123,8 +139,7 @@ export default function TeamWorkspace({
               !['팀 홈', '작업 보드', '산출물'].includes(menu) ? 'active' : ''
             }
           >
-            {!['팀 홈', '작업 보드', '산출물'].includes(menu) ? menu : '더보기'}{' '}
-            ⌄
+            더보기 ⌄
           </summary>
           <div className="mobile-team-more">
             {menus

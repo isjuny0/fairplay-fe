@@ -314,7 +314,7 @@ test('공통 입력창의 글씨·높이·모서리와 페이지 제목 크기�
   const dialog = await openCreate(page);
   const fields = dialog.locator('.form-field input, .form-field textarea');
   for (const input of await fields.all()) {
-    await expect(input).toHaveCSS('font-size', '17px');
+    await expect(input).toHaveCSS('font-size', '16px');
     await expect(input).toHaveCSS('min-height', '46px');
     await expect(input).toHaveCSS('border-radius', '5px');
   }

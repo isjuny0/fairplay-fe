@@ -1,3 +1,4 @@
+import { reviewerCandidates } from '../lib/domain.js';
 import { previewAiReview, invalidateReview } from './aiReviews.js';
 import {
   previewUsers,
@@ -90,6 +91,43 @@ function teamDetail(entry, context, state) {
       ),
     canCreateTask: membership === 'APPROVED' && entry.members.length >= 2,
   };
+}
+
+function previewTaskResponse(state, context, entry, task) {
+  let completionBlockReason = null;
+  const finalRound = state.rounds.find((round) => round.type === 'FINAL');
+  if (
+    !task.assignees.some((assignment) => assignment.userId === context.user.id)
+  )
+    completionBlockReason = 'NOT_ASSIGNEE';
+  else if (
+    finalRound &&
+    finalRound.status !== 'DRAFT' &&
+    new Date(finalRound.closesAt) <= new Date()
+  )
+    completionBlockReason = 'WORK_PERIOD_CLOSED';
+  else if (task.status !== 'IN_PROGRESS')
+    completionBlockReason = 'INVALID_TASK_STATE';
+  else if (
+    !reviewerCandidates(entry.members, task.assignees).some(
+      (member) => member.userId === task.completionReviewerId,
+    )
+  )
+    completionBlockReason = 'REVIEWER_UNAVAILABLE';
+  else if (context.user.id === task.completionReviewerId)
+    completionBlockReason = 'REVIEWER_IS_REQUESTER';
+  else if (entry.members.length < 2)
+    completionBlockReason = 'INSUFFICIENT_TEAM_MEMBERS';
+  else if (
+    task.assignees.length > 1 &&
+    task.assignees.some(
+      (assignment) => !task.contributions?.[assignment.userId]?.trim(),
+    )
+  )
+    completionBlockReason = 'CONTRIBUTION_DESCRIPTION_REQUIRED';
+  else if (!entry.deliverables.some((item) => item.taskId === task.id))
+    completionBlockReason = 'DELIVERABLE_REQUIRED';
+  return { ...task, completionBlockReason };
 }
 
 export async function previewRequest(
@@ -272,7 +310,10 @@ export async function previewRequest(
       state.applications.push(application);
       result = application;
     } else if (parts[3] === 'tasks') {
-      if (method === 'GET') return entry.tasks;
+      if (method === 'GET')
+        return entry.tasks.map((task) =>
+          previewTaskResponse(state, context, entry, task),
+        );
       const task = {
         ...body,
         id: Math.max(0, ...entry.tasks.map((task) => task.id)) + 1,
@@ -402,7 +443,16 @@ export async function previewRequest(
     }
     if (parts.length === 3 && method === 'GET')
       return {
-        task,
+        task: previewTaskResponse(state, context, entry, task),
+        deliverableSummary: entry.deliverables
+          .filter((item) => item.taskId === id)
+          .map(({ id, title, category, type, version }) => ({
+            id,
+            title,
+            category,
+            type,
+            version,
+          })),
         contributions: task.assignees.map((assignment) => ({
           userId: assignment.userId,
           allocationPercent: assignment.allocationPercent,
@@ -410,18 +460,35 @@ export async function previewRequest(
             task.contributions?.[assignment.userId] ?? null,
           contributionUpdatedAt: task.updatedAt,
         })),
-        approvalStatus: task.status === 'DONE' ? 'APPROVED' : null,
+        approvalStatus: approvalHistory(state, task)[0]?.status || null,
       };
     if (parts[3] === 'approvals') return approvalHistory(state, task);
     if (parts[3] === 'completion-requests') {
-      if (
-        !entry.deliverables.some(
-          (item) => item.taskId === id && ['TEXT', 'FILE'].includes(item.type),
-        )
-      )
+      if (body.expectedVersion !== task.version)
         throw new MockError(
-          'COMPLETION_INPUT_INCOMPLETE',
-          '완료 요청 전에 연결된 TEXT 또는 지원 파일 산출물 1개 이상이 필요합니다.',
+          'VERSION_CONFLICT',
+          '작업이 변경되었습니다. 최신 정보를 확인해 주세요.',
+        );
+      const blockReason = previewTaskResponse(
+        state,
+        context,
+        entry,
+        task,
+      ).completionBlockReason;
+      if (blockReason)
+        throw new MockError(
+          blockReason,
+          {
+            NOT_ASSIGNEE: '현재 담당자만 완료를 요청할 수 있습니다.',
+            INVALID_TASK_STATE: '진행 중인 작업만 완료 요청할 수 있습니다.',
+            REVIEWER_UNAVAILABLE: '적격한 승인자를 선택해 주세요.',
+            REVIEWER_IS_REQUESTER: '승인자와 완료 요청자는 달라야 합니다.',
+            INSUFFICIENT_TEAM_MEMBERS: '승인된 팀원이 2명 이상이어야 합니다.',
+            CONTRIBUTION_DESCRIPTION_REQUIRED:
+              '공동 담당자 전원의 수행 설명이 필요합니다.',
+            DELIVERABLE_REQUIRED: '작업에 연결된 산출물이 필요합니다.',
+          }[blockReason],
+          blockReason === 'NOT_ASSIGNEE' ? 403 : 409,
         );
       task.status = 'PENDING_APPROVAL';
       state.approvals ||= {};

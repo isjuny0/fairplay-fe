@@ -289,7 +289,7 @@ async function workspace(
       }
       return respond({
         task,
-        deliverableSummary: [],
+        deliverableSummary: deliverables.filter((item) => item.taskId === task.id).map(({ id, title, category, type, version }) => ({ id, title, category, type, version })),
         approvalStatus: approvals[0]?.status || null,
         contributions: task.assignees.map(({ userId: assigneeId }) => ({
           userId: assigneeId,
@@ -377,6 +377,7 @@ async function workspace(
     .click();
   return {
     requests,
+    addLinkedDeliverable: () => { deliverables.push({ id: 31, teamId: 1, taskId: task.id, title: '수행 결과', category: 'OTHER', type: 'TEXT', text: '등록된 작업 결과입니다.', version: 0 }); },
     setDeletion: (value) => {
       deletion = value;
     },
@@ -460,7 +461,7 @@ for (const [label, weight] of [
 test('담당자가 작업을 생성하고 버전으로 완료 요청하면 수정이 잠긴다', async ({
   page,
 }) => {
-  const { requests } = await workspace(page);
+  const { requests, addLinkedDeliverable } = await workspace(page);
   await page.getByRole('button', { name: '작업 보드', exact: true }).click();
   await page
     .getByRole('button', { name: '새 작업 만들기', exact: true })
@@ -491,6 +492,7 @@ test('담당자가 작업을 생성하고 버전으로 완료 요청하면 수�
   await expect(
     page.getByRole('button', { name: '완료 요청', exact: true }),
   ).toBeDisabled();
+  addLinkedDeliverable();
   await page.getByRole('button', { name: '작업 시작', exact: true }).click();
   await expect(
     page.getByRole('button', { name: '완료 요청', exact: true }),

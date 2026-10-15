@@ -92,21 +92,42 @@ export default function SpaceWorkspace({
   useEffect(() => {
     if (!setHeaderContext || !space) return;
     const titles = {
-      settings: '스페이스 관리', dashboard: '스페이스 대시보드',
-      rounds: '평가 회차 관리', reports: '리포트 검토·공개',
-      contributions: '팀원 수행 상세', teams: '팀 목록',
+      settings: '스페이스 관리',
+      dashboard: '스페이스 대시보드',
+      rounds: '평가 회차 관리',
+      reports: '리포트 검토·공개',
+      contributions: '팀원 수행 상세',
+      teams: '팀 목록',
     };
     setHeaderContext({
       pathname: location.pathname,
       spaceName: space.name,
-      scope: managerView ? '관리 공간' : view === 'team' ? '팀 공간' : '스페이스',
-      title: view === 'team'
-        ? taskId ? teamMenu === '승인 검토' ? '승인 검토 상세' : '작업 상세' : teamMenu
-        : titles[view] || '팀 목록',
+      scope: managerView
+        ? '관리 공간'
+        : view === 'team'
+          ? '팀 공간'
+          : '스페이스',
+      title:
+        view === 'team'
+          ? taskId
+            ? teamMenu === '승인 검토'
+              ? '승인 검토 상세'
+              : '작업 상세'
+            : teamMenu
+          : titles[view] || '팀 목록',
       detail: [space.name, team?.name].filter(Boolean).join(' / '),
       manager: managerView,
     });
-  }, [setHeaderContext, location.pathname, space, team, view, teamMenu, taskId, managerView]);
+  }, [
+    setHeaderContext,
+    location.pathname,
+    space,
+    team,
+    view,
+    teamMenu,
+    taskId,
+    managerView,
+  ]);
   const joinedTeam = teams.find(isApprovedMember);
   const teamRole = !team
     ? ''
@@ -176,6 +197,40 @@ export default function SpaceWorkspace({
         <ResourceState resource={resource}>
           {space && (
             <>
+              {isManager && (
+                <nav
+                  className="mobile-manager-navigation"
+                  aria-label="모바일 관리자 메뉴"
+                >
+                  {[
+                    ['dashboard', '대시보드'],
+                    ['rounds', '평가'],
+                    ['reports', '리포트'],
+                    ['settings', '설정'],
+                  ].map(([segment, label]) => (
+                    <button
+                      key={segment}
+                      className={
+                        view === segment ||
+                        (segment === 'dashboard' && view === 'contributions')
+                          ? 'active'
+                          : ''
+                      }
+                      aria-current={
+                        view === segment ||
+                        (segment === 'dashboard' && view === 'contributions')
+                          ? 'page'
+                          : undefined
+                      }
+                      onClick={() =>
+                        navigate(`${spacePath(spaceId)}/${segment}`)
+                      }
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </nav>
+              )}
               <nav className="workspace-breadcrumb" aria-label="현재 위치">
                 {team && (
                   <>
@@ -223,7 +278,10 @@ export default function SpaceWorkspace({
               ) : view === 'dashboard' ? (
                 <ManagerDashboard context={managerContext} />
               ) : view === 'rounds' ? (
-                <RoundManagement context={managerContext} onChanged={resource.reload} />
+                <RoundManagement
+                  context={managerContext}
+                  onChanged={resource.reload}
+                />
               ) : view === 'reports' ? (
                 <ReportReview context={managerContext} />
               ) : view === 'contributions' && team ? (

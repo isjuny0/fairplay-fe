@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   useInteractions,
   useUnsavedChanges,
@@ -39,6 +39,10 @@ function PeerResponseForm({
       Object.fromEntries(Object.keys(peerCriteria).map((code) => [code, ''])),
   );
   const [reason, setReason] = useState(response?.reason || '');
+  const formElement = useRef(null);
+  const reasonInput = useRef(null);
+  const [reasonError, setReasonError] = useState('');
+  const [scoreError, setScoreError] = useState(null);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(null);
   const { notify } = useInteractions();
@@ -53,11 +57,23 @@ function PeerResponseForm({
   return (
     <form
       className="panel peer-card"
+      ref={formElement}
       onSubmit={async (event) => {
         event.preventDefault();
         const validation = validatePeerResponse(scores, reason);
         if (validation) {
-          setError(new Error(validation));
+          const missingCode = Object.keys(peerCriteria).find(
+            (code) => !scores[code],
+          );
+          if (missingCode) {
+            setScoreError({ code: missingCode, message: validation });
+            formElement.current
+              ?.querySelector(`input[name="${target.targetId}-${missingCode}"]`)
+              ?.focus();
+          } else {
+            setReasonError(validation);
+            reasonInput.current?.focus();
+          }
           return;
         }
         setBusy(true);
@@ -98,7 +114,17 @@ function PeerResponseForm({
         </span>
       </div>
       {Object.entries(peerCriteria).map(([code, label]) => (
-        <fieldset className="score-field" key={code} disabled={locked || busy}>
+        <fieldset
+          className="score-field"
+          key={code}
+          disabled={locked || busy}
+          aria-invalid={scoreError?.code === code}
+          aria-describedby={
+            scoreError?.code === code
+              ? `${target.targetId}-${code}-error`
+              : undefined
+          }
+        >
           <legend>{label}</legend>
           <div className="score-options">
             {[1, 2, 3, 4, 5].map((score) => (
@@ -111,17 +137,42 @@ function PeerResponseForm({
                   name={`${target.targetId}-${code}`}
                   aria-label={`${target.name} ${label} ${score}점`}
                   checked={Number(scores[code]) === score}
-                  onChange={() =>
-                    setScores((current) => ({ ...current, [code]: score }))
-                  }
+                  onChange={() => {
+                    setScores((current) => ({ ...current, [code]: score }));
+                    setScoreError(null);
+                    setError(null);
+                  }}
                 />
                 <span>{score}</span>
               </label>
             ))}
           </div>
-          <p className="score-scale">
-            1점 · 기준 미달 <span>3점 · 기준 충족</span> 5점 · 기준 초과
+          <p className="score-scale" aria-label="점수 기준">
+            <span>
+              1점
+              <br />
+              기준 미달
+            </span>
+            <span>
+              3점
+              <br />
+              기준 충족
+            </span>
+            <span>
+              5점
+              <br />
+              기준 초과
+            </span>
           </p>
+          {scoreError?.code === code && (
+            <p
+              className="field-error"
+              role="alert"
+              id={`${target.targetId}-${code}-error`}
+            >
+              {scoreError.message}
+            </p>
+          )}
           <details>
             <summary>점수별 행동 기준</summary>
             <p>1점 · {peerGuides[code][0]}</p>
@@ -133,6 +184,7 @@ function PeerResponseForm({
       ))}
       <Field
         label="평가 사유"
+        error={reasonError}
         help={
           isLowScore(scores)
             ? '1~2점이 포함되면 10~500자 필수입니다. 구체적인 행동을 적어주세요.'
@@ -140,11 +192,16 @@ function PeerResponseForm({
         }
       >
         <textarea
+          ref={reasonInput}
           disabled={locked || busy}
           rows={3}
           maxLength={500}
           value={reason}
-          onChange={(event) => setReason(event.target.value)}
+          onChange={(event) => {
+            setReason(event.target.value);
+            setReasonError('');
+            setError(null);
+          }}
         />
       </Field>
       <p className="character-count">{reason.length} / 500자</p>
