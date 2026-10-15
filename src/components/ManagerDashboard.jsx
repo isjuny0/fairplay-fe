@@ -19,7 +19,7 @@ export default function ManagerDashboard({ context }) {
   );
   const dashboard = resource.data;
   return (
-    <section className="stack">
+    <section className="stack manager-dashboard">
       <div className="page-heading">
         <div>
           <span className="eyebrow">스페이스 관리자</span>

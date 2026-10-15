@@ -390,7 +390,8 @@ test('데스크톱 홈은 개인 지표 아래에 작업·진행률을 배치하
   const wide = await page.getByRole('main').boundingBox();
   await page.getByRole('button', { name: '중간 피드백', exact: true }).click();
   const reading = await page.getByRole('main').boundingBox();
-  expect(reading.width).toBe(wide.width);
+  expect(reading.width).toBeLessThan(wide.width);
+  expect(reading.width).toBeGreaterThan(900);
   await page.getByRole('button', { name: '작업 보드', exact: true }).click();
   await page
     .getByRole('button', { name: '새 작업 만들기', exact: true })

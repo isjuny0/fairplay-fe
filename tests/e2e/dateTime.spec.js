@@ -363,7 +363,7 @@ for (const width of [1440, 390]) {
 }
 
 for (const width of [1920, 1440, 1280]) {
-  test(`데스크톱 ${width}px: 화면별 본문 폭과 최소 높이를 통일하고 가로 넘침 방지`, async ({
+  test(`데스크톱 ${width}px: 현황·읽기 폭을 구분하고 여백·최소 높이와 가로 넘침 방지`, async ({
     page,
   }) => {
     await page.setViewportSize({ width, height: 900 });
@@ -392,6 +392,11 @@ for (const width of [1920, 1440, 1280]) {
         ),
       ).toBe(false);
     }
-    for (const box of boxes) expect(box).toEqual(boxes[0]);
+    expect(boxes[1].width).toBe(boxes[0].width);
+    for (const box of boxes) {
+      expect(box.width).toBeLessThanOrEqual(boxes[0].width);
+      expect(box.padding).toBe(boxes[0].padding);
+      expect(box.minHeight).toBe(boxes[0].minHeight);
+    }
   });
 }

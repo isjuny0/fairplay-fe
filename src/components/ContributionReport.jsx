@@ -198,9 +198,9 @@ export function TeamReport({ context, manager = false }) {
     !teamSubmissionComplete ||
     context.team.approvedMemberCount < 2;
   return (
-    <div className="stack">
+    <div className="stack team-report">
       <button
-        className="secondary-button"
+        className="secondary-button report-refresh"
         disabled={busy}
         onClick={() => {
           resource.reload();

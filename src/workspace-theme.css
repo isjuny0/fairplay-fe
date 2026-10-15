@@ -1028,3 +1028,235 @@ h1[tabindex="-1"]:focus {
     gap: 4px;
   }
 }
+
+/* Desktop workspace: clear reading widths, grouped controls and compact data. */
+@media (min-width: 901px) {
+  .main-content.content-reading {
+    max-width: 1200px;
+  }
+  .main-content.content-settings {
+    max-width: 1120px;
+  }
+  .main-content h1 {
+    font-size: 26px;
+    line-height: 1.35;
+    letter-spacing: -0.025em;
+  }
+  .main-content .page-heading {
+    align-items: center;
+    gap: 24px;
+  }
+  .main-content .page-heading p {
+    max-width: 72ch;
+    margin-bottom: 0;
+    line-height: 1.65;
+  }
+  .main-content .page-heading > :is(button, .heading-actions) {
+    flex-shrink: 0;
+  }
+  .workspace-breadcrumb {
+    padding-bottom: 8px;
+    margin-bottom: 24px;
+    font-size: 14px;
+  }
+  .sidebar .nav-section {
+    margin-top: 18px;
+    padding-inline: 10px;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+  }
+  .sidebar .nav-item {
+    min-height: 40px;
+    padding: 9px 12px;
+  }
+  .sidebar .nav-item.active {
+    box-shadow: inset 3px 0 var(--brand);
+  }
+  .task-board-page {
+    container-type: inline-size;
+  }
+  .task-board-page .toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 150px) minmax(0, 1fr) auto;
+    gap: 16px;
+    padding-block: 16px;
+  }
+  .task-board-page .task-status-filter {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .task-board-page .task-search-filter {
+    grid-column: 2;
+    grid-row: 1;
+    max-width: 460px;
+    min-width: 0;
+  }
+  .task-board-page .task-search-filter input {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+  }
+  .task-board-page .toolbar > button:last-child {
+    grid-column: 3;
+    grid-row: 1;
+    margin-left: 0;
+  }
+  .task-board-page .task-filter-fields {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    gap: 12px 20px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .task-board-page .task-filter-fields .view-switch {
+    margin-right: auto;
+  }
+  .task-board-page .task-column-heading {
+    padding: 10px 8px;
+    background: #f7f7f5;
+    border-radius: 6px;
+    border-bottom: 0;
+  }
+  .task-board-page .board-task-card {
+    grid-template-rows: 20px minmax(48px, auto) 30px minmax(84px, auto) minmax(50px, auto);
+    padding: 14px 12px 30px;
+  }
+  .task-board-page .board-task-card .task-card-meta {
+    grid-template-rows: minmax(52px, auto) auto;
+  }
+  .task-board-page .board-task-card .is-overdue {
+    bottom: 8px;
+    left: 12px;
+  }
+  .task-board-page .board-task-card:hover {
+    border-color: #afc5b9;
+    background: #fcfdfc;
+  }
+  .team-home-summary .own-work-panel {
+    padding-block: 12px 28px;
+  }
+  .own-work-panel .metric-grid {
+    gap: 16px;
+    margin-top: 24px;
+  }
+  .own-work-panel .metric-card,
+  .own-work-panel .metric-card.accent {
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #fafbf9;
+  }
+  .own-work-panel .metric-card.accent {
+    border-color: #cbded2;
+    background: #f1f7f3;
+  }
+  .own-work-panel .metric-card strong {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.025em;
+  }
+  .team-home-summary .next-action-panel {
+    padding: 24px 0;
+  }
+  .task-detail-layout {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 32px;
+  }
+  .main-content .task-review-sidebar > .panel:not(.danger-zone) {
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #fafbf9;
+  }
+  .task-review-sidebar .completion-readiness {
+    gap: 10px;
+  }
+  .task-review-sidebar .heading-actions {
+    gap: 8px;
+  }
+  .task-review-sidebar h2 {
+    font-size: 18px;
+    margin-top: 0;
+  }
+  .manager-dashboard > .metric-grid {
+    grid-row: 2;
+  }
+  .main-content .manager-dashboard > .next-action-panel {
+    padding: 20px;
+    background: #fafbf9;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .manager-dashboard .next-action-panel .stack {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    gap: 12px;
+  }
+  .manager-dashboard .next-action-panel .row-item {
+    padding: 12px 16px;
+    background: #fff;
+  }
+  .main-content .page-heading > .form-field {
+    width: 220px;
+    flex-shrink: 0;
+    margin: 0;
+  }
+  .data-table {
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+  .data-table :is(td, th) {
+    padding: 14px 12px;
+    vertical-align: middle;
+  }
+  .data-table thead th {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .data-table tbody tr:hover > :is(td, th) {
+    background: #f7faf8;
+  }
+  .data-table td .secondary-button {
+    min-height: 36px;
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+  .team-report .report-refresh {
+    justify-self: start;
+  }
+  .team-report .round-readiness {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .team-report .round-readiness li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 18px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #fafbf9;
+  }
+  .team-report .round-readiness li > span:last-child {
+    grid-column: 1 / -1;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (min-width: 901px) {
+  @container (max-width: 600px) {
+    .task-board-page .toolbar {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .task-board-page .task-search-filter {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      max-width: none;
+    }
+    .task-board-page .toolbar > button:last-child {
+      grid-column: 2;
+    }
+    .task-board-page .task-filter-fields {
+      grid-row: 3;
+    }
+  }
+}

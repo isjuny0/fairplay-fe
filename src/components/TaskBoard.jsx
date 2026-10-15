@@ -111,8 +111,7 @@ export default function TaskBoard({
     );
   const canCreate =
     team.canCreateTask && members.length >= 2 && canModifyTeamWork(team);
-  const hasFilters =
-    filter !== 'ALL' || onlyMine || onlyOverdue || Boolean(query.trim());
+  const hasFilters = appliedFilterCount > 0;
   const isOverdue = (task) =>
     task.status !== 'DONE' && new Date(task.dueAt) < new Date();
   const tasks = (resource.data || [])
