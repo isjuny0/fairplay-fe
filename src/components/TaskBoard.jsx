@@ -1,8 +1,9 @@
 import Icon from './Icon.jsx';
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { createTask, listTasks } from '../api/tasks.js';
 import useResource from '../hooks/useResource.js';
+import useCurrentTime from '../hooks/useCurrentTime.js';
 import { useInteractions } from '../hooks/useInteractions.js';
 import {
   canModifyTeamWork,
@@ -15,9 +16,17 @@ import {
 import TaskForm from './TaskForm.jsx';
 import TaskDetail from './TaskDetail.jsx';
 import TaskTable from './TaskTable.jsx';
-import { TaskCalendar, TaskTimeline } from './TaskSchedule.jsx';
-import { currentTaskMonth, isTaskMonth } from '../lib/taskSchedule.js';
-import { EmptyState, ResourceState } from './ui.jsx';
+import { MonthNavigation, TaskCalendar, TaskTimeline } from './TaskSchedule.jsx';
+import {
+  currentTaskMonth,
+  isTaskMonth,
+  nearestTaskMonth,
+  taskDate,
+  timelineTaskPeriod,
+  timelineWindow,
+} from '../lib/taskSchedule.js';
+import { EmptyState, Modal, ResourceState } from './ui.jsx';
+import { readTaskViewPreferences, saveTaskViewPreferences } from '../lib/taskViewPreferences.js';
 
 export default function TaskBoard({
   team,
@@ -29,6 +38,7 @@ export default function TaskBoard({
   onTaskBack,
 }) {
   const { notify, clearChanges } = useInteractions();
+  const now = useCurrentTime();
   const resource = useResource(() => listTasks(team.id), [team.id, taskId]);
   const [searchParams, setSearchParams] = useSearchParams();
   const filter = Object.hasOwn(statusLabels, searchParams.get('status'))
@@ -36,11 +46,30 @@ export default function TaskBoard({
     : 'ALL';
   const onlyMine = searchParams.get('mine') === '1';
   const onlyOverdue = searchParams.get('overdue') === '1';
-  const view = ['list', 'calendar', 'timeline'].includes(
-    searchParams.get('view'),
-  )
-    ? searchParams.get('view')
-    : 'board';
+  const [preferences, setPreferences] = useState(readTaskViewPreferences);
+  const view = searchParams.has('view')
+    ? ['board', 'list', 'calendar', 'timeline'].includes(searchParams.get('view'))
+      ? searchParams.get('view')
+      : 'board'
+    : preferences.view;
+  const urlView = searchParams.get('view');
+  useEffect(() => {
+    if (urlView !== null || taskId != null) return;
+    setSearchParams((current) => {
+      if (current.has('view')) return current;
+      const next = new URLSearchParams(current);
+      next.set('view', view);
+      return next;
+    }, { replace: true });
+  }, [view, urlView, taskId, setSearchParams]);
+  const timelineLabelWidth = preferences.labelWidth;
+  const setTimelineLabelWidth = (labelWidth) =>
+    setPreferences((current) => ({ ...current, labelWidth }));
+  useEffect(() => {
+    saveTaskViewPreferences({ view, labelWidth: timelineLabelWidth });
+    if (preferences.view !== view)
+      setPreferences((current) => ({ ...current, view }));
+  }, [view, timelineLabelWidth, preferences.view]);
   const month = isTaskMonth(searchParams.get('month'))
     ? searchParams.get('month')
     : currentTaskMonth();
@@ -97,6 +126,12 @@ export default function TaskBoard({
     Boolean(query.trim()),
     sort !== defaultSort,
   ].filter(Boolean).length;
+  const [expanded, setExpanded] = useState(false);
+  const expandButton = useRef(null);
+  useEffect(() => {
+    if (!expanded) return;
+    return () => requestAnimationFrame(() => expandButton.current?.focus());
+  }, [expanded]);
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -132,7 +167,7 @@ export default function TaskBoard({
     team.canCreateTask && members.length >= 2 && canModifyTeamWork(team);
   const hasFilters = appliedFilterCount > 0;
   const isOverdue = (task) =>
-    task.status !== 'DONE' && new Date(task.dueAt) < new Date();
+    task.status !== 'DONE' && Date.parse(task.dueAt) < now;
   const tasks = (resource.data || [])
     .filter(
       (task) =>
@@ -155,7 +190,24 @@ export default function TaskBoard({
           : (Date.parse(left.dueAt) || Infinity) -
               (Date.parse(right.dueAt) || Infinity) || right.id - left.id,
     );
-  return (
+  const isSchedule = view === 'calendar' || view === 'timeline';
+  const scheduleWindow = view === 'timeline' ? timelineWindow(month) : null;
+  const periodTaskCount = view === 'timeline'
+    ? tasks.filter((task) => timelineTaskPeriod(task, scheduleWindow, now)).length
+    : tasks.filter((task) =>
+        taskDate(task.startAt).slice(0, 7) <= month &&
+        taskDate(task.dueAt).slice(0, 7) >= month,
+      ).length;
+  const nearestMonth = nearestTaskMonth(tasks, `${month}-01`);
+  const hasSearchFilters = filter !== 'ALL' || onlyMine || onlyOverdue || Boolean(query.trim());
+  const activeFilters = [
+    ...(filter !== 'ALL' ? [{ key: 'status', label: `상태: ${statusLabels[filter]}` }] : []),
+    ...(onlyMine ? [{ key: 'mine', label: '내 담당' }] : []),
+    ...(onlyOverdue ? [{ key: 'overdue', label: '마감 지남' }] : []),
+    ...(query.trim() ? [{ key: 'q', label: `검색: ${query.trim()}` }] : []),
+    ...(sort !== defaultSort ? [{ key: 'sort', label: `정렬: ${sortLabel}` }] : []),
+  ];
+  const content = (
     <section className="stack task-board-page">
       <div className="page-heading">
         <div>
@@ -173,26 +225,49 @@ export default function TaskBoard({
           <Icon name="plus" />새 작업 만들기
         </button>
       </div>
-      <div
-        className="view-switch task-view-navigation"
-        role="group"
-        aria-label="작업 보기 방식"
-      >
-        {[
-          ['board', '보드'],
-          ['list', '목록'],
-          ['calendar', '캘린더'],
-          ['timeline', '타임라인'],
-        ].map(([mode, label]) => (
-          <button
-            key={mode}
-            aria-pressed={view === mode}
-            className={view === mode ? 'active' : ''}
-            onClick={() => setListOption('view', mode === 'board' ? '' : mode)}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="task-view-controls">
+        <div
+          className="view-switch task-view-navigation"
+          role="group"
+          aria-label="작업 보기 방식"
+        >
+          {[
+            ['board', '보드'],
+            ['list', '목록'],
+            ['calendar', '캘린더'],
+            ['timeline', '타임라인'],
+          ].map(([mode, label]) => (
+            <button
+              key={mode}
+              aria-pressed={view === mode}
+              className={view === mode ? 'active' : ''}
+              onClick={() => {
+                if (mode === 'board' || mode === 'list') setExpanded(false);
+                setListOption('view', mode);
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {isSchedule && (
+          <div className="task-schedule-controls">
+            <MonthNavigation
+              month={month}
+              span={view === 'timeline' ? 3 : 1}
+              onMonthChange={(next) => setListOption('month', next)}
+              tasks={tasks}
+            />
+            <button
+              ref={expandButton}
+              className="secondary-button"
+              aria-pressed={expanded}
+              onClick={() => setExpanded(!expanded)}
+            >
+              {expanded ? '원래 크기로' : '일정 넓게 보기'}
+            </button>
+          </div>
+        )}
       </div>
       <div
         className={`mobile-status-tabs ${view === 'list' ? 'list-status-tabs' : ''}`}
@@ -313,10 +388,27 @@ export default function TaskBoard({
           새로고침
         </button>
       </div>
+      {!!activeFilters.length && (
+        <div className="task-active-filters" role="group" aria-label="적용 중인 검색·필터">
+          {activeFilters.map(({ key, label }) => (
+            <button
+              key={key}
+              className="task-filter-chip"
+              aria-label={`${label} 해제`}
+              title={`${label} 해제`}
+              onClick={() => setListOption(key, '')}
+            >
+              <span>{label}</span>
+              <span aria-hidden="true">×</span>
+            </button>
+          ))}
+        </div>
+      )}
       <ResourceState resource={resource}>
-        <div className="list-summary">
+        <div className="list-summary" aria-live="polite">
           <span>
-            {tasks.length}개 작업 · 전체 {resource.data?.length || 0}개 ·{' '}
+            검색 결과 {tasks.length}개 · 전체 {resource.data?.length || 0}개
+            {isSchedule && ` · 현재 기간 ${periodTaskCount}개${view === 'timeline' ? ' (지연 포함)' : ''}`} ·{' '}
             {view === 'board' ? '상태별 ' : ''}
             {sortLabel}
           </span>
@@ -326,25 +418,50 @@ export default function TaskBoard({
             </button>
           )}
         </div>
-        {view === 'calendar' ? (
+        {isSchedule && periodTaskCount === 0 ? (
+          <EmptyState>
+            <p>{view === 'calendar'
+              ? '이 달에 예정된 작업이 없습니다.'
+              : '이 기간에 예정되거나 지연 중인 작업이 없습니다.'}</p>
+            <span>{tasks.length
+              ? `검색 결과 ${tasks.length}개의 작업은 다른 기간에 있습니다.`
+              : hasSearchFilters && resource.data?.length
+                ? '검색·필터 조건에 맞는 작업이 없습니다. 조건을 초기화해 다시 확인하세요.'
+                : '아직 등록된 작업이 없습니다. 새 작업을 만들어 시작하세요.'}</span>
+            <div className="heading-actions">
+              {nearestMonth && (
+                <button className="secondary-button" onClick={() => setListOption('month', nearestMonth)}>
+                  작업 있는 기간으로 이동
+                </button>
+              )}
+              {hasSearchFilters && !!resource.data?.length && (
+                <button className="secondary-button" onClick={clearFilters}>필터 초기화</button>
+              )}
+            </div>
+          </EmptyState>
+        ) : view === 'calendar' ? (
           <TaskCalendar
+            now={now}
             tasks={tasks}
             month={month}
-            onMonthChange={(next) => setListOption('month', next)}
             members={members}
             onOpenTask={onOpenTask}
           />
         ) : view === 'timeline' ? (
           <TaskTimeline
+            now={now}
             sortLabel={sortLabel}
+            labelWidth={timelineLabelWidth}
+            onLabelWidthChange={setTimelineLabelWidth}
+            onlyOverdue={onlyOverdue}
+            onToggleOverdue={() => setListOption('overdue', onlyOverdue ? '' : '1')}
             tasks={tasks}
             month={month}
-            onMonthChange={(next) => setListOption('month', next)}
             members={members}
             onOpenTask={onOpenTask}
           />
         ) : tasks.length && view === 'list' ? (
-          <TaskTable tasks={tasks} members={members} onOpenTask={onOpenTask} />
+          <TaskTable now={now} tasks={tasks} members={members} onOpenTask={onOpenTask} />
         ) : tasks.length ? (
           <div className="task-columns">
             {Object.entries(statusLabels).map(
@@ -426,7 +543,7 @@ export default function TaskBoard({
                               <small>마감 {formatDate(task.dueAt)}</small>
                             </div>
                             {task.status !== 'DONE' &&
-                              new Date(task.dueAt) < new Date() && (
+                              Date.parse(task.dueAt) < now && (
                                 <span className="is-overdue">마감 지남</span>
                               )}
                           </article>
@@ -486,4 +603,9 @@ export default function TaskBoard({
       )}
     </section>
   );
+  return expanded ? (
+    <Modal title="작업 일정 넓게 보기" fullscreen onClose={() => setExpanded(false)}>
+      {content}
+    </Modal>
+  ) : content;
 }

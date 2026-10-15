@@ -3,9 +3,20 @@ import {
   formatExpectedWorkload,
   memberName,
   statusLabels,
+  toDateInput,
 } from '../lib/domain.js';
 
-export default function TaskTable({ tasks, members, onOpenTask }) {
+function TaskDateTime({ value }) {
+  const [date, time] = toDateInput(value).split('T');
+  return (
+    <time dateTime={value} title={formatDate(value)}>
+      <span className="task-date-day">{date.replaceAll('-', '. ')}.</span>{' '}
+      <span className="task-date-clock">{time}</span>
+    </time>
+  );
+}
+
+export default function TaskTable({ tasks, members, onOpenTask, now }) {
   return (
     <div
       className="table-scroll task-table-scroll"
@@ -55,12 +66,12 @@ export default function TaskTable({ tasks, members, onOpenTask }) {
               <td>{memberName(members, task.completionReviewerId)}</td>
               <td>{formatExpectedWorkload(task.weight)}</td>
               <td>
-                <time dateTime={task.startAt}>{formatDate(task.startAt)}</time>
+                <TaskDateTime value={task.startAt} />
               </td>
               <td>
-                <time dateTime={task.dueAt}>{formatDate(task.dueAt)}</time>
+                <TaskDateTime value={task.dueAt} />
                 {task.status !== 'DONE' &&
-                  new Date(task.dueAt) < new Date() && (
+                  Date.parse(task.dueAt) < now && (
                     <span className="is-overdue">마감 지남</span>
                   )}
               </td>

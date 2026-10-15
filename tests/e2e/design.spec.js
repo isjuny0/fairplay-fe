@@ -113,8 +113,8 @@ for (const width of [1440, 390]) {
     await expect(page.locator('.board-task-card').first()).toHaveCSS('border-radius', '6px');
     await expect(page.locator('.board-task-card').first()).toHaveCSS('box-shadow', 'none');
     await expect(page.locator('.task-board-page .primary-button').first()).toHaveCSS('background-color', 'rgb(36, 87, 71)');
-    await expect(page.locator('.task-state-in_progress .status-dot')).toHaveCSS('background-color', 'rgb(79, 135, 188)');
-    await expect(page.locator('.task-state-pending_approval .status-dot')).toHaveCSS('background-color', 'rgb(201, 157, 58)');
+    await expect(page.locator('.task-state-in_progress .status-dot')).toHaveCSS('background-color', 'rgb(41, 116, 215)');
+    await expect(page.locator('.task-state-pending_approval .status-dot')).toHaveCSS('background-color', 'rgb(167, 117, 23)');
     await expect(page.locator('.task-state-done .status-dot')).toHaveCSS('background-color', 'rgb(38, 146, 105)');
     if (width === 1440) await page.screenshot({ path: testInfo.outputPath('desktop-task-board.png') });
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);

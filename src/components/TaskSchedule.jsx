@@ -1,4 +1,5 @@
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { formatDate, memberName, statusLabels } from '../lib/domain.js';
 import {
   calendarWeekTasks,
@@ -28,7 +29,7 @@ const timelineStateSymbols = {
 const scheduleLabel = (task) =>
   `${task.title} · 시작일 ${formatDate(task.startAt)} · 마감 ${formatDate(task.dueAt)}`;
 
-function MonthNavigation({ month, onMonthChange, tasks, span = 1 }) {
+export function MonthNavigation({ month, onMonthChange, tasks, span = 1 }) {
   const previous = moveTaskMonth(month, -span),
     next = moveTaskMonth(month, span);
   const nearest = nearestTaskMonth(tasks);
@@ -66,7 +67,9 @@ function MonthNavigation({ month, onMonthChange, tasks, span = 1 }) {
         </button>
       </div>
       <label>
-        {span === 3 ? '조회 시작 월' : '조회 월'}{' '}
+        <span className="sr-only">
+          {span === 3 ? '조회 시작 월' : '조회 월'}
+        </span>
         <input
           aria-label={span === 3 ? '조회 시작 월' : '조회 월'}
           type="month"
@@ -112,35 +115,22 @@ function ScheduleTask({ task, onOpenTask, members }) {
 }
 
 export function TaskCalendar({
+  now,
   tasks,
   month,
-  onMonthChange,
   onOpenTask,
   members,
 }) {
   const [selectedDate, setSelectedDate] = useState(null);
   const days = taskMonthDays(month),
     byDate = tasksByDate(tasks, days);
-  const today = taskDate(new Date().toISOString());
-  const count = new Set([...byDate.values()].flat().map((task) => task.id))
-    .size;
+  const today = taskDate(new Date(now).toISOString());
   return (
     <section className="task-schedule" aria-label="작업 캘린더">
-      <MonthNavigation
-        month={month}
-        onMonthChange={onMonthChange}
-        tasks={tasks}
-      />
-      <p className="field-help">
-        시작일부터 마감일까지 · 이번 달 {count}개 작업 · 날짜별 작업 수를
-        선택하면 전체 작업을 확인할 수 있습니다.
-      </p>
-      {!count && (
-        <p className="notice">
-          이 달에 예정된 작업이 없습니다. 다른 달을 선택하거나 검색·필터 조건을
-          확인하세요.
-        </p>
-      )}
+      <details className="task-schedule-help">
+        <summary>캘린더 읽는 법</summary>
+        <p>막대는 시작일부터 마감일까지 이어집니다. 날짜별 작업 수를 선택하면 해당 날짜의 모든 작업을 확인할 수 있습니다.</p>
+      </details>
       <div
         className="task-calendar-scroll"
         role="region"
@@ -279,15 +269,98 @@ export function TaskCalendar({
 }
 
 export function TaskTimeline({
+  now,
   tasks,
   month,
-  onMonthChange,
   onOpenTask,
   members,
   sortLabel,
+  onlyOverdue,
+  onToggleOverdue,
+  labelWidth,
+  onLabelWidthChange,
 }) {
-  const window = timelineWindow(month),
-    now = Date.now();
+  const [preview, setPreview] = useState(null);
+  const previewId = useId();
+  const closeTimer = useRef(null);
+  const hoverTimer = useRef(null);
+  const resizeStart = useRef(null);
+  const previousSchedule = useRef({ tasks, month });
+  const cancelHover = () => clearTimeout(hoverTimer.current);
+  const cancelClose = () => clearTimeout(closeTimer.current);
+  const closePreview = () => {
+    cancelClose();
+    cancelHover();
+    closeTimer.current = setTimeout(() => {
+      setPreview((current) =>
+        document.activeElement === current?.anchor ? current : null,
+      );
+    }, 120);
+  };
+  const previewEvents = (task, period) => ({
+    'aria-describedby': preview?.task.id === task.id ? previewId : undefined,
+    onMouseEnter: (event) => {
+      cancelHover();
+      cancelClose();
+      const anchor = event.currentTarget;
+      hoverTimer.current = setTimeout(() => showPreview(anchor, task, period), 200);
+    },
+    onMouseLeave: (event) => {
+      cancelHover();
+      if (document.activeElement !== event.currentTarget) closePreview();
+    },
+    onFocus: (event) => showPreview(event.currentTarget, task, period),
+    onBlur: closePreview,
+  });
+  const showPreview = (anchor, task, period) => {
+    cancelHover();
+    cancelClose();
+    const bounds = anchor.getBoundingClientRect();
+    const width = Math.min(320, globalThis.innerWidth - 24);
+    const left = Math.max(
+      12,
+      Math.min(bounds.left, globalThis.innerWidth - width - 12),
+    );
+    setPreview({ task, period, anchor, left, top: bounds.bottom + 8, width });
+  };
+  useEffect(() => {
+    const dismiss = (event) => {
+      if (event?.target instanceof Element && event.target.closest('.timeline-preview')) return;
+      clearTimeout(closeTimer.current);
+      clearTimeout(hoverTimer.current);
+      setPreview(null);
+    };
+    const dismissOnEscape = (event) => {
+      if (event.key !== 'Escape') return;
+      if (document.getElementById(previewId)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      dismiss();
+    };
+    globalThis.addEventListener('scroll', dismiss, true);
+    globalThis.addEventListener('resize', dismiss);
+    globalThis.addEventListener('keydown', dismissOnEscape, true);
+    return () => {
+      clearTimeout(closeTimer.current);
+      clearTimeout(hoverTimer.current);
+      globalThis.removeEventListener('scroll', dismiss, true);
+      globalThis.removeEventListener('resize', dismiss);
+      globalThis.removeEventListener('keydown', dismissOnEscape, true);
+    };
+  }, []);
+  useEffect(() => {
+    const previous = previousSchedule.current;
+    previousSchedule.current = { tasks, month };
+    const sameTasks = previous.tasks.length === tasks.length &&
+      previous.tasks.every((task, index) => task === tasks[index]);
+    if (previous.month === month && sameTasks) return;
+    clearTimeout(hoverTimer.current);
+    clearTimeout(closeTimer.current);
+    setPreview(null);
+  }, [tasks, month]);
+  const window = timelineWindow(month);
+  const previewPeriod = preview ? timelineTaskPeriod(preview.task, window, now) : null;
   const visible = tasks
     .map((task) => ({ task, period: timelineTaskPeriod(task, window, now) }))
     .filter(({ period }) => period);
@@ -310,20 +383,15 @@ export function TaskTimeline({
     ({ period }) => period.startPassed,
   ).length;
   return (
-    <section className="task-schedule" aria-label="작업 타임라인">
-      <MonthNavigation
-        month={month}
-        onMonthChange={onMonthChange}
-        tasks={tasks}
-        span={3}
-      />
+    <section className="task-schedule" aria-label="작업 타임라인" style={{ '--timeline-label-width': `${labelWidth}px` }}>
       <div className="timeline-summary" aria-label="조회 기간 작업 현황">
-        <span>
-          기간 내 작업 <strong>{visible.length}</strong>
-        </span>
-        <span className={lateCount ? 'is-overdue' : ''}>
+        <button
+          className={`timeline-late-filter${lateCount ? ' is-overdue' : ''}`}
+          aria-pressed={onlyOverdue}
+          onClick={onToggleOverdue}
+        >
           마감 지남 <strong>{lateCount}</strong>
-        </span>
+        </button>
         <span>
           시작 예정일 지남 <strong>{startPassedCount}</strong>
         </span>
@@ -338,9 +406,6 @@ export function TaskTimeline({
             {label}
           </span>
         ))}
-        <span className="timeline-legend-hint">
-          {sortLabel} · 막대의 위치와 겹침으로 일정 비교
-        </span>
       </div>
       <div
         className="task-timeline-scroll"
@@ -350,7 +415,46 @@ export function TaskTimeline({
       >
         <div className="task-timeline">
           <div className="timeline-row timeline-header">
-            <div className="timeline-task-label">작업 · {sortLabel}</div>
+            <div className="timeline-task-label">
+              작업 · {sortLabel}
+              <div
+                className="timeline-column-resizer"
+                role="separator"
+                aria-label="작업명 영역 너비"
+                aria-orientation="vertical"
+                aria-valuemin={220}
+                aria-valuemax={520}
+                aria-valuenow={labelWidth}
+                aria-valuetext={`${labelWidth}픽셀`}
+                tabIndex={0}
+                title="드래그 또는 방향키로 너비 조절 · 두 번 클릭해 초기화"
+                onDoubleClick={() => onLabelWidthChange(300)}
+                onPointerDown={(event) => {
+                  if (event.button !== 0) return;
+                  event.preventDefault();
+                  event.currentTarget.focus();
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  resizeStart.current = { x: event.clientX, width: labelWidth };
+                }}
+                onPointerMove={(event) => {
+                  if (!resizeStart.current) return;
+                  const width = resizeStart.current.width + event.clientX - resizeStart.current.x;
+                  onLabelWidthChange(Math.round(Math.max(220, Math.min(520, width))));
+                }}
+                onPointerUp={(event) => {
+                  resizeStart.current = null;
+                  if (event.currentTarget.hasPointerCapture(event.pointerId))
+                    event.currentTarget.releasePointerCapture(event.pointerId);
+                }}
+                onLostPointerCapture={() => { resizeStart.current = null; }}
+                onKeyDown={(event) => {
+                  const values = { ArrowLeft: labelWidth - 16, ArrowRight: labelWidth + 16, Home: 220, End: 520 };
+                  if (!Object.hasOwn(values, event.key)) return;
+                  event.preventDefault();
+                  onLabelWidthChange(Math.max(220, Math.min(520, values[event.key])));
+                }}
+              />
+            </div>
             <div className="timeline-scale">
               <div className="timeline-months">
                 {monthBands.map(({ value, left, width }) => (
@@ -403,16 +507,13 @@ export function TaskTimeline({
                     <span className="timeline-task-id">#{task.id}</span>
                     <button
                       className="task-title-button"
-                      title={description}
+                      {...previewEvents(task, period)}
                       onClick={() => onOpenTask(task.id)}
                     >
                       {task.title}
                     </button>
                   </div>
-                  <div className="timeline-task-meta" title={description}>
-                    <span className="timeline-state-label">
-                      {statusLabels[task.status]}
-                    </span>
+                  <div className="timeline-task-meta">
                     <span className="timeline-row-dates">
                       {shortDate(taskDate(task.startAt))} –{' '}
                       {shortDate(taskDate(task.dueAt))}
@@ -471,59 +572,62 @@ export function TaskTimeline({
                         width: `${period.planned.width}%`,
                       }}
                       aria-label={description}
-                      title={description}
+                      tabIndex={-1}
+                      {...previewEvents(task, period)}
                       onClick={() => onOpenTask(task.id)}
                     >
-                      {period.planned.continuesBefore && (
-                        <span
-                          className="timeline-continuation"
-                          aria-hidden="true"
-                        >
-                          ‹
-                        </span>
-                      )}
-                      {period.planned.width >= 4 && (
-                        <>
+                      <span className="timeline-period-content">
+                        {period.planned.continuesBefore && (
                           <span
-                            className="timeline-assignees"
+                            className="timeline-continuation"
                             aria-hidden="true"
                           >
-                            {assignees.slice(0, 2).map(({ userId, name }) => (
-                              <span
-                                key={userId}
-                                className="timeline-assignee"
-                                title={name}
-                              >
-                                {name
-                                  .trim()
-                                  .split(/\s+/)
-                                  .map((part) => part[0])
-                                  .slice(0, 2)
-                                  .join('')}
-                              </span>
-                            ))}
-                            {assignees.length > 2 && (
-                              <span className="timeline-assignee-more">
-                                +{assignees.length - 2}
-                              </span>
-                            )}
+                            ‹
                           </span>
+                        )}
+                        {period.planned.width >= 4 && (
+                          <>
+                            <span
+                              className="timeline-assignees"
+                              aria-hidden="true"
+                            >
+                              {assignees.slice(0, 2).map(({ userId, name }) => (
+                                <span
+                                  key={userId}
+                                  className="timeline-assignee"
+                                  title={name}
+                                >
+                                  {name
+                                    .trim()
+                                    .split(/\s+/)
+                                    .map((part) => part[0])
+                                    .slice(0, 2)
+                                    .join('')}
+                                </span>
+                              ))}
+                              {assignees.length > 2 && (
+                                <span className="timeline-assignee-more">
+                                  +{assignees.length - 2}
+                                </span>
+                              )}
+                            </span>
+                            <span
+                              className="timeline-bar-state"
+                              aria-hidden="true"
+                            >
+                              {timelineStateSymbols[task.status]}
+                            </span>
+                          </>
+                        )}
+                        {period.planned.continuesAfter && (
                           <span
-                            className="timeline-bar-state"
+                            className="timeline-continuation"
                             aria-hidden="true"
                           >
-                            {timelineStateSymbols[task.status]}
+                            ›
                           </span>
-                        </>
-                      )}
-                      {period.planned.continuesAfter && (
-                        <span
-                          className="timeline-continuation"
-                          aria-hidden="true"
-                        >
-                          ›
-                        </span>
-                      )}
+                        )}
+                      </span>
                     </button>
                   )}
                   {todayPosition != null && (
@@ -539,17 +643,47 @@ export function TaskTimeline({
           })}
         </div>
       </div>
-      {!visible.length && (
-        <p className="notice">
-          이 기간에 예정되거나 지연 중인 작업이 없습니다. 다른 기간을 선택하거나
-          검색·필터 조건을 확인하세요.
-        </p>
+      {preview && createPortal(
+        <div
+          id={previewId}
+          role="tooltip"
+          ref={(element) => {
+            if (!element) return;
+            const bounds = element.getBoundingClientRect();
+            const anchorBounds = preview.anchor.getBoundingClientRect();
+            const top = anchorBounds.bottom + bounds.height + 20 <= globalThis.innerHeight
+              ? anchorBounds.bottom + 8
+              : anchorBounds.top - bounds.height - 8;
+            element.style.top = `${Math.max(12, Math.min(top, globalThis.innerHeight - bounds.height - 12))}px`;
+          }}
+          className="timeline-preview"
+          style={{ left: preview.left, top: preview.top, width: preview.width }}
+          onMouseEnter={cancelClose}
+          onMouseLeave={closePreview}
+        >
+          <span className={`status-badge task-state-${preview.task.status.toLowerCase()}`}>
+            {statusLabels[preview.task.status]}
+          </span>
+          <strong>#{preview.task.id} {preview.task.title}</strong>
+          <dl>
+            <div>
+              <dt>담당</dt>
+              <dd>{preview.task.assignees.map(({ userId }) => memberName(members, userId)).join(' · ')}</dd>
+            </div>
+            <div><dt>시작일</dt><dd>{formatDate(preview.task.startAt)}</dd></div>
+            <div><dt>마감일</dt><dd>{formatDate(preview.task.dueAt)}</dd></div>
+          </dl>
+          {previewPeriod?.label && (
+            <span className={previewPeriod.overdue ? 'timeline-late-label' : 'timeline-start-label'}>
+              {previewPeriod.label}
+            </span>
+          )}
+        </div>, document.body,
       )}
-      <p className="field-help">
-        막대는 계획 기간, 빨간 점선은 마감 이후 오늘까지의 지연 구간입니다. 완료
-        작업은 지연 집계에서 제외합니다. 작업 제목이나 막대를 선택하면 상세를
-        확인할 수 있습니다.
-      </p>
+      <details className="task-schedule-help">
+        <summary>타임라인 읽는 법</summary>
+        <p>막대의 위치와 겹침으로 일정의 순서와 병행 구간을 비교합니다. 막대는 계획 기간, 빨간 점선은 마감 이후 오늘까지의 지연 구간입니다. 완료 작업은 지연 집계에서 제외합니다. 작업 제목이나 막대를 선택하면 상세를 확인할 수 있습니다.</p>
+      </details>
     </section>
   );
 }

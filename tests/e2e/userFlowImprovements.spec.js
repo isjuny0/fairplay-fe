@@ -36,7 +36,11 @@ test('새 화면은 상단과 제목에서 시작하고 목록 복귀는 필터�
   ).toBeFocused();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
   await page.getByRole('button', { name: '← 목록으로', exact: true }).click();
-  await expect(page).toHaveURL(/tasks\?mine=1$/);
+  await expect(page).toHaveURL((url) =>
+    url.pathname.endsWith('/tasks') &&
+    url.searchParams.get('mine') === '1' &&
+    url.searchParams.get('view') === 'board',
+  );
   await expect
     .poll(async () =>
       Math.abs((await page.evaluate(() => window.scrollY)) - position),

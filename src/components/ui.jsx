@@ -113,6 +113,7 @@ export function Modal({
   children,
   wide = false,
   editor = false,
+  fullscreen = false,
   dirty = false,
 }) {
   const dialog = useRef(null);
@@ -187,7 +188,7 @@ export function Modal({
     <div className="modal-backdrop">
       <section
         ref={dialog}
-        className={`modal real-modal ${wide ? 'modal-wide' : ''} ${editor ? 'modal-editor' : ''}`}
+        className={`modal real-modal ${wide ? 'modal-wide' : ''} ${editor ? 'modal-editor' : ''} ${fullscreen ? 'modal-fullscreen' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
