@@ -109,8 +109,7 @@ export default function SpaceSettings({ space, onChanged }) {
         <section className="panel">
           <h2>팀 빌딩 기간</h2>
           <p className="field-help">
-            팀 생성·가입 신청·가입 승인은 이 기간 안에서 가능합니다. 모든 시각은
-            한국 시간입니다.
+            팀 생성·가입 신청·가입 승인은 이 기간 안에서 가능합니다.
           </p>
           <form onSubmit={savePeriod} noValidate>
             <fieldset

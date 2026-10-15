@@ -266,7 +266,7 @@ export default function TaskForm({
                     ))}
                   </select>
                 </Field>
-                <Field label="마감 (한국 시간)" error={fieldErrors.dueAt}>
+                <Field label="마감" error={fieldErrors.dueAt}>
                   <DateTimeInput
                     name="dueAt"
                     required
@@ -476,7 +476,7 @@ export default function TaskForm({
                     <dd>{formatExpectedWorkload(form.weight)}</dd>
                   </div>
                   <div>
-                    <dt>마감 (한국 시간)</dt>
+                    <dt>마감</dt>
                     <dd>
                       {form.dueAt
                         ? formatDate(fromDateInput(form.dueAt))
@@ -566,7 +566,7 @@ export default function TaskForm({
                     input: formatExpectedWorkload(form.weight),
                   },
                   {
-                    label: '마감 (한국 시간)',
+                    label: '마감',
                     latest: toDateInput(recovery.latest.task.dueAt),
                     input: form.dueAt,
                   },

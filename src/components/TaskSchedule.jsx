@@ -118,7 +118,7 @@ export function TaskCalendar({
         tasks={tasks}
       />
       <p className="field-help">
-        마감일 기준 · 한국 시간(KST) · 이번 달 {count}개 작업
+        마감일 기준 · 이번 달 {count}개 작업
       </p>
       {!count && (
         <p className="notice">
@@ -235,7 +235,7 @@ export function TaskTimeline({
         tasks={tasks}
       />
       <p className="field-help">
-        마감일 기준 타임라인 · 한국 시간(KST) · 각 작업의 마감 시점을
+        마감일 기준 타임라인 · 각 작업의 마감 시점을
         표시합니다.
       </p>
       <div

@@ -15,8 +15,8 @@ test('새 스페이스 시작·종료 기본값은 현재 날짜·시간이며 �
 }) => {
   const dialog = await openCreate(page);
   for (const label of [
-    '프로젝트 시작 (한국 시간)',
-    '프로젝트 종료 (한국 시간)',
+    '프로젝트 시작',
+    '프로젝트 종료',
   ]) {
     await expect(
       dialog.getByRole('textbox', { name: `${label} 날짜`, exact: true }),
@@ -40,7 +40,7 @@ for (const width of [1440, 390]) {
       .fill('날짜 선택 프로젝트');
     await dialog
       .getByRole('button', {
-        name: '프로젝트 시작 (한국 시간) 달력 열기',
+        name: '프로젝트 시작 달력 열기',
         exact: true,
       })
       .click();
@@ -74,15 +74,15 @@ for (const width of [1440, 390]) {
       .getByRole('button', { name: '2028년 2월 29일', exact: true })
       .click();
     await expect(
-      dialog.getByLabel('프로젝트 시작 (한국 시간) 날짜', { exact: true }),
+      dialog.getByLabel('프로젝트 시작 날짜', { exact: true }),
     ).toHaveValue('2028-02-29');
     await expect(
-      dialog.getByLabel('프로젝트 시작 (한국 시간) 시간', { exact: true }),
+      dialog.getByLabel('프로젝트 시작 시간', { exact: true }),
     ).toHaveValue('18:15');
     await dialog
-      .getByLabel('프로젝트 시작 (한국 시간) 시간', { exact: true })
+      .getByLabel('프로젝트 시작 시간', { exact: true })
       .fill('10:45');
-    await fillDateTime(dialog, '프로젝트 종료 (한국 시간)', '2028-03-01T12:30');
+    await fillDateTime(dialog, '프로젝트 종료', '2028-03-01T12:30');
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth > innerWidth,
@@ -109,21 +109,21 @@ test('존재하지 않는 날짜와 비어 있는 시간을 거부하고 올바�
 }) => {
   const dialog = await openCreate(page);
   await dialog.getByLabel('스페이스 이름', { exact: true }).fill('입력 검증');
-  await fillDateTime(dialog, '프로젝트 종료 (한국 시간)', '2026-02-30T19:00');
+  await fillDateTime(dialog, '프로젝트 종료', '2026-02-30T19:00');
   await dialog.getByRole('button', { name: '만들기', exact: true }).click();
   await expect(
-    dialog.getByLabel('프로젝트 종료 (한국 시간) 날짜', { exact: true }),
+    dialog.getByLabel('프로젝트 종료 날짜', { exact: true }),
   ).toHaveAttribute('aria-invalid', 'true');
-  await fillDateTime(dialog, '프로젝트 종료 (한국 시간)', '2026-10-13T19:00');
+  await fillDateTime(dialog, '프로젝트 종료', '2026-10-13T19:00');
   await dialog
-    .getByLabel('프로젝트 종료 (한국 시간) 시간', { exact: true })
+    .getByLabel('프로젝트 종료 시간', { exact: true })
     .fill('');
   await dialog.getByRole('button', { name: '만들기', exact: true }).click();
   await expect(
-    dialog.getByLabel('프로젝트 종료 (한국 시간) 시간', { exact: true }),
+    dialog.getByLabel('프로젝트 종료 시간', { exact: true }),
   ).toHaveAttribute('aria-invalid', 'true');
   await dialog
-    .getByLabel('프로젝트 종료 (한국 시간) 시간', { exact: true })
+    .getByLabel('프로젝트 종료 시간', { exact: true })
     .fill('19:00');
   await dialog.getByRole('button', { name: '만들기', exact: true }).click();
   await expect(page).toHaveURL(/\/spaces\/3$/);
@@ -133,9 +133,9 @@ test('달력 방향키는 다음 달로 이동하고 Escape는 달력만 닫는�
   page,
 }) => {
   const dialog = await openCreate(page);
-  await fillDateTime(dialog, '프로젝트 시작 (한국 시간)', '2026-10-31T18:15');
+  await fillDateTime(dialog, '프로젝트 시작', '2026-10-31T18:15');
   const trigger = dialog.getByRole('button', {
-    name: '프로젝트 시작 (한국 시간) 달력 열기',
+    name: '프로젝트 시작 달력 열기',
     exact: true,
   });
   await trigger.click();
@@ -176,7 +176,7 @@ for (const width of [1440, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
     const dialog = await openCreate(page);
     const trigger = dialog.getByRole('button', {
-      name: '프로젝트 시작 (한국 시간) 시간 선택 열기',
+      name: '프로젝트 시작 시간 선택 열기',
       exact: true,
     });
     await trigger.click();
@@ -230,16 +230,16 @@ for (const width of [1440, 390, 320]) {
     await picker.getByRole('button', { name: '35분', exact: true }).click();
     await expect(picker.getByLabel('선택한 시간')).toHaveText('09:35');
     await expect(
-      dialog.getByLabel('프로젝트 시작 (한국 시간) 시간', { exact: true }),
+      dialog.getByLabel('프로젝트 시작 시간', { exact: true }),
     ).toHaveValue('18:15');
     await picker
       .getByRole('button', { name: '시간 적용', exact: true })
       .click();
     await expect(
-      dialog.getByLabel('프로젝트 시작 (한국 시간) 시간', { exact: true }),
+      dialog.getByLabel('프로젝트 시작 시간', { exact: true }),
     ).toHaveValue('09:35');
     await expect(
-      dialog.getByLabel('프로젝트 시작 (한국 시간) 날짜', { exact: true }),
+      dialog.getByLabel('프로젝트 시작 날짜', { exact: true }),
     ).toHaveValue('2026-10-12');
     await expect(trigger).toBeFocused();
     await trigger.click();
@@ -266,7 +266,7 @@ test('시간 선택 방향키와 Escape, 날짜·시간 선택기 상호 닫기,
 }) => {
   const dialog = await openCreate(page);
   const trigger = dialog.getByRole('button', {
-    name: '프로젝트 시작 (한국 시간) 시간 선택 열기',
+    name: '프로젝트 시작 시간 선택 열기',
     exact: true,
   });
   await trigger.click();
@@ -281,11 +281,11 @@ test('시간 선택 방향키와 Escape, 날짜·시간 선택기 상호 닫기,
   await expect(picker).toHaveCount(0);
   await expect(trigger).toBeFocused();
   await expect(
-    dialog.getByLabel('프로젝트 시작 (한국 시간) 시간', { exact: true }),
+    dialog.getByLabel('프로젝트 시작 시간', { exact: true }),
   ).toHaveValue('18:15');
   await dialog
     .getByRole('button', {
-      name: '프로젝트 시작 (한국 시간) 달력 열기',
+      name: '프로젝트 시작 달력 열기',
       exact: true,
     })
     .click();
@@ -296,10 +296,10 @@ test('시간 선택 방향키와 Escape, 날짜·시간 선택기 상호 닫기,
   await expect(picker).toBeVisible();
   await page.keyboard.press('Escape');
   await dialog.getByLabel('스페이스 이름', { exact: true }).fill('시간 검증');
-  await fillDateTime(dialog, '프로젝트 종료 (한국 시간)', '2026-10-13T24:00');
+  await fillDateTime(dialog, '프로젝트 종료', '2026-10-13T24:00');
   await dialog.getByRole('button', { name: '만들기', exact: true }).click();
   await expect(
-    dialog.getByLabel('프로젝트 종료 (한국 시간) 시간', { exact: true }),
+    dialog.getByLabel('프로젝트 종료 시간', { exact: true }),
   ).toHaveAttribute('aria-invalid', 'true');
   await expect(
     dialog.getByText('시간을 00:00~23:59 형식으로 입력해 주세요.', {
@@ -340,13 +340,13 @@ for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     const dialog = await openCreate(page);
     const end = dialog.getByRole('group', {
-      name: '프로젝트 종료 (한국 시간)',
+      name: '프로젝트 종료',
       exact: true,
     });
     const original = await end.boundingBox();
     for (const label of [
-      '프로젝트 시작 (한국 시간) 달력 열기',
-      '프로젝트 시작 (한국 시간) 시간 선택 열기',
+      '프로젝트 시작 달력 열기',
+      '프로젝트 시작 시간 선택 열기',
     ]) {
       await dialog.getByRole('button', { name: label, exact: true }).click();
       const after = await end.boundingBox();

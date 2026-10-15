@@ -24,7 +24,7 @@ async function seed(page, view = 'list', extra = '') {
     `/preview/spaces/1/teams/1/tasks?view=${view}&month=2026-11${extra}`,
   );
   await expect(
-    page.getByRole('heading', { name: '작업 보드', exact: true }),
+    page.getByRole('heading', { name: '작업', exact: true }),
   ).toBeVisible();
 }
 
@@ -40,7 +40,7 @@ test('목록은 여섯 열의 표로 제공하고 상세 복귀·필터·보기 
     '담당자·배분',
     '승인자',
     '예상 작업량',
-    '마감일 · KST',
+    '마감일',
   ]);
   await expect(table.getByRole('row')).toHaveCount(7);
   await page.screenshot({

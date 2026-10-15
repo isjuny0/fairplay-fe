@@ -146,7 +146,7 @@ export default function TaskBoard({
     <section className="stack task-board-page">
       <div className="page-heading">
         <div>
-          <h1>작업 보드</h1>
+          <h1>작업</h1>
           <p>담당 작업을 수행하고 지정 승인자의 검토를 요청하세요.</p>
         </div>
         <button

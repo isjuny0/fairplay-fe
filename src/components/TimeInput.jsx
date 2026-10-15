@@ -120,7 +120,7 @@ export default function TimeInput({
         >
           <div className="time-picker-heading">
             <strong>시간 선택</strong>
-            <span>한국 시간 · 24시간</span>
+            <span>24시간</span>
           </div>
           <div className="time-picker-columns">
             <div className="time-picker-column">

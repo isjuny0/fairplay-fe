@@ -26,7 +26,7 @@ for (const [path, heading, role] of [
   ['/main', '내 스페이스', 'leader'],
   ['/spaces/1', '2026 서비스 디자인 프로젝트', 'leader'],
   ['/spaces/1/teams/1', '삼위일체', 'leader'],
-  ['/spaces/1/teams/1/tasks', '작업 보드', 'leader'],
+  ['/spaces/1/teams/1/tasks', '작업', 'leader'],
   ['/spaces/1/teams/1/tasks/101', '사용자 인터뷰 계획', 'leader'],
   ['/spaces/1/teams/1/deliverables', '산출물 관리', 'leader'],
   ['/spaces/1/teams/1/approvals', '승인 검토', 'reviewer'],

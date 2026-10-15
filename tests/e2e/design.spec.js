@@ -7,10 +7,10 @@ for (const width of [1440, 390]) {
     const header = page.getByLabel('현재 화면 정보');
     await expect(header.locator('strong')).toHaveText('2026 서비스 디자인 프로젝트');
     await expect(header).not.toContainText('삼위일체');
-    await expect(header).not.toContainText('작업 보드');
+    await expect(header).not.toContainText('작업');
     const breadcrumb = page.locator('.workspace-breadcrumb');
     await expect(breadcrumb.locator('button')).toHaveText('삼위일체');
-    await expect(breadcrumb.locator('[aria-current="page"]')).toHaveText('작업 보드');
+    await expect(breadcrumb.locator('[aria-current="page"]')).toHaveText('작업');
     await expect(breadcrumb).not.toContainText('2026 서비스 디자인 프로젝트');
     if (width > 720) await expect(header).toBeVisible();
     else await expect(header).toBeHidden();

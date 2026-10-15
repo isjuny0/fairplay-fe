@@ -421,7 +421,7 @@ for (const [label, weight] of [
 ])
   test(`예상 작업량 ${label} 선택은 숫자 가중치 ${weight}로 저장된다`, async ({ page }) => {
     const { requests } = await workspace(page);
-    await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+    await page.getByRole('button', { name: '작업', exact: true }).click();
     await page.getByRole('button', { name: '새 작업 만들기', exact: true }).click();
     const dialog = page.getByRole('dialog');
     const workload = dialog.getByLabel('예상 작업량', { exact: true });
@@ -436,7 +436,7 @@ for (const [label, weight] of [
     await workload.selectOption({ label });
     await dialog.getByLabel('작업 제목').fill('예상 작업량 확인');
     await dialog.getByLabel('작업 설명', { exact: true }).fill('팀과 합의한 작업 범위입니다.');
-    await fillDateTime(dialog, '마감 (한국 시간)', '2030-12-01T18:00');
+    await fillDateTime(dialog, '마감', '2030-12-01T18:00');
     await dialog.getByLabel('담당자 · 팀원').check();
     await dialog.getByLabel('완료 승인자', { exact: true }).selectOption('leader');
     await dialog.getByRole('button', { name: '저장', exact: true }).click();
@@ -462,7 +462,7 @@ test('담당자가 작업을 생성하고 버전으로 완료 요청하면 수�
   page,
 }) => {
   const { requests, addLinkedDeliverable } = await workspace(page);
-  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await page.getByRole('button', { name: '작업', exact: true }).click();
   await page
     .getByRole('button', { name: '새 작업 만들기', exact: true })
     .click();
@@ -471,7 +471,7 @@ test('담당자가 작업을 생성하고 버전으로 완료 요청하면 수�
   await dialog
     .getByLabel('작업 설명', { exact: true })
     .fill('완료 조건과 담당 범위를 정의합니다.');
-  await fillDateTime(dialog, '마감 (한국 시간)', '2030-12-01T18:00');
+  await fillDateTime(dialog, '마감', '2030-12-01T18:00');
   await dialog.getByLabel('담당자 · 팀원').check();
   await dialog
     .getByLabel('완료 승인자', { exact: true })
@@ -530,7 +530,7 @@ test('지정 승인자가 사유를 입력해 반려하면 이력과 작업 수�
 
 test('팀원이 1명이면 작업 생성 버튼이 비활성화된다', async ({ page }) => {
   await workspace(page, { userId: 'leader', memberCount: 1 });
-  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await page.getByRole('button', { name: '작업', exact: true }).click();
   await expect(
     page.getByRole('button', { name: '새 작업 만들기', exact: true }),
   ).toBeDisabled();
@@ -566,7 +566,7 @@ test('스페이스 관리자는 타 팀 자료만 조회하고 팀 작업 API를
     userId: 'manager',
   });
   await expect(
-    page.getByRole('button', { name: '작업 보드', exact: true }),
+    page.getByRole('button', { name: '작업', exact: true }),
   ).toHaveCount(0);
   await page.getByRole('button', { name: '산출물', exact: true }).click();
   await expect(page.getByText('등록된 산출물이 없습니다.')).toBeVisible();
@@ -582,7 +582,7 @@ test('버전 충돌에서 요청을 재전송하지 않고 입력 내용을 유�
   page,
 }) => {
   const state = await workspace(page);
-  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await page.getByRole('button', { name: '작업', exact: true }).click();
   await page
     .getByRole('button', { name: '회원 탈퇴 구현', exact: true })
     .click();
@@ -636,7 +636,7 @@ test('파일 산출물을 multipart로 업로드하고 인증을 유지해 다�
 test('세션 만료 응답은 로그인 화면으로 돌아가 안내한다', async ({ page }) => {
   const state = await workspace(page);
   state.expire();
-  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await page.getByRole('button', { name: '작업', exact: true }).click();
   await expect(
     page.getByRole('button', { name: 'Google로 계속하기' }),
   ).toBeVisible();
@@ -658,8 +658,8 @@ test('관리자는 스페이스 생성 후 팀 빌딩 기간을 지정하고 코
     .click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('스페이스 이름').fill('프로젝트 스페이스');
-  await fillDateTime(dialog, '프로젝트 시작 (한국 시간)', '2026-01-01T00:00');
-  await fillDateTime(dialog, '프로젝트 종료 (한국 시간)', '2030-12-31T23:00');
+  await fillDateTime(dialog, '프로젝트 시작', '2026-01-01T00:00');
+  await fillDateTime(dialog, '프로젝트 종료', '2030-12-31T23:00');
   await dialog.getByRole('button', { name: '만들기', exact: true }).click();
   await page
     .getByRole('button', { name: '스페이스 관리', exact: true })
@@ -703,7 +703,7 @@ test('좁은 화면에서도 작업 상세를 가로 넘침 없이 확인한다'
 }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await workspace(page);
-  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await page.getByRole('button', { name: '작업', exact: true }).click();
   await page
     .getByRole('button', { name: '회원 탈퇴 구현', exact: true })
     .click();
@@ -730,13 +730,13 @@ test('모바일·태블릿·데스크톱에서 팀 탐색과 작업 생성 폼�
   page,
 }) => {
   await workspace(page);
-  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await page.getByRole('button', { name: '작업', exact: true }).click();
   for (const width of [320, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await expect(
       page
         .getByRole('navigation', { name: '팀 메뉴' })
-        .getByRole('button', { name: '작업 보드', exact: true }),
+        .getByRole('button', { name: '작업', exact: true }),
     ).toHaveAttribute('aria-current', 'page');
     expect(
       await page.evaluate(
@@ -750,7 +750,7 @@ test('모바일·태블릿·데스크톱에서 팀 탐색과 작업 생성 폼�
     if (width <= 600) {
       await dialog.getByLabel('작업 제목', { exact: true }).fill('반응형 입력 검증');
       await dialog.getByLabel('작업 설명', { exact: true }).fill('각 화면 폭에서 담당·승인 설정을 확인합니다.');
-      await fillDateTime(dialog, '마감 (한국 시간)', '2030-12-01T18:00');
+      await fillDateTime(dialog, '마감', '2030-12-01T18:00');
       await dialog.getByRole('button', { name: '다음: 담당·승인', exact: true }).click();
     }
     await expect(
@@ -858,7 +858,7 @@ test('팀원은 본인 동의만 변경하고 철회하면 요청 전체가 취�
       )
       .map(({ body }) => JSON.parse(body)),
   ).toEqual([{ agree: true }, { agree: false }]);
-  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await page.getByRole('button', { name: '작업', exact: true }).click();
   await expect(
     page.getByRole('button', { name: '새 작업 만들기', exact: true }),
   ).toBeEnabled();
@@ -1007,7 +1007,7 @@ test('탈퇴에 남은 의존성이 있으면 담당 작업과 자료 정리를 
     .click();
   await page.getByRole('button', { name: '담당 작업 확인' }).click();
   await expect(
-    page.getByRole('heading', { name: '작업 보드', exact: true }),
+    page.getByRole('heading', { name: '작업', exact: true }),
   ).toBeVisible();
   expect(
     requests.filter(({ path }) => path === '/api/teams/1/members/me'),
@@ -1066,7 +1066,7 @@ test('삭제 동의 중에는 작업·수행 설명·자료를 변경할 수 없
   page,
 }) => {
   await workspace(page, { initialDeletion: deletionRequest() });
-  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await page.getByRole('button', { name: '작업', exact: true }).click();
   await expect(
     page.getByRole('button', { name: '새 작업 만들기', exact: true }),
   ).toBeDisabled();
@@ -1136,7 +1136,7 @@ test('삭제 요청 없음 외의 404는 오류로 표시하고 작업 변경을
   await expect(
     page.getByRole('button', { name: '팀 삭제 요청 만들기', exact: true }),
   ).toHaveCount(0);
-  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await page.getByRole('button', { name: '작업', exact: true }).click();
   await expect(
     page.getByRole('button', { name: '새 작업 만들기', exact: true }),
   ).toBeDisabled();
@@ -1146,7 +1146,7 @@ test('다른 팀원의 삭제 요청을 확인하면 이미 열린 작업 수정
   page,
 }) => {
   const state = await workspace(page);
-  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await page.getByRole('button', { name: '작업', exact: true }).click();
   await page
     .getByRole('button', { name: '회원 탈퇴 구현', exact: true })
     .click();
@@ -1181,7 +1181,7 @@ test('다른 팀원의 삭제 요청을 확인하면 이미 열린 작업 수정
 const workspaceRoutes = [
   ['/spaces/1', '프로젝트 스페이스'],
   ['/spaces/1/teams/1', '삼위일체 팀'],
-  ['/spaces/1/teams/1/tasks', '작업 보드'],
+  ['/spaces/1/teams/1/tasks', '작업'],
   ['/spaces/1/teams/1/tasks/10', '회원 탈퇴 구현'],
   ['/spaces/1/teams/1/deliverables', '산출물 관리'],
   ['/spaces/1/teams/1/approvals', '승인 검토'],
@@ -1211,14 +1211,14 @@ test('팀 메뉴와 작업 상세는 브라우저 뒤로가기·앞으로가기�
 }) => {
   await workspace(page);
   await expect(page).toHaveURL(/\/spaces\/1\/teams\/1$/);
-  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await page.getByRole('button', { name: '작업', exact: true }).click();
   await page
     .getByRole('button', { name: '회원 탈퇴 구현', exact: true })
     .click();
   await expect(page).toHaveURL(/\/tasks\/10$/);
   await page.goBack();
   await expect(
-    page.getByRole('heading', { name: '작업 보드', exact: true }),
+    page.getByRole('heading', { name: '작업', exact: true }),
   ).toBeVisible();
   await page.goBack();
   await expect(
@@ -1226,7 +1226,7 @@ test('팀 메뉴와 작업 상세는 브라우저 뒤로가기·앞으로가기�
   ).toBeVisible();
   await page.goForward();
   await expect(
-    page.getByRole('heading', { name: '작업 보드', exact: true }),
+    page.getByRole('heading', { name: '작업', exact: true }),
   ).toBeVisible();
   await page.goForward();
   await expect(
@@ -1234,11 +1234,11 @@ test('팀 메뉴와 작업 상세는 브라우저 뒤로가기·앞으로가기�
   ).toBeVisible();
 });
 
-test('작업 보드의 상태·내 작업 필터는 새로고침과 상세 복귀 후 유지된다', async ({
+test('작업의 상태·내 작업 필터는 새로고침과 상세 복귀 후 유지된다', async ({
   page,
 }) => {
   await workspace(page);
-  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await page.getByRole('button', { name: '작업', exact: true }).click();
   await page.getByLabel('작업 상태', { exact: true }).selectOption('IN_PROGRESS');
   await page.getByLabel('내 담당 작업만').check();
   await page.reload();
@@ -1421,7 +1421,7 @@ test('참여 코드 발급 권한 오류를 표시하고 요청을 반복하지 
 
 test('다른 작업 정보를 저장해도 미저장 수행 설명을 보존한다', async ({ page }) => {
   const state = await workspace(page);
-  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await page.getByRole('button', { name: '작업', exact: true }).click();
   await page.getByRole('button', { name: '회원 탈퇴 구현', exact: true }).click();
   await page.getByLabel('내 수행 설명', { exact: true }).fill('아직 저장하지 않은 개인 수행 기록입니다.');
   await page.getByRole('button', { name: '작업 수정', exact: true }).click();

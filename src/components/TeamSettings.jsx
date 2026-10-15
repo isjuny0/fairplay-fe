@@ -294,7 +294,7 @@ export default function TeamSettings({
         <div className="heading-actions">
           <button
             className="secondary-button"
-            onClick={() => onNavigate('작업 보드')}
+            onClick={() => onNavigate('작업')}
           >
             담당 작업 확인
           </button>
