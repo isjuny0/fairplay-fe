@@ -45,7 +45,9 @@ export default function WorkspaceNavigation({
       }}
     >
       <Icon name={icon} />
-      {label}
+      <span className="nav-item-label" title={label}>
+        {label}
+      </span>
     </button>
   );
   return (
@@ -69,147 +71,153 @@ export default function WorkspaceNavigation({
         <span>공간·팀 선택 {open ? '⌃' : '⌄'}</span>
       </button>
       <nav id="workspace-navigation" aria-label="스페이스 메뉴">
-        <button
-          className="nav-item"
-          onClick={() => {
-            setOpen(false);
-            onBack();
-          }}
-        >
-          <Icon name="back" />내 스페이스
-        </button>
-        <div className="workspace-selectors">
-          <label>
-            <span>스페이스 선택</span>
-            <select
-              aria-label="스페이스 선택"
-              value={spaceId}
-              disabled={spaces.loading && !spaces.data}
-              onChange={(event) => {
-                setOpen(false);
-                navigate(spacePath(Number(event.target.value)));
-              }}
-            >
-              {!(spaces.data || []).some((item) => item.id === spaceId) && (
-                <option value={spaceId}>
-                  {space?.name || '현재 스페이스'}
-                </option>
-              )}
-              {(spaces.data || []).map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <ErrorNotice error={spaces.error} onRetry={spaces.reload} />
-          <label>
-            <span>팀 선택</span>
-            <select
-              aria-label="팀 선택"
-              value={
-                team && ['team', 'contributions'].includes(view) ? team.id : ''
-              }
-              disabled={!accessibleTeams.length}
-              onChange={(event) => {
-                setOpen(false);
-                const nextTeam = accessibleTeams.find(
-                  (item) => item.id === Number(event.target.value),
-                );
-                navigate(
-                  nextTeam
-                    ? teamMenuPath(
-                        spaceId,
-                        nextTeam.id,
-                        isApprovedMember(nextTeam) ? '팀 홈' : '팀원 관리',
-                      )
-                    : spacePath(spaceId),
-                );
-              }}
-            >
-              <option value="">
-                {accessibleTeams.length ? '팀 목록 보기' : '소속된 팀 없음'}
-              </option>
-              {accessibleTeams.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-        {navButton('팀 목록', 'users', spacePath(spaceId), view === 'teams')}
-        {isManager && (
-          <div className="workspace-nav-group manager-workspace-navigation">
-            <p className="nav-section">스페이스 운영</p>
-            {[
-              ['dashboard', '관리자 대시보드', 'grid'],
-              ['rounds', '평가 회차 관리', 'calendar'],
-              ['reports', '리포트 검토·공개', 'file'],
-              ['settings', '스페이스 관리', 'settings'],
-            ].map(([segment, label, icon]) =>
-              navButton(
-                label,
-                icon,
-                `${spacePath(spaceId)}/${segment}`,
-                view === segment ||
-                  (segment === 'dashboard' && view === 'contributions'),
-              ),
-            )}
-          </div>
-        )}
-        {!team &&
-          selectedTeam &&
-          !isManager &&
-          navButton(
-            `내 팀 · ${selectedTeam.name}`,
-            'home',
-            teamMenuPath(spaceId, selectedTeam.id, '팀 홈'),
-            false,
-          )}
-        {team && (isManager || isApprovedMember(team)) && (
-          <nav className="desktop-team-navigation" aria-label="팀 메뉴">
-            {!isApprovedMember(team) ? (
-              <div className="workspace-nav-group">
-                <p className="nav-section">팀 자료 조회</p>
-                {menus.map((label) =>
-                  navButton(
-                    label,
-                    label === '산출물' ? 'file' : 'users',
-                    teamMenuPath(spaceId, team.id, label),
-                    view === 'team' && teamMenu === label,
-                  ),
+        <div className="workspace-navigation-context">
+          <button
+            className="nav-item workspace-back-link"
+            onClick={() => {
+              setOpen(false);
+              onBack();
+            }}
+          >
+            <Icon name="back" />내 스페이스
+          </button>
+          <div className="workspace-selectors">
+            <label>
+              <span>스페이스</span>
+              <select
+                aria-label="스페이스 선택"
+                title={space?.name}
+                value={spaceId}
+                disabled={spaces.loading && !spaces.data}
+                onChange={(event) => {
+                  setOpen(false);
+                  navigate(spacePath(Number(event.target.value)));
+                }}
+              >
+                {!(spaces.data || []).some((item) => item.id === spaceId) && (
+                  <option value={spaceId}>
+                    {space?.name || '현재 스페이스'}
+                  </option>
                 )}
-              </div>
-            ) : (
-              teamNavigationGroups.map((group, index) => {
-                const items = group.items.filter(([label]) =>
-                  menus.includes(label),
-                );
-                return (
-                  items.length > 0 && (
-                    <div
-                      className="workspace-nav-group"
-                      key={group.label || index}
-                    >
-                      {group.label && (
-                        <p className="nav-section">{group.label}</p>
-                      )}
-                      {items.map(([label, icon]) =>
-                        navButton(
-                          label,
-                          icon,
-                          teamMenuPath(spaceId, team.id, label),
-                          view === 'team' && teamMenu === label,
-                        ),
-                      )}
-                    </div>
-                  )
-                );
-              })
+                {(spaces.data || []).map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <ErrorNotice error={spaces.error} onRetry={spaces.reload} />
+            <label>
+              <span>팀</span>
+              <select
+                aria-label="팀 선택"
+                title={team?.name}
+                value={
+                  team && ['team', 'contributions'].includes(view) ? team.id : ''
+                }
+                disabled={!accessibleTeams.length}
+                onChange={(event) => {
+                  setOpen(false);
+                  const nextTeam = accessibleTeams.find(
+                    (item) => item.id === Number(event.target.value),
+                  );
+                  navigate(
+                    nextTeam
+                      ? teamMenuPath(
+                          spaceId,
+                          nextTeam.id,
+                          isApprovedMember(nextTeam) ? '팀 홈' : '팀원 관리',
+                        )
+                      : spacePath(spaceId),
+                  );
+                }}
+              >
+                <option value="">
+                  {accessibleTeams.length ? '팀 목록 보기' : '소속된 팀 없음'}
+                </option>
+                {accessibleTeams.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </div>
+        <div className="workspace-navigation-links">
+          {navButton('팀 목록', 'users', spacePath(spaceId), view === 'teams')}
+          {isManager && (
+            <div className="workspace-nav-group manager-workspace-navigation">
+              <p className="nav-section">스페이스 운영</p>
+              {[
+                ['dashboard', '관리자 대시보드', 'grid'],
+                ['rounds', '평가 회차 관리', 'calendar'],
+                ['reports', '리포트 검토·공개', 'file'],
+                ['settings', '스페이스 관리', 'settings'],
+              ].map(([segment, label, icon]) =>
+                navButton(
+                  label,
+                  icon,
+                  `${spacePath(spaceId)}/${segment}`,
+                  view === segment ||
+                    (segment === 'dashboard' && view === 'contributions'),
+                ),
+              )}
+            </div>
+          )}
+          {!team &&
+            selectedTeam &&
+            !isManager &&
+            navButton(
+              `내 팀 · ${selectedTeam.name}`,
+              'home',
+              teamMenuPath(spaceId, selectedTeam.id, '팀 홈'),
+              false,
             )}
-          </nav>
-        )}
+          {team && (isManager || isApprovedMember(team)) && (
+            <nav className="desktop-team-navigation" aria-label="팀 메뉴">
+              {!isApprovedMember(team) ? (
+                <div className="workspace-nav-group">
+                  <p className="nav-section">팀 자료 조회</p>
+                  {menus.map((label) =>
+                    navButton(
+                      label,
+                      label === '산출물' ? 'file' : 'users',
+                      teamMenuPath(spaceId, team.id, label),
+                      view === 'team' && teamMenu === label,
+                    ),
+                  )}
+                </div>
+              ) : (
+                teamNavigationGroups.map((group, index) => {
+                  const items = group.items.filter(([label]) =>
+                    menus.includes(label),
+                  );
+                  return (
+                    items.length > 0 && (
+                      <div
+                        className="workspace-nav-group"
+                        key={group.label || index}
+                      >
+                        {group.label && (
+                          <p className="nav-section">{group.label}</p>
+                        )}
+                        {items.map(([label, icon]) =>
+                          navButton(
+                            label,
+                            icon,
+                            teamMenuPath(spaceId, team.id, label),
+                            view === 'team' && teamMenu === label,
+                          ),
+                        )}
+                      </div>
+                    )
+                  );
+                })
+              )}
+            </nav>
+          )}
+        </div>
       </nav>
     </aside>
   );

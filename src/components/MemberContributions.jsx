@@ -11,7 +11,7 @@ import {
   formatExpectedWorkload,
   statusLabels,
 } from '../lib/domain.js';
-import { FeedbackCards } from './PlanningUi.jsx';
+import { FeedbackSummary } from './PlanningUi.jsx';
 import { EmptyState, ResourceState } from './ui.jsx';
 
 export default function MemberContributions({ context, targetUserId, onBack }) {
@@ -151,7 +151,7 @@ export default function MemberContributions({ context, targetUserId, onBack }) {
       ) : ownFeedback ? (
         <>
           <h2>중간 평가 협업 평균과 개선 안내</h2>
-          <FeedbackCards member={ownFeedback} />
+          <FeedbackSummary member={ownFeedback} />
         </>
       ) : (
         <section className="panel">

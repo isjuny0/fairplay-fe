@@ -23,12 +23,13 @@ function CalculationDetails({ name, details }) {
       <h2>{name} 계산 근거</h2>
       <div className="table-scroll">
         <table className="data-table">
+          <caption className="sr-only">{name} 최종 기여율 계산 근거</caption>
           <thead>
             <tr>
-              <th>구성 요소</th>
-              <th>팀 내 비율</th>
-              <th>반영 비중</th>
-              <th>기여분</th>
+              <th scope="col">구성 요소</th>
+              <th scope="col">팀 내 비율</th>
+              <th scope="col">반영 비중</th>
+              <th scope="col">기여분</th>
             </tr>
           </thead>
           <tbody>
@@ -38,7 +39,7 @@ function CalculationDetails({ name, details }) {
               ['최종 동료 평가', 'final', 20],
             ].map(([label, key, weight]) => (
               <tr key={key}>
-                <th>{label}</th>
+                <th scope="row">{label}</th>
                 <td>{Number(details[`${key}RatioPercent`]).toFixed(1)}%</td>
                 <td>{weight}%</td>
                 <td>
@@ -63,7 +64,7 @@ function CalculationDetails({ name, details }) {
 }
 function ReportDetail({ context, report }) {
   return (
-    <div className="stack">
+    <div className="stack report-result">
       {report.myDetails && (
         <section className="report-own-result">
           <div>
@@ -76,8 +77,8 @@ function ReportDetail({ context, report }) {
           <strong>{Number(report.myDetails.totalPercent).toFixed(1)}%</strong>
         </section>
       )}
-      <section className="panel">
-        <div className="page-heading">
+      <section className="panel report-team-result">
+        <div className="section-heading">
           <div>
             <span className="eyebrow">
               {report.status === 'PUBLISHED'
@@ -91,25 +92,55 @@ function ReportDetail({ context, report }) {
                 : '팀원에게 공개되지 않았습니다.'}
             </p>
           </div>
-          <span className="status-badge task-state-done">
+          <span
+            className={`status-badge ${report.status === 'PUBLISHED' ? 'task-state-done' : 'task-state-todo'}`}
+          >
             {report.status === 'PUBLISHED' ? '공개' : '비공개'}
           </span>
         </div>
-        {report.members.map((member) => (
-          <div className="report-member" key={member.userId}>
-            <div>
-              <strong>
-                {member.name}
-                {member.userId === context.user.id && ' · 나'}
-              </strong>
-              <span>{Number(member.contributionPercent).toFixed(1)}%</span>
-            </div>
-            <ProgressBar
-              value={member.contributionPercent}
-              label={`${member.name} 최종 기여율`}
-            />
-          </div>
-        ))}
+        <div
+          className="table-scroll"
+          role="region"
+          aria-label="팀 최종 기여율"
+          tabIndex={0}
+        >
+          <table className="data-table report-results-table">
+            <caption className="sr-only">팀원별 최종 기여율</caption>
+            <thead>
+              <tr>
+                <th scope="col">팀원</th>
+                <th scope="col">최종 기여율</th>
+                <th scope="col">팀 내 비율</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.members.map((member) => (
+                <tr
+                  className={
+                    member.userId === context.user.id
+                      ? 'report-current-member'
+                      : ''
+                  }
+                  key={member.userId}
+                >
+                  <th scope="row">
+                    {member.name}
+                    {member.userId === context.user.id && (
+                      <span className="report-self-label">나</span>
+                    )}
+                  </th>
+                  <td>{Number(member.contributionPercent).toFixed(1)}%</td>
+                  <td>
+                    <ProgressBar
+                      value={member.contributionPercent}
+                      label={`${member.name} 최종 기여율`}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         <p className="field-help">
           최종 기여율 합계 {Number(report.totalPercent).toFixed(1)}% · 팀 홈의
           현재 작업 현황과는 다른 집계입니다.
@@ -398,11 +429,13 @@ export function TeamReport({ context, manager = false }) {
 }
 export default function ContributionReport({ context }) {
   return (
-    <section className="stack">
-      <div>
-        <span className="eyebrow">함께 만든 최종 결과</span>
-        <h1>기여도 리포트</h1>
-        <p>관리자가 공개한 팀 결과와 본인의 계산 근거를 확인하세요.</p>
+    <section className="stack contribution-report-page">
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">함께 만든 최종 결과</span>
+          <h1>기여도 리포트</h1>
+          <p>관리자가 공개한 팀 결과와 본인의 계산 근거를 확인하세요.</p>
+        </div>
       </div>
       <TeamReport context={context} />
     </section>

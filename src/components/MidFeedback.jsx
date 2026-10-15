@@ -1,7 +1,7 @@
 import { getMidFeedback } from '../api/evaluations.js';
 import useResource from '../hooks/useResource.js';
 import { formatDate } from '../lib/domain.js';
-import { FeedbackCards } from './PlanningUi.jsx';
+import { FeedbackSummary } from './PlanningUi.jsx';
 import { EmptyState, ResourceState } from './ui.jsx';
 
 export default function MidFeedback({ context }) {
@@ -10,11 +10,20 @@ export default function MidFeedback({ context }) {
     [context.team.id, context.user.id],
   );
   return (
-    <section className="stack">
-      <div>
-        <span className="eyebrow">나의 협업 피드백</span>
-        <h1>중간 피드백</h1>
-        <p>최종 평가 전에 내 협업 방식을 돌아보고 다음 작업을 준비하세요.</p>
+    <section className="stack mid-feedback-page">
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">나의 협업 피드백</span>
+          <h1>중간 피드백</h1>
+          <p>최종 평가 전에 내 협업 방식을 돌아보고 다음 작업을 준비하세요.</p>
+        </div>
+        <button
+          className="secondary-button"
+          disabled={resource.loading}
+          onClick={resource.reload}
+        >
+          피드백 새로고침
+        </button>
       </div>
       {resource.error?.code === 'MID_FEEDBACK_NOT_READY' ||
       resource.error?.code === 'ROUND_NOT_FOUND' ? (
@@ -35,7 +44,7 @@ export default function MidFeedback({ context }) {
                   <strong>팀원들이 평가한 {member.name}님의 협업 평균</strong>
                   <span>중간 평가 · {formatDate(resource.data.asOf)}</span>
                 </section>
-                <FeedbackCards member={member} />
+                <FeedbackSummary member={member} />
               </div>
             ))}
         </ResourceState>
