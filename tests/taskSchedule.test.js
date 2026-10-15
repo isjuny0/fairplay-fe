@@ -7,6 +7,7 @@ import {
   taskDate,
   taskMonthDays,
   tasksByDate,
+  taskMonthRange,
 } from '../src/lib/taskSchedule.js';
 
 test('UTC 마감일은 한국 시간의 일자와 월에 배치한다', () => {
@@ -58,4 +59,62 @@ test('가까운 마감은 다음 마감부터 찾고 과거 작업뿐이면 마�
   assert.equal(nearestTaskMonth(tasks, '2026-10-15'), '2026-11');
   assert.equal(nearestTaskMonth(tasks, '2027-01-01'), '2026-12');
   assert.equal(nearestTaskMonth([], '2026-10-15'), undefined);
+});
+
+test('계획 일정은 마감 월 밖에서도 겹치는 달에 표시하고 양 끝을 자른다', () => {
+  const task = {
+    startAt: '2026-10-31T14:59:00Z',
+    dueAt: '2026-12-01T00:00:00Z',
+  };
+  assert.deepEqual(taskMonthRange(task, '2026-11'), {
+    startDay: 1,
+    endDay: 30,
+    continuesBefore: true,
+    continuesAfter: true,
+    milestone: false,
+  });
+  assert.equal(taskMonthRange(task, '2027-01'), null);
+  assert.equal(taskMonthRange(task, '2026-09'), null);
+});
+test('같은 시각·같은 날 일정과 월 경계는 최소 하루의 기간으로 표시한다', () => {
+  const instant = '2026-10-31T15:00:00Z';
+  assert.deepEqual(
+    taskMonthRange({ startAt: instant, dueAt: instant }, '2026-11'),
+    {
+      startDay: 1,
+      endDay: 1,
+      continuesBefore: false,
+      continuesAfter: false,
+      milestone: false,
+    },
+  );
+  assert.deepEqual(
+    taskMonthRange(
+      {
+        startAt: '2028-02-29T00:00:00+09:00',
+        dueAt: '2028-03-01T00:00:00+09:00',
+      },
+      '2028-02',
+    ),
+    {
+      startDay: 29,
+      endDay: 29,
+      continuesBefore: false,
+      continuesAfter: true,
+      milestone: false,
+    },
+  );
+});
+test('기존 시작일 미설정 작업은 생성일을 기간으로 쓰지 않고 마감 시점만 제공한다', () => {
+  const task = {
+    startAt: null,
+    createdAt: '2026-01-01T00:00:00Z',
+    dueAt: '2026-10-31T15:00:00Z',
+  };
+  assert.deepEqual(taskMonthRange(task, '2026-11'), {
+    startDay: 1,
+    endDay: 1,
+    milestone: true,
+  });
+  assert.equal(taskMonthRange(task, '2026-10'), null);
 });

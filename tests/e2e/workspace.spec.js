@@ -1540,3 +1540,76 @@ for (const [view, label] of [['list', '목록'], ['calendar', '캘린더'], ['ti
     await expect(page).toHaveURL(new RegExp(`view=${view}.*month=2030-12`));
   });
 }
+
+
+test('작업 시작일은 생성 시 필수이며 일정 검증 후 오프셋과 버전으로 생성·수정한다', async ({ page }) => {
+  const { requests } = await workspace(page);
+  await page.getByRole('button', { name: '작업', exact: true }).click();
+  await page.getByRole('button', { name: '새 작업 만들기', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('작업 제목', { exact: true }).fill('계획 일정 작업');
+  await dialog.getByLabel('작업 설명', { exact: true }).fill('예정된 기간에 수행할 작업입니다.');
+  await dialog.getByLabel('담당자 · 팀원').check();
+  await dialog.getByLabel('완료 승인자', { exact: true }).selectOption('leader');
+  await fillDateTime(dialog, '마감', '2030-12-01T18:00');
+  await dialog.getByLabel('시작일 날짜', { exact: true }).fill('');
+  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await expect(dialog.getByLabel('시작일 날짜', { exact: true })).toBeFocused();
+  await fillDateTime(dialog, '시작일', '2030-12-02T18:00');
+  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await expect(dialog.getByText('마감은 시작일과 같거나 이후여야 합니다.')).toBeVisible();
+  expect(requests.filter(({ method, path }) => method === 'POST' && path === '/api/teams/1/tasks')).toHaveLength(0);
+  await fillDateTime(dialog, '시작일', '2030-12-01T18:00');
+  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  const created = requests.find(({ method, path }) => method === 'POST' && path === '/api/teams/1/tasks');
+  expect(JSON.parse(created.body)).toMatchObject({ startAt: '2030-12-01T18:00:00+09:00', dueAt: '2030-12-01T18:00:00+09:00' });
+  await expect(page.getByText('시작일 2030. 12. 01. 18:00', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: '작업 수정', exact: true }).click();
+  await expect(dialog.getByLabel('시작일 날짜', { exact: true })).toHaveValue('2030-12-01');
+  await fillDateTime(dialog, '시작일', '2030-11-30T09:00');
+  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  const updated = requests.find(({ method, path }) => method === 'PATCH' && path.startsWith('/api/tasks/'));
+  expect(JSON.parse(updated.body)).toMatchObject({ startAt: '2030-11-30T09:00:00+09:00', expectedVersion: 0 });
+});
+
+test('시작일 미설정 작업의 제목 수정은 시작일을 전송하지 않으며 직접 지정할 수 있다', async ({ page }) => {
+  const { requests } = await workspace(page);
+  await page.goto('/spaces/1/teams/1/tasks/10');
+  await expect(page.getByText('시작일 미설정', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: '작업 수정', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByLabel('시작일 날짜', { exact: true })).toHaveValue('');
+  await dialog.getByLabel('작업 제목', { exact: true }).fill('기존 일정 유지');
+  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  const update = requests.find(({ method, path }) => method === 'PATCH' && path === '/api/tasks/10');
+  expect(JSON.parse(update.body)).not.toHaveProperty('startAt');
+  await page.getByRole('button', { name: '작업 수정', exact: true }).click();
+  await fillDateTime(dialog, '시작일', '2030-11-01T09:00');
+  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  const updates = requests.filter(({ method, path }) => method === 'PATCH' && path === '/api/tasks/10');
+  expect(JSON.parse(updates.at(-1).body)).toMatchObject({ startAt: '2030-11-01T09:00:00+09:00', expectedVersion: 1 });
+});
+
+
+test('저장된 시작일은 비울 수 없고 제목만 수정할 때 기존 시각 정밀도를 보존한다', async ({ page }) => {
+  const { requests, changeTask } = await workspace(page);
+  changeTask({ startAt: '2030-11-01T09:00:45+09:00' });
+  await page.goto('/spaces/1/teams/1/tasks/10');
+  await page.getByRole('button', { name: '작업 수정', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByLabel('시작일 시간', { exact: true })).toHaveValue('09:00');
+  await dialog.getByLabel('시작일 날짜', { exact: true }).fill('');
+  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await expect(dialog.getByLabel('시작일 날짜', { exact: true })).toBeFocused();
+  expect(requests.filter(({ method, path }) => method === 'PATCH' && path === '/api/tasks/10')).toHaveLength(0);
+  await fillDateTime(dialog, '시작일', '2030-11-01T09:00');
+  await dialog.getByLabel('작업 제목', { exact: true }).fill('시각 정밀도 유지');
+  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  const update = requests.find(({ method, path }) => method === 'PATCH' && path === '/api/tasks/10');
+  expect(JSON.parse(update.body)).not.toHaveProperty('startAt');
+});
