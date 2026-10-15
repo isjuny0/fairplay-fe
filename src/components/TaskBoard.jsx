@@ -45,9 +45,18 @@ export default function TaskBoard({
     ? searchParams.get('month')
     : currentTaskMonth();
   const query = searchParams.get('q') || '';
-  const sort = ['deadline', 'newest'].includes(searchParams.get('sort'))
+  const defaultSort = view === 'timeline' ? 'start' : 'deadline';
+  const sortLabels = {
+    deadline: '마감 빠른 순',
+    newest: '최근 생성 순',
+    start: '시작일 순',
+  };
+  const sort = ['deadline', 'newest', 'start'].includes(
+    searchParams.get('sort'),
+  )
     ? searchParams.get('sort')
-    : 'deadline';
+    : defaultSort;
+  const sortLabel = sortLabels[sort];
   const setListOption = (key, value, replace = false) =>
     setSearchParams(
       (current) => {
@@ -86,7 +95,7 @@ export default function TaskBoard({
     onlyMine,
     onlyOverdue,
     Boolean(query.trim()),
-    sort === 'newest',
+    sort !== defaultSort,
   ].filter(Boolean).length;
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -139,8 +148,12 @@ export default function TaskBoard({
       sort === 'newest'
         ? (Date.parse(right.createdAt) || 0) -
             (Date.parse(left.createdAt) || 0) || right.id - left.id
-        : (Date.parse(left.dueAt) || Infinity) -
-            (Date.parse(right.dueAt) || Infinity) || right.id - left.id,
+        : sort === 'start'
+          ? Date.parse(left.startAt) - Date.parse(right.startAt) ||
+            Date.parse(left.dueAt) - Date.parse(right.dueAt) ||
+            left.id - right.id
+          : (Date.parse(left.dueAt) || Infinity) -
+              (Date.parse(right.dueAt) || Infinity) || right.id - left.id,
     );
   return (
     <section className="stack task-board-page">
@@ -267,10 +280,11 @@ export default function TaskBoard({
               onChange={(event) =>
                 setListOption(
                   'sort',
-                  event.target.value === 'deadline' ? '' : event.target.value,
+                  event.target.value === defaultSort ? '' : event.target.value,
                 )
               }
             >
+              <option value="start">시작일 순</option>
               <option value="deadline">마감 빠른 순</option>
               <option value="newest">최근 생성 순</option>
             </select>
@@ -304,7 +318,7 @@ export default function TaskBoard({
           <span>
             {tasks.length}개 작업 · 전체 {resource.data?.length || 0}개 ·{' '}
             {view === 'board' ? '상태별 ' : ''}
-            {sort === 'newest' ? '최근 생성 순' : '마감 빠른 순'}
+            {sortLabel}
           </span>
           {hasFilters && (
             <button className="text-button" onClick={clearFilters}>
@@ -322,6 +336,7 @@ export default function TaskBoard({
           />
         ) : view === 'timeline' ? (
           <TaskTimeline
+            sortLabel={sortLabel}
             tasks={tasks}
             month={month}
             onMonthChange={(next) => setListOption('month', next)}
