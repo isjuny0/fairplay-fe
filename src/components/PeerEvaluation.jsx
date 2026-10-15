@@ -272,31 +272,6 @@ function RoundResponses({ context, round, onSubmitted }) {
       <ResourceState resource={resource}>
         {resource.data && (
           <>
-            <section className="panel evaluation-progress">
-              <div className="page-heading">
-                <div>
-                  <h2>
-                    {round.status === 'CLOSED'
-                      ? '마감된 평가 · 내가 저장한 응답'
-                      : submitted
-                        ? '최종 제출 완료'
-                        : '대상별로 저장 후 최종 제출하세요'}
-                  </h2>
-                  <p>
-                    {responses.length} / {targets.length}명 저장 ·{' '}
-                    {submitted
-                      ? '제출한 응답은 수정할 수 없습니다.'
-                      : '저장만으로 최종 제출되지 않습니다.'}
-                  </p>
-                </div>
-              </div>
-              <ProgressBar
-                value={
-                  targets.length ? (responses.length / targets.length) * 100 : 0
-                }
-                label="내 평가 작성 진행률"
-              />
-            </section>
             {round.status === 'OPEN' &&
               Date.parse(round.closesAt) <= now &&
               !submitted && (
@@ -306,35 +281,62 @@ function RoundResponses({ context, round, onSubmitted }) {
                 </p>
               )}
             <div className="peer-response-layout">
-              <div
-                className="peer-target-picker"
-                role="group"
-                aria-label="평가할 팀원 선택"
-              >
-                {targets.map((target) => (
-                  <button
-                    key={target.targetId}
-                    className={
-                      currentTargetId === target.targetId ? 'active' : ''
+              <aside className="peer-response-sidebar">
+                <section className="evaluation-progress">
+                  <div className="page-heading">
+                    <div>
+                      <h2>
+                        {round.status === 'CLOSED'
+                          ? '마감된 평가 · 내가 저장한 응답'
+                          : submitted
+                            ? '최종 제출 완료'
+                            : '평가 저장 현황'}
+                      </h2>
+                      <p>
+                        {responses.length} / {targets.length}명 저장 ·{' '}
+                        {submitted
+                          ? '제출한 응답은 수정할 수 없습니다.'
+                          : '저장만으로 최종 제출되지 않습니다.'}
+                      </p>
+                    </div>
+                  </div>
+                  <ProgressBar
+                    value={
+                      targets.length ? (responses.length / targets.length) * 100 : 0
                     }
-                    aria-pressed={currentTargetId === target.targetId}
-                    aria-controls={`peer-target-${round.id}-${target.targetId}`}
-                    onClick={() => setActiveTargetId(target.targetId)}
-                  >
-                    {target.name}
-                    <span>
-                      {formStates[target.targetId]?.changed
-                        ? '미저장'
-                        : responses.some(
-                              (response) =>
-                                response.targetId === target.targetId,
-                            )
-                          ? '저장됨'
-                          : '작성 필요'}
-                    </span>
-                  </button>
-                ))}
-              </div>
+                    label="내 평가 작성 진행률"
+                  />
+                </section>
+                <div
+                  className="peer-target-picker"
+                  role="group"
+                  aria-label="평가할 팀원 선택"
+                >
+                  {targets.map((target) => (
+                    <button
+                      key={target.targetId}
+                      className={
+                        currentTargetId === target.targetId ? 'active' : ''
+                      }
+                      aria-pressed={currentTargetId === target.targetId}
+                      aria-controls={`peer-target-${round.id}-${target.targetId}`}
+                      onClick={() => setActiveTargetId(target.targetId)}
+                    >
+                      {target.name}
+                      <span>
+                        {formStates[target.targetId]?.changed
+                          ? '미저장'
+                          : responses.some(
+                                (response) =>
+                                  response.targetId === target.targetId,
+                              )
+                            ? '저장됨'
+                            : '작성 필요'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </aside>
               <div className="peer-grid">
                 {targets.map((target) => {
                   const response = responses.find(
@@ -472,29 +474,32 @@ export default function PeerEvaluation({ context }) {
           평가 상태 새로고침
         </button>
       </div>
-      <p className="field-help">
-        마감 후 스페이스 관리자가 최종 제출된 점수와 사유를 열람할 수 있습니다.
-      </p>
       <ResourceState resource={resource}>
         {rounds.length ? (
           <>
-            <RoundPicker
-              rounds={rounds}
-              selected={round?.id}
-              onSelect={(id) => setParams({ roundId: String(id) })}
-            />
-            <section
-              className="round-context evaluation-round-context"
-              aria-label="선택한 평가 회차"
-            >
-              <strong>
-                {roundLabels[round.type]} · {roundStatusLabels[round.status]}
-              </strong>
-              <span>시작 {formatDate(round.opensAt)}</span>
-              <span className="round-deadline">
-                마감 {formatDate(round.closesAt)}
-              </span>
-            </section>
+            <div className="peer-round-overview">
+              <RoundPicker
+                rounds={rounds}
+                selected={round?.id}
+                onSelect={(id) => setParams({ roundId: String(id) })}
+              />
+              <section
+                className="round-context evaluation-round-context"
+                aria-label="선택한 평가 회차"
+              >
+                <strong>
+                  {roundLabels[round.type]} · {roundStatusLabels[round.status]}
+                </strong>
+                <span>시작 {formatDate(round.opensAt)}</span>
+                <span className="round-deadline">
+                  마감 {formatDate(round.closesAt)}
+                </span>
+              </section>
+              <p className="field-help">
+                마감 후 스페이스 관리자가 최종 제출된 점수와 사유를 열람할 수
+                있습니다.
+              </p>
+            </div>
             {round.status === 'DRAFT' ? (
               <EmptyState>
                 <h2>평가 시작을 기다리고 있습니다.</h2>

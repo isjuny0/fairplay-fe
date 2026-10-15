@@ -96,8 +96,17 @@
   margin-left: auto;
   color: var(--text-primary);
 }
-.main-content .peer-evaluation-page > .evaluation-progress {
-  padding-block: 12px;
+.peer-round-overview {
+  display: grid;
+  gap: 12px;
+}
+.peer-round-overview > .field-help {
+  margin: 0;
+}
+.peer-evaluation-page .evaluation-progress {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
 }
 .peer-evaluation-page .evaluation-progress .page-heading {
   padding-bottom: 8px;
@@ -115,14 +124,20 @@
   height: 4px;
 }
 .peer-response-layout {
+  max-width: 1040px;
   display: grid;
-  grid-template-columns: 180px minmax(0, 1fr);
+  grid-template-columns: 200px minmax(0, 1fr);
   align-items: start;
   gap: 32px;
 }
-.peer-response-layout .peer-target-picker {
+.peer-response-sidebar {
   position: sticky;
   top: 80px;
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.peer-response-layout .peer-target-picker {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -175,8 +190,17 @@
   padding-bottom: 16px;
 }
 .peer-response-layout .score-field {
-  margin-block: 16px;
-  padding-top: 8px;
+  margin-block: 20px;
+  padding-top: 12px;
+}
+.peer-response-layout .peer-card :is(.score-options, .score-scale) {
+  max-width: 400px;
+}
+.peer-response-layout .score-scale {
+  margin-block: 0 4px;
+}
+.peer-response-layout .score-options label {
+  height: 40px;
 }
 .peer-response-layout .score-field details summary {
   cursor: pointer;
@@ -186,17 +210,14 @@
   margin-top: 12px;
 }
 .peer-evaluation-page .peer-submit-bar {
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
-  padding: 16px 0;
+  position: static;
+  max-width: 1040px;
+  padding: 20px 0;
+  margin-top: 8px;
   border: 0;
   border-top: 1px solid var(--border);
   border-radius: 0;
   background: var(--surface);
-}
-.peer-evaluation-page > .field-help {
-  margin: -8px 0 0;
 }
 .peer-evaluation-page .round-tabs {
   gap: 8px;
@@ -343,8 +364,11 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 20px;
   }
-  .peer-response-layout .peer-target-picker {
+  .peer-response-sidebar {
     position: static;
+    gap: 16px;
+  }
+  .peer-response-layout .peer-target-picker {
     flex-direction: row;
     overflow-x: auto;
   }
