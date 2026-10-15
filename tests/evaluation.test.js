@@ -159,27 +159,63 @@ test('리포트는 팀당 한 번 생성하고 공개 후 본인 계산만 제�
     'PUBLISHED',
   );
 });
-test('리포트 공개는 스페이스 전체의 필수 제출을 확인한다', async () => {
+test('리포트 생성과 공개는 해당 팀 제출만 확인하고 AI 점수를 요구하지 않는다', async () => {
   const manager = context('manager');
   resetMockState(manager, 'review');
   const state = getMockState(manager);
+  state.reports = [];
   delete state.submitted[`12:${state.teams[2].members[0].userId}`];
   saveMockState(manager, state);
+  const report = await plannedRequest(manager, '/api/teams/1/report', {
+    method: 'POST',
+  });
+  assert.equal(report.members.length, 3);
+  assert.equal(report.members[0].details.taskRatioPercent, 80);
+  assert.equal(report.members[0].details.taskContributionPercent, 56);
+  assert.equal(report.members[0].details.aiRatioPercent, undefined);
+  const current = getMockState(manager);
+  delete current.submitted[`12:${current.teams[1].members[0].userId}`];
+  saveMockState(manager, current);
   await assert.rejects(
     plannedRequest(manager, '/api/reports/10001/publish', { method: 'POST' }),
     { code: 'REPORT_PUBLICATION_BLOCKED' },
   );
-  state.submitted[`12:${state.teams[2].members[0].userId}`] =
+  current.submitted[`12:${current.teams[1].members[0].userId}`] =
     new Date().toISOString();
-  saveMockState(manager, state);
-  const published = await plannedRequest(
-    manager,
-    '/api/reports/10001/publish',
-    {
-      method: 'POST',
-    },
+  saveMockState(manager, current);
+  assert.equal(
+    (
+      await plannedRequest(manager, '/api/reports/10001/publish', {
+        method: 'POST',
+      })
+    ).status,
+    'PUBLISHED',
   );
-  assert.equal(published.status, 'PUBLISHED');
+});
+
+test('관리자 평가 원문은 마감된 회차의 최종 제출분만 제공한다', async () => {
+  const manager = context('manager');
+  await assert.rejects(
+    previewRequest('/api/evaluation-rounds/12/teams/1/responses'),
+    { code: 'ROUND_NOT_CLOSED' },
+  );
+  const state = getMockState(manager);
+  const evaluator = state.teams[1].members[0].userId;
+  delete state.submitted[`11:${evaluator}`];
+  saveMockState(manager, state);
+  const result = await previewRequest(
+    '/api/evaluation-rounds/11/teams/1/responses',
+  );
+  assert.equal(result.missingCount, 1);
+  assert.ok(result.responses.length > 0);
+  assert.ok(
+    result.responses.every((response) => response.evaluatorId !== evaluator),
+  );
+  context('leader');
+  await assert.rejects(
+    previewRequest('/api/evaluation-rounds/11/teams/1/responses'),
+    { status: 403 },
+  );
 });
 test('AI 검토는 담당자가 수동 요청하고 지정 승인자는 조회만 한다', async () => {
   const leader = context('leader');

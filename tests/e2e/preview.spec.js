@@ -77,14 +77,12 @@ test('팀 홈과 관리자 현황은 가중치 숫자 대신 비율과 계산 �
     page.getByRole('columnheader', { name: '승인된 배분 가중치' }),
   ).toHaveCount(0);
   await expect(
-    page
-      .getByRole('row')
-      .filter({
-        has: page.getByRole('rowheader', { name: '김하늘', exact: true }),
-      }),
+    page.getByRole('row').filter({
+      has: page.getByRole('rowheader', { name: '김하늘', exact: true }),
+    }),
   ).toContainText('80.00%');
   await page.evaluate(() => {
-    const key = 'fairplay:mock:v3:preview:1';
+    const key = 'fairplay:mock:v4:preview:1';
     const state = JSON.parse(localStorage.getItem(key));
     for (const team of Object.values(state.teams))
       for (const task of team.tasks) task.status = 'TODO';
@@ -207,7 +205,7 @@ test('팀원 직접 관리자 주소 접근은 차단하고 관리자는 수행 
   await page.getByRole('button', { name: '김하늘 수행 상세' }).click();
   await page.getByText('인터뷰 결과 기록 파일 · 파일', { exact: true }).click();
   const downloaded = page.waitForEvent('download');
-  await page.getByRole('button', { name: '예시 파일 다운로드' }).click();
+  await page.getByRole('button', { name: '파일 다운로드' }).click();
   expect((await downloaded).suggestedFilename()).toBe('인터뷰-기록.txt');
   await expect(
     page.getByRole('button', { name: '작업 수정', exact: true }),

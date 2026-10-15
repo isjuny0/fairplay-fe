@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { test, expect } from '@playwright/test';
 import { fillDateTime } from './helpers/dateTime.js';
 
@@ -15,7 +16,14 @@ const members = [
 ];
 async function backend(
   page,
-  { manager = false, roundStatus = 'OPEN', participating = true } = {},
+  {
+    manager = false,
+    roundStatus = 'OPEN',
+    participating = true,
+    reportReady = false,
+    reportId = null,
+    reportStatus = null,
+  } = {},
 ) {
   const requests = [];
   const space = {
@@ -52,6 +60,8 @@ async function backend(
       closesAt: '2030-12-01T18:00:00+09:00',
     },
   ];
+  if (reportReady)
+    rounds.push({ ...rounds[0], id: 12, type: 'FINAL', status: 'CLOSED' });
   const task = {
     id: 10,
     teamId: 1,
@@ -182,6 +192,16 @@ async function backend(
           submittedAt: response?.submittedAt || null,
         },
       ]);
+    if (/^\/api\/evaluation-rounds\/\d+\/teams\/1\/responses$/.test(path))
+      return respond({
+        roundId: Number(path.split('/')[3]),
+        type: 'MID',
+        teamId: 1,
+        requiredCount: 2,
+        submittedCount: 0,
+        missingCount: 2,
+        responses: [],
+      });
     if (path === '/api/evaluation-rounds/11/responses/me')
       return respond(response ? [response] : []);
     if (path === `/api/evaluation-rounds/11/responses/${members[1].userId}`) {
@@ -249,6 +269,8 @@ async function backend(
             overdueTaskCount: 2,
             staleTaskCount: 3,
             deliverableCount: 4,
+            reportId,
+            reportStatus,
             ...(url.searchParams.has('teamId')
               ? {
                   members: members.map((member) => ({
@@ -267,17 +289,40 @@ async function backend(
               : {}),
           },
         ],
-        missingPeerSubmissions: [
-          {
-            roundId: 11,
-            type: 'MID',
-            status: roundStatus,
-            requiredCount: roundStatus === 'DRAFT' ? 0 : 2,
-            submittedCount: 0,
-            missingCount: roundStatus === 'DRAFT' ? 0 : 2,
-            teams: [],
-          },
-        ],
+        missingPeerSubmissions: reportReady
+          ? rounds.map((round) => ({
+              roundId: round.id,
+              type: round.type,
+              status: round.status,
+              requiredCount: 4,
+              submittedCount: 2,
+              missingCount: 2,
+              teams: [
+                {
+                  teamId: 1,
+                  requiredCount: 2,
+                  submittedCount: 2,
+                  missingCount: 0,
+                },
+                {
+                  teamId: 2,
+                  requiredCount: 2,
+                  submittedCount: 0,
+                  missingCount: 2,
+                },
+              ],
+            }))
+          : [
+              {
+                roundId: 11,
+                type: 'MID',
+                status: roundStatus,
+                requiredCount: roundStatus === 'DRAFT' ? 0 : 2,
+                submittedCount: 0,
+                missingCount: roundStatus === 'DRAFT' ? 0 : 2,
+                teams: [],
+              },
+            ],
       });
     if (path === '/api/tasks/10/ai-review') {
       if (method === 'POST') {
@@ -422,7 +467,7 @@ test('관리자 대시보드는 현재 DTO의 가중 진행률과 선택 팀 구
   await expect(page.getByText('AI 확인 필요', { exact: true })).toHaveCount(0);
   await expect(
     page.getByRole('columnheader', { name: '리포트', exact: true }),
-  ).toHaveCount(0);
+  ).toHaveCount(1);
   await expect(
     page.getByRole('heading', { name: /팀원 수행 현황/ }),
   ).toHaveCount(0);
@@ -709,4 +754,484 @@ test('AI 조회의 권한 오류에서는 폴링과 새 검토 요청을 제공�
   await expect(
     page.getByRole('button', { name: 'AI 검토 요청', exact: true }),
   ).toHaveCount(0);
+});
+
+const contributionDetails = (percent) => ({
+  taskRatioPercent: percent,
+  midRatioPercent: percent,
+  finalRatioPercent: percent,
+  taskContributionPercent: percent * 0.7,
+  midContributionPercent: percent * 0.1,
+  finalContributionPercent: percent * 0.2,
+  roundingAdjustmentPercent: 0,
+  totalPercent: percent,
+});
+function reportResponse(manager, status = 'UNPUBLISHED') {
+  return {
+    id: 40,
+    teamId: 1,
+    status,
+    cutoffAt: '2026-10-14T10:00:00Z',
+    createdAt: '2026-10-15T10:00:00Z',
+    publishedAt: status === 'PUBLISHED' ? '2026-10-15T11:00:00Z' : null,
+    totalPercent: 100,
+    members: members.map((member, index) => ({
+      userId: member.userId,
+      name: member.name,
+      contributionPercent: index ? 40 : 60,
+      ...(manager ? { details: contributionDetails(index ? 40 : 60) } : {}),
+    })),
+    myDetails: manager ? null : contributionDetails(60),
+  };
+}
+async function reportBackend(
+  page,
+  {
+    manager = true,
+    initialReport = null,
+    generateError = null,
+    publishError = null,
+    getError = null,
+  } = {},
+) {
+  const fixture = await backend(page, {
+    manager,
+    roundStatus: 'CLOSED',
+    reportReady: true,
+  });
+  let report = initialReport;
+  await page.route('**/api/**', async (route) => {
+    const request = route.request(),
+      url = new URL(request.url());
+    if (
+      !['/api/teams/1/report', '/api/reports/40/publish'].includes(url.pathname)
+    )
+      return route.fallback();
+    fixture.requests.push({
+      path: url.pathname,
+      method: request.method(),
+      query: url.search,
+      body: request.postData(),
+      headers: request.headers(),
+    });
+    const error = url.pathname.endsWith('/publish')
+      ? publishError
+      : request.method() === 'POST'
+        ? generateError
+        : getError;
+    if (error)
+      return route.fulfill({
+        status: error.status || 409,
+        json: { code: error.code, message: error.message || '서버 거절' },
+      });
+    if (url.pathname.endsWith('/publish'))
+      report = {
+        ...report,
+        status: 'PUBLISHED',
+        publishedAt: '2026-10-15T11:00:00Z',
+      };
+    else if (request.method() === 'POST') report ||= reportResponse(manager);
+    return route.fulfill({ json: report });
+  });
+  return fixture;
+}
+
+test('리포트를 실제 생성·검토·공개하고 다른 팀 미제출은 공개를 막지 않는다', async ({
+  page,
+}) => {
+  const fixture = await reportBackend(page);
+  await page.goto('/spaces/1/reports');
+  await expect(
+    page.getByRole('button', { name: '리포트 생성', exact: true }),
+  ).toBeEnabled();
+  await page.getByRole('button', { name: '리포트 생성', exact: true }).click();
+  await page.getByText('담당자님의 계산 근거 보기', { exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: '담당자님의 계산 근거' }),
+  ).toBeVisible();
+  await page.getByText('승인자님의 계산 근거 보기', { exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: '승인자님의 계산 근거' }),
+  ).toBeVisible();
+  await expect(page.getByText('목업', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('AI 작업 평가', { exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: '리포트 공개', exact: true }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: '공개 확정' })
+    .click();
+  await expect(
+    page.getByText('공개된 최종 결과', { exact: true }),
+  ).toBeVisible();
+  for (const path of ['/api/teams/1/report', '/api/reports/40/publish']) {
+    const request = fixture.requests.find(
+      (request) => request.path === path && request.method === 'POST',
+    );
+    expect(request.body).toBeNull();
+    expect(request.query).toBe('');
+    expect(request.headers['x-csrf-token']).toBe('test-token');
+  }
+  await page.reload();
+  await expect(
+    page.getByText('공개된 최종 결과', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: '리포트 공개', exact: true }),
+  ).toHaveCount(0);
+});
+
+test('팀원은 공개 결과와 본인 근거만 보고 관리 API를 호출하지 않는다', async ({
+  page,
+}) => {
+  const fixture = await reportBackend(page, {
+    manager: false,
+    initialReport: reportResponse(false, 'PUBLISHED'),
+  });
+  await page.goto('/spaces/1/teams/1/reports');
+  await page.getByText('나의 계산 근거 보기', { exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: '나의 계산 근거' }),
+  ).toBeVisible();
+  await expect(page.getByText('승인 작업', { exact: true })).toBeVisible();
+  await expect(page.getByText('승인자님의 계산 근거 보기')).toHaveCount(0);
+  await expect(
+    page.getByRole('heading', { name: '동료 평가 원문', exact: true }),
+  ).toHaveCount(0);
+  expect(
+    fixture.requests.some(
+      (request) =>
+        request.path.endsWith('/manager-dashboard') ||
+        /teams\/1\/responses$/.test(request.path),
+    ),
+  ).toBe(false);
+});
+
+test('미공개 리포트 null과 실제 404를 구분하고 오류를 목업으로 바꾸지 않는다', async ({
+  page,
+}) => {
+  await reportBackend(page, { manager: false });
+  await page.goto('/spaces/1/teams/1/reports');
+  await expect(
+    page.getByRole('heading', { name: '공개된 리포트가 없습니다.' }),
+  ).toBeVisible();
+  await page.route('**/api/teams/1/report', (route) =>
+    route.fulfill({
+      status: 404,
+      json: { code: 'TEAM_NOT_FOUND', message: '조회 대상 팀이 없습니다.' },
+    }),
+  );
+  await page.getByRole('button', { name: '리포트·준비 상태 새로고침' }).click();
+  await expect(page.getByRole('alert')).toContainText(
+    '조회 대상 팀이 없습니다.',
+  );
+  await expect(
+    page.getByRole('heading', { name: '공개된 리포트가 없습니다.' }),
+  ).toHaveCount(0);
+  await expect(page.getByText('팀 기여도 리포트', { exact: true })).toHaveCount(
+    0,
+  );
+});
+
+test('표시상 마감 후에도 서버 마감 정리와 승인 작업 부족 오류를 안내한다', async ({
+  page,
+}) => {
+  const fixture = await reportBackend(page, {
+    generateError: { code: 'REPORT_INPUT_INCOMPLETE' },
+  });
+  await page.goto('/spaces/1/reports');
+  await page.getByRole('button', { name: '리포트 생성', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('서버의 마감 정리');
+  await expect(
+    page.getByRole('heading', { name: '생성된 리포트가 없습니다.' }),
+  ).toBeVisible();
+  expect(
+    fixture.requests.filter(
+      (request) =>
+        request.path === '/api/teams/1/report' && request.method === 'POST',
+    ),
+  ).toHaveLength(1);
+  await page.route('**/api/teams/1/report', (route) =>
+    route.request().method() === 'POST'
+      ? route.fulfill({
+          status: 409,
+          json: { code: 'REPORT_UNCALCULABLE', message: '계산 불가' },
+        })
+      : route.fallback(),
+  );
+  await page.getByRole('button', { name: '리포트 생성', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText(
+    '승인 작업 또는 평가 입력이 부족',
+  );
+});
+
+test('리포트 공개 실패는 비공개 결과를 유지하고 자동 재요청하지 않는다', async ({
+  page,
+}) => {
+  const fixture = await reportBackend(page, {
+    initialReport: reportResponse(true),
+    publishError: { code: 'REPORT_PUBLICATION_BLOCKED' },
+  });
+  await page.goto('/spaces/1/reports');
+  await page.getByRole('button', { name: '리포트 공개', exact: true }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: '공개 확정' })
+    .click();
+  await expect(page.getByRole('dialog').getByRole('alert')).toContainText(
+    '해당 팀의 두 회차 마감',
+  );
+  await expect(
+    page.getByText('관리자 검토용 비공개 리포트', { exact: true }),
+  ).toBeVisible();
+  expect(
+    fixture.requests.filter((request) => request.path.endsWith('/publish')),
+  ).toHaveLength(1);
+});
+
+test('관리자는 부분 제출된 평가 원문을 읽고 OPEN 회차 원문은 호출하지 않는다', async ({
+  page,
+}) => {
+  const fixture = await backend(page, {
+    manager: true,
+    roundStatus: 'CLOSED',
+    reportReady: true,
+  });
+  fixture.rounds[1].status = 'OPEN';
+  await page.route('**/api/evaluation-rounds/11/teams/1/responses', (route) =>
+    route.fulfill({
+      json: {
+        roundId: 11,
+        type: 'MID',
+        teamId: 1,
+        requiredCount: 2,
+        submittedCount: 1,
+        missingCount: 1,
+        responses: [
+          {
+            evaluatorId: members[0].userId,
+            evaluatorName: '평가 작성자',
+            targetId: members[1].userId,
+            targetName: '평가 대상자',
+            scores: {
+              taskExecution: 4,
+              responsibility: 3,
+              collaboration: 2,
+              communication: 5,
+            },
+            reason: '관리자 전용 제출 사유입니다.',
+            submittedAt: '2026-10-15T10:00:00Z',
+          },
+        ],
+      },
+    }),
+  );
+  await page.goto('/spaces/1/rounds');
+  const panel = page.getByRole('region', { name: '관리자 동료 평가 상세' });
+  await expect(panel.getByText('평가 작성자 → 평가 대상자')).toBeVisible();
+  await expect(panel.getByText('관리자 전용 제출 사유입니다.')).toBeVisible();
+  await expect(panel).toContainText('미제출 1명');
+  await panel.getByLabel('원문 조회 회차').selectOption('12');
+  await expect(panel).toContainText('회차 마감 후 최종 제출된 평가를 조회');
+  await expect(panel.getByText('관리자 전용 제출 사유입니다.')).toHaveCount(0);
+  expect(
+    fixture.requests.some(
+      (request) =>
+        request.path === '/api/evaluation-rounds/12/teams/1/responses',
+    ),
+  ).toBe(false);
+});
+
+test('관리자 평가 원문은 마감 정리 대기를 안내하고 권한 오류 후 원문을 숨긴다', async ({
+  page,
+}) => {
+  await backend(page, { manager: true, roundStatus: 'CLOSED' });
+  let forbidden = false;
+  await page.route('**/api/evaluation-rounds/11/teams/1/responses', (route) =>
+    route.fulfill({
+      status: forbidden ? 403 : 409,
+      json: {
+        code: forbidden ? 'FORBIDDEN' : 'ROUND_NOT_CLOSED',
+        message: '관리자 권한이 없습니다.',
+      },
+    }),
+  );
+  await page.goto('/spaces/1/dashboard');
+  const panel = page.getByRole('region', { name: '관리자 동료 평가 상세' });
+  await expect(panel).toContainText('마감 정리가 아직 끝나지 않았습니다.');
+  forbidden = true;
+  await panel.getByRole('button', { name: '평가 원문 새로고침' }).click();
+  await expect(panel.getByRole('alert')).toContainText(
+    '관리자 권한이 없습니다.',
+  );
+});
+
+test('대시보드 서버 리포트 상태에서 검토 화면으로 진입한다', async ({
+  page,
+}) => {
+  await backend(page, {
+    manager: true,
+    reportId: 40,
+    reportStatus: 'PUBLISHED',
+  });
+  await page.goto('/spaces/1/dashboard');
+  const table = page.locator('.desktop-data-table').first();
+  await expect(table).toContainText('공개');
+  await table.getByRole('button', { name: '리포트 검토 화면' }).click();
+  await expect(page).toHaveURL(/\/spaces\/1\/reports\?teamId=1$/);
+});
+
+test('관리자 수행 상세는 요약과 별도 현재 산출물 본문·파일을 실제 API로 읽는다', async ({
+  page,
+}) => {
+  const fixture = await backend(page, { manager: true });
+  await page.route('**/api/teams/1/members/*/contributions', (route) =>
+    route.fulfill({
+      json: [
+        {
+          taskId: 10,
+          title: '서버 담당 작업',
+          status: 'DONE',
+          weight: 3,
+          dueAt: '2026-10-14T10:00:00Z',
+          allocationPercent: 60,
+          contributionDescription: '서버에 저장한 수행 설명',
+          contributionUpdatedAt: '2026-10-14T10:00:00Z',
+          taskVersion: 2,
+          deliverableSummary: [
+            {
+              id: 90,
+              title: '현재 결과 문서',
+              category: 'OTHER',
+              type: 'TEXT',
+              version: 1,
+            },
+            {
+              id: 91,
+              title: '최종 파일',
+              category: 'OTHER',
+              type: 'FILE',
+              version: 1,
+            },
+          ],
+        },
+      ],
+    }),
+  );
+  const deliverableCalls = [];
+  await page.route('**/api/teams/1/deliverables?*', (route) => {
+    deliverableCalls.push(new URL(route.request().url()).searchParams);
+    return route.fulfill({
+      json: [
+        {
+          id: 90,
+          title: '현재 결과 문서',
+          version: 1,
+          type: 'TEXT',
+          text: '별도 목록 API의 실제 현재 본문',
+        },
+        {
+          id: 91,
+          title: '최종 파일',
+          version: 2,
+          type: 'FILE',
+          file: {
+            originalFilename: '결과.txt',
+            sizeBytes: 6,
+            contentType: 'text/plain',
+          },
+        },
+      ],
+    });
+  });
+  await page.route('**/api/deliverables/91/file', (route) =>
+    route.fulfill({ contentType: 'text/plain', body: 'real file bytes' }),
+  );
+  await page.goto(`/spaces/1/manager/teams/1/members/${members[0].userId}`);
+  await expect(
+    page.getByText('서버에 저장한 수행 설명', { exact: true }),
+  ).toBeVisible();
+  await page.getByText('현재 결과 문서 · 문서', { exact: true }).click();
+  await expect(page.getByText('별도 목록 API의 실제 현재 본문')).toBeVisible();
+  await page.getByText('최종 파일 · 파일', { exact: true }).click();
+  await expect(
+    page.getByText('요약 조회 이후 변경된 최신 산출물입니다.'),
+  ).toBeVisible();
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: '파일 다운로드' }).click();
+  const downloaded = await download;
+  expect(downloaded.suggestedFilename()).toBe('결과.txt');
+  expect(await readFile(await downloaded.path(), 'utf8')).toBe(
+    'real file bytes',
+  );
+  expect(
+    deliverableCalls.every(
+      (query) => query.get('taskId') === '10' && query.get('size') === '100',
+    ),
+  ).toBe(true);
+  expect(
+    fixture.requests.filter((request) => request.method !== 'GET'),
+  ).toEqual([]);
+  await expect(
+    page.getByRole('button', { name: '작업 수정', exact: true }),
+  ).toHaveCount(0);
+  await expect(page.getByText('목업', { exact: true })).toHaveCount(0);
+});
+
+test('평가 미마감 상태에서는 리포트 생성을 막는다', async ({ page }) => {
+  const fixture = await backend(page, { manager: true });
+  await page.route('**/api/teams/1/report', (route) =>
+    route.fulfill({ json: null }),
+  );
+  await page.goto('/spaces/1/reports');
+  await expect(
+    page.getByRole('button', { name: '리포트 생성', exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole('heading', { name: '생성된 리포트가 없습니다.' }),
+  ).toBeVisible();
+  expect(fixture.requests.some((request) => request.method === 'POST')).toBe(
+    false,
+  );
+});
+
+for (const [status, code, message] of [
+  [403, 'FORBIDDEN', '스페이스 관리자만 조회할 수 있습니다.'],
+  [404, 'TEAM_MEMBER_NOT_FOUND', '대상 팀원이 없습니다.'],
+]) {
+  test(`수행 상세 ${status} 오류를 예시 작업이나 빈 목록으로 바꾸지 않는다`, async ({
+    page,
+  }) => {
+    await backend(page, { manager: true });
+    await page.route('**/api/teams/1/members/*/contributions', (route) =>
+      route.fulfill({ status, json: { code, message } }),
+    );
+    await page.goto(`/spaces/1/manager/teams/1/members/${members[0].userId}`);
+    await expect(page.getByRole('alert')).toContainText(message);
+    await expect(
+      page.getByText('현재 담당 작업이 없습니다.', { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole('heading', { name: '담당 작업 요약' }),
+    ).toHaveCount(0);
+  });
+}
+
+test('관리자 원문 회차 새로고침으로 마감된 회차를 조회한다', async ({
+  page,
+}) => {
+  const fixture = await backend(page, { manager: true });
+  await page.goto('/spaces/1/dashboard');
+  const panel = page.getByRole('region', { name: '관리자 동료 평가 상세' });
+  await expect(panel).toContainText('회차 마감 후 최종 제출된 평가를 조회');
+  fixture.rounds[0].status = 'CLOSED';
+  await panel.getByRole('button', { name: '원문 조회 회차 새로고침' }).click();
+  await expect(
+    panel.getByText('최종 제출된 평가 응답이 없습니다.', { exact: true }),
+  ).toBeVisible();
+  expect(
+    fixture.requests.some(
+      (request) =>
+        request.path === '/api/evaluation-rounds/11/teams/1/responses',
+    ),
+  ).toBe(true);
 });

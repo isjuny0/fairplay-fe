@@ -1,3 +1,10 @@
+import {
+  getTeamReport,
+  generateTeamReport,
+  publishReport,
+} from '../src/api/reports.js';
+import { getMemberContributions } from '../src/api/dashboard.js';
+import { getManagerPeerResponses } from '../src/api/evaluations.js';
 import { getAiReview, requestAiReview } from '../src/api/aiReviews.js';
 import { getMyWorkSummary } from '../src/api/teams.js';
 import {
@@ -265,4 +272,42 @@ test('AI 검토 비활성화는 실제 오류로 반환하고 자동으로 재�
     code: 'AI_REVIEW_UNAVAILABLE',
   });
   assert.equal(calls.filter((call) => call.method === 'POST').length, 1);
+});
+
+test('추가된 리포트·관리자 조회는 현재 경로에 쿠키를 전송한다', async () => {
+  await getTeamReport(7);
+  await getMemberContributions(7, '00000000-0000-4000-8000-000000000001');
+  await getManagerPeerResponses(12, 7);
+  assert.deepEqual(
+    calls.map((call) => call.url),
+    [
+      '/api/teams/7/report',
+      '/api/teams/7/members/00000000-0000-4000-8000-000000000001/contributions',
+      '/api/evaluation-rounds/12/teams/7/responses',
+    ],
+  );
+  assert.ok(
+    calls.every(
+      (call) => call.credentials === 'include' && call.method === 'GET',
+    ),
+  );
+});
+test('리포트 생성·공개에는 본문이나 쿼리 없이 CSRF만 전송한다', async () => {
+  await generateTeamReport(7);
+  await publishReport(8);
+  assert.deepEqual(
+    calls.slice(1).map((call) => call.url),
+    ['/api/teams/7/report', '/api/reports/8/publish'],
+  );
+  assert.ok(
+    calls
+      .slice(1)
+      .every(
+        (call) =>
+          call.method === 'POST' &&
+          call.body === undefined &&
+          call.headers['Content-Type'] === undefined &&
+          call.headers['X-CSRF-TOKEN'] === 'token',
+      ),
+  );
 });

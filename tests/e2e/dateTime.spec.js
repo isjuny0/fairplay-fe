@@ -92,7 +92,7 @@ for (const width of [1440, 390]) {
     await expect(page).toHaveURL(/\/spaces\/3$/);
     const saved = await page.evaluate(
       () =>
-        JSON.parse(localStorage.getItem('fairplay:mock:v3:preview:1'))
+        JSON.parse(localStorage.getItem('fairplay:mock:v4:preview:1'))
           .extraSpace,
     );
     expect(saved.startAt).toBe('2028-02-29T10:45:00+09:00');
@@ -189,10 +189,19 @@ for (const width of [1440, 390, 320]) {
     expect(pickerBox.width).toBeLessThanOrEqual(216);
     expect(pickerBox.height).toBeLessThanOrEqual(240);
     await expect(picker).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-    await expect(picker.locator('.time-picker-options').first()).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-    await expect(picker.locator('.time-picker-options [aria-pressed="true"]').first()).toHaveCSS('background-color', 'rgb(55, 53, 47)');
-    await expect(picker.getByRole('button', { name: '시간 적용', exact: true })).toHaveCSS('background-color', 'rgb(55, 53, 47)');
-    expect(await picker.evaluate(el => el.scrollWidth > el.clientWidth)).toBe(false);
+    await expect(picker.locator('.time-picker-options').first()).toHaveCSS(
+      'background-color',
+      'rgb(255, 255, 255)',
+    );
+    await expect(
+      picker.locator('.time-picker-options [aria-pressed="true"]').first(),
+    ).toHaveCSS('background-color', 'rgb(55, 53, 47)');
+    await expect(
+      picker.getByRole('button', { name: '시간 적용', exact: true }),
+    ).toHaveCSS('background-color', 'rgb(55, 53, 47)');
+    expect(await picker.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(
+      false,
+    );
     expect(Math.abs(pickerBox.x - timeBox.x)).toBeLessThanOrEqual(1);
     expect(pickerBox.y).toBeGreaterThanOrEqual(timeBox.y + timeBox.height);
     expect(pickerBox.y - timeBox.y - timeBox.height).toBeLessThanOrEqual(12);
