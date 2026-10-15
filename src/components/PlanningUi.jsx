@@ -1,16 +1,6 @@
 import { roundLabels, roundStatusLabels } from '../lib/evaluation.js';
 import { peerCriteria } from '../mock/fixtures.js';
 
-export function MockNotice({
-  children = '미구현 API의 예시 데이터입니다. 저장·제출·공개는 이 브라우저에만 반영됩니다.',
-}) {
-  return (
-    <div className="mock-notice">
-      <span className="mock-tag">목업</span>
-      <span>{children}</span>
-    </div>
-  );
-}
 export function MetricCard({ label, value, description, accent = false }) {
   return (
     <article className={`metric-card ${accent ? 'accent' : ''}`}>

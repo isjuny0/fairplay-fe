@@ -64,3 +64,6 @@ export const leaveTeam = (teamId, nextLeaderId) => {
     method: 'DELETE',
   });
 };
+
+export const getMyWorkSummary = (teamId) =>
+  apiRequest(`/api/teams/${teamId}/my-work-summary`);

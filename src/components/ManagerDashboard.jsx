@@ -1,10 +1,12 @@
+import ManagerPeerResponses from './ManagerPeerResponses.jsx';
 import { useSearchParams } from 'react-router';
-import { requestPlanned } from '../api/planned.js';
+import { getManagerDashboard } from '../api/dashboard.js';
 import useResource from '../hooks/useResource.js';
 import useAppNavigate from '../hooks/useAppNavigate.js';
+import { formatDate } from '../lib/domain.js';
 import { spacePath } from '../lib/routes.js';
 import { completedWorkShare, formatPercent } from '../lib/evaluation.js';
-import { MetricCard, MockNotice } from './PlanningUi.jsx';
+import { MetricCard } from './PlanningUi.jsx';
 import { EmptyState, Field, ResourceState } from './ui.jsx';
 
 export default function ManagerDashboard({ context }) {
@@ -12,11 +14,7 @@ export default function ManagerDashboard({ context }) {
   const teamId = params.get('teamId') || '';
   const navigate = useAppNavigate();
   const resource = useResource(
-    () =>
-      requestPlanned(
-        context,
-        `/api/spaces/${context.space.id}/manager-dashboard${teamId ? `?teamId=${teamId}` : ''}`,
-      ),
+    () => getManagerDashboard(context.space.id, teamId),
     [context.space.id, teamId],
   );
   const dashboard = resource.data;
@@ -32,12 +30,15 @@ export default function ManagerDashboard({ context }) {
           현황 새로고침
         </button>
       </div>
-      <MockNotice />
       <ResourceState resource={resource}>
         {dashboard && (
           <>
             <section className="panel next-action-panel">
               <h2>먼저 확인할 팀</h2>
+              <p className="field-help">
+                기준 시각 · {formatDate(dashboard.asOf)} · 가입 대기{' '}
+                {dashboard.pendingApplications}명
+              </p>
               <p className="field-help">
                 마감 지연·작업 정체·승인 대기를 확인하고 필요한 지원을
                 준비하세요.
@@ -90,9 +91,9 @@ export default function ManagerDashboard({ context }) {
                 description="지정 승인자의 검토 대기"
               />
               <MetricCard
-                label="AI 확인 필요"
-                value={`${dashboard.aiNeedsReviewCount}건`}
-                description="유효 점수가 없는 평가"
+                label="장기 정체"
+                value={`${dashboard.staleTaskCount}건`}
+                description="마지막 활동 후 48시간 이상 지난 진행 작업"
               />
             </div>
             <section className="panel">
@@ -100,8 +101,8 @@ export default function ManagerDashboard({ context }) {
                 <div>
                   <h2>팀별 진행 현황</h2>
                   <p>
-                    완료율은 작업 개수 기준입니다. 팀 홈의 예상 작업량을 반영한
-                    진행률과 구분됩니다.
+                    예상 작업량을 반영한 팀 진행률입니다. 실제 수행 시간이나
+                    최종 기여도 점수가 아닙니다.
                   </p>
                 </div>
                 <Field label="조회할 팀">
@@ -134,7 +135,7 @@ export default function ManagerDashboard({ context }) {
                         <th>할 일</th>
                         <th>진행</th>
                         <th>승인 대기</th>
-                        <th>완료율 · 개수</th>
+                        <th>진행률 · 예상 작업량</th>
                         <th>지연 / 정체</th>
                         <th>산출물</th>
                         <th>리포트</th>
@@ -159,11 +160,25 @@ export default function ManagerDashboard({ context }) {
                           </td>
                           <td>{team.deliverableCount}</td>
                           <td>
-                            {team.reportStatus === 'PUBLISHED'
-                              ? '공개'
-                              : team.reportStatus === 'UNPUBLISHED'
-                                ? '비공개'
-                                : '미생성'}
+                            <span>
+                              {team.reportStatus === 'PUBLISHED'
+                                ? '공개'
+                                : team.reportStatus === 'UNPUBLISHED'
+                                  ? '비공개'
+                                  : '미생성'}
+                            </span>
+                            <button
+                              className="secondary-button"
+                              onClick={() =>
+                                navigate(
+                                  `${spacePath(context.space.id)}/reports?teamId=${team.teamId}`,
+                                )
+                              }
+                            >
+                              {team.reportId == null
+                                ? '리포트 생성 화면'
+                                : '리포트 검토 화면'}
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -183,7 +198,7 @@ export default function ManagerDashboard({ context }) {
                     </p>
                     <dl className="card-facts">
                       <div>
-                        <dt>완료율 · 작업 개수</dt>
+                        <dt>진행률 · 예상 작업량</dt>
                         <dd>
                           {formatPercent(team.completionRate, '작업 없음')}
                         </dd>
@@ -205,16 +220,35 @@ export default function ManagerDashboard({ context }) {
                         </dd>
                       </div>
                     </dl>
+                    <p>
+                      리포트 ·{' '}
+                      {team.reportStatus === 'PUBLISHED'
+                        ? '공개'
+                        : team.reportStatus === 'UNPUBLISHED'
+                          ? '비공개'
+                          : '미생성'}
+                    </p>
+                    <button
+                      className="secondary-button"
+                      onClick={() =>
+                        navigate(
+                          `${spacePath(context.space.id)}/reports?teamId=${team.teamId}`,
+                        )
+                      }
+                    >
+                      {team.reportId == null
+                        ? '리포트 생성 화면'
+                        : '리포트 검토 화면'}
+                    </button>
                     <details>
-                      <summary>산출물·리포트 상태</summary>
+                      <summary>산출물·팀 참여 상태</summary>
                       <p>
-                        산출물 {team.deliverableCount}개 · 리포트{' '}
-                        {team.reportStatus === 'PUBLISHED'
-                          ? '공개'
-                          : team.reportStatus === 'UNPUBLISHED'
-                            ? '비공개'
-                            : '미생성'}
+                        산출물 {team.deliverableCount}개 · 가입 대기{' '}
+                        {team.pendingApplications}명
                       </p>
+                      {!team.hasMinimumMembers && (
+                        <p>팀원 2명 이상이 필요합니다.</p>
+                      )}
                     </details>
                   </article>
                 ))}
@@ -234,7 +268,9 @@ export default function ManagerDashboard({ context }) {
                           : '작성 중'}
                     </span>
                     <strong>
-                      {round.submittedCount} / {round.requiredCount}명 제출
+                      {round.status === 'DRAFT'
+                        ? '참여자 고정 전'
+                        : `${round.submittedCount} / ${round.requiredCount}명 제출`}
                     </strong>
                   </div>
                 ))
@@ -242,106 +278,110 @@ export default function ManagerDashboard({ context }) {
                 <p>평가 회차가 없습니다.</p>
               )}
             </section>
-            {dashboard.teams.filter((team) => team.members).map((team) => (
-              <section className="panel" key={team.teamId}>
-                <h2>{team.teamName} · 팀원 수행 현황</h2>
-                <div className="table-scroll desktop-data-table">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>팀원</th>
-                        <th>담당</th>
-                        <th>진행</th>
-                        <th>완료</th>
-                        <th>현재 팀원 완료 비중</th>
-                        <th>공동 수행 설명 미작성</th>
-                        <th>자료 확인</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {team.members.map((member) => (
-                        <tr key={member.userId}>
-                          <th>{member.name}</th>
-                          <td>{member.assignedTaskCount}</td>
-                          <td>{member.inProgressTaskCount}</td>
-                          <td>{member.doneTaskCount}</td>
-                          <td>
-                            {formatPercent(
-                              completedWorkShare(member, team.members),
-                              '완료 작업 없음',
-                            )}
-                          </td>
-                          <td>{member.missingContributionDescriptionCount}</td>
-                          <td>
-                            <button
-                              className="secondary-button"
-                              onClick={() =>
-                                navigate(
-                                  `${spacePath(context.space.id)}/manager/teams/${team.teamId}/members/${member.userId}`,
-                                )
-                              }
-                            >
-                              {member.name} 수행 상세
-                            </button>
-                          </td>
+            {dashboard.teams
+              .filter((team) => team.members)
+              .map((team) => (
+                <section className="panel" key={team.teamId}>
+                  <h2>{team.teamName} · 팀원 수행 현황</h2>
+                  <div className="table-scroll desktop-data-table">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>팀원</th>
+                          <th>담당</th>
+                          <th>진행</th>
+                          <th>완료</th>
+                          <th>현재 팀원 완료 비중</th>
+                          <th>공동 수행 설명 미작성</th>
+                          <th>자료 확인</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="mobile-data-cards">
-                  {team.members.map((member) => (
-                    <article key={member.userId}>
-                      <h3>{member.name}</h3>
-                      <dl className="card-facts">
-                        <div>
-                          <dt>담당 / 진행 / 완료</dt>
-                          <dd>
-                            {member.assignedTaskCount} /{' '}
-                            {member.inProgressTaskCount} /{' '}
-                            {member.doneTaskCount}건
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>공동 수행 설명 미작성</dt>
-                          <dd>
-                            {member.missingContributionDescriptionCount}건
-                          </dd>
-                        </div>
-                      </dl>
-                      <details className="member-extra-facts">
-                        <summary>완료 비중·계산 기준</summary>
-                        <dl className="card-facts">
-                          <div>
-                            <dt>현재 팀원 완료 비중</dt>
-                            <dd>
+                      </thead>
+                      <tbody>
+                        {team.members.map((member) => (
+                          <tr key={member.userId}>
+                            <th>{member.name}</th>
+                            <td>{member.assignedTaskCount}</td>
+                            <td>{member.inProgressTaskCount}</td>
+                            <td>{member.doneTaskCount}</td>
+                            <td>
                               {formatPercent(
                                 completedWorkShare(member, team.members),
                                 '완료 작업 없음',
                               )}
+                            </td>
+                            <td>
+                              {member.missingContributionDescriptionCount}
+                            </td>
+                            <td>
+                              <button
+                                className="secondary-button"
+                                onClick={() =>
+                                  navigate(
+                                    `${spacePath(context.space.id)}/manager/teams/${team.teamId}/members/${member.userId}`,
+                                  )
+                                }
+                              >
+                                {member.name} 수행 상세
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="mobile-data-cards">
+                    {team.members.map((member) => (
+                      <article key={member.userId}>
+                        <h3>{member.name}</h3>
+                        <dl className="card-facts">
+                          <div>
+                            <dt>담당 / 진행 / 완료</dt>
+                            <dd>
+                              {member.assignedTaskCount} /{' '}
+                              {member.inProgressTaskCount} /{' '}
+                              {member.doneTaskCount}건
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>공동 수행 설명 미작성</dt>
+                            <dd>
+                              {member.missingContributionDescriptionCount}건
                             </dd>
                           </div>
                         </dl>
-                        <p className="field-help">
-                          예상 작업량과 담당 비율을 반영한 현재 팀원의 완료 작업
-                          비중입니다. 최종 기여도 점수가 아닙니다.
-                        </p>
-                      </details>
-                      <button
-                        className="secondary-button"
-                        onClick={() =>
-                          navigate(
-                            `${spacePath(context.space.id)}/manager/teams/${team.teamId}/members/${member.userId}`,
-                          )
-                        }
-                      >
-                        {member.name} 수행 상세
-                      </button>
-                    </article>
-                  ))}
-                </div>
-              </section>
-            ))}
+                        <details className="member-extra-facts">
+                          <summary>완료 비중·계산 기준</summary>
+                          <dl className="card-facts">
+                            <div>
+                              <dt>현재 팀원 완료 비중</dt>
+                              <dd>
+                                {formatPercent(
+                                  completedWorkShare(member, team.members),
+                                  '완료 작업 없음',
+                                )}
+                              </dd>
+                            </div>
+                          </dl>
+                          <p className="field-help">
+                            예상 작업량과 담당 비율을 반영한 현재 팀원의 완료
+                            작업 비중입니다. 최종 기여도 점수가 아닙니다.
+                          </p>
+                        </details>
+                        <button
+                          className="secondary-button"
+                          onClick={() =>
+                            navigate(
+                              `${spacePath(context.space.id)}/manager/teams/${team.teamId}/members/${member.userId}`,
+                            )
+                          }
+                        >
+                          {member.name} 수행 상세
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              ))}
             <p className="field-help">
               현재 팀원 완료 비중은 현재 팀원들의 완료 작업에서 각자가 맡은 몫을
               예상 작업량과 담당 비율로 계산한 값입니다. 실제 시간이나 최종
@@ -355,6 +395,7 @@ export default function ManagerDashboard({ context }) {
           </>
         )}
       </ResourceState>
+      <ManagerPeerResponses context={context} teamId={teamId || undefined} />
     </section>
   );
 }

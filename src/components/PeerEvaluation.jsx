@@ -4,9 +4,15 @@ import {
   useUnsavedChanges,
 } from '../hooks/useInteractions.js';
 import { useSearchParams } from 'react-router';
-import { getRounds, requestPlanned } from '../api/planned.js';
+import {
+  listEvaluationRounds,
+  listPeerTargets,
+  getMyPeerResponses,
+  savePeerResponse,
+  submitPeerEvaluation,
+} from '../api/evaluations.js';
 import useResource from '../hooks/useResource.js';
-import { formatDate } from '../lib/domain.js';
+import { formatDate, memberName } from '../lib/domain.js';
 import { parseRouteId } from '../lib/routes.js';
 import {
   roundLabels,
@@ -16,7 +22,7 @@ import {
 } from '../lib/evaluation.js';
 import { peerCriteria, peerGuides } from '../mock/fixtures.js';
 import { EmptyState, ErrorNotice, Field, Modal, ResourceState } from './ui.jsx';
-import { MockNotice, ProgressBar, RoundPicker } from './PlanningUi.jsx';
+import { ProgressBar, RoundPicker } from './PlanningUi.jsx';
 
 function PeerResponseForm({
   target,
@@ -57,22 +63,15 @@ function PeerResponseForm({
         setBusy(true);
         setError(null);
         try {
-          await requestPlanned(
-            context,
-            `/api/evaluation-rounds/${round.id}/responses/${target.targetId}`,
-            {
-              method: 'PUT',
-              body: {
-                scores: Object.fromEntries(
-                  Object.entries(scores).map(([code, score]) => [
-                    code,
-                    Number(score),
-                  ]),
-                ),
-                reason: reason.trim() || null,
-              },
-            },
-          );
+          await savePeerResponse(round.id, target.targetId, {
+            scores: Object.fromEntries(
+              Object.entries(scores).map(([code, score]) => [
+                code,
+                Number(score),
+              ]),
+            ),
+            reason: reason.trim() || null,
+          });
           onSaved();
           notify(`${target.name}님의 평가를 저장했습니다.`);
         } catch (error) {
@@ -160,13 +159,15 @@ function PeerResponseForm({
 }
 function RoundResponses({ context, round, onSubmitted }) {
   const resource = useResource(async () => {
-    const [targets, responses] = await Promise.all([
-      requestPlanned(context, `/api/evaluation-rounds/${round.id}/targets`),
-      requestPlanned(
-        context,
-        `/api/evaluation-rounds/${round.id}/responses/me`,
-      ),
-    ]);
+    const responses = await getMyPeerResponses(round.id);
+    const targets =
+      round.status === 'CLOSED'
+        ? responses.map((response) => ({
+            targetId: response.targetId,
+            name: memberName(context.members, response.targetId),
+            submittedAt: response.submittedAt,
+          }))
+        : await listPeerTargets(round.id);
     return { targets, responses };
   }, [round.id, round.status]);
   const [confirming, setConfirming] = useState(false),
@@ -192,7 +193,10 @@ function RoundResponses({ context, round, onSubmitted }) {
   const submitted =
     round.mySubmissionStatus === 'SUBMITTED' ||
     targets.some((target) => target.submittedAt);
-  const locked = round.status !== 'OPEN' || submitted;
+  const locked =
+    round.status !== 'OPEN' ||
+    new Date(round.closesAt) <= new Date() ||
+    submitted;
   const currentTargetId = targets.some(
     (target) => target.targetId === activeTargetId,
   )
@@ -213,9 +217,11 @@ function RoundResponses({ context, round, onSubmitted }) {
               <div className="page-heading">
                 <div>
                   <h2>
-                    {submitted
-                      ? '최종 제출 완료'
-                      : '대상별로 저장 후 최종 제출하세요'}
+                    {round.status === 'CLOSED'
+                      ? '마감된 평가 · 내가 저장한 응답'
+                      : submitted
+                        ? '최종 제출 완료'
+                        : '대상별로 저장 후 최종 제출하세요'}
                   </h2>
                   <p>
                     {responses.length} / {targets.length}명 저장 ·{' '}
@@ -338,11 +344,7 @@ function RoundResponses({ context, round, onSubmitted }) {
                 if (!readyToSubmit) return;
                 setBusy(true);
                 try {
-                  await requestPlanned(
-                    context,
-                    `/api/evaluation-rounds/${round.id}/submit`,
-                    { method: 'POST' },
-                  );
+                  await submitPeerEvaluation(round.id);
                   setConfirming(false);
                   resource.reload();
                   onSubmitted();
@@ -363,7 +365,7 @@ function RoundResponses({ context, round, onSubmitted }) {
 }
 export default function PeerEvaluation({ context }) {
   const resource = useResource(
-    () => getRounds(context),
+    () => listEvaluationRounds(context.space.id),
     [context.space.id, context.user.id],
   );
   const [params, setParams] = useSearchParams();
@@ -382,7 +384,12 @@ export default function PeerEvaluation({ context }) {
           대상에서 제외됩니다.
         </p>
       </div>
-      <MockNotice />
+      <button className="secondary-button" onClick={resource.reload}>
+        평가 상태 새로고침
+      </button>
+      <p className="field-help">
+        마감 후 스페이스 관리자가 최종 제출된 점수와 사유를 열람할 수 있습니다.
+      </p>
       <ResourceState resource={resource}>
         {rounds.length ? (
           <>
@@ -404,6 +411,8 @@ export default function PeerEvaluation({ context }) {
                 <h2>평가 시작을 기다리고 있습니다.</h2>
                 <p>관리자가 회차를 시작하면 평가할 팀원이 표시됩니다.</p>
               </EmptyState>
+            ) : round.mySubmissionStatus === 'NOT_PARTICIPATING' ? (
+              <EmptyState>이 평가 회차의 고정 참여자가 아닙니다.</EmptyState>
             ) : (
               <RoundResponses
                 key={`${round.id}-${round.version}`}
