@@ -447,3 +447,15 @@ test('미리보기 연결 산출물이 없으면 완료 요청을 거절하고 �
     'IN_PROGRESS',
   );
 });
+
+test('본인 수행 지연은 마감 지난 할 일·진행 중만 집계하고 승인 대기는 분리한다', () => {
+  const tasks = ['TODO', 'IN_PROGRESS', 'PENDING_APPROVAL', 'DONE'].map((status, index) => ({
+    id: index + 1, status, weight: 1, dueAt: '2030-01-01T00:00:00Z',
+    assignees: [{ userId: 'me', allocationPercent: 100 }],
+  }));
+  tasks.push({ ...tasks[0], id: 5, assignees: [{ userId: 'other', allocationPercent: 100 }] });
+  tasks.push({ ...tasks[0], id: 6, dueAt: '2030-01-03T00:00:00Z' });
+  const summary = workSummary(1, 'me', tasks, new Date('2030-01-02T00:00:00Z'));
+  assert.equal(summary.myOverdueTaskCount, 2);
+  assert.equal(summary.myPendingApprovalCount, 1);
+});

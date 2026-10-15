@@ -12,6 +12,8 @@ async function openPreview(page, path, role = 'leader', scenario = 'active') {
 }
 
 async function fillEvaluation(page, member, score = 4) {
+  if (!(await page.getByLabel(`${member} 작업 수행 ${score}점`, { exact: true }).isVisible()))
+    await page.getByRole('group', { name: '평가할 팀원 선택', exact: true }).getByRole('button', { name: new RegExp(`^${member}`) }).click();
   for (const criterion of ['작업 수행', '책임감', '협업', '의사소통'])
     await page
       .getByLabel(`${member} ${criterion} ${score}점`, { exact: true })
@@ -33,6 +35,7 @@ test('저장 후 바꾼 평가는 제출을 막고 다시 저장한 최신 점�
   await expect(
     page.getByRole('button', { name: '최종 제출', exact: true }),
   ).toBeEnabled();
+  await page.getByRole('button', { name: '이지원 저장됨', exact: true }).click();
   await page.getByLabel('이지원 작업 수행 5점', { exact: true }).check();
   await expect(page.getByText('미저장 변경', { exact: true })).toBeVisible();
   await expect(
@@ -110,16 +113,16 @@ test('작업 입력창의 Escape와 취소는 미저장 내용을 확인하고 �
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
-test('모바일 대상 전환과 다른 대상 저장에도 미저장 점수를 보존한다', async ({
+for (const width of [1440, 390]) test(`평가 대상 전환 ${width}px: 다른 대상 저장에도 미저장 점수를 보존한다`, async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+  await page.setViewportSize({ width, height: 844 });
   await openPreview(page, '/spaces/1/teams/1');
-  await expect(page.getByLabel('미리보기 역할')).toBeHidden();
-  await expect(
-    page.getByRole('navigation', { name: '팀 메뉴', exact: true }),
-  ).toBeHidden();
-  await page.getByText('더보기 ⌄', { exact: true }).click();
+  if (width < 721) {
+    await expect(page.getByLabel('미리보기 역할')).toBeHidden();
+    await expect(page.getByRole('navigation', { name: '팀 메뉴', exact: true })).toBeHidden();
+    await page.getByText('더보기 ⌄', { exact: true }).click();
+  }
   await page.getByRole('button', { name: '동료 평가', exact: true }).click();
   await fillEvaluation(page, '이지원');
   await page
@@ -872,3 +875,54 @@ for (const width of [1440, 320]) {
     expect((await downloaded).suggestedFilename()).toBe('인터뷰-기록.txt');
   });
 }
+
+test('팀 홈 수행 지연에서 승인 대기는 제외하고 일반 마감 필터에서는 함께 확인한다', async ({ page }) => {
+  await openPreview(page, '/spaces/1/teams/1');
+  await page.evaluate(() => {
+    const key = 'fairplay:mock:v5:preview:1';
+    const state = JSON.parse(localStorage.getItem(key));
+    state.teams[1].tasks.find(task => task.id === 103).dueAt = new Date(Date.now() - 60000).toISOString();
+    localStorage.setItem(key, JSON.stringify(state));
+  });
+  await page.reload();
+  await expect(page.getByRole('button', { name: /내 마감 지연.*1건/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /내 승인 대기.*1건/ })).toBeVisible();
+  await page.getByRole('button', { name: /내 마감 지연/ }).click();
+  await expect(page.getByRole('button', { name: '서비스 흐름 설계', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '설문 결과 분석', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '수행 지연: 할 일·진행 중 해제', exact: true })).toBeVisible();
+  await page.reload();
+  expect(new URL(page.url()).searchParams.get('overdue')).toBe('work');
+  await expect(page.getByRole('button', { name: '서비스 흐름 설계', exact: true })).toHaveCount(0);
+  await page.getByLabel('마감 지난 작업만').uncheck();
+  await page.getByLabel('마감 지난 작업만').check();
+  await expect(page.getByRole('button', { name: '서비스 흐름 설계', exact: true })).toBeVisible();
+});
+
+test('평가 마감 시각이 지나면 열린 작성 화면도 조회 전용으로 바뀐다', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-10-16T09:00:00+09:00') });
+  await openPreview(page, peerPath);
+  await page.evaluate(() => {
+    const key = 'fairplay:mock:v5:preview:1';
+    const state = JSON.parse(localStorage.getItem(key));
+    state.rounds.find(round => round.status === 'OPEN').closesAt = new Date(Date.now() + 30000).toISOString();
+    localStorage.setItem(key, JSON.stringify(state));
+  });
+  await page.reload();
+  const score = page.getByLabel('이지원 작업 수행 5점', { exact: true });
+  await expect(score).toBeEnabled();
+  for (const member of ['이지원', '박서연']) {
+    await fillEvaluation(page, member);
+    await page.getByRole('button', { name: `${member} 평가 저장`, exact: true }).click();
+  }
+  await page.getByRole('button', { name: '최종 제출', exact: true }).click();
+  const confirmation = page.getByRole('dialog', { name: '동료 평가 최종 제출', exact: true });
+  await expect(confirmation.getByRole('button', { name: '제출 확정', exact: true })).toBeEnabled();
+  await page.clock.fastForward(60000);
+  await expect(confirmation.getByRole('button', { name: '제출 확정', exact: true })).toBeDisabled();
+  await confirmation.getByRole('button', { name: '취소', exact: true }).click();
+  await page.getByRole('button', { name: '이지원 저장됨', exact: true }).click();
+  await expect(score).toBeDisabled();
+  await expect(page.getByText('평가 시간이 마감되어 저장·제출할 수 없습니다. 저장한 응답을 확인하세요.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '최종 제출', exact: true })).toHaveCount(0);
+});

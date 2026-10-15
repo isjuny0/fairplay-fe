@@ -101,6 +101,7 @@ test('대상별 평가를 저장하고 제출하면 새로고침 후에도 수�
     path: '/spaces/1/teams/1/peer-evaluations',
   });
   for (const member of ['이지원', '박서연']) {
+    await page.getByRole('group', { name: '평가할 팀원 선택', exact: true }).getByRole('button', { name: new RegExp(`^${member}`) }).click();
     for (const criterion of ['작업 수행', '책임감', '협업', '의사소통'])
       await page
         .getByLabel(`${member} ${criterion} 4점`, { exact: true })
@@ -174,7 +175,7 @@ test('관리자가 리포트를 공개하면 팀원은 본인 계산 근거를 �
   await expect(
     page.getByRole('heading', { name: '나의 계산 근거' }),
   ).toBeVisible();
-  await expect(page.getByText('이지원 · 나', { exact: true })).toBeVisible();
+  await expect(page.getByRole('rowheader').filter({ hasText: '이지원' })).toContainText('나');
   expect(calls).toEqual([]);
 });
 test('AI 검토는 담당자가 선택적으로 요청하고 지정 승인자는 조회만 한다', async ({
