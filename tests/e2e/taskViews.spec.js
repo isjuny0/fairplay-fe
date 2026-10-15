@@ -494,3 +494,109 @@ test('작업 표는 가로·세로로 스크롤해도 열 제목과 작업 제�
   expect(await table.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
   await page.screenshot({ path: testInfo.outputPath('task-table-sticky.png') });
 });
+
+
+test('빈 달·기간에서 현재 검색과 담당 조건을 유지한 채 작업 있는 기간으로 이동한다', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await seed(page, 'calendar');
+  await page.getByLabel('작업 제목 검색').fill('서비스');
+  await page.getByRole('checkbox', { name: '내 담당 작업만', exact: true }).check();
+  for (const [label, input] of [['캘린더', '조회 월'], ['타임라인', '조회 시작 월']]) {
+    await page.getByRole('button', { name: label, exact: true }).click();
+    await page.getByLabel(input, { exact: true }).fill('2032-01');
+    await expect(page.locator('.list-summary')).toContainText('현재 기간 0개');
+    await expect(page.getByText('검색 결과 1개의 작업은 다른 기간에 있습니다.', { exact: true })).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath(label === '캘린더' ? 'task-calendar-empty.png' : 'task-timeline-empty.png'), fullPage: true });
+    await page.getByRole('button', { name: '작업 있는 기간으로 이동', exact: true }).click();
+    await expect(page.getByLabel(input, { exact: true })).toHaveValue('2026-11');
+    await expect(page.getByLabel('작업 제목 검색')).toHaveValue('서비스');
+    await expect(page.getByRole('checkbox', { name: '내 담당 작업만', exact: true })).toBeChecked();
+    await expect(page.locator('.list-summary')).toContainText('현재 기간 1개');
+  }
+  const help = page.getByText('타임라인 읽는 법', { exact: true });
+  await help.click();
+  await expect(page.getByText('막대의 위치와 겹침으로 일정의 순서와 병행 구간을 비교합니다.', { exact: false })).toBeVisible();
+  await expect(page.getByText('기간 내 작업', { exact: false })).toHaveCount(0);
+});
+
+test('검색으로 빈 일정은 필터만 초기화하고 등록된 작업이 없으면 이동을 제안하지 않는다', async ({ page }) => {
+  await seed(page, 'timeline');
+  await page.getByLabel('조회 시작 월').fill('2032-01');
+  await page.getByLabel('작업 제목 검색').fill('없는 작업');
+  await expect(page.getByRole('button', { name: '작업 있는 기간으로 이동', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: '필터 초기화', exact: true }).click();
+  await expect(page.getByLabel('작업 제목 검색')).toHaveValue('');
+  await expect(page.getByLabel('조회 시작 월')).toHaveValue('2032-01');
+  await expect(page.getByRole('button', { name: '작업 있는 기간으로 이동', exact: true })).toBeVisible();
+  await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('fairplay:mock:v5:preview:1'));
+    state.teams[1].tasks = [];
+    localStorage.setItem('fairplay:mock:v5:preview:1', JSON.stringify(state));
+  });
+  await page.getByRole('button', { name: '새로고침', exact: true }).click();
+  await expect(page.getByText('아직 등록된 작업이 없습니다. 새 작업을 만들어 시작하세요.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '작업 있는 기간으로 이동', exact: true })).toHaveCount(0);
+});
+
+test('마지막 보기·너비는 재방문에 복원하고 주소의 보기·필터·월은 우선 적용한다', async ({ page }) => {
+  await seed(page, 'timeline');
+  const resizer = page.getByRole('separator', { name: '작업명 영역 너비' });
+  await resizer.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(resizer).toHaveAttribute('aria-valuenow', '316');
+  await page.reload();
+  await expect(resizer).toHaveAttribute('aria-valuenow', '316');
+  await page.getByRole('button', { name: '팀 홈', exact: true }).click();
+  await page.getByRole('button', { name: '작업', exact: true }).click();
+  await expect(page.getByRole('button', { name: '타임라인', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(resizer).toHaveAttribute('aria-valuenow', '316');
+  await page.goto('/preview/spaces/1/teams/1/tasks?view=calendar&month=2026-11&q=서비스&status=PENDING_APPROVAL');
+  await expect(page.getByRole('button', { name: '캘린더', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByLabel('조회 월')).toHaveValue('2026-11');
+  await expect(page.getByLabel('작업 제목 검색')).toHaveValue('서비스');
+  await expect(page.getByLabel('작업 상태', { exact: true })).toHaveValue('PENDING_APPROVAL');
+  await page.goto('/preview/spaces/1/teams/1/tasks?month=2026-11');
+  await expect(page.getByRole('button', { name: '캘린더', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByLabel('작업 제목 검색')).toHaveValue('');
+  await expect(page.getByLabel('작업 상태', { exact: true })).toHaveValue('ALL');
+  await expect(page).toHaveURL(/view=calendar/);
+  await page.getByRole('button', { name: '보드', exact: true }).click();
+  await page.goBack();
+  await expect(page.getByRole('button', { name: '캘린더', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.goForward();
+  await expect(page.getByRole('button', { name: '보드', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.reload();
+  await expect(page.getByRole('button', { name: '보드', exact: true })).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('손상되거나 범위가 잘못된 보기 설정은 기본값으로 복구한다', async ({ page }) => {
+  await seed(page);
+  await page.evaluate(() => localStorage.setItem('fairplay:task-view-preferences', '{broken'));
+  await page.goto('/preview/spaces/1/teams/1/tasks?month=2026-11');
+  await expect(page.getByRole('button', { name: '보드', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.evaluate(() => localStorage.setItem('fairplay:task-view-preferences', JSON.stringify({ view: 'unknown', labelWidth: 9999 })));
+  await page.goto('/preview/spaces/1/teams/1/tasks?view=timeline&month=2026-11');
+  await expect(page.getByRole('separator', { name: '작업명 영역 너비' })).toHaveAttribute('aria-valuenow', '300');
+});
+
+test('브라우저 설정 저장이 차단되어도 작업 조회·보기 전환·너비 조절이 가능하다', async ({ page }) => {
+  await page.addInitScript(() => {
+    const read = Storage.prototype.getItem;
+    const write = Storage.prototype.setItem;
+    Storage.prototype.getItem = function(key) {
+      if (key === 'fairplay:task-view-preferences') throw new DOMException('Blocked', 'SecurityError');
+      return read.call(this, key);
+    };
+    Storage.prototype.setItem = function(key, value) {
+      if (key === 'fairplay:task-view-preferences') throw new DOMException('Blocked', 'SecurityError');
+      return write.call(this, key, value);
+    };
+  });
+  await seed(page, 'timeline');
+  const resizer = page.getByRole('separator', { name: '작업명 영역 너비' });
+  await resizer.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(resizer).toHaveAttribute('aria-valuenow', '316');
+  await page.getByRole('button', { name: '목록', exact: true }).click();
+  await expect(page.getByRole('table', { name: '정렬된 작업 목록' })).toBeVisible();
+});
