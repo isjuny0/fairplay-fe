@@ -1498,3 +1498,28 @@ h1[tabindex="-1"]:focus {
   .task-month-navigation h2 { font-size: 18px; }
   .task-month-navigation .heading-actions { gap: 6px; }
 }
+
+.timeline-row > .timeline-task-label { grid-column: 1; grid-row: 1; z-index: 3; }
+.timeline-row > .timeline-day { grid-row: 1; }
+.timeline-row > .timeline-marker { align-self: center; justify-self: center; z-index: 1; }
+.timeline-period {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  align-self: center;
+  z-index: 1;
+  min-width: 0;
+  min-height: 36px;
+  margin-inline: 3px;
+  padding: 6px;
+  color: var(--schedule-color);
+  background: var(--schedule-background);
+  border: 1px solid var(--schedule-color);
+  border-radius: 5px;
+  font-size: 12px;
+}
+.timeline-period-title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.timeline-period.continues-before { border-left-style: dashed; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.timeline-period.continues-after { border-right-style: dashed; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.timeline-period:hover { filter: brightness(.96); }

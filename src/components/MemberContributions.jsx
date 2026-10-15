@@ -109,7 +109,8 @@ export default function MemberContributions({ context, targetUserId, onBack }) {
                 </div>
                 <p>
                   예상 작업량: {formatExpectedWorkload(task.weight)} · 본인 배분{' '}
-                  {task.allocationPercent}% · 마감 {formatDate(task.dueAt)}
+                  {task.allocationPercent}% · 시작일 {formatDate(task.startAt)}{' '}
+                  · 마감 {formatDate(task.dueAt)}
                 </p>
                 <h3>본인이 작성한 수행 설명</h3>
                 <p className="preserve-lines">

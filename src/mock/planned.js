@@ -705,6 +705,7 @@ export async function plannedRequest(
           title: task.title,
           status: task.status,
           weight: task.weight,
+          startAt: task.startAt ?? null,
           dueAt: task.dueAt,
           allocationPercent: task.assignees.find(
             (assignment) => assignment.userId === member.userId,
