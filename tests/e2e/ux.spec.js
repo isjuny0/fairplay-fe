@@ -669,7 +669,7 @@ test('팀 홈의 본인·승인 대기·마감 지연은 각 조건의 작업 �
   await page.getByRole('button', { name: /내 마감 지연/ }).click();
   await expect(page.getByLabel('마감 지난 작업만')).toBeChecked();
   await expect(
-    page.getByRole('list', { name: '정렬된 작업 목록' }).getByRole('listitem'),
+    page.getByRole('table', { name: '정렬된 작업 목록' }).locator('tbody tr'),
   ).toHaveCount(1);
   await expect(
     page.getByRole('button', { name: '설문 결과 분석', exact: true }),
@@ -684,7 +684,7 @@ test('작업 목록은 상태를 가로질러 정렬하고 상세 복귀·초기
   await openPreview(page, '/spaces/1/teams/1/tasks');
   await page.getByRole('button', { name: '목록', exact: true }).click();
   await page.getByLabel('작업 정렬').selectOption('newest');
-  const list = page.getByRole('list', { name: '정렬된 작업 목록' });
+  const list = page.getByRole('table', { name: '정렬된 작업 목록' });
   await expect(list.getByRole('button')).toHaveText([
     '조사 결과 요약',
     '최종 발표 자료',
@@ -706,7 +706,7 @@ test('작업 목록은 상태를 가로질러 정렬하고 상세 복귀·초기
   await page
     .getByRole('button', { name: '검색·필터 초기화', exact: true })
     .click();
-  await expect(list.getByRole('listitem')).toHaveCount(6);
+  await expect(list.locator('tbody tr')).toHaveCount(6);
   await page.reload();
   await expect(
     page.getByRole('button', { name: '목록', exact: true }),
