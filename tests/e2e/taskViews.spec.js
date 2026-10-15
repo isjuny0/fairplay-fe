@@ -198,6 +198,17 @@ for (const width of [1440, 320])
         await expect(
           page.getByRole('table', { name: '정렬된 작업 목록' }),
         ).toBeVisible();
+      if (view === 'calendar' || view === 'timeline') {
+        await page.getByRole('button', { name: '일정 넓게 보기', exact: true }).click();
+        const expanded = page.getByRole('dialog', { name: '작업 일정 넓게 보기', exact: true });
+        await expect(expanded).toBeVisible();
+        const bounds = await expanded.boundingBox();
+        expect(bounds.x).toBeGreaterThanOrEqual(0);
+        expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        await expanded.getByRole('button', { name: '닫기', exact: true }).click();
+        await expect(expanded).toHaveCount(0);
+      }
     }
   });
 
@@ -370,4 +381,116 @@ test('타임라인은 긴 목록에서 월 헤더와 작업명을 고정하고 �
   await lateFilter.click();
   await expect(page.getByRole('checkbox', { name: '마감 지난 작업만', exact: true })).not.toBeChecked();
   await expect(timeline.locator('.timeline-row:not(.timeline-header)')).toHaveCount(30);
+});
+
+
+test('검색 결과와 현재 기간을 구분하고 적용한 검색·필터를 하나씩 해제한다', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-10-15T09:00:00Z') });
+  await seed(page, 'timeline');
+  await expect(page.locator('.list-summary')).toContainText('검색 결과 6개 · 전체 6개 · 현재 기간 5개');
+  await page.getByLabel('작업 제목 검색').fill('설문');
+  await page.getByLabel('작업 상태', { exact: true }).selectOption('IN_PROGRESS');
+  await page.getByRole('checkbox', { name: '내 담당 작업만', exact: true }).check();
+  await page.getByRole('checkbox', { name: '마감 지난 작업만', exact: true }).check();
+  await page.getByLabel('작업 정렬').selectOption('newest');
+  const chips = page.getByRole('group', { name: '적용 중인 검색·필터' });
+  await expect(chips.getByRole('button')).toHaveCount(5);
+  await chips.getByRole('button', { name: '검색: 설문 해제', exact: true }).click();
+  await expect(page.getByLabel('작업 제목 검색')).toHaveValue('');
+  await page.reload();
+  await expect(chips.getByRole('button')).toHaveCount(4);
+  await chips.getByRole('button', { name: '상태: 진행 중 해제', exact: true }).click();
+  await expect(page.getByLabel('작업 상태', { exact: true })).toHaveValue('ALL');
+  await expect(page.getByRole('checkbox', { name: '마감 지난 작업만', exact: true })).toBeChecked();
+  for (const name of ['내 담당 해제', '마감 지남 해제', '정렬: 최근 생성 순 해제']) {
+    await chips.getByRole('button', { name, exact: true }).click();
+  }
+  await expect(chips).toHaveCount(0);
+  await expect(page.locator('.list-summary')).toContainText('현재 기간 5개');
+  await page.getByRole('button', { name: '캘린더', exact: true }).click();
+  await expect(page.locator('.list-summary')).toContainText('검색 결과 6개 · 전체 6개 · 현재 기간 5개');
+});
+
+test('일정을 넓게 보고 작업명 너비를 조절해도 조회 조건을 유지하고 원래 크기로 복귀한다', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await seed(page, 'timeline');
+  const timeline = page.getByRole('region', { name: '작업 계획 타임라인' });
+  const normalWidth = (await timeline.boundingBox()).width;
+  const resizer = page.getByRole('separator', { name: '작업명 영역 너비' });
+  await resizer.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(resizer).toHaveAttribute('aria-valuenow', '316');
+  const handle = await resizer.boundingBox();
+  await page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(handle.x + handle.width / 2 + 100, handle.y + handle.height / 2);
+  await page.mouse.up();
+  await expect(resizer).toHaveAttribute('aria-valuenow', '416');
+  await page.getByRole('button', { name: '일정 넓게 보기', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '작업 일정 넓게 보기', exact: true });
+  await expect(dialog).toBeVisible();
+  expect((await timeline.boundingBox()).width).toBeGreaterThan(normalWidth);
+  await expect(resizer).toHaveAttribute('aria-valuenow', '416');
+  await expect(page.locator('body')).toHaveCSS('overflow', 'hidden');
+  await page.getByLabel('작업 제목 검색').fill('서비스');
+  await expect(page.locator('.list-summary')).toContainText('검색 결과 1개');
+  await page.screenshot({ path: testInfo.outputPath('task-timeline-expanded.png') });
+  const task = dialog.getByRole('button', { name: '서비스 흐름 설계', exact: true });
+  await task.focus();
+  await expect(page.getByRole('tooltip')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('tooltip')).toHaveCount(0);
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '일정 넓게 보기', exact: true })).toBeFocused();
+  await expect(page.getByLabel('작업 제목 검색')).toHaveValue('서비스');
+  await expect(resizer).toHaveAttribute('aria-valuenow', '416');
+  await resizer.focus();
+  await page.keyboard.press('Home');
+  await expect(resizer).toHaveAttribute('aria-valuenow', '220');
+  await page.keyboard.press('End');
+  await expect(resizer).toHaveAttribute('aria-valuenow', '520');
+  await resizer.dblclick();
+  await expect(resizer).toHaveAttribute('aria-valuenow', '300');
+});
+
+test('마우스로 잠깐 지나친 작업은 미리보기를 열지 않고 키보드 초점은 즉시 표시한다', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-10-15T09:00:00Z') });
+  await seed(page, 'timeline');
+  await page.clock.pauseAt(new Date('2026-10-15T09:01:00Z'));
+  const task = page.getByRole('button', { name: '서비스 흐름 설계', exact: true });
+  await task.hover();
+  await page.clock.runFor(150);
+  await expect(page.getByRole('tooltip')).toHaveCount(0);
+  await page.mouse.move(0, 0);
+  await page.clock.runFor(100);
+  await expect(page.getByRole('tooltip')).toHaveCount(0);
+  await task.hover();
+  await page.clock.runFor(220);
+  await expect(page.getByRole('tooltip')).toContainText('서비스 흐름 설계');
+  await page.keyboard.press('Escape');
+  await task.focus();
+  await expect(page.getByRole('tooltip')).toBeVisible();
+});
+
+test('작업 표는 가로·세로로 스크롤해도 열 제목과 작업 제목을 유지한다', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1100, height: 900 });
+  await seed(page, 'list', '', (state) => {
+    const original = state.teams[1].tasks[0];
+    for (let index = 0; index < 24; index++) {
+      state.teams[1].tasks.push({ ...structuredClone(original), id: 1000 + index, title: `검토 작업 ${index + 1}` });
+    }
+  });
+  const table = page.getByRole('region', { name: '작업 표', exact: true });
+  await table.scrollIntoViewIfNeeded();
+  await table.evaluate((element) => { element.scrollTop = 400; element.scrollLeft = 150; });
+  const bounds = await table.boundingBox();
+  const corner = await table.getByRole('columnheader', { name: '작업', exact: true }).boundingBox();
+  expect(Math.abs(corner.x - bounds.x - 1)).toBeLessThan(2);
+  expect(Math.abs(corner.y - bounds.y - 1)).toBeLessThan(2);
+  const firstTask = await table.locator('tbody th').first().boundingBox();
+  expect(Math.abs(firstTask.x - bounds.x - 1)).toBeLessThan(2);
+  expect(await table.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
+  await page.screenshot({ path: testInfo.outputPath('task-table-sticky.png') });
 });
