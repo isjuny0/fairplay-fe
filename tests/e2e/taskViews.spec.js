@@ -136,7 +136,11 @@ test('타임라인은 3개월의 계획 기간을 주 눈금으로 비교하고 
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await seed(page, 'timeline');
+  await seed(page, 'timeline', '', (state) => {
+    state.teams[1].tasks[3].status = 'IN_PROGRESS';
+    state.teams[1].tasks[3].dueAt = '2026-12-10T00:00:00Z';
+    state.teams[1].tasks[5].dueAt = '2027-01-12T00:00:00Z';
+  });
   const timeline = page.getByRole('region', { name: '작업 계획 타임라인' });
   await expect(timeline.locator('.timeline-period')).toHaveCount(5);
   await expect(timeline.locator('.continues-before')).toHaveCount(2);

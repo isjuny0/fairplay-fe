@@ -1434,35 +1434,61 @@ h1[tabindex="-1"]:focus {
 .schedule-task:hover {
   border-color: var(--schedule-color);
 }
-/* Three-month timeline uses a continuous scale with weekly guides. */
-.task-timeline { min-width: 980px; }
-.timeline-row { display: grid; grid-template-columns: 280px minmax(700px, 1fr); border-bottom: 1px solid var(--border); }
+/* Compact task rows and month bands keep a full three-month schedule visible. */
+.task-timeline { min-width: 940px; }
+.timeline-row { display: grid; grid-template-columns: 300px minmax(640px, 1fr); border-bottom: 1px solid #e9edf2; }
 .timeline-row:last-child { border-bottom: 0; }
-.timeline-header { background: #f7f7f5; font-size: 13px; font-weight: 600; }
-.timeline-task-label { position: sticky; left: 0; z-index: 3; display: grid; align-content: center; gap: 5px; min-height: 100px; padding: 12px 16px; background: #fff; border-right: 1px solid var(--border); }
-.timeline-task-label .task-title-button { font-size: 14px; line-height: 1.5; font-weight: 600; overflow-wrap: anywhere; }
-.timeline-task-label .field-help, .timeline-row-dates { font-size: 12px; color: var(--text-muted); }
-.timeline-header .timeline-task-label { background: #f7f7f5; min-height: 76px; }
+.timeline-header { background: #f7f8fa; font-size: 12px; font-weight: 600; }
+.timeline-task-label { position: sticky; left: 0; z-index: 3; display: grid; align-content: center; gap: 3px; min-height: 52px; padding: 6px 12px; background: #fff; border-right: 1px solid #dfe4eb; min-width: 0; }
+.timeline-task-name { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.timeline-task-state { flex: 0 0 17px; display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 3px; color: #fff; background: var(--schedule-color); font-size: 12px; line-height: 1; }
+.timeline-task-id { flex: 0 0 auto; color: #7d8795; font-size: 11px; font-variant-numeric: tabular-nums; }
+.timeline-task-label .task-title-button { min-width: 0; padding: 0; font-size: 13px; line-height: 1.45; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.timeline-task-meta { display: flex; align-items: center; gap: 7px; min-width: 0; padding-left: 24px; overflow: hidden; white-space: nowrap; color: #7c8590; font-size: 11px; line-height: 1.4; }
+.timeline-row-dates { font-variant-numeric: tabular-nums; }
+.timeline-state-label { color: #606b78; }
+.timeline-carried-label { overflow: hidden; text-overflow: ellipsis; }
+.timeline-header .timeline-task-label { background: #f7f8fa; min-height: 58px; padding-left: 16px; }
 .timeline-scale { position: relative; min-width: 0; overflow: hidden; }
-.timeline-months { position: relative; height: 36px; border-bottom: 1px solid var(--border); }
-.timeline-months > span { position: absolute; height: 36px; padding: 9px 12px; border-right: 1px solid var(--border); white-space: nowrap; }
-.timeline-weeks { position: relative; height: 38px; }
-.timeline-weeks > span { position: absolute; padding: 9px 4px; color: var(--text-muted); font-size: 11px; font-weight: 400; white-space: nowrap; }
+.timeline-months { position: relative; height: 32px; border-bottom: 1px solid #e5e9ef; }
+.timeline-months > span { position: absolute; height: 32px; padding: 8px 4px; border-right: 1px solid #e0e5ed; text-align: center; white-space: nowrap; }
+.timeline-weeks { position: relative; height: 26px; background: #fcfdfe; }
+.timeline-weeks > span { position: absolute; padding: 6px 4px; color: #939ba6; font-size: 10px; font-weight: 400; white-space: nowrap; }
 .timeline-track { position: relative; min-width: 0; overflow: hidden; }
-.timeline-week-line { position: absolute; top: 0; bottom: 0; border-left: 1px solid #eeefed; pointer-events: none; }
-.timeline-period { position: absolute; top: calc(50% - 18px); display: flex; align-items: center; justify-content: center; gap: 4px; z-index: 1; min-width: 8px; min-height: 36px; padding: 4px; color: var(--schedule-color); background: var(--schedule-background); border: 1px solid var(--schedule-color); border-radius: 5px; font-size: 12px; }
-.timeline-period-title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.timeline-period.continues-before { border-left-style: dashed; border-top-left-radius: 0; border-bottom-left-radius: 0; }
-.timeline-period.continues-after { border-right-style: dashed; border-top-right-radius: 0; border-bottom-right-radius: 0; }
-.timeline-period:hover { filter: brightness(.96); }
-.timeline-row.is-late .timeline-period { border-color: #b45348; }
-.timeline-delay { position: absolute; top: calc(50% - 9px); height: 18px; border: 1px dashed #bd6356; background: repeating-linear-gradient(135deg, #fcf1ee, #fcf1ee 4px, #fff 4px, #fff 8px); }
-.timeline-today-line { position: absolute; top: 0; bottom: 0; border-left: 2px solid var(--brand); z-index: 2; pointer-events: none; }
-.timeline-today-label { position: absolute; top: 41px; z-index: 2; padding: 3px 5px; background: var(--brand); color: #fff; border-radius: 3px; font-size: 11px; transform: translateX(-50%); }
-.timeline-summary { display: flex; flex-wrap: wrap; gap: 10px 24px; padding: 12px 0; font-size: 14px; }
+.timeline-month-band { position: absolute; top: 0; bottom: 0; border-right: 1px solid #e1e6ee; background: #f9fbfd; pointer-events: none; }
+.timeline-month-band:nth-child(even) { background: #fff; }
+.timeline-week-line { position: absolute; top: 0; bottom: 0; border-left: 1px solid #eef1f5; pointer-events: none; }
+.timeline-row:not(.timeline-header):hover .timeline-task-label,
+.timeline-row:focus-within .timeline-task-label,
+.timeline-row:not(.timeline-header):hover .timeline-month-band,
+.timeline-row:focus-within .timeline-month-band { background: #f0f4fa; }
+.task-timeline .schedule-task-todo, .timeline-legend .schedule-task-todo { --schedule-color: #7e899a; }
+.task-timeline .schedule-task-in_progress, .timeline-legend .schedule-task-in_progress { --schedule-color: #3987ef; }
+.task-timeline .schedule-task-pending_approval, .timeline-legend .schedule-task-pending_approval { --schedule-color: #c49732; }
+.task-timeline .schedule-task-done, .timeline-legend .schedule-task-done { --schedule-color: #36a57e; }
+.timeline-period { position: absolute; top: calc(50% - 12px); display: flex; align-items: center; justify-content: space-between; gap: 3px; z-index: 1; min-width: 8px; height: 24px; padding: 2px 4px; color: #fff; background: var(--schedule-color); border: 1px solid transparent; border-radius: 4px; box-shadow: inset 0 -1px 0 #00000012; overflow: hidden; }
+.timeline-period.continues-before { border-left: 1px dashed #ffffffaa; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.timeline-period.continues-after { border-right: 1px dashed #ffffffaa; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.timeline-period:hover { filter: brightness(.94); }
+.timeline-period:focus-visible { outline-offset: -2px; }
+.timeline-assignees { display: flex; align-items: center; min-width: 0; overflow: hidden; }
+.timeline-assignee { display: inline-flex; flex: 0 0 18px; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; border: 1px solid #ffffffd9; background: #fff; color: #4b596a; font-size: 10px; line-height: 1; }
+.timeline-assignee + .timeline-assignee { margin-left: -4px; }
+.timeline-assignee-more { padding-left: 3px; font-size: 9px; }
+.timeline-bar-state { margin-left: auto; font-size: 12px; opacity: .9; }
+.timeline-continuation { font-size: 15px; line-height: 1; }
+.timeline-row.is-late .timeline-period { box-shadow: inset 0 0 0 1px #b04e46; }
+.timeline-delay { position: absolute; top: calc(50% - 6px); height: 12px; border: 1px dashed #bd6356; background: repeating-linear-gradient(135deg, #fcf1ee, #fcf1ee 4px, #fff 4px, #fff 8px); }
+.timeline-today-line { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--brand); z-index: 2; pointer-events: none; }
+.timeline-today-label { position: absolute; top: 35px; z-index: 2; padding: 2px 4px; background: var(--brand); color: #fff; border-radius: 3px; font-size: 10px; transform: translateX(-50%); }
+.timeline-summary { display: flex; flex-wrap: wrap; gap: 10px 24px; padding: 10px 0; font-size: 13px; }
 .timeline-summary strong { margin-left: 6px; font-variant-numeric: tabular-nums; }
-.timeline-late-label { color: #a5473b; font-size: 12px; font-weight: 600; }
-.timeline-start-label { color: #8a681e; font-size: 12px; }
+.timeline-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 14px; color: var(--text-muted); font-size: 11px; }
+.timeline-legend > span { display: inline-flex; align-items: center; gap: 5px; }
+.timeline-legend .status-dot { width: 6px; height: 6px; background: var(--schedule-color); }
+.timeline-legend-hint { margin-left: auto; }
+.timeline-late-label { color: #a5473b; font-size: 11px; font-weight: 600; }
+.timeline-start-label { color: #8a681e; font-size: 11px; }
 @media (max-width: 720px) {
   .task-view-navigation button { padding: 7px 12px; }
   .task-month-navigation { gap: 12px; }

@@ -19,6 +19,12 @@ const monthLabel = (month) =>
   `${Number(month.slice(0, 4))}년 ${Number(month.slice(5))}월`;
 const shortDate = (date) =>
   `${Number(date.slice(5, 7))}/${Number(date.slice(-2))}`;
+const timelineStateSymbols = {
+  TODO: '□',
+  IN_PROGRESS: '↗',
+  PENDING_APPROVAL: '…',
+  DONE: '✓',
+};
 const scheduleLabel = (task) =>
   `${task.title} · 시작일 ${formatDate(task.startAt)} · 마감 ${formatDate(task.dueAt)}`;
 
@@ -290,6 +296,15 @@ export function TaskTimeline({
     today >= window.first && today <= window.last
       ? window.position(today) + 50 / window.dayCount
       : null;
+  const monthBands = window.months.map((value, index) => {
+    const left = window.position(`${value}-01`);
+    const next = window.months[index + 1];
+    return {
+      value,
+      left,
+      width: next ? window.position(`${next}-01`) - left : 100 - left,
+    };
+  });
   const lateCount = visible.filter(({ period }) => period.overdue).length;
   const startPassedCount = visible.filter(
     ({ period }) => period.startPassed,
@@ -313,9 +328,20 @@ export function TaskTimeline({
           시작 예정일 지남 <strong>{startPassedCount}</strong>
         </span>
       </div>
-      <p className="field-help">
-        {sortLabel} · 막대의 위치와 겹침으로 일정 순서를 비교하세요.
-      </p>
+      <div className="timeline-legend" aria-label="타임라인 상태 범례">
+        {Object.entries(statusLabels).map(([status, label]) => (
+          <span
+            key={status}
+            className={`schedule-task-${status.toLowerCase()}`}
+          >
+            <span className="status-dot" aria-hidden="true" />
+            {label}
+          </span>
+        ))}
+        <span className="timeline-legend-hint">
+          {sortLabel} · 막대의 위치와 겹침으로 일정 비교
+        </span>
+      </div>
       <div
         className="task-timeline-scroll"
         role="region"
@@ -327,21 +353,14 @@ export function TaskTimeline({
             <div className="timeline-task-label">작업 · {sortLabel}</div>
             <div className="timeline-scale">
               <div className="timeline-months">
-                {window.months.map((value, index) => {
-                  const first = `${value}-01`,
-                    next = window.months[index + 1];
-                  return (
-                    <span
-                      key={value}
-                      style={{
-                        left: `${window.position(first)}%`,
-                        width: `${next ? window.position(`${next}-01`) - window.position(first) : 100 - window.position(first)}%`,
-                      }}
-                    >
-                      {monthLabel(value)}
-                    </span>
-                  );
-                })}
+                {monthBands.map(({ value, left, width }) => (
+                  <span
+                    key={value}
+                    style={{ left: `${left}%`, width: `${width}%` }}
+                  >
+                    {monthLabel(value)}
+                  </span>
+                ))}
               </div>
               <div className="timeline-weeks">
                 {window.weeks.map(({ date, left }) => (
@@ -361,45 +380,70 @@ export function TaskTimeline({
             </div>
           </div>
           {visible.map(({ task, period }) => {
-            const description = `${scheduleLabel(task)}${period.label ? ` · ${period.label}` : ''}`;
+            const assignees = task.assignees.map((assignment) => ({
+              userId: assignment.userId,
+              name: memberName(members, assignment.userId),
+            }));
+            const assigneeNames = assignees.map(({ name }) => name).join(' · ');
+            const description = `${scheduleLabel(task)} · ${statusLabels[task.status]} · 담당 ${assigneeNames}${period.label ? ` · ${period.label}` : ''}`;
             return (
               <div
                 className={`timeline-row${period.overdue ? ' is-late' : ''}`}
                 key={task.id}
               >
                 <div className="timeline-task-label">
-                  <button
-                    className="task-title-button"
-                    onClick={() => onOpenTask(task.id)}
-                  >
-                    {task.title}
-                  </button>
-                  <span className="field-help">
-                    {statusLabels[task.status]} ·{' '}
-                    {task.assignees
-                      .map((assignment) =>
-                        memberName(members, assignment.userId),
-                      )
-                      .join(' · ')}
-                  </span>
-                  <span className="timeline-row-dates">
-                    {shortDate(taskDate(task.startAt))} –{' '}
-                    {shortDate(taskDate(task.dueAt))}
-                    {!period.planned ? ' · 이전 기간 마감' : ''}
-                  </span>
-                  {period.label && (
+                  <div className="timeline-task-name">
                     <span
-                      className={
-                        period.overdue
-                          ? 'timeline-late-label'
-                          : 'timeline-start-label'
-                      }
+                      className={`timeline-task-state schedule-task-${task.status.toLowerCase()}`}
+                      title={statusLabels[task.status]}
+                      aria-hidden="true"
                     >
-                      {period.label}
+                      {timelineStateSymbols[task.status]}
                     </span>
-                  )}
+                    <span className="timeline-task-id">#{task.id}</span>
+                    <button
+                      className="task-title-button"
+                      title={description}
+                      onClick={() => onOpenTask(task.id)}
+                    >
+                      {task.title}
+                    </button>
+                  </div>
+                  <div className="timeline-task-meta" title={description}>
+                    <span className="timeline-state-label">
+                      {statusLabels[task.status]}
+                    </span>
+                    <span className="timeline-row-dates">
+                      {shortDate(taskDate(task.startAt))} –{' '}
+                      {shortDate(taskDate(task.dueAt))}
+                    </span>
+                    {period.label && (
+                      <span
+                        className={
+                          period.overdue
+                            ? 'timeline-late-label'
+                            : 'timeline-start-label'
+                        }
+                      >
+                        {period.label}
+                      </span>
+                    )}
+                    {!period.planned && (
+                      <span className="timeline-carried-label">
+                        이전 기간 마감
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="timeline-track">
+                  {monthBands.map(({ value, left, width }) => (
+                    <span
+                      key={value}
+                      className="timeline-month-band"
+                      style={{ left: `${left}%`, width: `${width}%` }}
+                      aria-hidden="true"
+                    />
+                  ))}
                   {window.weeks.map(({ date, left }) => (
                     <span
                       key={date}
@@ -431,13 +475,54 @@ export function TaskTimeline({
                       onClick={() => onOpenTask(task.id)}
                     >
                       {period.planned.continuesBefore && (
-                        <span aria-hidden="true">← </span>
+                        <span
+                          className="timeline-continuation"
+                          aria-hidden="true"
+                        >
+                          ‹
+                        </span>
                       )}
-                      <span className="timeline-period-title">
-                        {task.title}
-                      </span>
+                      {period.planned.width >= 4 && (
+                        <>
+                          <span
+                            className="timeline-assignees"
+                            aria-hidden="true"
+                          >
+                            {assignees.slice(0, 2).map(({ userId, name }) => (
+                              <span
+                                key={userId}
+                                className="timeline-assignee"
+                                title={name}
+                              >
+                                {name
+                                  .trim()
+                                  .split(/\s+/)
+                                  .map((part) => part[0])
+                                  .slice(0, 2)
+                                  .join('')}
+                              </span>
+                            ))}
+                            {assignees.length > 2 && (
+                              <span className="timeline-assignee-more">
+                                +{assignees.length - 2}
+                              </span>
+                            )}
+                          </span>
+                          <span
+                            className="timeline-bar-state"
+                            aria-hidden="true"
+                          >
+                            {timelineStateSymbols[task.status]}
+                          </span>
+                        </>
+                      )}
                       {period.planned.continuesAfter && (
-                        <span aria-hidden="true"> →</span>
+                        <span
+                          className="timeline-continuation"
+                          aria-hidden="true"
+                        >
+                          ›
+                        </span>
                       )}
                     </button>
                   )}
