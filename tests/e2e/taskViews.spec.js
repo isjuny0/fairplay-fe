@@ -600,3 +600,57 @@ test('브라우저 설정 저장이 차단되어도 작업 조회·보기 전환
   await page.getByRole('button', { name: '목록', exact: true }).click();
   await expect(page.getByRole('table', { name: '정렬된 작업 목록' })).toBeVisible();
 });
+
+
+test('열어 둔 타임라인은 분마다 지연을 갱신하고 창·탭 복귀 시 현재 시각을 반영한다', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-11-15T14:59:30Z') });
+  await seed(page, 'timeline', '', (state) => {
+    state.teams[1].tasks.forEach((task) => { task.status = 'DONE'; });
+    Object.assign(state.teams[1].tasks[0], { status: 'IN_PROGRESS', startAt: '2026-11-14T00:00:00Z', dueAt: '2026-11-15T14:59:50Z' });
+  });
+  const late = page.getByRole('button', { name: /마감 지남 \d/ });
+  await expect(late).toHaveText('마감 지남 0');
+  await page.clock.runFor(60000);
+  await expect(late).toHaveText('마감 지남 1');
+  const row = page.locator('.timeline-row').filter({ has: page.getByRole('button', { name: '사용자 인터뷰 계획', exact: true }) });
+  await expect(row.locator('.timeline-late-label')).toHaveText('마감 지남');
+  await page.clock.setSystemTime(new Date('2026-11-17T15:00:00Z'));
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect(row.locator('.timeline-late-label')).toHaveText('2일 지연');
+  await page.clock.setSystemTime(new Date('2026-11-18T15:00:00Z'));
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  await expect(row.locator('.timeline-late-label')).toHaveText('3일 지연');
+});
+
+test('캘린더의 오늘 표시는 화면을 열어 둔 채 날짜가 바뀌어도 갱신된다', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-11-15T14:59:30Z') });
+  await seed(page, 'calendar');
+  await expect(page.getByRole('cell', { name: '2026-11-15 작업 일정', exact: true }).locator('time')).toHaveAttribute('aria-current', 'date');
+  await page.clock.runFor(60000);
+  await expect(page.getByRole('cell', { name: '2026-11-16 작업 일정', exact: true }).locator('time')).toHaveAttribute('aria-current', 'date');
+  await expect(page.getByRole('cell', { name: '2026-11-15 작업 일정', exact: true }).locator('time')).not.toHaveAttribute('aria-current', 'date');
+});
+
+test('작업 표는 날짜와 시간을 두 줄로 표시하고 타임라인은 작업당 한 번씩 Tab 이동한다', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 1000 });
+  await seed(page, 'list');
+  const firstStart = page.getByRole('table', { name: '정렬된 작업 목록' }).locator('tbody tr').first().locator('time').first();
+  await expect(firstStart.locator('.task-date-day')).toHaveText('2026. 10. 20.');
+  await expect(firstStart.locator('.task-date-clock')).toHaveText('09:00');
+  await expect(firstStart).toHaveText('2026. 10. 20. 09:00');
+  const date = await firstStart.locator('.task-date-day').boundingBox();
+  const time = await firstStart.locator('.task-date-clock').boundingBox();
+  expect(time.y).toBeGreaterThan(date.y);
+  const table = page.getByRole('region', { name: '작업 표', exact: true });
+  expect(await table.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('task-table-dates.png'), fullPage: true });
+  await page.getByRole('button', { name: '타임라인', exact: true }).click();
+  const titles = page.locator('.timeline-task-label .task-title-button');
+  const secondTitle = await titles.nth(1).innerText();
+  await titles.first().focus();
+  await page.keyboard.press('Tab');
+  await expect(titles.nth(1)).toBeFocused();
+  await expect(page.getByRole('tooltip')).toContainText(secondTitle);
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { name: secondTitle, exact: true })).toBeVisible();
+});
