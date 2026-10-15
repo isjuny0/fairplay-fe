@@ -1,0 +1,292 @@
+/* Collection screens share a compact toolbar and comparison table. */
+.collection-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+  min-width: 0;
+}
+.collection-toolbar .form-field {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  max-width: 100%;
+}
+.collection-toolbar .field-label {
+  white-space: nowrap;
+  font-weight: 500;
+}
+.collection-toolbar select {
+  width: auto;
+  max-width: min(360px, 100%);
+  margin: 0;
+  min-height: var(--control-height);
+}
+.collection-toolbar > label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.collection-toolbar > label select {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  padding: 6px 10px;
+  background: var(--surface);
+  color: var(--text-primary);
+}
+.collection-count {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: var(--text-support);
+  white-space: nowrap;
+}
+.collection-table-scroll {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.collection-table {
+  table-layout: fixed;
+  min-width: 960px;
+}
+.collection-table :is(th, td) {
+  padding: 14px 12px;
+  font-size: var(--text-body);
+  font-weight: 400;
+}
+.collection-table thead th {
+  background: var(--surface-secondary);
+  font-size: var(--text-support);
+  font-weight: 500;
+}
+.collection-table tbody tr:hover {
+  background: var(--surface-secondary);
+}
+.collection-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.collection-table .collection-name-cell {
+  width: 27%;
+  white-space: normal;
+}
+.collection-table .collection-name-cell h3 {
+  margin: 0;
+  font-size: var(--text-body);
+}
+.collection-table th:first-child {
+  width: 24%;
+}
+.deliverable-table th:nth-child(2) {
+  width: 9%;
+}
+.deliverable-table th:nth-child(3) {
+  width: 16%;
+}
+.deliverable-table th:nth-child(4) {
+  width: 9%;
+}
+.deliverable-table th:nth-child(5) {
+  width: 17%;
+}
+.deliverable-table th:nth-child(6) {
+  width: 25%;
+}
+.collection-title-button {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--control-height);
+  padding: 6px 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  font-size: var(--text-body);
+  font-weight: 500;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.collection-title-button:hover {
+  color: var(--brand);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.collection-title-button .ui-icon {
+  margin-top: 2px;
+  color: var(--text-muted);
+}
+.collection-title-button span {
+  min-width: 0;
+}
+.collection-table small {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+  font-weight: 400;
+}
+.collection-filename {
+  max-width: 100%;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  padding-left: 26px;
+}
+.collection-task-cell > span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.collection-table time {
+  font-size: var(--text-support);
+  font-variant-numeric: tabular-nums;
+}
+.collection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.collection-table .secondary-button {
+  min-height: var(--control-height);
+  padding: 6px 9px;
+  font-size: var(--text-support);
+}
+.ghost-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-height);
+  padding: 6px 9px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-support);
+}
+.ghost-button:hover:not(:disabled) {
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+}
+.ghost-button.danger {
+  color: #a32f38;
+}
+.ghost-button.danger:hover:not(:disabled) {
+  background: #fff2f2;
+  color: #83242c;
+}
+.approval-table th:first-child {
+  width: 27%;
+}
+.approval-table th:nth-child(2) {
+  width: 11%;
+}
+.approval-table th:nth-child(3) {
+  width: 10%;
+}
+.approval-table th:nth-child(4) {
+  width: 17%;
+}
+.approval-table th:nth-child(5) {
+  width: 21%;
+}
+.approval-table th:nth-child(6) {
+  width: 14%;
+}
+.approval-result-cell {
+  white-space: normal !important;
+}
+.approval-result-cell summary {
+  cursor: pointer;
+  min-height: var(--control-height);
+  padding-block: 6px;
+  color: #a32f38;
+}
+.approval-result-cell .preserve-lines {
+  margin: 6px 0;
+  font-size: var(--text-support);
+}
+.deliverable-detail {
+  gap: var(--space-6);
+}
+.deliverable-detail h3 {
+  margin: 8px 0 0;
+  font-size: var(--text-section);
+  overflow-wrap: anywhere;
+}
+.deliverable-detail h4 {
+  margin: 0 0 8px;
+  font-size: var(--text-body);
+}
+.deliverable-detail .preserve-lines {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text-primary);
+}
+.deliverable-facts {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding-block: var(--space-4);
+  border-block: 1px solid var(--border);
+}
+.deliverable-facts > div {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: var(--space-4);
+}
+.deliverable-facts dt {
+  color: var(--text-muted);
+}
+.deliverable-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.review-guide {
+  padding-left: 20px;
+  margin: 0 0 var(--space-6);
+  color: var(--text-muted);
+  font-size: var(--text-support);
+  line-height: 1.8;
+}
+.linked-deliverables .deliverable-card {
+  padding: var(--space-4) 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+}
+.linked-deliverables .deliverable-title {
+  gap: var(--space-2);
+}
+.linked-deliverables .file-symbol {
+  width: 28px;
+  height: 30px;
+  flex-basis: 28px;
+}
+@media (max-width: 720px) {
+  .collection-toolbar .form-field {
+    width: 100%;
+  }
+  .collection-toolbar > label {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+  .collection-toolbar select {
+    max-width: 100%;
+    min-width: 0;
+  }
+  .collection-count {
+    margin-left: 0;
+  }
+  .collection-toolbar > button {
+    margin-left: auto;
+  }
+  .deliverable-facts > div {
+    grid-template-columns: 74px minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+}

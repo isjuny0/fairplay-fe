@@ -60,9 +60,14 @@ export default function ApprovalDecision({
     }
   };
   return (
-    <section className="panel task-next-action">
+    <section className="panel task-next-action approval-decision">
       <h2>완료 검토</h2>
-      <p>작업 설명·담당 배분·개인 수행 설명·최신 산출물을 확인해 주세요.</p>
+      <p>작업 내용과 수행 결과를 확인한 뒤 완료 여부를 결정하세요.</p>
+      <ol className="review-guide" aria-label="검토할 내용">
+        <li>작업 설명과 담당 배분 확인</li>
+        <li>담당자의 개인 수행 설명 확인</li>
+        <li>연결된 최신 산출물 확인</li>
+      </ol>
       <Field
         label="반려 사유"
         error={reasonError}
@@ -81,6 +86,11 @@ export default function ApprovalDecision({
         />
       </Field>
       <p className="character-count">{reason.length} / 500자</p>
+      {blocked && (
+        <p className="notice" role="status">
+          현재 팀 상태에서는 승인·반려할 수 없습니다. 팀 상태를 확인해 주세요.
+        </p>
+      )}
       <ErrorNotice
         error={error}
         onRetry={

@@ -842,3 +842,33 @@ test('두 창에서 수정한 산출물은 최신 내용을 비교하고 본문 
   ).toBeVisible();
   await other.close();
 });
+
+for (const width of [1440, 320]) {
+  test(`산출물 표 ${width}px: 제목에서 본문을 열고 닫으면 조회 범위와 초점을 유지한다`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await openPreview(page, '/spaces/1/teams/1/deliverables?taskId=101');
+    const list = page.getByRole('region', { name: '산출물 목록', exact: true });
+    await expect(list.getByRole('columnheader', { name: '등록자', exact: true })).toBeVisible();
+    const title = list.getByRole('button', { name: '인터뷰 계획과 질문 목록', exact: true });
+    await title.focus();
+    await page.keyboard.press('Enter');
+    const dialog = page.getByRole('dialog', { name: '산출물 상세', exact: true });
+    await expect(dialog.getByRole('heading', { name: '본문', exact: true })).toBeVisible();
+    await expect(dialog.getByText('사용자 인터뷰 계획', { exact: true })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: '수정', exact: true })).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(title).toBeFocused();
+    await expect(page.getByLabel('작업별 조회')).toHaveValue('101');
+    expect(new URL(page.url()).searchParams.get('taskId')).toBe('101');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+    await page.reload();
+    await expect(page.getByLabel('작업별 조회')).toHaveValue('101');
+    await expect(list.getByRole('button', { name: '파일 다운로드', exact: true })).toBeVisible();
+    await list.getByRole('button', { name: '인터뷰 결과 기록 파일', exact: true }).click();
+    await expect(dialog.getByRole('heading', { name: '현재 파일', exact: true })).toBeVisible();
+    const downloaded = page.waitForEvent('download');
+    await dialog.getByRole('button', { name: '파일 다운로드', exact: true }).click();
+    expect((await downloaded).suggestedFilename()).toBe('인터뷰-기록.txt');
+  });
+}

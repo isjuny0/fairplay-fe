@@ -5,7 +5,7 @@ import { listTasks } from '../api/tasks.js';
 import useResource from '../hooks/useResource.js';
 import { formatDate, memberName } from '../lib/domain.js';
 import TaskDetail from './TaskDetail.jsx';
-import { EmptyState, ResourceState } from './ui.jsx';
+import { EmptyState, ErrorNotice, ResourceState } from './ui.jsx';
 
 export default function Approvals({
   team,
@@ -33,7 +33,7 @@ export default function Approvals({
     () => listApprovals(team.id, status),
     [team.id, status, taskId],
   );
-  const taskResource = useResource(() => listTasks(team.id), [team.id]);
+  const taskResource = useResource(() => listTasks(team.id), [team.id, taskId]);
   if (taskId != null)
     return (
       <TaskDetail
@@ -47,14 +47,14 @@ export default function Approvals({
       />
     );
   return (
-    <section className="stack">
+    <section className="stack approvals-page">
       <div className="page-heading">
         <div>
           <h1>승인 검토</h1>
           <p>내가 승인자로 지정된 완료 요청입니다.</p>
         </div>
       </div>
-      <div className="toolbar">
+      <div className="collection-toolbar">
         <label>
           요청 상태{' '}
           <select
@@ -66,52 +66,118 @@ export default function Approvals({
             <option value="REJECTED">반려</option>
           </select>
         </label>
-        <button className="secondary-button" onClick={resource.reload}>
+        <span className="collection-count" role="status">
+          {!resource.loading &&
+            !resource.error &&
+            `${{ PENDING: '승인 대기', APPROVED: '승인 완료', REJECTED: '반려' }[status]} ${resource.data?.length || 0}건`}
+        </span>
+        <button
+          className="secondary-button"
+          disabled={resource.loading || taskResource.loading}
+          onClick={() => {
+            resource.reload();
+            taskResource.reload();
+          }}
+        >
           <Icon name="refresh" />
           새로고침
         </button>
       </div>
+      <ErrorNotice error={taskResource.error} onRetry={taskResource.reload} />
       <ResourceState resource={resource}>
         {resource.data?.length ? (
-          <ul className="clean-list">
-            {resource.data.map((approval) => (
-              <li className="panel row-item approval-card" key={approval.id}>
-                <span>
-                  <span
-                    className={`status-badge approval-${approval.status.toLowerCase()}`}
-                  >
-                    {
-                      {
-                        PENDING: '승인 대기',
-                        APPROVED: '승인 완료',
-                        REJECTED: '반려',
-                      }[approval.status]
-                    }
-                  </span>
-                  <strong>
-                    {taskResource.data?.find(
-                      (task) => task.id === approval.taskId,
-                    )?.title || `작업 #${approval.taskId}`}
-                  </strong>
-                  <small>
-                    요청자 {memberName(members, approval.requesterId)} ·{' '}
-                    {formatDate(approval.requestedAt)}
-                  </small>
-                  {approval.reason && (
-                    <small className="preserve-lines">{approval.reason}</small>
-                  )}
-                </span>
-                <button
-                  className="primary-button"
-                  onClick={() => onOpenTask(approval.taskId)}
-                >
-                  작업 검토
-                </button>
-              </li>
-            ))}
-          </ul>
+          <div
+            className="table-scroll collection-table-scroll"
+            role="region"
+            aria-label="승인 요청 목록"
+            tabIndex={0}
+          >
+            <table className="data-table collection-table approval-table">
+              <caption className="sr-only">
+                내가 승인자로 지정된 완료 요청과 처리 결과
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">작업</th>
+                  <th scope="col">상태</th>
+                  <th scope="col">요청자</th>
+                  <th scope="col">요청일</th>
+                  <th scope="col">처리 결과</th>
+                  <th scope="col">검토</th>
+                </tr>
+              </thead>
+              <tbody>
+                {resource.data.map((approval) => (
+                  <tr key={approval.id}>
+                    <th scope="row" className="collection-name-cell">
+                      <button
+                        className="collection-title-button"
+                        onClick={() => onOpenTask(approval.taskId)}
+                      >
+                        {taskResource.data?.find(
+                          (task) => task.id === approval.taskId,
+                        )?.title || `작업 #${approval.taskId}`}
+                      </button>
+                    </th>
+                    <td>
+                      <span
+                        className={`status-badge approval-${approval.status.toLowerCase()}`}
+                      >
+                        {
+                          {
+                            PENDING: '승인 대기',
+                            APPROVED: '승인 완료',
+                            REJECTED: '반려',
+                          }[approval.status]
+                        }
+                      </span>
+                    </td>
+                    <td>{memberName(members, approval.requesterId)}</td>
+                    <td>
+                      <time dateTime={approval.requestedAt}>
+                        {formatDate(approval.requestedAt)}
+                      </time>
+                    </td>
+                    <td className="approval-result-cell">
+                      {approval.reason ? (
+                        <details>
+                          <summary>반려 사유</summary>
+                          <p className="preserve-lines">{approval.reason}</p>
+                          {approval.decidedAt && (
+                            <small>{formatDate(approval.decidedAt)}</small>
+                          )}
+                        </details>
+                      ) : approval.decidedAt ? (
+                        <time dateTime={approval.decidedAt}>
+                          {formatDate(approval.decidedAt)}
+                        </time>
+                      ) : (
+                        <span className="field-help">검토 전</span>
+                      )}
+                    </td>
+                    <td>
+                      <button
+                        className="secondary-button"
+                        onClick={() => onOpenTask(approval.taskId)}
+                      >
+                        작업 검토
+                        <Icon name="arrow" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
-          <EmptyState>해당 상태의 승인 요청이 없습니다.</EmptyState>
+          <EmptyState>
+            <p>해당 상태의 승인 요청이 없습니다.</p>
+            <span>
+              {status === 'PENDING'
+                ? '내가 승인자로 지정된 작업의 완료 요청이 이곳에 표시됩니다.'
+                : '요청 상태를 변경해 다른 검토 내역을 확인하세요.'}
+            </span>
+          </EmptyState>
         )}
       </ResourceState>
     </section>

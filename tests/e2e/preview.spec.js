@@ -231,7 +231,7 @@ test('미리보기 업로드는 새 파일 형식을 지원하고 URL 새 등록
     buffer: Buffer.from('preview only'),
   });
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
-  await expect(page.getByText('발표.pptx ·', { exact: false })).toBeVisible();
+  await expect(page.getByText('발표.pptx', { exact: true })).toBeVisible();
   expect(calls).toEqual([]);
 });
 test('평가 시작 전 회차 생성·일정 수정·개방 화면을 사용할 수 있다', async ({

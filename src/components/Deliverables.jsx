@@ -1,5 +1,6 @@
 import { isPreviewPath } from '../mock/preview.js';
 import Icon from './Icon.jsx';
+import DeliverableTable from './DeliverableTable.jsx';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { parseRouteId } from '../lib/routes.js';
@@ -391,6 +392,10 @@ export default function Deliverables({
     [team.id, selectedTaskId, page],
   );
   const [editing, setEditing] = useState(undefined);
+  const [selectedDeliverableId, setSelectedDeliverableId] = useState(null);
+  const selectedDeliverable = resource.data?.find(
+    (item) => item.id === selectedDeliverableId,
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const taskMap = new Map(tasks.map((task) => [task.id, task]));
@@ -462,7 +467,7 @@ export default function Deliverables({
   };
   return (
     <section className="stack deliverables-section">
-      <div className="section-heading">
+      <div className={taskId == null ? 'page-heading' : 'section-heading'}>
         {taskId == null ? (
           <div>
             <h1>산출물 관리</h1>
@@ -484,126 +489,154 @@ export default function Deliverables({
           </button>
         )}
       </div>
-      {taskId == null && tasks.length > 0 && (
-        <Field label="작업별 조회">
-          <select
-            value={scope}
-            onChange={(event) => {
-              setScope(event.target.value);
-            }}
-          >
-            <option value="ALL">전체 산출물</option>
-            {tasks.map((task) => (
-              <option key={task.id} value={task.id}>
-                {task.title}
-              </option>
-            ))}
-          </select>
-        </Field>
-      )}
+      <div className="collection-toolbar">
+        {taskId == null && tasks.length > 0 && (
+          <Field label="작업별 조회">
+            <select
+              value={scope}
+              onChange={(event) => setScope(event.target.value)}
+            >
+              <option value="ALL">전체 산출물</option>
+              {tasks.map((task) => (
+                <option key={task.id} value={task.id}>
+                  {task.title}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
+        <span className="collection-count" role="status">
+          {!resource.loading &&
+            !resource.error &&
+            `현재 페이지 ${resource.data?.length || 0}건`}
+        </span>
+        <button
+          className="secondary-button"
+          disabled={resource.loading}
+          onClick={resource.reload}
+        >
+          <Icon name="refresh" />
+          새로고침
+        </button>
+      </div>
       <ErrorNotice error={error} onRetry={resource.reload} />
       <ResourceState resource={resource}>
         {resource.data?.length ? (
-          <div className="stack">
-            {resource.data.map((deliverable) => {
-              const permissions = deliverablePermissions(
-                deliverable,
-                taskMap.get(deliverable.taskId),
-                team,
-                user.id,
-              );
-              return (
-                <article
-                  className="panel deliverable-card"
-                  key={deliverable.id}
-                >
-                  <div className="section-heading">
-                    <div className="deliverable-title">
-                      <span className="file-symbol">
-                        <Icon name="file" />
+          taskId == null ? (
+            <DeliverableTable
+              deliverables={resource.data}
+              taskMap={taskMap}
+              team={team}
+              user={user}
+              members={members}
+              busy={busy}
+              onOpen={setSelectedDeliverableId}
+              onDownload={download}
+              onEdit={(deliverable) => {
+                setError(null);
+                setEditing(deliverable);
+              }}
+              onRemove={remove}
+            />
+          ) : (
+            <div className="stack linked-deliverables">
+              {resource.data.map((deliverable) => {
+                const permissions = deliverablePermissions(
+                  deliverable,
+                  taskMap.get(deliverable.taskId),
+                  team,
+                  user.id,
+                );
+                return (
+                  <article
+                    className="panel deliverable-card"
+                    key={deliverable.id}
+                  >
+                    <div className="section-heading">
+                      <div className="deliverable-title">
+                        <span className="file-symbol">
+                          <Icon name="file" />
+                        </span>
+                        <h3>{deliverable.title}</h3>
+                      </div>
+                      <span className="role-badge">
+                        {{ TEXT: '문서', FILE: '파일' }[deliverable.type]} ·{' '}
+                        {categoryLabels[deliverable.category] ||
+                          {
+                            RESEARCH: '조사·분석',
+                            PRESENTATION: '발표',
+                            OPERATION: '행사·운영',
+                          }[deliverable.category] ||
+                          deliverable.category}
                       </span>
-                      <h3>{deliverable.title}</h3>
                     </div>
-                    <span className="role-badge">
-                      {
-                        { TEXT: '문서', FILE: '파일' }[
-                          deliverable.type
-                        ]
-                      }{' '}
-                      ·{' '}
-                      {categoryLabels[deliverable.category] ||
-                        {
-                          RESEARCH: '조사·분석',
-                          PRESENTATION: '발표',
-                          OPERATION: '행사·운영',
-                        }[deliverable.category] ||
-                        deliverable.category}
-                    </span>
-                  </div>
-                  <p className="field-help">
-                    {deliverable.taskId == null
-                      ? '팀 공용'
-                      : `작업 연결${taskMap.get(deliverable.taskId) ? ` · ${taskMap.get(deliverable.taskId).title}` : ''}`}{' '}
-                  </p>
-                  <details className="deliverable-record">
-                    <summary>등록·수정 정보</summary>
                     <p className="field-help">
-                      등록 {memberName(members, deliverable.authorId)} · 수정{' '}
-                      {formatDate(deliverable.updatedAt)}
+                      {deliverable.taskId == null
+                        ? '팀 공용'
+                        : `작업 연결${taskMap.get(deliverable.taskId) ? ` · ${taskMap.get(deliverable.taskId).title}` : ''}`}{' '}
                     </p>
-                  </details>
-                  {deliverable.description && (
-                    <p className="preserve-lines">{deliverable.description}</p>
-                  )}
-                  {deliverable.type === 'TEXT' && (
-                    <details>
-                      <summary>본문 보기</summary>
-                      <p className="preserve-lines deliverable-body">
-                        {deliverable.text}
+                    <details className="deliverable-record">
+                      <summary>등록·수정 정보</summary>
+                      <p className="field-help">
+                        등록 {memberName(members, deliverable.authorId)} · 수정{' '}
+                        {formatDate(deliverable.updatedAt)}
                       </p>
                     </details>
-                  )}
-                  {deliverable.type === 'FILE' && (
-                    <p>
-                      {deliverable.file.originalFilename} ·{' '}
-                      {(deliverable.file.sizeBytes / 1024).toFixed(1)}KiB
-                    </p>
-                  )}
-                  <div className="heading-actions">
+                    {deliverable.description && (
+                      <p className="preserve-lines">
+                        {deliverable.description}
+                      </p>
+                    )}
+                    {deliverable.type === 'TEXT' && (
+                      <details>
+                        <summary>본문 보기</summary>
+                        <p className="preserve-lines deliverable-body">
+                          {deliverable.text}
+                        </p>
+                      </details>
+                    )}
                     {deliverable.type === 'FILE' && (
-                      <button
-                        className="secondary-button"
-                        onClick={() => download(deliverable)}
-                      >
-                        파일 다운로드
-                      </button>
+                      <p>
+                        {deliverable.file.originalFilename} ·{' '}
+                        {(deliverable.file.sizeBytes / 1024).toFixed(1)}KiB
+                      </p>
                     )}
-                    {permissions.metadata && (
-                      <button
-                        className="secondary-button"
-                        disabled={busy}
-                        onClick={() => {
-                          setError(null);
-                          setEditing(deliverable);
-                        }}
-                      >
-                        수정
-                      </button>
-                    )}
-                    {permissions.remove && (
-                      <button
-                        className="secondary-button danger"
-                        disabled={busy}
-                        onClick={() => remove(deliverable)}
-                      >
-                        삭제
-                      </button>
-                    )}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+                    <div className="heading-actions">
+                      {deliverable.type === 'FILE' && (
+                        <button
+                          className="secondary-button"
+                          onClick={() => download(deliverable)}
+                        >
+                          파일 다운로드
+                        </button>
+                      )}
+                      {permissions.metadata && (
+                        <button
+                          className="secondary-button"
+                          disabled={busy}
+                          onClick={() => {
+                            setError(null);
+                            setEditing(deliverable);
+                          }}
+                        >
+                          수정
+                        </button>
+                      )}
+                      {permissions.remove && (
+                        <button
+                          className="secondary-button danger"
+                          disabled={busy}
+                          onClick={() => remove(deliverable)}
+                        >
+                          삭제
+                        </button>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )
         ) : (
           <EmptyState>
             <p>
@@ -669,6 +702,86 @@ export default function Deliverables({
           다음
         </button>
       </div>
+      {selectedDeliverable && (
+        <Modal
+          title="산출물 상세"
+          onClose={() => setSelectedDeliverableId(null)}
+          wide
+        >
+          <div className="stack deliverable-detail">
+            <div>
+              <span className="eyebrow">
+                {selectedDeliverable.type === 'FILE' ? '파일' : '문서'} ·{' '}
+                {categoryLabels[selectedDeliverable.category] ||
+                  selectedDeliverable.category}
+              </span>
+              <h3>{selectedDeliverable.title}</h3>
+            </div>
+            <dl className="deliverable-facts">
+              <div>
+                <dt>연결 작업</dt>
+                <dd>
+                  {selectedDeliverable.taskId == null
+                    ? '팀 공용'
+                    : taskMap.get(selectedDeliverable.taskId)?.title ||
+                      `작업 #${selectedDeliverable.taskId}`}
+                </dd>
+              </div>
+              <div>
+                <dt>등록자</dt>
+                <dd>{memberName(members, selectedDeliverable.authorId)}</dd>
+              </div>
+              <div>
+                <dt>최종 수정일</dt>
+                <dd>{formatDate(selectedDeliverable.updatedAt)}</dd>
+              </div>
+            </dl>
+            {selectedDeliverable.description && (
+              <section>
+                <h4>설명</h4>
+                <p className="preserve-lines">
+                  {selectedDeliverable.description}
+                </p>
+              </section>
+            )}
+            {selectedDeliverable.type === 'TEXT' ? (
+              <section>
+                <h4>본문</h4>
+                <p className="preserve-lines">{selectedDeliverable.text}</p>
+              </section>
+            ) : (
+              <section>
+                <h4>현재 파일</h4>
+                <p className="preserve-lines">
+                  {selectedDeliverable.file.originalFilename} ·{' '}
+                  {(selectedDeliverable.file.sizeBytes / 1024).toFixed(1)}KiB
+                </p>
+                <p className="field-help">
+                  최신 파일만 보관합니다. 파일을 교체하면 이전 원본은
+                  삭제됩니다.
+                </p>
+              </section>
+            )}
+            <ErrorNotice error={error} />
+            <div className="modal-actions">
+              {selectedDeliverable.type === 'FILE' && (
+                <button
+                  className="primary-button"
+                  onClick={() => download(selectedDeliverable)}
+                >
+                  파일 다운로드
+                </button>
+              )}
+              <button
+                className="secondary-button"
+                onClick={() => setSelectedDeliverableId(null)}
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
       {editing !== undefined && (
         <DeliverableForm
           key={editing?.id || 'new'}

@@ -1564,6 +1564,7 @@ test('작업 시작일은 생성 시 필수이며 일정 검증 후 오프셋과
   await fillDateTime(dialog, '시작일', '2030-12-02T18:00');
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
   await expect(dialog.getByText('마감은 시작일과 같거나 이후여야 합니다.')).toBeVisible();
+  await expect(dialog.getByLabel('마감 날짜', { exact: true })).toBeFocused();
   expect(requests.filter(({ method, path }) => method === 'POST' && path === '/api/teams/1/tasks')).toHaveLength(0);
   await fillDateTime(dialog, '시작일', '2030-12-01T18:00');
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
