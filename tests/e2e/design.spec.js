@@ -105,7 +105,7 @@ test('로그인 미리보기에도 흰 배경과 담백한 카드 적용', async
 });
 
 for (const width of [1440, 390]) {
-  test(`문서형 워크스페이스 ${width}px: 초록 강조·카드·구분선과 상태색`, async ({ page }) => {
+  test(`문서형 워크스페이스 ${width}px: 초록 강조·카드·구분선과 상태색`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('/preview/spaces/1/teams/1/tasks');
     await expect(page.locator('.sidebar')).toHaveCSS('background-color', 'rgb(247, 247, 245)');
@@ -116,6 +116,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('.task-state-in_progress .status-dot')).toHaveCSS('background-color', 'rgb(79, 135, 188)');
     await expect(page.locator('.task-state-pending_approval .status-dot')).toHaveCSS('background-color', 'rgb(201, 157, 58)');
     await expect(page.locator('.task-state-done .status-dot')).toHaveCSS('background-color', 'rgb(38, 146, 105)');
+    if (width === 1440) await page.screenshot({ path: testInfo.outputPath('desktop-task-board.png') });
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
     if (!await page.getByLabel('미리보기 역할').isVisible())
       await page.getByText('미리보기 설정', { exact: true }).click();
