@@ -12,6 +12,7 @@ import {
   submitPeerEvaluation,
 } from '../api/evaluations.js';
 import useResource from '../hooks/useResource.js';
+import useCurrentTime from '../hooks/useCurrentTime.js';
 import { formatDate, memberName } from '../lib/domain.js';
 import { parseRouteId } from '../lib/routes.js';
 import {
@@ -60,6 +61,7 @@ function PeerResponseForm({
       ref={formElement}
       onSubmit={async (event) => {
         event.preventDefault();
+        if (locked || busy) return;
         const validation = validatePeerResponse(scores, reason);
         if (validation) {
           const missingCode = Object.keys(peerCriteria).find(
@@ -215,6 +217,7 @@ function PeerResponseForm({
   );
 }
 function RoundResponses({ context, round, onSubmitted }) {
+  const now = useCurrentTime();
   const resource = useResource(async () => {
     const responses = await getMyPeerResponses(round.id);
     const targets =
@@ -251,15 +254,14 @@ function RoundResponses({ context, round, onSubmitted }) {
     round.mySubmissionStatus === 'SUBMITTED' ||
     targets.some((target) => target.submittedAt);
   const locked =
-    round.status !== 'OPEN' ||
-    new Date(round.closesAt) <= new Date() ||
-    submitted;
+    round.status !== 'OPEN' || Date.parse(round.closesAt) <= now || submitted;
   const currentTargetId = targets.some(
     (target) => target.targetId === activeTargetId,
   )
     ? activeTargetId
     : targets[0]?.targetId;
   const readyToSubmit =
+    !locked &&
     targets.length > 0 &&
     responses.length === targets.length &&
     !hasChanges &&
@@ -270,7 +272,7 @@ function RoundResponses({ context, round, onSubmitted }) {
       <ResourceState resource={resource}>
         {resource.data && (
           <>
-            <section className="panel">
+            <section className="panel evaluation-progress">
               <div className="page-heading">
                 <div>
                   <h2>
@@ -295,57 +297,71 @@ function RoundResponses({ context, round, onSubmitted }) {
                 label="내 평가 작성 진행률"
               />
             </section>
-            <div
-              className="peer-target-picker"
-              role="group"
-              aria-label="평가할 팀원 선택"
-            >
-              {targets.map((target) => (
-                <button
-                  key={target.targetId}
-                  className={
-                    currentTargetId === target.targetId ? 'active' : ''
-                  }
-                  aria-pressed={currentTargetId === target.targetId}
-                  onClick={() => setActiveTargetId(target.targetId)}
-                >
-                  {target.name}
-                  <span>
-                    {formStates[target.targetId]?.changed
-                      ? '미저장'
-                      : responses.some(
-                            (response) => response.targetId === target.targetId,
-                          )
-                        ? '저장됨'
-                        : '작성 필요'}
-                  </span>
-                </button>
-              ))}
-            </div>
-            <div className="peer-grid">
-              {targets.map((target) => {
-                const response = responses.find(
-                  (response) => response.targetId === target.targetId,
-                );
-                return (
-                  <div
-                    className={`peer-target ${currentTargetId === target.targetId ? 'is-active' : ''}`}
+            {round.status === 'OPEN' &&
+              Date.parse(round.closesAt) <= now &&
+              !submitted && (
+                <p className="notice" role="status">
+                  평가 시간이 마감되어 저장·제출할 수 없습니다. 저장한 응답을
+                  확인하세요.
+                </p>
+              )}
+            <div className="peer-response-layout">
+              <div
+                className="peer-target-picker"
+                role="group"
+                aria-label="평가할 팀원 선택"
+              >
+                {targets.map((target) => (
+                  <button
                     key={target.targetId}
+                    className={
+                      currentTargetId === target.targetId ? 'active' : ''
+                    }
+                    aria-pressed={currentTargetId === target.targetId}
+                    aria-controls={`peer-target-${round.id}-${target.targetId}`}
+                    onClick={() => setActiveTargetId(target.targetId)}
                   >
-                    <PeerResponseForm
-                      key={`${target.targetId}-${response?.updatedAt || 'new'}`}
-                      target={target}
-                      response={response}
-                      locked={locked}
-                      onSaved={resource.reload}
-                      context={context}
-                      round={round}
-                      onStateChanged={onStateChanged}
-                      submitted={submitted}
-                    />
-                  </div>
-                );
-              })}
+                    {target.name}
+                    <span>
+                      {formStates[target.targetId]?.changed
+                        ? '미저장'
+                        : responses.some(
+                              (response) =>
+                                response.targetId === target.targetId,
+                            )
+                          ? '저장됨'
+                          : '작성 필요'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <div className="peer-grid">
+                {targets.map((target) => {
+                  const response = responses.find(
+                    (response) => response.targetId === target.targetId,
+                  );
+                  return (
+                    <div
+                      className={`peer-target ${currentTargetId === target.targetId ? 'is-active' : ''}`}
+                      id={`peer-target-${round.id}-${target.targetId}`}
+                      hidden={currentTargetId !== target.targetId}
+                      key={target.targetId}
+                    >
+                      <PeerResponseForm
+                        key={`${target.targetId}-${response?.updatedAt || 'new'}`}
+                        target={target}
+                        response={response}
+                        locked={locked}
+                        onSaved={resource.reload}
+                        context={context}
+                        round={round}
+                        onStateChanged={onStateChanged}
+                        submitted={submitted}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             {!locked && (
               <section className="peer-submit-bar" aria-label="평가 최종 제출">
@@ -385,6 +401,12 @@ function RoundResponses({ context, round, onSubmitted }) {
             모든 대상의 저장된 응답을 최종 제출합니다. 제출 후에는 수정할 수
             없습니다.
           </p>
+          {locked && (
+            <p className="notice" role="status">
+              평가가 마감되어 제출할 수 없습니다. 창을 닫고 저장한 응답을
+              확인하세요.
+            </p>
+          )}
           <ErrorNotice error={error} />
           <div className="heading-actions">
             <button
@@ -432,18 +454,24 @@ export default function PeerEvaluation({ context }) {
     rounds.find((round) => round.status === 'OPEN') ||
     rounds[0];
   return (
-    <section className="stack">
-      <div>
-        <span className="eyebrow">협업 돌아보기</span>
-        <h1>동료 평가</h1>
-        <p>
-          같은 팀의 동료가 수행한 행동을 기준으로 평가해 주세요. 본인은 평가
-          대상에서 제외됩니다.
-        </p>
+    <section className="stack peer-evaluation-page">
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">협업 돌아보기</span>
+          <h1>동료 평가</h1>
+          <p>
+            같은 팀의 동료가 수행한 행동을 기준으로 평가해 주세요. 본인은 평가
+            대상에서 제외됩니다.
+          </p>
+        </div>
+        <button
+          className="secondary-button"
+          disabled={resource.loading}
+          onClick={resource.reload}
+        >
+          평가 상태 새로고침
+        </button>
       </div>
-      <button className="secondary-button" onClick={resource.reload}>
-        평가 상태 새로고침
-      </button>
       <p className="field-help">
         마감 후 스페이스 관리자가 최종 제출된 점수와 사유를 열람할 수 있습니다.
       </p>
@@ -455,12 +483,16 @@ export default function PeerEvaluation({ context }) {
               selected={round?.id}
               onSelect={(id) => setParams({ roundId: String(id) })}
             />
-            <section className="round-context">
+            <section
+              className="round-context evaluation-round-context"
+              aria-label="선택한 평가 회차"
+            >
               <strong>
                 {roundLabels[round.type]} · {roundStatusLabels[round.status]}
               </strong>
-              <span>
-                {formatDate(round.opensAt)} ~ {formatDate(round.closesAt)}
+              <span>시작 {formatDate(round.opensAt)}</span>
+              <span className="round-deadline">
+                마감 {formatDate(round.closesAt)}
               </span>
             </section>
             {round.status === 'DRAFT' ? (
