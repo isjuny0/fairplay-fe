@@ -1,3 +1,4 @@
+import ManagerPeerResponses from './ManagerPeerResponses.jsx';
 import { useSearchParams } from 'react-router';
 import { getManagerDashboard } from '../api/dashboard.js';
 import useResource from '../hooks/useResource.js';
@@ -137,6 +138,7 @@ export default function ManagerDashboard({ context }) {
                         <th>진행률 · 예상 작업량</th>
                         <th>지연 / 정체</th>
                         <th>산출물</th>
+                        <th>리포트</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -157,6 +159,27 @@ export default function ManagerDashboard({ context }) {
                             {team.overdueTaskCount} / {team.staleTaskCount}
                           </td>
                           <td>{team.deliverableCount}</td>
+                          <td>
+                            <span>
+                              {team.reportStatus === 'PUBLISHED'
+                                ? '공개'
+                                : team.reportStatus === 'UNPUBLISHED'
+                                  ? '비공개'
+                                  : '미생성'}
+                            </span>
+                            <button
+                              className="secondary-button"
+                              onClick={() =>
+                                navigate(
+                                  `${spacePath(context.space.id)}/reports?teamId=${team.teamId}`,
+                                )
+                              }
+                            >
+                              {team.reportId == null
+                                ? '리포트 생성 화면'
+                                : '리포트 검토 화면'}
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -197,6 +220,26 @@ export default function ManagerDashboard({ context }) {
                         </dd>
                       </div>
                     </dl>
+                    <p>
+                      리포트 ·{' '}
+                      {team.reportStatus === 'PUBLISHED'
+                        ? '공개'
+                        : team.reportStatus === 'UNPUBLISHED'
+                          ? '비공개'
+                          : '미생성'}
+                    </p>
+                    <button
+                      className="secondary-button"
+                      onClick={() =>
+                        navigate(
+                          `${spacePath(context.space.id)}/reports?teamId=${team.teamId}`,
+                        )
+                      }
+                    >
+                      {team.reportId == null
+                        ? '리포트 생성 화면'
+                        : '리포트 검토 화면'}
+                    </button>
                     <details>
                       <summary>산출물·팀 참여 상태</summary>
                       <p>
@@ -352,6 +395,7 @@ export default function ManagerDashboard({ context }) {
           </>
         )}
       </ResourceState>
+      <ManagerPeerResponses context={context} teamId={teamId || undefined} />
     </section>
   );
 }

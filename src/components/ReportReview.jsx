@@ -1,5 +1,4 @@
 import { useSearchParams } from 'react-router';
-import { MockNotice } from './PlanningUi.jsx';
 import { TeamReport } from './ContributionReport.jsx';
 import { EmptyState, Field } from './ui.jsx';
 
@@ -19,7 +18,6 @@ export default function ReportReview({ context }) {
           않습니다.
         </p>
       </div>
-      <MockNotice />
       {entry ? (
         <>
           <Field label="리포트 대상 팀">

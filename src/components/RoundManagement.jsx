@@ -1,3 +1,4 @@
+import ManagerPeerResponses from './ManagerPeerResponses.jsx';
 import { useState } from 'react';
 import DateTimeInput from './DateTimeInput.jsx';
 import { currentDateTime } from '../lib/dateTime.js';
@@ -236,6 +237,7 @@ export default function RoundManagement({ context, onChanged }) {
           </EmptyState>
         )}
       </ResourceState>
+      <ManagerPeerResponses context={context} />
       {editing && (
         <Modal
           title={

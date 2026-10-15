@@ -228,6 +228,7 @@ export default function SpaceWorkspace({
                 <ReportReview context={managerContext} />
               ) : view === 'contributions' && team ? (
                 <MemberContributions
+                  key={`${team.id}:${targetUserId}`}
                   context={{
                     ...managerContext,
                     team,

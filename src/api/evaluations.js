@@ -1,5 +1,8 @@
 import { apiRequest } from './client.js';
 
+export const getManagerPeerResponses = (roundId, teamId) =>
+  apiRequest(`/api/evaluation-rounds/${roundId}/teams/${teamId}/responses`);
+
 export const listEvaluationRounds = (spaceId) =>
   apiRequest(`/api/spaces/${spaceId}/evaluation-rounds`);
 export const createEvaluationRound = (spaceId, input) =>

@@ -12,7 +12,6 @@ import {
   plannedRequest,
   resetMockState,
   MockError,
-  exampleEvaluation,
 } from './planned.js';
 
 export const isPreviewPath = (path) =>
@@ -115,7 +114,8 @@ export async function previewRequest(
       ['evaluation-rounds', 'manager-dashboard'].includes(parts[3])) ||
     parts[1] === 'evaluation-rounds' ||
     (parts[1] === 'teams' &&
-      ['my-work-summary', 'mid-feedback'].includes(parts[3]))
+      (['my-work-summary', 'mid-feedback'].includes(parts[3]) ||
+        (parts[3] === 'members' && parts[5] === 'contributions')))
   ) {
     const entry =
       parts[1] === 'teams'
@@ -290,11 +290,12 @@ export async function previewRequest(
     } else if (parts[3] === 'deliverables') {
       if (method === 'GET') {
         const taskId = Number(url.searchParams.get('taskId'));
+        const size = Number(url.searchParams.get('size') || 20);
         return entry.deliverables
           .filter((item) => !taskId || item.taskId === taskId)
           .slice(
-            Number(url.searchParams.get('page') || 0) * 20,
-            (Number(url.searchParams.get('page') || 0) + 1) * 20,
+            Number(url.searchParams.get('page') || 0) * size,
+            (Number(url.searchParams.get('page') || 0) + 1) * size,
           );
       }
       let fields = { ...body, type: 'TEXT' };
@@ -481,10 +482,6 @@ export async function previewRequest(
     approval.reason = body.reason || null;
     approval.decidedAt = new Date().toISOString();
     task.status = approval.status === 'APPROVED' ? 'DONE' : 'IN_PROGRESS';
-    if (approval.status === 'APPROVED')
-      state.ai[task.id] = exampleEvaluation(task, approval.id, {
-        successful: true,
-      });
     task.version++;
     state.approvals ||= {};
     state.approvals[task.id] = history;
