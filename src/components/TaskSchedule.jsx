@@ -283,13 +283,19 @@ export function TaskTimeline({
   sortLabel,
   onlyOverdue,
   onToggleOverdue,
+  labelWidth,
+  onLabelWidthChange,
 }) {
   const [preview, setPreview] = useState(null);
   const previewId = useId();
   const closeTimer = useRef(null);
+  const hoverTimer = useRef(null);
+  const resizeStart = useRef(null);
+  const cancelHover = () => clearTimeout(hoverTimer.current);
   const cancelClose = () => clearTimeout(closeTimer.current);
   const closePreview = () => {
     cancelClose();
+    cancelHover();
     closeTimer.current = setTimeout(() => {
       setPreview((current) =>
         document.activeElement === current?.anchor ? current : null,
@@ -298,14 +304,21 @@ export function TaskTimeline({
   };
   const previewEvents = (task, period) => ({
     'aria-describedby': preview?.task.id === task.id ? previewId : undefined,
-    onMouseEnter: (event) => showPreview(event.currentTarget, task, period),
+    onMouseEnter: (event) => {
+      cancelHover();
+      cancelClose();
+      const anchor = event.currentTarget;
+      hoverTimer.current = setTimeout(() => showPreview(anchor, task, period), 200);
+    },
     onMouseLeave: (event) => {
+      cancelHover();
       if (document.activeElement !== event.currentTarget) closePreview();
     },
     onFocus: (event) => showPreview(event.currentTarget, task, period),
     onBlur: closePreview,
   });
   const showPreview = (anchor, task, period) => {
+    cancelHover();
     cancelClose();
     const bounds = anchor.getBoundingClientRect();
     const width = Math.min(320, globalThis.innerWidth - 24);
@@ -319,22 +332,31 @@ export function TaskTimeline({
     const dismiss = (event) => {
       if (event?.target instanceof Element && event.target.closest('.timeline-preview')) return;
       clearTimeout(closeTimer.current);
+      clearTimeout(hoverTimer.current);
       setPreview(null);
     };
     const dismissOnEscape = (event) => {
-      if (event.key === 'Escape') dismiss();
+      if (event.key !== 'Escape') return;
+      if (document.getElementById(previewId)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      dismiss();
     };
     globalThis.addEventListener('scroll', dismiss, true);
     globalThis.addEventListener('resize', dismiss);
-    globalThis.addEventListener('keydown', dismissOnEscape);
+    globalThis.addEventListener('keydown', dismissOnEscape, true);
     return () => {
       clearTimeout(closeTimer.current);
+      clearTimeout(hoverTimer.current);
       globalThis.removeEventListener('scroll', dismiss, true);
       globalThis.removeEventListener('resize', dismiss);
-      globalThis.removeEventListener('keydown', dismissOnEscape);
+      globalThis.removeEventListener('keydown', dismissOnEscape, true);
     };
   }, []);
   useEffect(() => {
+    clearTimeout(hoverTimer.current);
+    clearTimeout(closeTimer.current);
     setPreview(null);
   }, [tasks, month]);
   const window = timelineWindow(month),
@@ -361,7 +383,7 @@ export function TaskTimeline({
     ({ period }) => period.startPassed,
   ).length;
   return (
-    <section className="task-schedule" aria-label="작업 타임라인">
+    <section className="task-schedule" aria-label="작업 타임라인" style={{ '--timeline-label-width': `${labelWidth}px` }}>
       <div className="timeline-summary" aria-label="조회 기간 작업 현황">
         <span>
           기간 내 작업 <strong>{visible.length}</strong>
@@ -399,7 +421,46 @@ export function TaskTimeline({
       >
         <div className="task-timeline">
           <div className="timeline-row timeline-header">
-            <div className="timeline-task-label">작업 · {sortLabel}</div>
+            <div className="timeline-task-label">
+              작업 · {sortLabel}
+              <div
+                className="timeline-column-resizer"
+                role="separator"
+                aria-label="작업명 영역 너비"
+                aria-orientation="vertical"
+                aria-valuemin={220}
+                aria-valuemax={520}
+                aria-valuenow={labelWidth}
+                aria-valuetext={`${labelWidth}픽셀`}
+                tabIndex={0}
+                title="드래그 또는 방향키로 너비 조절 · 두 번 클릭해 초기화"
+                onDoubleClick={() => onLabelWidthChange(300)}
+                onPointerDown={(event) => {
+                  if (event.button !== 0) return;
+                  event.preventDefault();
+                  event.currentTarget.focus();
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  resizeStart.current = { x: event.clientX, width: labelWidth };
+                }}
+                onPointerMove={(event) => {
+                  if (!resizeStart.current) return;
+                  const width = resizeStart.current.width + event.clientX - resizeStart.current.x;
+                  onLabelWidthChange(Math.round(Math.max(220, Math.min(520, width))));
+                }}
+                onPointerUp={(event) => {
+                  resizeStart.current = null;
+                  if (event.currentTarget.hasPointerCapture(event.pointerId))
+                    event.currentTarget.releasePointerCapture(event.pointerId);
+                }}
+                onLostPointerCapture={() => { resizeStart.current = null; }}
+                onKeyDown={(event) => {
+                  const values = { ArrowLeft: labelWidth - 16, ArrowRight: labelWidth + 16, Home: 220, End: 520 };
+                  if (!Object.hasOwn(values, event.key)) return;
+                  event.preventDefault();
+                  onLabelWidthChange(Math.max(220, Math.min(520, values[event.key])));
+                }}
+              />
+            </div>
             <div className="timeline-scale">
               <div className="timeline-months">
                 {monthBands.map(({ value, left, width }) => (

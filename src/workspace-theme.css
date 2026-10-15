@@ -1563,3 +1563,38 @@ h1[tabindex="-1"]:focus {
   .task-month-navigation h2 { font-size: 15px; }
   .task-month-navigation .heading-actions { flex-wrap: wrap; }
 }
+
+/* Keep the active query visible without reopening filter controls. */
+.task-active-filters { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.task-filter-chip { display: inline-flex; align-items: center; gap: 8px; max-width: min(320px, 100%); border: 1px solid #cbdcd3; border-radius: 5px; background: #f1f7f3; color: #245747; padding: 5px 8px; font: inherit; font-size: 12px; cursor: pointer; }
+.task-filter-chip > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.task-filter-chip:hover { background: #e5f0e9; }
+.task-filter-chip:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.task-schedule-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.task-timeline { min-width: calc(var(--timeline-label-width, 300px) + 640px); }
+.timeline-row { grid-template-columns: var(--timeline-label-width, 300px) minmax(640px, 1fr); }
+.task-timeline-scroll { max-height: clamp(260px, 55dvh, 680px); scroll-padding-left: var(--timeline-label-width, 300px); }
+.timeline-column-resizer { position: absolute; right: -5px; top: 0; bottom: 0; z-index: 7; width: 10px; cursor: col-resize; touch-action: none; }
+.timeline-column-resizer::after { content: ''; position: absolute; top: 12px; bottom: 12px; left: 4px; width: 2px; background: #bbc7d4; border-radius: 2px; }
+.timeline-column-resizer:hover::after,
+.timeline-column-resizer:focus-visible::after { background: var(--brand); width: 3px; }
+.timeline-column-resizer:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.task-table-scroll { max-height: min(64dvh, 640px); overflow: auto; scroll-padding: 52px 0 12px 250px; }
+.task-table thead th { position: sticky; top: 0; z-index: 3; background: #f7f7f5; box-shadow: inset 0 -1px var(--border); }
+.task-table tbody th { position: sticky; left: 0; z-index: 2; background: #fff; box-shadow: inset -1px 0 var(--border); }
+.task-table thead th:first-child { left: 0; z-index: 4; }
+.task-table tbody tr:hover th { background: #f6f8f6; }
+.modal-backdrop:has(.modal-fullscreen) { padding: 12px; }
+.real-modal.modal-fullscreen { width: calc(100vw - 24px); height: calc(100dvh - 24px); max-width: none; max-height: none; }
+.modal-fullscreen .modal-body { display: flex; flex: 1; min-height: 0; padding: 12px 20px 16px; }
+.modal-fullscreen .task-board-page { display: flex; flex-direction: column; width: 100%; min-height: 0; gap: 12px; }
+.modal-fullscreen .task-board-page > .page-heading { display: none; }
+.modal-fullscreen .task-schedule { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.modal-fullscreen .task-timeline-scroll { flex: 1; min-height: 140px; max-height: none; }
+.modal-fullscreen .timeline-summary { padding-bottom: 4px; }
+.modal-fullscreen .timeline-legend { margin-bottom: 8px; }
+.modal-fullscreen .task-schedule > .field-help { flex-shrink: 0; }
+@media (max-width: 720px) {
+  .task-schedule-controls { width: 100%; }
+  .modal-fullscreen .modal-body { padding: 12px; }
+}
