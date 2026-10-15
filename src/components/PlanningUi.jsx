@@ -44,21 +44,26 @@ export function RoundPicker({ rounds, selected, onSelect }) {
     </div>
   );
 }
-export function FeedbackCards({ member }) {
+export function FeedbackSummary({ member }) {
   return (
     <div className="feedback-layout">
-      <div className="metric-grid">
-        {Object.entries(peerCriteria).map(([code, label]) => (
-          <MetricCard
-            key={code}
-            label={label}
-            value={`${Number(member.averageScores[code]).toFixed(2)} / 5`}
-          />
-        ))}
-      </div>
+      <section className="feedback-score-list" aria-label="항목별 협업 평균">
+        <h2>항목별 평균</h2>
+        <dl>
+          {Object.entries(peerCriteria).map(([code, label]) => (
+            <div key={code}>
+              <dt>{label}</dt>
+              <dd>{Number(member.averageScores[code]).toFixed(2)} / 5</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="field-help">
+          동료에게 받은 평균입니다. 최종 기여율과는 다른 지표입니다.
+        </p>
+      </section>
       <section className="panel guidance-panel">
         <span className="eyebrow">다음 협업을 위한 안내</span>
-        <h2>조금씩 개선해 보세요</h2>
+        <h2>다음 작업에서 확인할 점</h2>
         {member.improvementGuidance.length ? (
           member.improvementGuidance.map((guidance) => (
             <p key={guidance}>{guidance}</p>

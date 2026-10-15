@@ -40,6 +40,10 @@ export function validatePeerResponse(scores, reason) {
   return null;
 }
 
+export function isTaskExecutionOverdue(task, now = new Date()) {
+  return ['TODO', 'IN_PROGRESS'].includes(task.status) && Date.parse(task.dueAt) < Number(now);
+}
+
 export function workSummary(teamId, userId, tasks, now = new Date()) {
   const sum = (items, own) =>
     items.reduce(
@@ -77,7 +81,7 @@ export function workSummary(teamId, userId, tasks, now = new Date()) {
       (task) => task.status === 'PENDING_APPROVAL',
     ).length,
     myOverdueTaskCount: ownTasks.filter(
-      (task) => task.status !== 'DONE' && new Date(task.dueAt) < now,
+      (task) => isTaskExecutionOverdue(task, now),
     ).length,
   };
 }

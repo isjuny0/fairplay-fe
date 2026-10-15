@@ -1,3 +1,5 @@
+import Icon from './Icon.jsx';
+import { formatDate } from '../lib/domain.js';
 import useResource from '../hooks/useResource.js';
 import { getMyWorkSummary } from '../api/teams.js';
 import { formatPercent } from '../lib/evaluation.js';
@@ -18,12 +20,22 @@ export default function TeamHome({ context, onNavigate }) {
           <h1>{context.team.name}</h1>
           <p>팀의 진행 상황과 내가 맡은 작업을 확인하세요.</p>
         </div>
-        <button
-          className="primary-button"
-          onClick={() => onNavigate('작업', { mine: '1' })}
-        >
-          내 작업 확인
-        </button>
+        <div className="heading-actions">
+          <button
+            className="secondary-button"
+            disabled={resource.loading}
+            onClick={resource.reload}
+          >
+            <Icon name="refresh" />
+            현황 새로고침
+          </button>
+          <button
+            className="primary-button"
+            onClick={() => onNavigate('작업', { mine: '1' })}
+          >
+            내 작업 확인
+          </button>
+        </div>
       </div>
       <ResourceState resource={resource}>
         {summary && (
@@ -34,10 +46,17 @@ export default function TeamHome({ context, onNavigate }) {
                 aria-label="본인 작업 현황"
               >
                 <h2>본인 작업 현황</h2>
-                <p className="field-help">
-                  현재 등록된 작업의 예상 작업량과 담당 비율을 기준으로
-                  계산합니다.
-                </p>
+                <div className="section-heading home-summary-context">
+                  <p className="field-help">
+                    현재 등록된 작업의 예상 작업량과 담당 비율을 기준으로
+                    계산합니다.
+                  </p>
+                  {summary.asOf && (
+                    <time dateTime={summary.asOf}>
+                      조회 기준 {formatDate(summary.asOf)}
+                    </time>
+                  )}
+                </div>
                 <div className="metric-grid three">
                   <MetricCard
                     accent
@@ -82,7 +101,7 @@ export default function TeamHome({ context, onNavigate }) {
                     onClick={() =>
                       onNavigate('작업', {
                         mine: '1',
-                        overdue: '1',
+                        overdue: 'work',
                         view: 'list',
                       })
                     }
@@ -92,8 +111,8 @@ export default function TeamHome({ context, onNavigate }) {
                   </button>
                 </div>
                 <p className="field-help">
-                  승인 대기와 지연은 함께 집계될 수 있습니다. 내 담당 작업을
-                  확인하고 다음 행동을 정하세요.
+                  마감 지연은 할 일·진행 중인 내 작업만 집계합니다. 승인 대기
+                  중인 작업은 제외합니다.
                 </p>
               </section>
               <section className="panel progress-panel">
@@ -119,18 +138,32 @@ export default function TeamHome({ context, onNavigate }) {
               <p>
                 작업을 기록하고, 협업을 돌아보고, 공개된 최종 결과를 확인하세요.
               </p>
-              <div className="heading-actions">
+              <div className="collaboration-navigation">
                 <button
-                  className="secondary-button"
+                  className="collaboration-link"
+                  aria-label="동료 평가 작성"
                   onClick={() => onNavigate('동료 평가')}
                 >
-                  동료 평가 작성
+                  <span>
+                    <strong>동료 평가 작성</strong>
+                    <small>
+                      팀원의 수행 행동을 돌아보고 평가를 제출하세요.
+                    </small>
+                  </span>
+                  <Icon name="arrow" />
                 </button>
                 <button
-                  className="secondary-button"
+                  className="collaboration-link"
+                  aria-label="공개 리포트 보기"
                   onClick={() => onNavigate('기여도 리포트')}
                 >
-                  공개 리포트 보기
+                  <span>
+                    <strong>공개 리포트 보기</strong>
+                    <small>
+                      관리자가 공개한 결과와 본인의 계산 근거를 확인하세요.
+                    </small>
+                  </span>
+                  <Icon name="arrow" />
                 </button>
               </div>
             </section>

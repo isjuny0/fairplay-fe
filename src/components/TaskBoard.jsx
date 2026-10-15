@@ -14,6 +14,7 @@ import {
   statusLabels,
 } from '../lib/domain.js';
 import TaskForm from './TaskForm.jsx';
+import { isTaskExecutionOverdue } from '../lib/evaluation.js';
 import TaskDetail from './TaskDetail.jsx';
 import TaskTable from './TaskTable.jsx';
 import { MonthNavigation, TaskCalendar, TaskTimeline } from './TaskSchedule.jsx';
@@ -45,7 +46,8 @@ export default function TaskBoard({
     ? searchParams.get('status')
     : 'ALL';
   const onlyMine = searchParams.get('mine') === '1';
-  const onlyOverdue = searchParams.get('overdue') === '1';
+  const onlyExecutionOverdue = searchParams.get('overdue') === 'work';
+  const onlyOverdue = onlyExecutionOverdue || searchParams.get('overdue') === '1';
   const [preferences, setPreferences] = useState(readTaskViewPreferences);
   const view = searchParams.has('view')
     ? ['board', 'list', 'calendar', 'timeline'].includes(searchParams.get('view'))
@@ -172,7 +174,7 @@ export default function TaskBoard({
     .filter(
       (task) =>
         (filter === 'ALL' || task.status === filter) &&
-        (!onlyOverdue || isOverdue(task)) &&
+        (!onlyOverdue || (onlyExecutionOverdue ? isTaskExecutionOverdue(task, now) : isOverdue(task))) &&
         (!onlyMine ||
           task.assignees.some((assignment) => assignment.userId === user.id)) &&
         task.title
@@ -203,7 +205,7 @@ export default function TaskBoard({
   const activeFilters = [
     ...(filter !== 'ALL' ? [{ key: 'status', label: `상태: ${statusLabels[filter]}` }] : []),
     ...(onlyMine ? [{ key: 'mine', label: '내 담당' }] : []),
-    ...(onlyOverdue ? [{ key: 'overdue', label: '마감 지남' }] : []),
+    ...(onlyOverdue ? [{ key: 'overdue', label: onlyExecutionOverdue ? '수행 지연: 할 일·진행 중' : '마감 지남' }] : []),
     ...(query.trim() ? [{ key: 'q', label: `검색: ${query.trim()}` }] : []),
     ...(sort !== defaultSort ? [{ key: 'sort', label: `정렬: ${sortLabel}` }] : []),
   ];
@@ -288,7 +290,7 @@ export default function TaskBoard({
                   (resource.data || []).filter(
                     (task) =>
                       (status === 'ALL' || task.status === status) &&
-                      (!onlyOverdue || isOverdue(task)) &&
+                      (!onlyOverdue || (onlyExecutionOverdue ? isTaskExecutionOverdue(task, now) : isOverdue(task))) &&
                       task.title
                         .toLocaleLowerCase()
                         .includes(query.trim().toLocaleLowerCase()) &&
