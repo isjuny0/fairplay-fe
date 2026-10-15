@@ -115,6 +115,7 @@ function ScheduleTask({ task, onOpenTask, members }) {
 }
 
 export function TaskCalendar({
+  now,
   tasks,
   month,
   onOpenTask,
@@ -123,7 +124,7 @@ export function TaskCalendar({
   const [selectedDate, setSelectedDate] = useState(null);
   const days = taskMonthDays(month),
     byDate = tasksByDate(tasks, days);
-  const today = taskDate(new Date().toISOString());
+  const today = taskDate(new Date(now).toISOString());
   return (
     <section className="task-schedule" aria-label="작업 캘린더">
       <details className="task-schedule-help">
@@ -268,6 +269,7 @@ export function TaskCalendar({
 }
 
 export function TaskTimeline({
+  now,
   tasks,
   month,
   onOpenTask,
@@ -283,6 +285,7 @@ export function TaskTimeline({
   const closeTimer = useRef(null);
   const hoverTimer = useRef(null);
   const resizeStart = useRef(null);
+  const previousSchedule = useRef({ tasks, month });
   const cancelHover = () => clearTimeout(hoverTimer.current);
   const cancelClose = () => clearTimeout(closeTimer.current);
   const closePreview = () => {
@@ -347,12 +350,17 @@ export function TaskTimeline({
     };
   }, []);
   useEffect(() => {
+    const previous = previousSchedule.current;
+    previousSchedule.current = { tasks, month };
+    const sameTasks = previous.tasks.length === tasks.length &&
+      previous.tasks.every((task, index) => task === tasks[index]);
+    if (previous.month === month && sameTasks) return;
     clearTimeout(hoverTimer.current);
     clearTimeout(closeTimer.current);
     setPreview(null);
   }, [tasks, month]);
-  const window = timelineWindow(month),
-    now = Date.now();
+  const window = timelineWindow(month);
+  const previewPeriod = preview ? timelineTaskPeriod(preview.task, window, now) : null;
   const visible = tasks
     .map((task) => ({ task, period: timelineTaskPeriod(task, window, now) }))
     .filter(({ period }) => period);
@@ -564,6 +572,7 @@ export function TaskTimeline({
                         width: `${period.planned.width}%`,
                       }}
                       aria-label={description}
+                      tabIndex={-1}
                       {...previewEvents(task, period)}
                       onClick={() => onOpenTask(task.id)}
                     >
@@ -664,9 +673,9 @@ export function TaskTimeline({
             <div><dt>시작일</dt><dd>{formatDate(preview.task.startAt)}</dd></div>
             <div><dt>마감일</dt><dd>{formatDate(preview.task.dueAt)}</dd></div>
           </dl>
-          {preview.period.label && (
-            <span className={preview.period.overdue ? 'timeline-late-label' : 'timeline-start-label'}>
-              {preview.period.label}
+          {previewPeriod?.label && (
+            <span className={previewPeriod.overdue ? 'timeline-late-label' : 'timeline-start-label'}>
+              {previewPeriod.label}
             </span>
           )}
         </div>, document.body,

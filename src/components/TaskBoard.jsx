@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { createTask, listTasks } from '../api/tasks.js';
 import useResource from '../hooks/useResource.js';
+import useCurrentTime from '../hooks/useCurrentTime.js';
 import { useInteractions } from '../hooks/useInteractions.js';
 import {
   canModifyTeamWork,
@@ -37,6 +38,7 @@ export default function TaskBoard({
   onTaskBack,
 }) {
   const { notify, clearChanges } = useInteractions();
+  const now = useCurrentTime();
   const resource = useResource(() => listTasks(team.id), [team.id, taskId]);
   const [searchParams, setSearchParams] = useSearchParams();
   const filter = Object.hasOwn(statusLabels, searchParams.get('status'))
@@ -165,7 +167,7 @@ export default function TaskBoard({
     team.canCreateTask && members.length >= 2 && canModifyTeamWork(team);
   const hasFilters = appliedFilterCount > 0;
   const isOverdue = (task) =>
-    task.status !== 'DONE' && new Date(task.dueAt) < new Date();
+    task.status !== 'DONE' && Date.parse(task.dueAt) < now;
   const tasks = (resource.data || [])
     .filter(
       (task) =>
@@ -191,7 +193,7 @@ export default function TaskBoard({
   const isSchedule = view === 'calendar' || view === 'timeline';
   const scheduleWindow = view === 'timeline' ? timelineWindow(month) : null;
   const periodTaskCount = view === 'timeline'
-    ? tasks.filter((task) => timelineTaskPeriod(task, scheduleWindow)).length
+    ? tasks.filter((task) => timelineTaskPeriod(task, scheduleWindow, now)).length
     : tasks.filter((task) =>
         taskDate(task.startAt).slice(0, 7) <= month &&
         taskDate(task.dueAt).slice(0, 7) >= month,
@@ -439,6 +441,7 @@ export default function TaskBoard({
           </EmptyState>
         ) : view === 'calendar' ? (
           <TaskCalendar
+            now={now}
             tasks={tasks}
             month={month}
             members={members}
@@ -446,6 +449,7 @@ export default function TaskBoard({
           />
         ) : view === 'timeline' ? (
           <TaskTimeline
+            now={now}
             sortLabel={sortLabel}
             labelWidth={timelineLabelWidth}
             onLabelWidthChange={setTimelineLabelWidth}
@@ -457,7 +461,7 @@ export default function TaskBoard({
             onOpenTask={onOpenTask}
           />
         ) : tasks.length && view === 'list' ? (
-          <TaskTable tasks={tasks} members={members} onOpenTask={onOpenTask} />
+          <TaskTable now={now} tasks={tasks} members={members} onOpenTask={onOpenTask} />
         ) : tasks.length ? (
           <div className="task-columns">
             {Object.entries(statusLabels).map(
@@ -539,7 +543,7 @@ export default function TaskBoard({
                               <small>마감 {formatDate(task.dueAt)}</small>
                             </div>
                             {task.status !== 'DONE' &&
-                              new Date(task.dueAt) < new Date() && (
+                              Date.parse(task.dueAt) < now && (
                                 <span className="is-overdue">마감 지남</span>
                               )}
                           </article>
