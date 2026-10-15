@@ -15,7 +15,7 @@ import {
 import TaskForm from './TaskForm.jsx';
 import TaskDetail from './TaskDetail.jsx';
 import TaskTable from './TaskTable.jsx';
-import { TaskCalendar, TaskTimeline } from './TaskSchedule.jsx';
+import { MonthNavigation, TaskCalendar, TaskTimeline } from './TaskSchedule.jsx';
 import { currentTaskMonth, isTaskMonth } from '../lib/taskSchedule.js';
 import { EmptyState, ResourceState } from './ui.jsx';
 
@@ -173,26 +173,36 @@ export default function TaskBoard({
           <Icon name="plus" />새 작업 만들기
         </button>
       </div>
-      <div
-        className="view-switch task-view-navigation"
-        role="group"
-        aria-label="작업 보기 방식"
-      >
-        {[
-          ['board', '보드'],
-          ['list', '목록'],
-          ['calendar', '캘린더'],
-          ['timeline', '타임라인'],
-        ].map(([mode, label]) => (
-          <button
-            key={mode}
-            aria-pressed={view === mode}
-            className={view === mode ? 'active' : ''}
-            onClick={() => setListOption('view', mode === 'board' ? '' : mode)}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="task-view-controls">
+        <div
+          className="view-switch task-view-navigation"
+          role="group"
+          aria-label="작업 보기 방식"
+        >
+          {[
+            ['board', '보드'],
+            ['list', '목록'],
+            ['calendar', '캘린더'],
+            ['timeline', '타임라인'],
+          ].map(([mode, label]) => (
+            <button
+              key={mode}
+              aria-pressed={view === mode}
+              className={view === mode ? 'active' : ''}
+              onClick={() => setListOption('view', mode === 'board' ? '' : mode)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {['calendar', 'timeline'].includes(view) && (
+          <MonthNavigation
+            month={month}
+            span={view === 'timeline' ? 3 : 1}
+            onMonthChange={(next) => setListOption('month', next)}
+            tasks={tasks}
+          />
+        )}
       </div>
       <div
         className={`mobile-status-tabs ${view === 'list' ? 'list-status-tabs' : ''}`}
@@ -330,16 +340,16 @@ export default function TaskBoard({
           <TaskCalendar
             tasks={tasks}
             month={month}
-            onMonthChange={(next) => setListOption('month', next)}
             members={members}
             onOpenTask={onOpenTask}
           />
         ) : view === 'timeline' ? (
           <TaskTimeline
             sortLabel={sortLabel}
+            onlyOverdue={onlyOverdue}
+            onToggleOverdue={() => setListOption('overdue', onlyOverdue ? '' : '1')}
             tasks={tasks}
             month={month}
-            onMonthChange={(next) => setListOption('month', next)}
             members={members}
             onOpenTask={onOpenTask}
           />
