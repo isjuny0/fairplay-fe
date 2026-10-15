@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   deleteTask,
   getTask,
@@ -34,6 +34,7 @@ import { ErrorNotice, Field, ResourceState } from './ui.jsx';
 function OwnContribution({ task, contribution, busy, blocked, onSave }) {
   const [description, setDescription] = useState(contribution || '');
   const [error, setError] = useState(null);
+  const descriptionInput = useRef(null);
   useEffect(() => {
     if (!isMutable(task)) setDescription(contribution || '');
   }, [task.status, contribution]);
@@ -48,6 +49,7 @@ function OwnContribution({ task, contribution, busy, blocked, onSave }) {
           setError(
             new Error('수행 설명은 10~1000자로 작성하거나 비워 주세요.'),
           );
+          descriptionInput.current?.focus();
           return;
         }
         setError(null);
@@ -57,16 +59,21 @@ function OwnContribution({ task, contribution, busy, blocked, onSave }) {
       <Field
         label="내 수행 설명"
         help="공동 담당자는 모두 작성해야 합니다. 비워서 저장하면 기존 설명을 제거합니다."
+        error={error?.message}
       >
         <textarea
+          ref={descriptionInput}
+          id="own-contribution-description"
           disabled={busy || blocked || !isMutable(task)}
           maxLength={1000}
           rows={4}
           value={description}
-          onChange={(event) => setDescription(event.target.value)}
+          onChange={(event) => {
+            setDescription(event.target.value);
+            setError(null);
+          }}
         />
       </Field>
-      <ErrorNotice error={error} />
       {isMutable(task) && description !== (contribution || '') && (
         <p className="field-help" role="status">
           저장하지 않은 수행 설명이 있습니다.
@@ -105,13 +112,16 @@ export default function TaskDetail({
   const [editing, setEditing] = useState(false);
   const [reviewerId, setReviewerId] = useState('');
   const { confirm, confirmDiscard, notify } = useInteractions();
-  const mutate = async (action) => {
+  const mutate = async (
+    action,
+    successMessage = '작업 변경 사항을 저장했습니다.',
+  ) => {
     if (!canModifyTeamWork(team)) return;
     setBusy(true);
     setError(null);
     try {
       await action();
-      notify('작업 변경 사항을 저장했습니다.');
+      notify(successMessage);
       setEditing(false);
       resource.reload();
     } catch (requestError) {
@@ -126,6 +136,26 @@ export default function TaskDetail({
     (approval) => approval.status === 'PENDING',
   );
   const candidates = task ? reviewerCandidates(members, task.assignees) : [];
+  const latestDecision = history[0];
+  const missingContributions =
+    task?.assignees.length > 1
+      ? task.assignees.filter(
+          (assignment) =>
+            !resource.data.contributions
+              .find((entry) => entry.userId === assignment.userId)
+              ?.contributionDescription?.trim(),
+        )
+      : [];
+  const hasDeliverables = Boolean(resource.data?.deliverableSummary?.length);
+  const hasEligibleReviewer = candidates.some(
+    (member) => member.userId === task?.completionReviewerId,
+  );
+  const completionReady =
+    task?.status === 'IN_PROGRESS' &&
+    !missingContributions.length &&
+    hasDeliverables &&
+    hasEligibleReviewer;
+
   return (
     <section className="stack">
       <button className="secondary-button back-button" onClick={onBack}>
@@ -161,6 +191,20 @@ export default function TaskDetail({
                 </button>
               )}
             </div>
+            {isMutable(task) && latestDecision?.status === 'REJECTED' && (
+              <section
+                className="notice rejection-notice"
+                aria-label="최근 반려 사유"
+              >
+                <h2>보완 필요</h2>
+                <p className="preserve-lines">{latestDecision.reason}</p>
+                <p className="field-help">
+                  {memberName(members, latestDecision.reviewerId)} ·{' '}
+                  {formatDate(latestDecision.decidedAt)} · 내용을 보완한 뒤 다시
+                  완료를 요청해 주세요.
+                </p>
+              </section>
+            )}
             <div className="task-detail-layout">
               <div className="stack">
                 <section className="panel">
@@ -248,6 +292,40 @@ export default function TaskDetail({
                 {isAssignee(task, user.id) && isMutable(task) && (
                   <section className="panel stack task-next-action">
                     <h2>작업 진행</h2>
+                    <ul
+                      className="completion-readiness"
+                      aria-label="완료 요청 준비 상태"
+                    >
+                      <li>
+                        {task.status === 'IN_PROGRESS' ? '✓' : '○'} 작업 진행 중
+                      </li>
+                      <li>
+                        {hasDeliverables
+                          ? '✓ 연결 산출물 등록 완료'
+                          : '○ 연결 산출물 미등록'}
+                      </li>
+                      {task.assignees.length > 1 &&
+                        task.assignees.map((assignment) => (
+                          <li key={assignment.userId}>
+                            {missingContributions.some(
+                              (entry) => entry.userId === assignment.userId,
+                            )
+                              ? '○'
+                              : '✓'}{' '}
+                            {memberName(members, assignment.userId)} 수행 설명{' '}
+                            {missingContributions.some(
+                              (entry) => entry.userId === assignment.userId,
+                            )
+                              ? '미작성'
+                              : '작성 완료'}
+                          </li>
+                        ))}
+                      <li>
+                        {hasEligibleReviewer
+                          ? '✓ 승인자 지정 완료'
+                          : '○ 적격한 승인자 지정 필요'}
+                      </li>
+                    </ul>
                     <div className="heading-actions">
                       <button
                         className="secondary-button"
@@ -272,12 +350,14 @@ export default function TaskDetail({
                         disabled={
                           busy ||
                           !canModifyTeamWork(team) ||
-                          task.completionBlockReason !== null
+                          task.completionBlockReason !== null ||
+                          !completionReady
                         }
                         onClick={async () => {
                           if (!(await confirmDiscard())) return;
-                          mutate(() =>
-                            requestCompletion(task.id, task.version),
+                          mutate(
+                            () => requestCompletion(task.id, task.version),
+                            `${memberName(members, task.completionReviewerId)}님에게 완료 검토를 요청했습니다.`,
                           );
                         }}
                       >

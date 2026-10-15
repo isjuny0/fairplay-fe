@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { approveCompletion, rejectCompletion } from '../api/approvals.js';
 import { ErrorNotice, Field } from './ui.jsx';
 import { useInteractions } from '../hooks/useInteractions.js';
@@ -13,6 +13,8 @@ export default function ApprovalDecision({
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [reasonError, setReasonError] = useState('');
+  const reasonInput = useRef(null);
   if (
     approval.status !== 'PENDING' ||
     approval.reviewerId !== user.id ||
@@ -26,7 +28,8 @@ export default function ApprovalDecision({
       decision === 'reject' &&
       (trimmedReason.length < 10 || trimmedReason.length > 500)
     ) {
-      setError(new Error('반려 사유를 10~500자로 작성해 주세요.'));
+      setReasonError('반려 사유를 10~500자로 작성해 주세요.');
+      reasonInput.current?.focus();
       return;
     }
     if (
@@ -62,18 +65,28 @@ export default function ApprovalDecision({
       <p>작업 설명·담당 배분·개인 수행 설명·최신 산출물을 확인해 주세요.</p>
       <Field
         label="반려 사유"
+        error={reasonError}
         help="반려할 때만 10~500자로 작성해 주세요. 담당자가 수정할 내용을 구체적으로 적어주세요."
       >
         <textarea
+          ref={reasonInput}
           disabled={busy || blocked}
           rows={3}
           maxLength={500}
           value={reason}
-          onChange={(event) => setReason(event.target.value)}
+          onChange={(event) => {
+            setReason(event.target.value);
+            setReasonError('');
+          }}
         />
       </Field>
       <p className="character-count">{reason.length} / 500자</p>
-      <ErrorNotice error={error} onRetry={onChanged} />
+      <ErrorNotice
+        error={error}
+        onRetry={
+          error?.status === 409 || error?.status >= 500 ? onChanged : undefined
+        }
+      />
       <div className="modal-actions">
         <button
           className="secondary-button"
