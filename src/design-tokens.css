@@ -1,0 +1,46 @@
+/* Shared workspace foundations. Component layouts live in their own styles. */
+:root {
+  font-family:
+    "Pretendard Variable",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Apple SD Gothic Neo",
+    "Malgun Gothic",
+    sans-serif;
+  font-synthesis: none;
+  color: #20242b;
+  background: #fff;
+  --font-brand: ui-rounded, "Avenir Next", "Arial Rounded MT Bold", sans-serif;
+  --text-primary: #20242b;
+  --text-muted: #666b74;
+  --surface: #fff;
+  --surface-secondary: #f8f9fa;
+  --border: #e5e7eb;
+  --neutral-action: #57554f;
+  --brand: #245747;
+  --brand-dark: #1b4437;
+  --brand-light: #eaf3ee;
+  --text-body: 14px;
+  --text-support: 13px;
+  --text-caption: 12px;
+  --text-subheading: 16px;
+  --text-section: 18px;
+  --text-page: 24px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-section: var(--space-6);
+  --space-card: var(--space-4);
+  --radius-card: 6px;
+  --radius-control: 6px;
+  --control-height: 36px;
+  --header-height: 56px;
+  --page-width: 1480px;
+  --task-todo: #697586;
+  --task-progress: #2974d7;
+  --task-review: #a77517;
+  --task-done: #269269;
+}

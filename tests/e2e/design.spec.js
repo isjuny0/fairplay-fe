@@ -82,7 +82,7 @@ for (const width of [1440, 390]) {
     await page.goto('/preview/main');
     await expect(page.getByRole('heading', { name: '내 스페이스', exact: true })).toBeVisible();
     await expect(page.locator('html')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-    await expect(page.locator('body')).toHaveCSS('font-size', '16px');
+    await expect(page.locator('body')).toHaveCSS('font-size', '14px');
     await expect(page.getByRole('button', { name: 'Fairplay', exact: true })).toHaveCSS('font-weight', '400');
     const layout = await page.evaluate(() => ({
       heading: parseFloat(getComputedStyle(document.querySelector('h1')).fontSize),
@@ -108,7 +108,7 @@ for (const width of [1440, 390]) {
   test(`문서형 워크스페이스 ${width}px: 초록 강조·카드·구분선과 상태색`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('/preview/spaces/1/teams/1/tasks');
-    await expect(page.locator('.sidebar')).toHaveCSS('background-color', 'rgb(247, 247, 245)');
+    await expect(page.locator('.sidebar')).toHaveCSS('background-color', 'rgb(248, 249, 250)');
     await expect(page.locator('.nav-item.active').first()).toHaveCSS('background-color', 'rgb(234, 243, 238)');
     await expect(page.locator('.board-task-card').first()).toHaveCSS('border-radius', '6px');
     await expect(page.locator('.board-task-card').first()).toHaveCSS('box-shadow', 'none');

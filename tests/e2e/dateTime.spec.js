@@ -195,10 +195,10 @@ for (const width of [1440, 390, 320]) {
     );
     await expect(
       picker.locator('.time-picker-options [aria-pressed="true"]').first(),
-    ).toHaveCSS('background-color', 'rgb(55, 53, 47)');
+    ).toHaveCSS('background-color', 'rgb(32, 36, 43)');
     await expect(
       picker.getByRole('button', { name: '시간 적용', exact: true }),
-    ).toHaveCSS('background-color', 'rgb(55, 53, 47)');
+    ).toHaveCSS('background-color', 'rgb(32, 36, 43)');
     expect(await picker.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(
       false,
     );
@@ -314,9 +314,9 @@ test('공통 입력창의 글씨·높이·모서리와 페이지 제목 크기�
   const dialog = await openCreate(page);
   const fields = dialog.locator('.form-field input, .form-field textarea');
   for (const input of await fields.all()) {
-    await expect(input).toHaveCSS('font-size', '16px');
-    await expect(input).toHaveCSS('min-height', '46px');
-    await expect(input).toHaveCSS('border-radius', '5px');
+    await expect(input).toHaveCSS('font-size', '14px');
+    await expect(input).toHaveCSS('min-height', '36px');
+    await expect(input).toHaveCSS('border-radius', '6px');
   }
   await dialog.getByRole('button', { name: '취소', exact: true }).click();
   for (const path of [
@@ -328,7 +328,7 @@ test('공통 입력창의 글씨·높이·모서리와 페이지 제목 크기�
     await page.goto(path);
     await expect(page.locator('.main-content h1')).toHaveCSS(
       'font-size',
-      '26.04px',
+      '24px',
     );
   }
 });
