@@ -14,6 +14,9 @@ import {
 } from '../lib/domain.js';
 import TaskForm from './TaskForm.jsx';
 import TaskDetail from './TaskDetail.jsx';
+import TaskTable from './TaskTable.jsx';
+import { TaskCalendar, TaskTimeline } from './TaskSchedule.jsx';
+import { currentTaskMonth, isTaskMonth } from '../lib/taskSchedule.js';
 import { EmptyState, ResourceState } from './ui.jsx';
 
 export default function TaskBoard({
@@ -33,7 +36,14 @@ export default function TaskBoard({
     : 'ALL';
   const onlyMine = searchParams.get('mine') === '1';
   const onlyOverdue = searchParams.get('overdue') === '1';
-  const view = searchParams.get('view') === 'list' ? 'list' : 'board';
+  const view = ['list', 'calendar', 'timeline'].includes(
+    searchParams.get('view'),
+  )
+    ? searchParams.get('view')
+    : 'board';
+  const month = isTaskMonth(searchParams.get('month'))
+    ? searchParams.get('month')
+    : currentTaskMonth();
   const query = searchParams.get('q') || '';
   const sort = ['deadline', 'newest'].includes(searchParams.get('sort'))
     ? searchParams.get('sort')
@@ -151,6 +161,27 @@ export default function TaskBoard({
         </button>
       </div>
       <div
+        className="view-switch task-view-navigation"
+        role="group"
+        aria-label="작업 보기 방식"
+      >
+        {[
+          ['board', '보드'],
+          ['list', '목록'],
+          ['calendar', '캘린더'],
+          ['timeline', '타임라인'],
+        ].map(([mode, label]) => (
+          <button
+            key={mode}
+            aria-pressed={view === mode}
+            className={view === mode ? 'active' : ''}
+            onClick={() => setListOption('view', mode === 'board' ? '' : mode)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <div
         className={`mobile-status-tabs ${view === 'list' ? 'list-status-tabs' : ''}`}
         role="group"
         aria-label="작업 상태 선택"
@@ -228,22 +259,6 @@ export default function TaskBoard({
           id={filterPanelId}
           className={`task-filter-fields ${filtersOpen ? 'is-open' : ''}`}
         >
-          <div className="view-switch" role="group" aria-label="작업 보기 방식">
-            <button
-              aria-pressed={view === 'board'}
-              className={view === 'board' ? 'active' : ''}
-              onClick={() => setListOption('view', '')}
-            >
-              보드
-            </button>
-            <button
-              aria-pressed={view === 'list'}
-              className={view === 'list' ? 'active' : ''}
-              onClick={() => setListOption('view', 'list')}
-            >
-              목록
-            </button>
-          </div>
           <label>
             정렬
             <select
@@ -297,46 +312,24 @@ export default function TaskBoard({
             </button>
           )}
         </div>
-        {tasks.length && view === 'list' ? (
-          <ul className="task-list-view" aria-label="정렬된 작업 목록">
-            {tasks.map((task) => (
-              <li className="panel task-list-item" key={task.id}>
-                <div className="task-list-main">
-                  <span
-                    className={`status-badge task-state-${task.status.toLowerCase()}`}
-                  >
-                    {statusLabels[task.status]}
-                  </span>
-                  <button
-                    className="task-title-button"
-                    onClick={() => onOpenTask(task.id)}
-                  >
-                    <h3>{task.title}</h3>
-                  </button>
-                  <p className="task-list-assignees">
-                    담당{' '}
-                    {task.assignees
-                      .map(
-                        (assignment) =>
-                          `${memberName(members, assignment.userId)} ${assignment.allocationPercent}%`,
-                      )
-                      .join(' · ')}
-                  </p>
-                </div>
-                <div className="task-list-deadline">
-                  <span>마감 {formatDate(task.dueAt)}</span>
-                  {isOverdue(task) && (
-                    <span className="is-overdue">마감 지남</span>
-                  )}
-                </div>
-                <details className="task-list-more">
-                  <summary>승인·작업량</summary>
-                  <p>승인 {memberName(members, task.completionReviewerId)}</p>
-                  <p>{formatExpectedWorkload(task.weight)}</p>
-                </details>
-              </li>
-            ))}
-          </ul>
+        {view === 'calendar' ? (
+          <TaskCalendar
+            tasks={tasks}
+            month={month}
+            onMonthChange={(next) => setListOption('month', next)}
+            members={members}
+            onOpenTask={onOpenTask}
+          />
+        ) : view === 'timeline' ? (
+          <TaskTimeline
+            tasks={tasks}
+            month={month}
+            onMonthChange={(next) => setListOption('month', next)}
+            members={members}
+            onOpenTask={onOpenTask}
+          />
+        ) : tasks.length && view === 'list' ? (
+          <TaskTable tasks={tasks} members={members} onOpenTask={onOpenTask} />
         ) : tasks.length ? (
           <div className="task-columns">
             {Object.entries(statusLabels).map(
