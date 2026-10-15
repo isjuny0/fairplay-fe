@@ -1,5 +1,5 @@
 import Icon from './Icon.jsx';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { createTask, listTasks } from '../api/tasks.js';
 import useResource from '../hooks/useResource.js';
@@ -51,7 +51,8 @@ export default function TaskBoard({
   const clearFilters = () =>
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
-      for (const key of ['status', 'mine', 'q', 'overdue']) next.delete(key);
+      for (const key of ['status', 'mine', 'q', 'overdue', 'sort'])
+        next.delete(key);
       return next;
     });
   const setFilter = (status) =>
@@ -68,6 +69,15 @@ export default function TaskBoard({
       else next.delete('mine');
       return next;
     });
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filterPanelId = useId();
+  const appliedFilterCount = [
+    filter !== 'ALL',
+    onlyMine,
+    onlyOverdue,
+    Boolean(query.trim()),
+    sort === 'newest',
+  ].filter(Boolean).length;
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -181,22 +191,6 @@ export default function TaskBoard({
         </p>
       )}
       <div className="toolbar">
-        <div className="view-switch" role="group" aria-label="작업 보기 방식">
-          <button
-            aria-pressed={view === 'board'}
-            className={view === 'board' ? 'active' : ''}
-            onClick={() => setListOption('view', '')}
-          >
-            보드
-          </button>
-          <button
-            aria-pressed={view === 'list'}
-            className={view === 'list' ? 'active' : ''}
-            onClick={() => setListOption('view', 'list')}
-          >
-            목록
-          </button>
-        </div>
         <label className="task-status-filter">
           상태{' '}
           <select
@@ -223,40 +217,69 @@ export default function TaskBoard({
             onChange={(event) => setListOption('q', event.target.value, true)}
           />
         </label>
-        <label>
-          정렬
-          <select
-            aria-label="작업 정렬"
-            value={sort}
-            onChange={(event) =>
-              setListOption(
-                'sort',
-                event.target.value === 'deadline' ? '' : event.target.value,
-              )
-            }
-          >
-            <option value="deadline">마감 빠른 순</option>
-            <option value="newest">최근 생성 순</option>
-          </select>
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={onlyMine}
-            onChange={(event) => setOnlyMine(event.target.checked)}
-          />{' '}
-          내 담당 작업만
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={onlyOverdue}
-            onChange={(event) =>
-              setListOption('overdue', event.target.checked ? '1' : '')
-            }
-          />{' '}
-          마감 지난 작업만
-        </label>
+        <button
+          className="secondary-button mobile-filter-toggle"
+          aria-expanded={filtersOpen}
+          aria-controls={filterPanelId}
+          onClick={() => setFiltersOpen(!filtersOpen)}
+        >
+          필터{appliedFilterCount > 0 ? ` · ${appliedFilterCount}` : ''}
+        </button>
+        <div
+          id={filterPanelId}
+          className={`task-filter-fields ${filtersOpen ? 'is-open' : ''}`}
+        >
+          <div className="view-switch" role="group" aria-label="작업 보기 방식">
+            <button
+              aria-pressed={view === 'board'}
+              className={view === 'board' ? 'active' : ''}
+              onClick={() => setListOption('view', '')}
+            >
+              보드
+            </button>
+            <button
+              aria-pressed={view === 'list'}
+              className={view === 'list' ? 'active' : ''}
+              onClick={() => setListOption('view', 'list')}
+            >
+              목록
+            </button>
+          </div>
+          <label>
+            정렬
+            <select
+              aria-label="작업 정렬"
+              value={sort}
+              onChange={(event) =>
+                setListOption(
+                  'sort',
+                  event.target.value === 'deadline' ? '' : event.target.value,
+                )
+              }
+            >
+              <option value="deadline">마감 빠른 순</option>
+              <option value="newest">최근 생성 순</option>
+            </select>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={onlyMine}
+              onChange={(event) => setOnlyMine(event.target.checked)}
+            />{' '}
+            내 담당 작업만
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={onlyOverdue}
+              onChange={(event) =>
+                setListOption('overdue', event.target.checked ? '1' : '')
+              }
+            />{' '}
+            마감 지난 작업만
+          </label>
+        </div>
         <button className="secondary-button" onClick={resource.reload}>
           <Icon name="refresh" />
           새로고침
