@@ -826,3 +826,205 @@
 .time-picker-panel :focus-visible {
   outline-color: #8c8a84;
 }
+
+/* User-flow hierarchy and compact responsive controls. */
+:root {
+  --text-body: 16px;
+  --text-support: 15px;
+  --text-caption: 14px;
+  --text-muted: #66655f;
+  --text-section: 20px;
+  --text-subheading: 18px;
+}
+body {
+  font-size: var(--text-body);
+}
+h1[tabindex="-1"]:focus {
+  outline: none;
+}
+.main-content .preserve-lines {
+  max-inline-size: 70ch;
+  color: #37352f;
+  font-size: var(--text-body);
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.main-content :is(.field-help, .character-count, .score-scale) {
+  font-size: var(--text-caption);
+  line-height: 1.6;
+}
+.main-content .stack {
+  gap: var(--space-section);
+}
+.main-content .stack > .panel:not(.danger-zone, .save-recovery, .empty-state) {
+  padding-block: var(--space-section);
+}
+.rejection-notice {
+  border-left: 3px solid #b08032;
+  padding: 20px;
+}
+.rejection-notice h2 {
+  margin-top: 0;
+}
+.completion-readiness {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  font-size: var(--text-caption);
+  line-height: 1.6;
+}
+.completion-readiness li {
+  overflow-wrap: anywhere;
+}
+.mobile-manager-navigation,
+.mobile-filter-toggle {
+  display: none;
+}
+.task-filter-fields {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.task-board-page .toolbar {
+  flex-wrap: wrap;
+}
+.peer-card .score-options,
+.peer-card .score-scale {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+.peer-card .score-options label {
+  width: 100%;
+  min-width: 0;
+}
+.peer-card .score-scale > span {
+  text-align: center;
+}
+.peer-card .score-scale > span:nth-child(1) {
+  grid-column: 1;
+}
+.peer-card .score-scale > span:nth-child(2) {
+  grid-column: 3;
+}
+.peer-card .score-scale > span:nth-child(3) {
+  grid-column: 5;
+}
+.round-readiness {
+  display: grid;
+  gap: 12px;
+}
+.round-readiness li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+.round-readiness strong {
+  color: #37352f;
+}
+.peer-response-panel summary,
+.peer-target-responses summary {
+  cursor: pointer;
+  min-height: 44px;
+  padding-block: 10px;
+  font-weight: 600;
+}
+.peer-response-content {
+  padding-top: 16px;
+}
+.peer-target-responses {
+  border-top: 1px solid var(--border);
+  padding-block: 8px;
+}
+.submitted-peer-response {
+  padding: 16px;
+  background: #f7f7f5;
+  border-radius: var(--radius-card);
+}
+.submitted-peer-response :is(h3, h4) {
+  margin-top: 0;
+}
+@media (max-width: 720px) {
+  .mobile-manager-navigation {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    margin-bottom: 20px;
+  }
+  .mobile-manager-navigation button {
+    min-width: 0;
+    min-height: 44px;
+    padding: 8px 4px;
+    border: 0;
+    background: transparent;
+    color: #57554f;
+    white-space: nowrap;
+  }
+  .mobile-manager-navigation .active {
+    color: var(--brand-dark);
+    background: var(--brand-light);
+    font-weight: 600;
+  }
+  .workspace:has(.mobile-manager-navigation) .manager-workspace-navigation {
+    display: none;
+  }
+  .mobile-team-navigation summary {
+    white-space: nowrap;
+  }
+  .mobile-filter-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .task-board-page .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .task-board-page .mobile-filter-toggle {
+    margin-left: 0;
+  }
+  .task-board-page .task-search-filter {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  .task-search-filter > input {
+    min-width: 0;
+    width: 100%;
+  }
+  .task-board-page .task-filter-fields {
+    display: none;
+    width: 100%;
+  }
+  .task-board-page .task-filter-fields.is-open {
+    display: flex;
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+  }
+  .task-board-page .toolbar > button:last-child {
+    flex: 0 0 auto;
+    width: auto;
+  }
+  .task-board-page .task-status-filter {
+    display: none !important;
+  }
+  .mobile-status-tabs.list-status-tabs {
+    display: flex;
+  }
+  .round-readiness li {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .peer-card .score-scale {
+    font-size: 12px;
+    gap: 4px;
+  }
+}

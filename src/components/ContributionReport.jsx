@@ -9,6 +9,9 @@ import { getManagerDashboard } from '../api/dashboard.js';
 import ManagerPeerResponses from './ManagerPeerResponses.jsx';
 import useResource from '../hooks/useResource.js';
 import { useInteractions } from '../hooks/useInteractions.js';
+import useAppNavigate from '../hooks/useAppNavigate.js';
+import { spacePath } from '../lib/routes.js';
+import { roundLabels, roundStatusLabels } from '../lib/evaluation.js';
 import { formatDate } from '../lib/domain.js';
 import { ProgressBar } from './PlanningUi.jsx';
 import { EmptyState, ErrorNotice, Modal, ResourceState } from './ui.jsx';
@@ -151,6 +154,7 @@ function ReportDetail({ context, report }) {
 }
 export function TeamReport({ context, manager = false }) {
   const { notify } = useInteractions();
+  const navigate = useAppNavigate();
   const readiness = useResource(async () => {
     if (!manager) return null;
     const [rounds, dashboard] = await Promise.all([
@@ -203,7 +207,7 @@ export function TeamReport({ context, manager = false }) {
           readiness.reload();
         }}
       >
-        리포트·준비 상태 새로고침
+        {manager ? '리포트·준비 상태 새로고침' : '리포트 새로고침'}
       </button>
       <ErrorNotice error={error} />
       {manager && (
@@ -217,12 +221,54 @@ export function TeamReport({ context, manager = false }) {
               3. 공개
             </li>
           </ol>
-          <ul className="readiness-list">
-            <li>{closedRounds ? '✓' : '○'} 중간·최종 평가 마감</li>
-            <li>
-              {teamSubmissionComplete ? '✓' : '○'} 우리 팀 필수 동료 평가 제출
-            </li>
+          <ul
+            className="readiness-list round-readiness"
+            aria-label="회차별 리포트 준비 상태"
+          >
+            {['MID', 'FINAL'].map((type) => {
+              const round = readiness.data?.rounds.find(
+                (round) => round.type === type,
+              );
+              const submission =
+                readiness.data?.dashboard.missingPeerSubmissions
+                  .find((entry) => entry.type === type)
+                  ?.teams.find((team) => team.teamId === context.team.id);
+              return (
+                <li key={type}>
+                  <strong>{roundLabels[type]}</strong>
+                  <span>
+                    {readiness.loading
+                      ? '확인 중'
+                      : round
+                        ? roundStatusLabels[round.status]
+                        : '회차 미설정'}
+                  </span>
+                  <span>
+                    {!round || round.status === 'DRAFT'
+                      ? '참여자 고정 전'
+                      : submission
+                        ? `${submission.submittedCount}/${submission.requiredCount}명 제출 · 미제출 ${submission.missingCount}명`
+                        : '제출 현황 확인 필요'}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
+          {!knownBlock && (
+            <p className="field-help">
+              두 회차 마감과 해당 팀의 필수 제출 조건을 충족했습니다. 최종 계산
+              가능 여부는 생성 시 확인합니다.
+            </p>
+          )}
+          {context.team.approvedMemberCount < 2 && (
+            <p className="notice">승인된 팀원 2명 이상이 필요합니다.</p>
+          )}
+          <button
+            className="secondary-button"
+            onClick={() => navigate(`${spacePath(context.space.id)}/rounds`)}
+          >
+            평가 회차 관리로
+          </button>
           <ErrorNotice error={readiness.error} onRetry={readiness.reload} />
           <div className="page-heading">
             <div>
@@ -311,7 +357,8 @@ export function TeamReport({ context, manager = false }) {
         >
           <p>
             {context.team.name}의 검토한 결과를 공개합니다. 팀원은 전체 최종
-            비율과 자신의 계산 근거를 보게 됩니다.
+            비율과 자신의 계산 근거를 보게 됩니다. 공개 후에는 결과를 수정하거나
+            비공개로 되돌릴 수 없습니다.
           </p>
           <ErrorNotice error={error} />
           <div className="heading-actions">

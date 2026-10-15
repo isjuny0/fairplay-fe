@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import {
   getManagerPeerResponses,
@@ -15,6 +16,19 @@ function SubmittedResponses({ roundId, teamId }) {
     [roundId, teamId],
   );
   const result = resource.data;
+  const targetGroups = result
+    ? Object.values(
+        result.responses.reduce((groups, response) => {
+          groups[response.targetId] ||= {
+            targetId: response.targetId,
+            name: response.targetName,
+            responses: [],
+          };
+          groups[response.targetId].responses.push(response);
+          return groups;
+        }, {}),
+      )
+    : [];
   return (
     <div className="stack">
       <button className="secondary-button" onClick={resource.reload}>
@@ -38,30 +52,44 @@ function SubmittedResponses({ roundId, teamId }) {
                 </p>
               )}
               {result.responses.length ? (
-                result.responses.map((response) => (
-                  <article
-                    className="panel"
-                    key={`${response.evaluatorId}:${response.targetId}`}
+                targetGroups.map((group) => (
+                  <details
+                    className="peer-target-responses"
+                    key={group.targetId}
                   >
-                    <h3>
-                      {response.evaluatorName} → {response.targetName}
-                    </h3>
-                    <dl className="card-facts">
-                      {Object.entries(peerCriteria).map(([code, label]) => (
-                        <div key={code}>
-                          <dt>{label}</dt>
-                          <dd>{response.scores[code]} / 5</dd>
-                        </div>
+                    <summary>
+                      {group.name} 받은 평가 · {group.responses.length}건
+                    </summary>
+                    <div className="stack">
+                      {group.responses.map((response) => (
+                        <article
+                          className="submitted-peer-response"
+                          key={`${response.evaluatorId}:${response.targetId}`}
+                        >
+                          <h3>
+                            {response.evaluatorName} → {response.targetName}
+                          </h3>
+                          <dl className="card-facts">
+                            {Object.entries(peerCriteria).map(
+                              ([code, label]) => (
+                                <div key={code}>
+                                  <dt>{label}</dt>
+                                  <dd>{response.scores[code]} / 5</dd>
+                                </div>
+                              ),
+                            )}
+                          </dl>
+                          <h4>작성한 사유</h4>
+                          <p className="preserve-lines">
+                            {response.reason || '작성한 사유가 없습니다.'}
+                          </p>
+                          <p className="field-help">
+                            최종 제출 {formatDate(response.submittedAt)}
+                          </p>
+                        </article>
                       ))}
-                    </dl>
-                    <h4>작성한 사유</h4>
-                    <p className="preserve-lines">
-                      {response.reason || '작성한 사유가 없습니다.'}
-                    </p>
-                    <p className="field-help">
-                      최종 제출 {formatDate(response.submittedAt)}
-                    </p>
-                  </article>
+                    </div>
+                  </details>
                 ))
               ) : (
                 <EmptyState>최종 제출된 평가 응답이 없습니다.</EmptyState>
@@ -74,7 +102,7 @@ function SubmittedResponses({ roundId, teamId }) {
   );
 }
 
-export default function ManagerPeerResponses({ context, teamId }) {
+function PeerResponseContent({ context, teamId }) {
   const [params, setParams] = useSearchParams();
   const rounds = useResource(
     () => listEvaluationRounds(context.space.id),
@@ -94,7 +122,7 @@ export default function ManagerPeerResponses({ context, teamId }) {
     setParams(next);
   };
   return (
-    <section className="panel stack" aria-label="관리자 동료 평가 상세">
+    <div className="stack peer-response-content">
       <div>
         <span className="eyebrow">관리자 전용 · 읽기 전용</span>
         <h2>동료 평가 원문</h2>
@@ -156,6 +184,21 @@ export default function ManagerPeerResponses({ context, teamId }) {
           <EmptyState>조회할 팀과 평가 회차가 필요합니다.</EmptyState>
         )}
       </ResourceState>
+    </div>
+  );
+}
+
+export default function ManagerPeerResponses({ context, teamId }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <section
+      className="panel peer-response-panel"
+      aria-label="관리자 동료 평가 상세"
+    >
+      <details onToggle={(event) => setOpen(event.currentTarget.open)}>
+        <summary>동료 평가 원문 보기</summary>
+        {open && <PeerResponseContent context={context} teamId={teamId} />}
+      </details>
     </section>
   );
 }
