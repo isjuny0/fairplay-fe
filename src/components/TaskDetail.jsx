@@ -157,7 +157,7 @@ export default function TaskDetail({
     hasEligibleReviewer;
 
   return (
-    <section className="stack">
+    <section className="stack task-detail-page">
       <button className="secondary-button back-button" onClick={onBack}>
         ← 목록으로
       </button>
