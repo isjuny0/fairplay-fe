@@ -311,3 +311,63 @@ test('3개월 타임라인은 시작일 순서·오늘·지연 구간을 표시�
   await page.reload();
   await expect(page.getByLabel('작업 정렬')).toHaveValue('deadline');
 });
+
+
+test('타임라인 미리보기는 마우스·키보드로 확인하고 짧은 막대 주변도 선택할 수 있다', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await seed(page, 'timeline');
+  const bar = page.getByRole('button', { name: /프로토타입 사용성 검증 · 시작일/ });
+  await bar.hover();
+  const preview = page.getByRole('tooltip');
+  await expect(preview).toContainText('프로토타입 사용성 검증');
+  await expect(preview).toContainText('담당');
+  await expect(preview).toContainText('2026. 11. 12. 11:00');
+  await preview.hover();
+  await expect(preview).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(preview).toHaveCount(0);
+  await bar.hover();
+  await expect(preview).toBeVisible();
+  await page.mouse.move(0, 0);
+  await expect(preview).toHaveCount(0);
+  await bar.focus();
+  await expect(preview).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('task-timeline-preview.png') });
+  await page.keyboard.press('Escape');
+  await expect(preview).toHaveCount(0);
+  const bounds = await bar.boundingBox();
+  expect(bounds.width).toBeLessThan(12);
+  // Click outside the visible duration, inside its transparent target.
+  await page.mouse.click(bounds.x + bounds.width / 2 + 10, bounds.y + bounds.height / 2);
+  await expect(page.getByRole('heading', { name: '프로토타입 사용성 검증', exact: true })).toBeVisible();
+});
+
+test('타임라인은 긴 목록에서 월 헤더와 작업명을 고정하고 지연 집계로 필터링한다', async ({ page }, testInfo) => {
+  await page.clock.install({ time: new Date('2026-11-15T09:00:00Z') });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await seed(page, 'timeline', '', (state) => {
+    const original = state.teams[1].tasks[0];
+    for (let index = 0; index < 24; index++) {
+      state.teams[1].tasks.push({ ...structuredClone(original), id: 1000 + index, title: `일정 검토 ${index + 1}`, startAt: '2026-11-01T00:00:00Z', dueAt: '2026-11-25T00:00:00Z' });
+    }
+  });
+  const timeline = page.getByRole('region', { name: '작업 계획 타임라인' });
+  await timeline.scrollIntoViewIfNeeded();
+  await timeline.evaluate((element) => { element.scrollTop = 400; element.scrollLeft = 120; });
+  const regionBounds = await timeline.boundingBox();
+  const headerBounds = await timeline.locator('.timeline-header').boundingBox();
+  const labelBounds = await timeline.locator('.timeline-header .timeline-task-label').boundingBox();
+  expect(Math.abs(headerBounds.y - regionBounds.y - 1)).toBeLessThan(2);
+  expect(Math.abs(labelBounds.x - regionBounds.x - 1)).toBeLessThan(2);
+  await page.screenshot({ path: testInfo.outputPath('task-timeline-scroll.png'), fullPage: true });
+  const lateFilter = page.getByRole('button', { name: /마감 지남 \d/ });
+  await lateFilter.click();
+  await expect(page.getByRole('checkbox', { name: '마감 지난 작업만', exact: true })).toBeChecked();
+  await expect(lateFilter).toHaveAttribute('aria-pressed', 'true');
+  await expect(timeline.locator('.timeline-row:not(.timeline-header):not(.is-late)')).toHaveCount(0);
+  await page.reload();
+  await expect(lateFilter).toHaveAttribute('aria-pressed', 'true');
+  await lateFilter.click();
+  await expect(page.getByRole('checkbox', { name: '마감 지난 작업만', exact: true })).not.toBeChecked();
+  await expect(timeline.locator('.timeline-row:not(.timeline-header)')).toHaveCount(30);
+});
