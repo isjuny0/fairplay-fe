@@ -15,7 +15,7 @@ const now = () => new Date().toISOString();
 const clone = (value) => structuredClone(value);
 const memoryStates = new Map();
 export const mockKey = (context) =>
-  `fairplay:mock:v4:${context.preview ? 'preview' : context.user.id}:${context.space.id}`;
+  `fairplay:mock:v5:${context.preview ? 'preview' : context.user.id}:${context.space.id}`;
 export function getMockState(context) {
   const key = mockKey(context);
   let state = memoryStates.get(key);
@@ -705,7 +705,7 @@ export async function plannedRequest(
           title: task.title,
           status: task.status,
           weight: task.weight,
-          startAt: task.startAt ?? null,
+          startAt: task.startAt,
           dueAt: task.dueAt,
           allocationPercent: task.assignees.find(
             (assignment) => assignment.userId === member.userId,

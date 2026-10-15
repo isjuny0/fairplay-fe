@@ -262,9 +262,7 @@ export function TaskTimeline({
             ))}
           </div>
           {visible.map(({ task, range }) => {
-            const scheduleLabel = range.milestone
-              ? `${task.title} · 시작일 미설정 · 마감 ${formatDate(task.dueAt)}`
-              : `${task.title} · 시작일 ${formatDate(task.startAt)} · 마감 ${formatDate(task.dueAt)}`;
+            const scheduleLabel = `${task.title} · 시작일 ${formatDate(task.startAt)} · 마감 ${formatDate(task.dueAt)}`;
             return (
               <div className="timeline-row" key={task.id}>
                 <div className="timeline-task-label">
@@ -291,7 +289,7 @@ export function TaskTimeline({
                   />
                 ))}
                 <button
-                  className={`${range.milestone ? 'timeline-marker' : 'timeline-period'} schedule-task-${task.status.toLowerCase()}${range.continuesBefore ? ' continues-before' : ''}${range.continuesAfter ? ' continues-after' : ''}`}
+                  className={`timeline-period schedule-task-${task.status.toLowerCase()}${range.continuesBefore ? ' continues-before' : ''}${range.continuesAfter ? ' continues-after' : ''}`}
                   style={{
                     gridColumn: `${range.startDay + 1} / ${range.endDay + 2}`,
                     gridRow: 1,
@@ -300,21 +298,13 @@ export function TaskTimeline({
                   title={scheduleLabel}
                   onClick={() => onOpenTask(task.id)}
                 >
-                  {range.milestone ? (
-                    '◆'
-                  ) : (
-                    <>
-                      {range.continuesBefore && (
-                        <span aria-hidden="true">← </span>
-                      )}
-                      <span className="timeline-period-title">
-                        {task.title}
-                      </span>
-                      {range.continuesAfter && (
-                        <span aria-hidden="true"> →</span>
-                      )}
-                    </>
-                  )}
+                  <>
+                    {range.continuesBefore && (
+                      <span aria-hidden="true">← </span>
+                    )}
+                    <span className="timeline-period-title">{task.title}</span>
+                    {range.continuesAfter && <span aria-hidden="true"> →</span>}
+                  </>
                 </button>
               </div>
             );
@@ -328,8 +318,8 @@ export function TaskTimeline({
         </p>
       )}
       <p className="field-help">
-        막대는 계획 기간, ◆는 시작일 미설정 작업의 마감입니다. 작업 제목이나
-        일정 표시를 선택하면 상세를 확인할 수 있습니다.
+        막대는 시작일부터 마감일까지의 계획 기간입니다. 작업 제목이나 일정
+        표시를 선택하면 상세를 확인할 수 있습니다.
       </p>
     </section>
   );

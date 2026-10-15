@@ -111,7 +111,7 @@ export function exampleTasks(team, members) {
     weight: [3, 5, 3, 2, 5, 2][index],
     status: states[index],
     version: 1,
-    startAt: index === 5 ? null : new Date(now - (8 - index) * 86400000).toISOString(),
+    startAt: new Date(now - (8 - index) * 86400000).toISOString(),
     dueAt: new Date(
       now + (index === 1 ? -86400000 : 7 * 86400000),
     ).toISOString(),

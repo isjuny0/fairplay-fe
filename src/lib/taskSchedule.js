@@ -43,27 +43,17 @@ export function nearestTaskMonth(
   return (dates.find((date) => date >= today) || dates.at(-1))?.slice(0, 7);
 }
 
-// 기존 시작일 미설정 작업은 마감 시점만 표시한다.
 export function taskMonthRange(task, month) {
   const due = taskDate(task.dueAt);
   const start = taskDate(task.startAt);
   const first = `${month}-01`;
   const [year, number] = month.split('-').map(Number);
   const last = dateKey(year, number - 1, daysInMonth(year, number - 1));
-  if (!start)
-    return due.startsWith(month)
-      ? {
-          startDay: Number(due.slice(-2)),
-          endDay: Number(due.slice(-2)),
-          milestone: true,
-        }
-      : null;
   if (start > due || start > last || due < first) return null;
   return {
     startDay: Number((start < first ? first : start).slice(-2)),
     endDay: Number((due > last ? last : due).slice(-2)),
     continuesBefore: start < first,
     continuesAfter: due > last,
-    milestone: false,
   };
 }

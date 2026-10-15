@@ -118,10 +118,8 @@ export default function TaskForm({
       setError(new Error('승인된 팀원이 2명 이상 필요합니다.'));
       return;
     }
-    const effectiveStart =
-      form.startAt || toDateInput(recovery.latest?.task.startAt);
     const allErrors = collectFieldErrors(event.currentTarget, {
-      ...(effectiveStart && form.dueAt && effectiveStart > form.dueAt
+      ...(form.startAt && form.dueAt && form.startAt > form.dueAt
         ? { dueAt: '마감은 시작일과 같거나 이후여야 합니다.' }
         : {}),
       ...(!form.assignees.length
@@ -179,11 +177,10 @@ export default function TaskForm({
         title: form.title.trim(),
         description: form.description.trim(),
         weight: Number(form.weight),
-        ...(form.startAt &&
-        (!task ||
-          form.startAt !== initialForm.startAt ||
-          (recovery.latest &&
-            form.startAt !== toDateInput(recovery.latest.task.startAt)))
+        ...(!task ||
+        form.startAt !== initialForm.startAt ||
+        (recovery.latest &&
+          form.startAt !== toDateInput(recovery.latest.task.startAt))
           ? { startAt: fromDateInput(form.startAt) }
           : {}),
         dueAt: fromDateInput(form.dueAt),
@@ -291,10 +288,7 @@ export default function TaskForm({
                 >
                   <DateTimeInput
                     name="startAt"
-                    required={
-                      !task ||
-                      Boolean(task.startAt || recovery.latest?.task.startAt)
-                    }
+                    required
                     value={form.startAt}
                     onChange={(event) => update('startAt', event.target.value)}
                   />
@@ -513,7 +507,7 @@ export default function TaskForm({
                     <dd>
                       {form.startAt
                         ? formatDate(fromDateInput(form.startAt))
-                        : '미설정'}
+                        : '미입력'}
                     </dd>
                   </div>
                   <div>
@@ -608,9 +602,8 @@ export default function TaskForm({
                   },
                   {
                     label: '시작일',
-                    latest:
-                      toDateInput(recovery.latest.task.startAt) || '미설정',
-                    input: form.startAt || '미설정',
+                    latest: toDateInput(recovery.latest.task.startAt),
+                    input: form.startAt || '미입력',
                   },
                   {
                     label: '마감',

@@ -82,7 +82,7 @@ test('팀 홈과 관리자 현황은 가중치 숫자 대신 비율과 계산 �
     }),
   ).toContainText('80.00%');
   await page.evaluate(() => {
-    const key = 'fairplay:mock:v4:preview:1';
+    const key = 'fairplay:mock:v5:preview:1';
     const state = JSON.parse(localStorage.getItem(key));
     for (const team of Object.values(state.teams))
       for (const task of team.tasks) task.status = 'TODO';

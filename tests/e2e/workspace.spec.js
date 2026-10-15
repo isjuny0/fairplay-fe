@@ -47,6 +47,7 @@ async function workspace(
     title: '회원 탈퇴 구현',
     description: '탈퇴 정책에 따라 기능 구현',
     weight: 3,
+    startAt: '2030-11-01T09:00:00+09:00',
     dueAt: '2030-12-01T18:00:00+09:00',
     status: 'IN_PROGRESS',
     version: 0,
@@ -1573,27 +1574,6 @@ test('작업 시작일은 생성 시 필수이며 일정 검증 후 오프셋과
   const updated = requests.find(({ method, path }) => method === 'PATCH' && path.startsWith('/api/tasks/'));
   expect(JSON.parse(updated.body)).toMatchObject({ startAt: '2030-11-30T09:00:00+09:00', expectedVersion: 0 });
 });
-
-test('시작일 미설정 작업의 제목 수정은 시작일을 전송하지 않으며 직접 지정할 수 있다', async ({ page }) => {
-  const { requests } = await workspace(page);
-  await page.goto('/spaces/1/teams/1/tasks/10');
-  await expect(page.getByText('시작일 미설정', { exact: false })).toBeVisible();
-  await page.getByRole('button', { name: '작업 수정', exact: true }).click();
-  const dialog = page.getByRole('dialog');
-  await expect(dialog.getByLabel('시작일 날짜', { exact: true })).toHaveValue('');
-  await dialog.getByLabel('작업 제목', { exact: true }).fill('기존 일정 유지');
-  await dialog.getByRole('button', { name: '저장', exact: true }).click();
-  await expect(dialog).toHaveCount(0);
-  const update = requests.find(({ method, path }) => method === 'PATCH' && path === '/api/tasks/10');
-  expect(JSON.parse(update.body)).not.toHaveProperty('startAt');
-  await page.getByRole('button', { name: '작업 수정', exact: true }).click();
-  await fillDateTime(dialog, '시작일', '2030-11-01T09:00');
-  await dialog.getByRole('button', { name: '저장', exact: true }).click();
-  await expect(dialog).toHaveCount(0);
-  const updates = requests.filter(({ method, path }) => method === 'PATCH' && path === '/api/tasks/10');
-  expect(JSON.parse(updates.at(-1).body)).toMatchObject({ startAt: '2030-11-01T09:00:00+09:00', expectedVersion: 1 });
-});
-
 
 test('저장된 시작일은 비울 수 없고 제목만 수정할 때 기존 시각 정밀도를 보존한다', async ({ page }) => {
   const { requests, changeTask } = await workspace(page);

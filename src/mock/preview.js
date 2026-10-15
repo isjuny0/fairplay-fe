@@ -538,7 +538,7 @@ export async function previewRequest(
       if (
         (Object.hasOwn(body, 'startAt') &&
           (!body.startAt || !Number.isFinite(Date.parse(body.startAt)))) ||
-        (startAt && new Date(startAt) > new Date(dueAt))
+        new Date(startAt) > new Date(dueAt)
       )
         throw new MockError(
           'INVALID_REQUEST',

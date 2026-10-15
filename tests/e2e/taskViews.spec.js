@@ -20,14 +20,14 @@ async function seed(page, view = 'list', extra = '', customize = () => {}) {
       '2026-10-20T00:00:00Z',
       '2026-10-28T00:00:00Z',
       dates[3],
-      null,
+      dates[4],
       '2026-11-10T00:00:00Z',
     ][index];
   });
   customize(state);
   await page.addInitScript((state) => {
     localStorage.setItem('fairplay:preview-role', 'leader');
-    localStorage.setItem('fairplay:mock:v4:preview:1', JSON.stringify(state));
+    localStorage.setItem('fairplay:mock:v5:preview:1', JSON.stringify(state));
   }, state);
   await page.goto(
     `/preview/spaces/1/teams/1/tasks?view=${view}&month=2026-11${extra}`,
@@ -131,14 +131,13 @@ test('캘린더 월 이동은 빈 달·연말·오늘과 URL 새로고침을 처
   await expect(page.getByLabel('조회 월')).toHaveValue(currentTaskMonth());
 });
 
-test('타임라인은 월에 겹치는 계획 기간과 시작일 미설정 작업의 마감을 표시한다', async ({
+test('타임라인은 월에 겹치는 계획 기간과 같은 날 일정을 모두 기간 막대로 표시한다', async ({
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await seed(page, 'timeline');
   const timeline = page.getByRole('region', { name: '작업 계획 타임라인' });
-  await expect(timeline.locator('.timeline-period')).toHaveCount(4);
-  await expect(timeline.locator('.timeline-marker')).toHaveCount(1);
+  await expect(timeline.locator('.timeline-period')).toHaveCount(5);
   await expect(timeline.locator('.continues-before')).toHaveCount(2);
   await expect(
     timeline.getByRole('button', { name: '설문 결과 분석', exact: true }),
@@ -156,9 +155,8 @@ test('타임라인은 월에 겹치는 계획 기간과 시작일 미설정 작�
   ).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: '이전 달', exact: true }).click();
   await expect(timeline.locator('.timeline-period')).toHaveCount(3);
-  await expect(timeline.locator('.timeline-marker')).toHaveCount(0);
   await page.getByLabel('작업 제목 검색').fill('없는 작업');
-  await expect(timeline.locator('.timeline-marker')).toHaveCount(0);
+  await expect(timeline.locator('.timeline-period')).toHaveCount(0);
   await expect(
     page.getByText('이 달에 예정된 작업이 없습니다.', { exact: false }),
   ).toBeVisible();

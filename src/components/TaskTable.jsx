@@ -55,13 +55,7 @@ export default function TaskTable({ tasks, members, onOpenTask }) {
               <td>{memberName(members, task.completionReviewerId)}</td>
               <td>{formatExpectedWorkload(task.weight)}</td>
               <td>
-                {task.startAt ? (
-                  <time dateTime={task.startAt}>
-                    {formatDate(task.startAt)}
-                  </time>
-                ) : (
-                  '미설정'
-                )}
+                <time dateTime={task.startAt}>{formatDate(task.startAt)}</time>
               </td>
               <td>
                 <time dateTime={task.dueAt}>{formatDate(task.dueAt)}</time>

@@ -1481,17 +1481,6 @@ h1[tabindex="-1"]:focus {
   border-right: 1px solid var(--border);
   font-variant-numeric: tabular-nums;
 }
-.timeline-marker {
-  width: 32px;
-  min-height: 44px;
-  padding: 0;
-  color: var(--schedule-color);
-  background: var(--schedule-background);
-  border: 0;
-  border-radius: 4px;
-  font-size: 20px;
-}
-.timeline-marker:hover { outline: 1px solid var(--schedule-color); }
 @media (max-width: 720px) {
   .task-view-navigation button { padding: 7px 12px; }
   .task-month-navigation { gap: 12px; }
@@ -1501,7 +1490,6 @@ h1[tabindex="-1"]:focus {
 
 .timeline-row > .timeline-task-label { grid-column: 1; grid-row: 1; z-index: 3; }
 .timeline-row > .timeline-day { grid-row: 1; }
-.timeline-row > .timeline-marker { align-self: center; justify-self: center; z-index: 1; }
 .timeline-period {
   display: flex;
   align-items: center;
