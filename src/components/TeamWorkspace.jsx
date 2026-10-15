@@ -122,7 +122,7 @@ export default function TeamWorkspace({
     <section className="stack">
       <nav className="mobile-team-navigation" aria-label="모바일 팀 메뉴">
         {menus
-          .filter((label) => ['팀 홈', '작업 보드', '산출물'].includes(label))
+          .filter((label) => ['팀 홈', '작업', '산출물'].includes(label))
           .map((label) => (
             <button
               key={label}
@@ -136,7 +136,7 @@ export default function TeamWorkspace({
         <details>
           <summary
             className={
-              !['팀 홈', '작업 보드', '산출물'].includes(menu) ? 'active' : ''
+              !['팀 홈', '작업', '산출물'].includes(menu) ? 'active' : ''
             }
           >
             더보기 ⌄
@@ -144,7 +144,7 @@ export default function TeamWorkspace({
           <div className="mobile-team-more">
             {menus
               .filter(
-                (label) => !['팀 홈', '작업 보드', '산출물'].includes(label),
+                (label) => !['팀 홈', '작업', '산출물'].includes(label),
               )
               .map((label) => (
                 <button
@@ -210,7 +210,7 @@ export default function TeamWorkspace({
             }}
           />
         )}
-        {currentMenu === '작업 보드' && approved && (
+        {currentMenu === '작업' && approved && (
           <TaskBoard
             team={workTeam}
             user={user}

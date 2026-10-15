@@ -59,7 +59,7 @@ export default function SpaceGuide({
         teamMenuPath(
           space.id,
           joinedTeam.id,
-          ready ? '작업 보드' : '팀원 관리',
+          ready ? '작업' : '팀원 관리',
         ),
       );
   } else if (pendingTeam) {

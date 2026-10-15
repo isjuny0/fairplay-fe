@@ -39,11 +39,13 @@ export default function TaskForm({
   const { confirm } = useInteractions();
   const recovery = useSaveRecovery(serverError);
   const editingMembers = recovery.latest?.members || members;
+  const [defaultDateTime] = useState(currentDateTime);
   const [initialForm] = useState({
     title: task?.title || '',
     description: task?.description || '',
     weight: task?.weight || 3,
-    dueAt: toDateInput(task?.dueAt) || currentDateTime(),
+    startAt: task ? toDateInput(task.startAt) : defaultDateTime,
+    dueAt: toDateInput(task?.dueAt) || defaultDateTime,
     assignees: task?.assignees.map((assignment) => ({ ...assignment })) || [],
     completionReviewerId: task?.completionReviewerId || '',
   });
@@ -117,6 +119,9 @@ export default function TaskForm({
       return;
     }
     const allErrors = collectFieldErrors(event.currentTarget, {
+      ...(form.startAt && form.dueAt && form.startAt > form.dueAt
+        ? { dueAt: '마감은 시작일과 같거나 이후여야 합니다.' }
+        : {}),
       ...(!form.assignees.length
         ? { assignees: '담당자를 한 명 이상 선택해 주세요.' }
         : total !== 100
@@ -133,8 +138,8 @@ export default function TaskForm({
         ? Object.fromEntries(
             Object.entries(allErrors).filter(([name]) =>
               step === 0
-                ? ['title', 'description', 'dueAt'].includes(name)
-                : !['title', 'description', 'dueAt'].includes(name),
+                ? ['title', 'description', 'startAt', 'dueAt'].includes(name)
+                : !['title', 'description', 'startAt', 'dueAt'].includes(name),
             ),
           )
         : allErrors;
@@ -142,7 +147,9 @@ export default function TaskForm({
     if (Object.keys(errors).length) {
       if (mobile && step === 2)
         setStep(
-          ['title', 'description', 'dueAt'].some((name) => errors[name])
+          ['title', 'description', 'startAt', 'dueAt'].some(
+            (name) => errors[name],
+          )
             ? 0
             : 1,
         );
@@ -160,7 +167,7 @@ export default function TaskForm({
       !(await confirm({
         title: '최신 작업에 내 입력 반영',
         message:
-          '확인한 최신 작업에 현재 제목·설명·작업량·마감·담당 배분·승인자를 반영합니다. 다른 팀원의 수정 내용을 덮어쓸 수 있습니다. 비교한 내용을 확인하고 저장할까요?',
+          '확인한 최신 작업에 현재 제목·설명·작업량·시작일·마감·담당 배분·승인자를 반영합니다. 다른 팀원의 수정 내용을 덮어쓸 수 있습니다. 비교한 내용을 확인하고 저장할까요?',
         label: '내 입력으로 저장',
       }))
     )
@@ -170,6 +177,12 @@ export default function TaskForm({
         title: form.title.trim(),
         description: form.description.trim(),
         weight: Number(form.weight),
+        ...(!task ||
+        form.startAt !== initialForm.startAt ||
+        (recovery.latest &&
+          form.startAt !== toDateInput(recovery.latest.task.startAt))
+          ? { startAt: fromDateInput(form.startAt) }
+          : {}),
         dueAt: fromDateInput(form.dueAt),
         assignees: form.assignees.map((assignment) => ({
           userId: assignment.userId,
@@ -266,7 +279,21 @@ export default function TaskForm({
                     ))}
                   </select>
                 </Field>
-                <Field label="마감 (한국 시간)" error={fieldErrors.dueAt}>
+              </div>
+              <div className="two-columns">
+                <Field
+                  label="시작일"
+                  error={fieldErrors.startAt}
+                  help="계획 일정이며 시작일 전에도 작업할 수 있습니다."
+                >
+                  <DateTimeInput
+                    name="startAt"
+                    required
+                    value={form.startAt}
+                    onChange={(event) => update('startAt', event.target.value)}
+                  />
+                </Field>
+                <Field label="마감" error={fieldErrors.dueAt}>
                   <DateTimeInput
                     name="dueAt"
                     required
@@ -476,7 +503,15 @@ export default function TaskForm({
                     <dd>{formatExpectedWorkload(form.weight)}</dd>
                   </div>
                   <div>
-                    <dt>마감 (한국 시간)</dt>
+                    <dt>시작일</dt>
+                    <dd>
+                      {form.startAt
+                        ? formatDate(fromDateInput(form.startAt))
+                        : '미입력'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>마감</dt>
                     <dd>
                       {form.dueAt
                         ? formatDate(fromDateInput(form.dueAt))
@@ -566,7 +601,12 @@ export default function TaskForm({
                     input: formatExpectedWorkload(form.weight),
                   },
                   {
-                    label: '마감 (한국 시간)',
+                    label: '시작일',
+                    latest: toDateInput(recovery.latest.task.startAt),
+                    input: form.startAt || '미입력',
+                  },
+                  {
+                    label: '마감',
                     latest: toDateInput(recovery.latest.task.dueAt),
                     input: form.dueAt,
                   },

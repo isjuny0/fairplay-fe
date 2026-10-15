@@ -64,7 +64,7 @@ test('미저장 평가의 메뉴 이동과 브라우저 뒤로가기를 취소�
   await openPreview(page, '/spaces/1/teams/1');
   await page.getByRole('button', { name: '동료 평가', exact: true }).click();
   await page.getByLabel('이지원 작업 수행 5점', { exact: true }).check();
-  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await page.getByRole('button', { name: '작업', exact: true }).click();
   await expect(page.getByRole('dialog')).toContainText('저장하지 않은 입력');
   await page.getByRole('button', { name: '계속 작성', exact: true }).click();
   await expect(
@@ -172,7 +172,7 @@ for (const height of [844, 500])
     await dialog
       .getByLabel('작업 설명', { exact: true })
       .fill('키보드가 열린 높이에서도 다음 행동을 확인합니다.');
-    await fillDateTime(dialog, '마감 (한국 시간)', '2030-12-01T18:00');
+    await fillDateTime(dialog, '마감', '2030-12-01T18:00');
     await next.click();
     await dialog.getByLabel('완료 승인자', { exact: true }).focus();
     await dialog
@@ -200,7 +200,7 @@ test('세 담당자 균등 배분과 필수 승인자 선택으로 작업을 생
   await dialog
     .getByLabel('작업 설명', { exact: true })
     .fill('모든 담당자의 역할과 결과를 함께 확인합니다.');
-  await fillDateTime(dialog, '마감 (한국 시간)', '2030-12-01T18:00');
+  await fillDateTime(dialog, '마감', '2030-12-01T18:00');
   for (const member of ['김하늘 · 리더', '이지원 · 팀원', '박서연 · 부리더'])
     await dialog.getByLabel(member, { exact: true }).check();
   await dialog.getByRole('button', { name: '균등 배분', exact: true }).click();
@@ -258,7 +258,7 @@ test('데스크톱 팀 메뉴는 왼쪽에 묶이고 메뉴 이동과 새로고�
     exact: true,
   });
   await expect(teamMenus.getByRole('button')).toHaveCount(9);
-  await expect(teamMenus.getByText('작업', { exact: true })).toBeVisible();
+  await expect(teamMenus.getByRole('paragraph').filter({ hasText: /^작업$/ })).toBeVisible();
   await expect(teamMenus.getByText('평가', { exact: true })).toBeVisible();
   await expect(teamMenus.getByText('팀 관리', { exact: true })).toBeVisible();
   await expect(page.locator('.tab-bar')).toHaveCount(0);
@@ -284,8 +284,8 @@ test('스페이스 선택은 현재 공간을 전환하고 뒤로가기로 이�
   await dialog
     .getByLabel('스페이스 이름', { exact: true })
     .fill('두 번째 프로젝트');
-  await fillDateTime(dialog, '프로젝트 시작 (한국 시간)', '2030-01-01T09:00');
-  await fillDateTime(dialog, '프로젝트 종료 (한국 시간)', '2030-12-31T18:00');
+  await fillDateTime(dialog, '프로젝트 시작', '2030-01-01T09:00');
+  await fillDateTime(dialog, '프로젝트 종료', '2030-12-31T18:00');
   await dialog.getByRole('button', { name: '만들기', exact: true }).click();
   await expect(page).toHaveURL(/spaces\/3$/);
   await expect(
@@ -326,7 +326,7 @@ test('관리자는 팀 선택으로 자료 조회에 진입하고 팀 작업 메
     sidebar.getByRole('button', { name: '관리자 대시보드', exact: true }),
   ).toBeVisible();
   await expect(
-    sidebar.getByRole('button', { name: '작업 보드', exact: true }),
+    sidebar.getByRole('button', { name: '작업', exact: true }),
   ).toHaveCount(0);
   await expect(
     sidebar.getByRole('button', { name: '승인 검토', exact: true }),
@@ -356,7 +356,7 @@ test('모바일 공간·팀 선택은 하나의 접힌 영역에 있고 작업 �
   await expect(page.getByLabel('팀 선택', { exact: true })).toBeHidden();
   await page
     .getByRole('navigation', { name: '모바일 팀 메뉴' })
-    .getByRole('button', { name: '작업 보드', exact: true })
+    .getByRole('button', { name: '작업', exact: true })
     .click();
   await expect(page.getByLabel('작업 상태', { exact: true })).toBeHidden();
   await expect(page.getByLabel('작업 정렬', { exact: true })).toBeHidden();
@@ -392,7 +392,7 @@ test('데스크톱 홈은 개인 지표 아래에 작업·진행률을 배치하
   const reading = await page.getByRole('main').boundingBox();
   expect(reading.width).toBeLessThan(wide.width);
   expect(reading.width).toBeGreaterThan(900);
-  await page.getByRole('button', { name: '작업 보드', exact: true }).click();
+  await page.getByRole('button', { name: '작업', exact: true }).click();
   await page
     .getByRole('button', { name: '새 작업 만들기', exact: true })
     .click();
@@ -490,7 +490,7 @@ test('모바일 작업 입력은 첫 오류로 초점을 옮기고 배분·승�
   await dialog
     .getByLabel('작업 설명', { exact: true })
     .fill('대상과 일정을 확정하고 조사 계획을 공유합니다.');
-  await fillDateTime(dialog, '마감 (한국 시간)', '2030-12-01T18:00');
+  await fillDateTime(dialog, '마감', '2030-12-01T18:00');
   await dialog
     .getByRole('button', { name: '다음: 담당·승인', exact: true })
     .click();
@@ -546,14 +546,14 @@ test('스페이스 종료 시각 오류를 항목에서 수정하면 관리자 �
     .click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('스페이스 이름', { exact: true }).fill('새 프로젝트');
-  await fillDateTime(dialog, '프로젝트 시작 (한국 시간)', '2030-10-01T09:00');
-  await fillDateTime(dialog, '프로젝트 종료 (한국 시간)', '2030-09-01T18:00');
+  await fillDateTime(dialog, '프로젝트 시작', '2030-10-01T09:00');
+  await fillDateTime(dialog, '프로젝트 종료', '2030-09-01T18:00');
   await dialog.getByRole('button', { name: '만들기', exact: true }).click();
-  await expect(dialog.getByLabel('프로젝트 종료 (한국 시간) 날짜')).toBeFocused();
+  await expect(dialog.getByLabel('프로젝트 종료 날짜')).toBeFocused();
   await expect(
     dialog.getByText('프로젝트 종료 시각을 시작 시각보다 늦게 지정해 주세요.'),
   ).toBeVisible();
-  await fillDateTime(dialog, '프로젝트 종료 (한국 시간)', '2030-12-31T18:00');
+  await fillDateTime(dialog, '프로젝트 종료', '2030-12-31T18:00');
   await dialog.getByRole('button', { name: '만들기', exact: true }).click();
   await expect(page).toHaveURL(/spaces\/3$/);
   await expect(
@@ -669,7 +669,7 @@ test('팀 홈의 본인·승인 대기·마감 지연은 각 조건의 작업 �
   await page.getByRole('button', { name: /내 마감 지연/ }).click();
   await expect(page.getByLabel('마감 지난 작업만')).toBeChecked();
   await expect(
-    page.getByRole('list', { name: '정렬된 작업 목록' }).getByRole('listitem'),
+    page.getByRole('table', { name: '정렬된 작업 목록' }).locator('tbody tr'),
   ).toHaveCount(1);
   await expect(
     page.getByRole('button', { name: '설문 결과 분석', exact: true }),
@@ -684,7 +684,7 @@ test('작업 목록은 상태를 가로질러 정렬하고 상세 복귀·초기
   await openPreview(page, '/spaces/1/teams/1/tasks');
   await page.getByRole('button', { name: '목록', exact: true }).click();
   await page.getByLabel('작업 정렬').selectOption('newest');
-  const list = page.getByRole('list', { name: '정렬된 작업 목록' });
+  const list = page.getByRole('table', { name: '정렬된 작업 목록' });
   await expect(list.getByRole('button')).toHaveText([
     '조사 결과 요약',
     '최종 발표 자료',
@@ -706,7 +706,7 @@ test('작업 목록은 상태를 가로질러 정렬하고 상세 복귀·초기
   await page
     .getByRole('button', { name: '검색·필터 초기화', exact: true })
     .click();
-  await expect(list.getByRole('listitem')).toHaveCount(6);
+  await expect(list.locator('tbody tr')).toHaveCount(6);
   await page.reload();
   await expect(
     page.getByRole('button', { name: '목록', exact: true }),

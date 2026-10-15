@@ -174,8 +174,8 @@ export default function TaskDetail({
                 </span>
                 <h1>{task.title}</h1>
                 <p>
-                  예상 작업량: {formatExpectedWorkload(task.weight)} · 마감{' '}
-                  {formatDate(task.dueAt)}
+                  예상 작업량: {formatExpectedWorkload(task.weight)} · 시작일{' '}
+                  {formatDate(task.startAt)} · 마감 {formatDate(task.dueAt)}
                 </p>
               </div>
               {canEditTask(task, team, user.id) && (

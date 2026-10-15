@@ -1,6 +1,6 @@
 export const teamMenuPaths = {
   '팀 홈': '',
-  '작업 보드': 'tasks',
+  '작업': 'tasks',
   산출물: 'deliverables',
   '승인 검토': 'approvals',
   '동료 평가': 'peer-evaluations',

@@ -141,7 +141,7 @@ export default function SpaceWorkspace({
   const contentLayout =
     view === 'dashboard' ||
     (view === 'team' &&
-      ['팀 홈', '작업 보드', '승인 검토', '팀원 관리'].includes(teamMenu))
+      ['팀 홈', '작업', '승인 검토', '팀원 관리'].includes(teamMenu))
       ? 'content-wide'
       : view === 'settings' || (view === 'team' && teamMenu === '팀 설정')
         ? 'content-settings'

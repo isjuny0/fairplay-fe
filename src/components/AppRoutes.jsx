@@ -71,7 +71,7 @@ export default function AppRoutes({ user, prefix = '' }) {
       <Route
         path={`${prefix}/spaces/:spaceId/teams/:teamId/tasks/:taskId`}
         element={
-          <WorkspaceRoute user={user} view="team" teamMenu="작업 보드" />
+          <WorkspaceRoute user={user} view="team" teamMenu="작업" />
         }
       />
       <Route

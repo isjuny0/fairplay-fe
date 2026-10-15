@@ -314,6 +314,16 @@ export async function previewRequest(
         return entry.tasks.map((task) =>
           previewTaskResponse(state, context, entry, task),
         );
+      if (
+        !body.startAt ||
+        !Number.isFinite(Date.parse(body.startAt)) ||
+        new Date(body.startAt) > new Date(body.dueAt)
+      )
+        throw new MockError(
+          'INVALID_REQUEST',
+          '시작일과 마감을 확인해 주세요.',
+          400,
+        );
       const task = {
         ...body,
         id: Math.max(0, ...entry.tasks.map((task) => task.id)) + 1,
@@ -522,6 +532,18 @@ export async function previewRequest(
           'VERSION_CONFLICT',
           '다른 사용자가 먼저 작업을 수정했습니다.',
           409,
+        );
+      const startAt = body.startAt ?? task.startAt;
+      const dueAt = body.dueAt ?? task.dueAt;
+      if (
+        (Object.hasOwn(body, 'startAt') &&
+          (!body.startAt || !Number.isFinite(Date.parse(body.startAt)))) ||
+        new Date(startAt) > new Date(dueAt)
+      )
+        throw new MockError(
+          'INVALID_REQUEST',
+          '시작일과 마감을 확인해 주세요.',
+          400,
         );
       if (
         (body.title != null && body.title !== task.title) ||

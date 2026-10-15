@@ -5,7 +5,7 @@ export const teamNavigationGroups = [
   {
     label: '작업',
     items: [
-      ['작업 보드', 'board'],
+      ['작업', 'board'],
       ['산출물', 'file'],
       ['승인 검토', 'check'],
     ],

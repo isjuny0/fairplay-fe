@@ -201,7 +201,7 @@ export default function Spaces({ onSelect }) {
                     />
                   </Field>
                   <Field
-                    label="프로젝트 시작 (한국 시간)"
+                    label="프로젝트 시작"
                     error={fieldErrors.startAt}
                   >
                     <DateTimeInput
@@ -214,7 +214,7 @@ export default function Spaces({ onSelect }) {
                     />
                   </Field>
                   <Field
-                    label="프로젝트 종료 (한국 시간)"
+                    label="프로젝트 종료"
                     error={fieldErrors.endAt}
                   >
                     <DateTimeInput
