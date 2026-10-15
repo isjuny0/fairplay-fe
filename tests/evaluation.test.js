@@ -380,3 +380,70 @@ test('FINAL 기한 이후 작업 변경은 차단하며 과거 검토 조회는 
     { code: 'TASK_WORK_CLOSED' },
   );
 });
+
+test('미리보기 공동 담당 설명 누락은 완료 요청을 막고 전원 작성 후 요청할 수 있다', async () => {
+  const leader = context('leader');
+  let detail = await previewRequest('/api/tasks/102');
+  assert.equal(
+    detail.task.completionBlockReason,
+    'CONTRIBUTION_DESCRIPTION_REQUIRED',
+  );
+  assert.ok(detail.deliverableSummary.length > 0);
+  await assert.rejects(
+    previewRequest('/api/tasks/102/completion-requests', {
+      method: 'POST',
+      body: { expectedVersion: detail.task.version },
+    }),
+    { code: 'CONTRIBUTION_DESCRIPTION_REQUIRED' },
+  );
+  assert.equal(
+    (await previewRequest('/api/tasks/102')).task.status,
+    'IN_PROGRESS',
+  );
+  context('member');
+  await previewRequest('/api/tasks/102/contribution', {
+    method: 'PATCH',
+    body: {
+      expectedVersion: detail.task.version,
+      contributionDescription:
+        '설문 응답을 분류하고 결과 자료의 근거를 정리했습니다.',
+    },
+  });
+  context('leader');
+  detail = await previewRequest('/api/tasks/102');
+  assert.equal(detail.task.completionBlockReason, null);
+  const approval = await previewRequest('/api/tasks/102/completion-requests', {
+    method: 'POST',
+    body: { expectedVersion: detail.task.version },
+  });
+  assert.equal(approval.status, 'PENDING');
+  assert.equal(
+    (await previewRequest('/api/tasks/102')).task.status,
+    'PENDING_APPROVAL',
+  );
+});
+
+test('미리보기 연결 산출물이 없으면 완료 요청을 거절하고 상태를 유지한다', async () => {
+  const leader = context('leader');
+  const state = getMockState(leader);
+  state.teams[1].tasks.find((task) => task.id === 102).contributions[
+    state.teams[1].members[1].userId
+  ] = '개인 수행 설명을 충분히 작성했습니다.';
+  state.teams[1].deliverables = state.teams[1].deliverables.filter(
+    (item) => item.taskId !== 102,
+  );
+  saveMockState(leader, state);
+  const detail = await previewRequest('/api/tasks/102');
+  assert.equal(detail.task.completionBlockReason, 'DELIVERABLE_REQUIRED');
+  await assert.rejects(
+    previewRequest('/api/tasks/102/completion-requests', {
+      method: 'POST',
+      body: { expectedVersion: detail.task.version },
+    }),
+    { code: 'DELIVERABLE_REQUIRED' },
+  );
+  assert.equal(
+    (await previewRequest('/api/tasks/102')).task.status,
+    'IN_PROGRESS',
+  );
+});

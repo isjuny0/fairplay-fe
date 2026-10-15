@@ -920,7 +920,7 @@ test('미공개 리포트 null과 실제 404를 구분하고 오류를 목업으
       json: { code: 'TEAM_NOT_FOUND', message: '조회 대상 팀이 없습니다.' },
     }),
   );
-  await page.getByRole('button', { name: '리포트·준비 상태 새로고침' }).click();
+  await page.getByRole('button', { name: '리포트 새로고침' }).click();
   await expect(page.getByRole('alert')).toContainText(
     '조회 대상 팀이 없습니다.',
   );
@@ -1027,6 +1027,17 @@ test('관리자는 부분 제출된 평가 원문을 읽고 OPEN 회차 원문�
   );
   await page.goto('/spaces/1/rounds');
   const panel = page.getByRole('region', { name: '관리자 동료 평가 상세' });
+  await expect(
+    page.getByRole('heading', { name: '평가 회차 관리', exact: true }),
+  ).toBeVisible();
+  expect(
+    fixture.requests.some((request) =>
+      /teams\/1\/responses$/.test(request.path),
+    ),
+  ).toBe(false);
+  await panel.getByText('동료 평가 원문 보기', { exact: true }).click();
+  await expect(panel.getByText('관리자 전용 제출 사유입니다.')).toBeHidden();
+  await panel.getByText('평가 대상자 받은 평가 · 1건', { exact: true }).click();
   await expect(panel.getByText('평가 작성자 → 평가 대상자')).toBeVisible();
   await expect(panel.getByText('관리자 전용 제출 사유입니다.')).toBeVisible();
   await expect(panel).toContainText('미제출 1명');
@@ -1057,6 +1068,7 @@ test('관리자 평가 원문은 마감 정리 대기를 안내하고 권한 오
   );
   await page.goto('/spaces/1/dashboard');
   const panel = page.getByRole('region', { name: '관리자 동료 평가 상세' });
+  await panel.getByText('동료 평가 원문 보기', { exact: true }).click();
   await expect(panel).toContainText('마감 정리가 아직 끝나지 않았습니다.');
   forbidden = true;
   await panel.getByRole('button', { name: '평가 원문 새로고침' }).click();
@@ -1222,6 +1234,7 @@ test('관리자 원문 회차 새로고침으로 마감된 회차를 조회한�
   const fixture = await backend(page, { manager: true });
   await page.goto('/spaces/1/dashboard');
   const panel = page.getByRole('region', { name: '관리자 동료 평가 상세' });
+  await panel.getByText('동료 평가 원문 보기', { exact: true }).click();
   await expect(panel).toContainText('회차 마감 후 최종 제출된 평가를 조회');
   fixture.rounds[0].status = 'CLOSED';
   await panel.getByRole('button', { name: '원문 조회 회차 새로고침' }).click();

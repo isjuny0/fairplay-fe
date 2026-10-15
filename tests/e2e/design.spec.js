@@ -82,7 +82,7 @@ for (const width of [1440, 390]) {
     await page.goto('/preview/main');
     await expect(page.getByRole('heading', { name: '내 스페이스', exact: true })).toBeVisible();
     await expect(page.locator('html')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-    await expect(page.locator('body')).toHaveCSS('font-size', '17px');
+    await expect(page.locator('body')).toHaveCSS('font-size', '16px');
     await expect(page.getByRole('button', { name: 'Fairplay', exact: true })).toHaveCSS('font-weight', '400');
     const layout = await page.evaluate(() => ({
       heading: parseFloat(getComputedStyle(document.querySelector('h1')).fontSize),

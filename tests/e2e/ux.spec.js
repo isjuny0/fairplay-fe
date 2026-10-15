@@ -359,6 +359,8 @@ test('모바일 공간·팀 선택은 하나의 접힌 영역에 있고 작업 �
     .getByRole('button', { name: '작업 보드', exact: true })
     .click();
   await expect(page.getByLabel('작업 상태', { exact: true })).toBeHidden();
+  await expect(page.getByLabel('작업 정렬', { exact: true })).toBeHidden();
+  await page.getByRole('button', { name: /^필터/ }).click();
   await expect(page.getByLabel('작업 정렬', { exact: true })).toBeVisible();
   const columns = await page.locator('.task-columns').boundingBox();
   const card = await page.locator('.board-task-card').first().boundingBox();
@@ -455,7 +457,7 @@ test('작업 제목 검색·정렬은 새로고침과 상세 복귀에도 유지
     .click();
   await expect(page.locator('.board-task-card')).toHaveCount(6);
   await expect(page.getByLabel('작업 제목 검색')).toHaveValue('');
-  await expect(page.getByLabel('작업 정렬')).toHaveValue('newest');
+  await expect(page.getByLabel('작업 정렬')).toHaveValue('deadline');
   const completedTitles = page.locator('.task-state-done .task-title-button');
   await expect(completedTitles).toHaveText([
     '조사 결과 요약',
@@ -748,7 +750,7 @@ test('200% 확대와 모바일 목록 전환에서도 입력 단계와 주요 �
     document.documentElement.style.zoom = '';
   });
   await page.setViewportSize({ width: 320, height: 500 });
-  await expect(page.getByLabel('작업 상태', { exact: true })).toBeVisible();
+  await expect(page.getByRole('group', { name: '작업 상태 선택' })).toBeVisible();
   await page
     .getByRole('button', { name: '새 작업 만들기', exact: true })
     .click();
