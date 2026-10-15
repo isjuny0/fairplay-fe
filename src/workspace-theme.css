@@ -1598,3 +1598,8 @@ h1[tabindex="-1"]:focus {
   .task-schedule-controls { width: 100%; }
   .modal-fullscreen .modal-body { padding: 12px; }
 }
+
+.task-schedule-help { flex-shrink: 0; margin: 8px 0; color: #626e7d; font-size: 12px; line-height: 1.6; }
+.task-schedule-help > summary { width: fit-content; padding: 4px 0; cursor: pointer; color: #536575; }
+.task-schedule-help > summary:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.task-schedule-help p { max-width: 760px; margin: 6px 0 0; }

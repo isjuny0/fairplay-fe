@@ -124,20 +124,12 @@ export function TaskCalendar({
   const days = taskMonthDays(month),
     byDate = tasksByDate(tasks, days);
   const today = taskDate(new Date().toISOString());
-  const count = new Set([...byDate.values()].flat().map((task) => task.id))
-    .size;
   return (
     <section className="task-schedule" aria-label="작업 캘린더">
-      <p className="field-help">
-        시작일부터 마감일까지 · 이번 달 {count}개 작업 · 날짜별 작업 수를
-        선택하면 전체 작업을 확인할 수 있습니다.
-      </p>
-      {!count && (
-        <p className="notice">
-          이 달에 예정된 작업이 없습니다. 다른 달을 선택하거나 검색·필터 조건을
-          확인하세요.
-        </p>
-      )}
+      <details className="task-schedule-help">
+        <summary>캘린더 읽는 법</summary>
+        <p>막대는 시작일부터 마감일까지 이어집니다. 날짜별 작업 수를 선택하면 해당 날짜의 모든 작업을 확인할 수 있습니다.</p>
+      </details>
       <div
         className="task-calendar-scroll"
         role="region"
@@ -385,9 +377,6 @@ export function TaskTimeline({
   return (
     <section className="task-schedule" aria-label="작업 타임라인" style={{ '--timeline-label-width': `${labelWidth}px` }}>
       <div className="timeline-summary" aria-label="조회 기간 작업 현황">
-        <span>
-          기간 내 작업 <strong>{visible.length}</strong>
-        </span>
         <button
           className={`timeline-late-filter${lateCount ? ' is-overdue' : ''}`}
           aria-pressed={onlyOverdue}
@@ -409,9 +398,6 @@ export function TaskTimeline({
             {label}
           </span>
         ))}
-        <span className="timeline-legend-hint">
-          {sortLabel} · 막대의 위치와 겹침으로 일정 비교
-        </span>
       </div>
       <div
         className="task-timeline-scroll"
@@ -685,17 +671,10 @@ export function TaskTimeline({
           )}
         </div>, document.body,
       )}
-      {!visible.length && (
-        <p className="notice">
-          이 기간에 예정되거나 지연 중인 작업이 없습니다. 다른 기간을 선택하거나
-          검색·필터 조건을 확인하세요.
-        </p>
-      )}
-      <p className="field-help">
-        막대는 계획 기간, 빨간 점선은 마감 이후 오늘까지의 지연 구간입니다. 완료
-        작업은 지연 집계에서 제외합니다. 작업 제목이나 막대를 선택하면 상세를
-        확인할 수 있습니다.
-      </p>
+      <details className="task-schedule-help">
+        <summary>타임라인 읽는 법</summary>
+        <p>막대의 위치와 겹침으로 일정의 순서와 병행 구간을 비교합니다. 막대는 계획 기간, 빨간 점선은 마감 이후 오늘까지의 지연 구간입니다. 완료 작업은 지연 집계에서 제외합니다. 작업 제목이나 막대를 선택하면 상세를 확인할 수 있습니다.</p>
+      </details>
     </section>
   );
 }

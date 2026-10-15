@@ -19,11 +19,13 @@ import { MonthNavigation, TaskCalendar, TaskTimeline } from './TaskSchedule.jsx'
 import {
   currentTaskMonth,
   isTaskMonth,
+  nearestTaskMonth,
   taskDate,
   timelineTaskPeriod,
   timelineWindow,
 } from '../lib/taskSchedule.js';
 import { EmptyState, Modal, ResourceState } from './ui.jsx';
+import { readTaskViewPreferences, saveTaskViewPreferences } from '../lib/taskViewPreferences.js';
 
 export default function TaskBoard({
   team,
@@ -42,11 +44,30 @@ export default function TaskBoard({
     : 'ALL';
   const onlyMine = searchParams.get('mine') === '1';
   const onlyOverdue = searchParams.get('overdue') === '1';
-  const view = ['list', 'calendar', 'timeline'].includes(
-    searchParams.get('view'),
-  )
-    ? searchParams.get('view')
-    : 'board';
+  const [preferences, setPreferences] = useState(readTaskViewPreferences);
+  const view = searchParams.has('view')
+    ? ['board', 'list', 'calendar', 'timeline'].includes(searchParams.get('view'))
+      ? searchParams.get('view')
+      : 'board'
+    : preferences.view;
+  const urlView = searchParams.get('view');
+  useEffect(() => {
+    if (urlView !== null || taskId != null) return;
+    setSearchParams((current) => {
+      if (current.has('view')) return current;
+      const next = new URLSearchParams(current);
+      next.set('view', view);
+      return next;
+    }, { replace: true });
+  }, [view, urlView, taskId, setSearchParams]);
+  const timelineLabelWidth = preferences.labelWidth;
+  const setTimelineLabelWidth = (labelWidth) =>
+    setPreferences((current) => ({ ...current, labelWidth }));
+  useEffect(() => {
+    saveTaskViewPreferences({ view, labelWidth: timelineLabelWidth });
+    if (preferences.view !== view)
+      setPreferences((current) => ({ ...current, view }));
+  }, [view, timelineLabelWidth, preferences.view]);
   const month = isTaskMonth(searchParams.get('month'))
     ? searchParams.get('month')
     : currentTaskMonth();
@@ -105,7 +126,6 @@ export default function TaskBoard({
   ].filter(Boolean).length;
   const [expanded, setExpanded] = useState(false);
   const expandButton = useRef(null);
-  const [timelineLabelWidth, setTimelineLabelWidth] = useState(300);
   useEffect(() => {
     if (!expanded) return;
     return () => requestAnimationFrame(() => expandButton.current?.focus());
@@ -176,6 +196,8 @@ export default function TaskBoard({
         taskDate(task.startAt).slice(0, 7) <= month &&
         taskDate(task.dueAt).slice(0, 7) >= month,
       ).length;
+  const nearestMonth = nearestTaskMonth(tasks, `${month}-01`);
+  const hasSearchFilters = filter !== 'ALL' || onlyMine || onlyOverdue || Boolean(query.trim());
   const activeFilters = [
     ...(filter !== 'ALL' ? [{ key: 'status', label: `상태: ${statusLabels[filter]}` }] : []),
     ...(onlyMine ? [{ key: 'mine', label: '내 담당' }] : []),
@@ -219,7 +241,7 @@ export default function TaskBoard({
               className={view === mode ? 'active' : ''}
               onClick={() => {
                 if (mode === 'board' || mode === 'list') setExpanded(false);
-                setListOption('view', mode === 'board' ? '' : mode);
+                setListOption('view', mode);
               }}
             >
               {label}
@@ -394,7 +416,28 @@ export default function TaskBoard({
             </button>
           )}
         </div>
-        {view === 'calendar' ? (
+        {isSchedule && periodTaskCount === 0 ? (
+          <EmptyState>
+            <p>{view === 'calendar'
+              ? '이 달에 예정된 작업이 없습니다.'
+              : '이 기간에 예정되거나 지연 중인 작업이 없습니다.'}</p>
+            <span>{tasks.length
+              ? `검색 결과 ${tasks.length}개의 작업은 다른 기간에 있습니다.`
+              : hasSearchFilters && resource.data?.length
+                ? '검색·필터 조건에 맞는 작업이 없습니다. 조건을 초기화해 다시 확인하세요.'
+                : '아직 등록된 작업이 없습니다. 새 작업을 만들어 시작하세요.'}</span>
+            <div className="heading-actions">
+              {nearestMonth && (
+                <button className="secondary-button" onClick={() => setListOption('month', nearestMonth)}>
+                  작업 있는 기간으로 이동
+                </button>
+              )}
+              {hasSearchFilters && !!resource.data?.length && (
+                <button className="secondary-button" onClick={clearFilters}>필터 초기화</button>
+              )}
+            </div>
+          </EmptyState>
+        ) : view === 'calendar' ? (
           <TaskCalendar
             tasks={tasks}
             month={month}
