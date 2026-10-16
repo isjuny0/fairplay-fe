@@ -41,6 +41,21 @@ test('스페이스 이름과 내 역할 조건을 함께 적용하고 초기화 
   await page.getByLabel('내 역할 필터').selectOption({ label: '참여자' });
   await expect(list.getByRole('listitem')).toHaveCount(1);
   await expect(list).toContainText('서비스 디자인');
+  await page.reload();
+  await expect(page.getByLabel('스페이스 이름 검색')).toHaveValue('서비스');
+  await expect(page.getByLabel('내 역할 필터')).toHaveValue('USER');
+  await page.route('**/api/spaces/1', (route) =>
+    route.fulfill({ json: spaces[0] }),
+  );
+  await page.route('**/api/spaces/1/teams', (route) =>
+    route.fulfill({ json: [] }),
+  );
+  await list.getByRole('button').filter({ hasText: '서비스 디자인' }).click();
+  await expect(page).toHaveURL(/\/spaces\/1$/);
+  await page.goBack();
+  await expect(page.getByLabel('스페이스 이름 검색')).toHaveValue('서비스');
+  await expect(page.getByLabel('내 역할 필터')).toHaveValue('USER');
+  await expect(list.getByRole('listitem')).toHaveCount(1);
   await page.getByLabel('스페이스 이름 검색').fill('없는 공간');
   await expect(
     page.getByText('조건에 맞는 스페이스가 없습니다.'),
