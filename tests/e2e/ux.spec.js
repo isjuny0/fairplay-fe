@@ -207,6 +207,9 @@ test('세 담당자 균등 배분과 필수 승인자 선택으로 작업을 생
   for (const member of ['김하늘 · 리더', '이지원 · 팀원', '박서연 · 부리더'])
     await dialog.getByLabel(member, { exact: true }).check();
   await dialog.getByRole('button', { name: '균등 배분', exact: true }).click();
+  await expect(dialog.getByText('담당 3명', { exact: true })).toBeVisible();
+  await expect(dialog.getByText('합계 100%', { exact: true })).toBeVisible();
+  await expect(dialog.getByText(/전원 담당 작업은 리더·부리더를 승인자로 선택/)).toBeVisible();
   await expect(dialog.getByLabel('김하늘 배분율')).toHaveValue('34');
   await expect(dialog.getByLabel('이지원 배분율')).toHaveValue('33');
   await expect(dialog.getByLabel('박서연 배분율')).toHaveValue('33');

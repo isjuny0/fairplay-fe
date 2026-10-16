@@ -308,3 +308,20 @@ test('반려 사유를 작성한 상태의 승인에는 미전송을 안내하�
   await expect(page).toHaveURL(/\/approvals$/);
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
+
+test('담당자 변경으로 승인자가 후보에서 빠지면 입력을 유지하며 재선택을 안내한다', async ({ page }) => {
+  await preview(page, '/spaces/1/teams/1/tasks');
+  await page.getByRole('button', { name: '새 작업 만들기', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '새 작업 만들기' });
+  await dialog.getByLabel('작업 제목', { exact: true }).fill('승인자 확인 작업');
+  await dialog.getByLabel('이지원 · 팀원', { exact: true }).check();
+  const reviewer = dialog.getByLabel('완료 승인자', { exact: true });
+  await reviewer.selectOption({ label: '1. 김하늘 · 리더' });
+  await dialog.getByLabel('김하늘 · 리더', { exact: true }).check();
+  await expect(reviewer).toHaveValue('');
+  await expect(dialog.getByText(/이전 승인자를 선택할 수 없습니다/)).toBeVisible();
+  await expect(dialog.getByLabel('작업 제목', { exact: true })).toHaveValue('승인자 확인 작업');
+  await expect(dialog.getByLabel('이지원 배분율')).toHaveValue('100');
+  await reviewer.selectOption({ label: '1. 박서연 · 부리더' });
+  await expect(dialog.getByText(/이전 승인자를 선택할 수 없습니다/)).toHaveCount(0);
+});
