@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { ErrorNotice } from './ui.jsx';
 import { getMemberContributions } from '../api/dashboard.js';
-import { getMidFeedback } from '../api/evaluations.js';
 import { listDeliverables, downloadDeliverable } from '../api/deliverables.js';
 import { ApiError } from '../api/client.js';
 import useResource from '../hooks/useResource.js';
@@ -11,7 +10,7 @@ import {
   formatExpectedWorkload,
   statusLabels,
 } from '../lib/domain.js';
-import { FeedbackSummary } from './PlanningUi.jsx';
+import MemberEvaluationResults from './MemberEvaluationResults.jsx';
 import { EmptyState, ResourceState } from './ui.jsx';
 
 export default function MemberContributions({ context, targetUserId, onBack }) {
@@ -26,38 +25,35 @@ export default function MemberContributions({ context, targetUserId, onBack }) {
     () => getMemberContributions(context.team.id, targetUserId),
     [context.team.id, targetUserId],
   );
-  const feedback = useResource(
-    () => getMidFeedback(context.team.id),
-    [context.team.id, targetUserId],
-  );
-  const ownFeedback = feedback.data?.members.find(
-    (member) => member.userId === targetUserId,
-  );
+  const [evaluationRevision, setEvaluationRevision] = useState(0);
   return (
-    <section className="stack">
+    <section className="stack member-contributions-page">
       <button className="secondary-button back-button" onClick={onBack}>
         ← 대시보드로
       </button>
-      <button
-        className="secondary-button"
-        onClick={() => {
-          resource.reload();
-          feedback.reload();
-        }}
-      >
-        수행 상세 새로고침
-      </button>
-      <div>
-        <span className="eyebrow">관리자 읽기 전용</span>
-        <h1>{member?.name || '팀원'}님의 수행 상세</h1>
-        <p>{context.team.name} · 현재 담당 작업과 최신 자료를 확인합니다.</p>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">관리자 읽기 전용</span>
+          <h1>{member?.name || '팀원'}님의 수행 상세</h1>
+          <p>{context.team.name} · 현재 담당 작업과 최신 자료를 확인합니다.</p>
+        </div>
+        <button
+          className="secondary-button"
+          disabled={resource.loading}
+          onClick={() => {
+            resource.reload();
+            setEvaluationRevision((revision) => revision + 1);
+          }}
+        >
+          수행 상세 새로고침
+        </button>
       </div>
       {!resource.error && resource.data && (
-        <section className="panel">
+        <section className="member-work-summary">
           <h2>담당 작업 요약</h2>
           <div className="action-summary">
             {Object.entries(statusLabels).map(([status, label]) => (
-              <span key={status}>
+              <div key={status}>
                 {label}{' '}
                 <strong>
                   {
@@ -66,7 +62,7 @@ export default function MemberContributions({ context, targetUserId, onBack }) {
                   }
                   건
                 </strong>
-              </span>
+              </div>
             ))}
           </div>
           <label className="form-field">
@@ -98,7 +94,7 @@ export default function MemberContributions({ context, targetUserId, onBack }) {
               (task) => statusFilter === 'ALL' || task.status === statusFilter,
             )
             .map((task) => (
-              <section className="panel" key={task.taskId}>
+              <section className="member-task-record" key={task.taskId}>
                 <div className="page-heading">
                   <h2>{task.title}</h2>
                   <span
@@ -107,32 +103,51 @@ export default function MemberContributions({ context, targetUserId, onBack }) {
                     {statusLabels[task.status]}
                   </span>
                 </div>
-                <p>
-                  예상 작업량: {formatExpectedWorkload(task.weight)} · 본인 배분{' '}
-                  {task.allocationPercent}% · 시작일 {formatDate(task.startAt)}{' '}
-                  · 마감 {formatDate(task.dueAt)}
-                </p>
-                <h3>본인이 작성한 수행 설명</h3>
-                <p className="preserve-lines">
-                  {task.contributionDescription ||
-                    '아직 작성하지 않았습니다. 미작성만으로 수행 여부를 판단할 수 없습니다.'}
-                </p>
-                <p className="field-help">
-                  수행 설명 수정 {formatDate(task.contributionUpdatedAt)}
-                </p>
-                <h3>연결된 최신 산출물</h3>
-                {task.deliverableSummary.length ? (
-                  task.deliverableSummary.map((item) => (
-                    <LinkedDeliverable
-                      key={`${item.id}:${item.version}:${task.taskVersion}`}
-                      item={item}
-                      teamId={context.team.id}
-                      taskId={task.taskId}
-                    />
-                  ))
-                ) : (
-                  <p>연결된 산출물이 없습니다.</p>
-                )}
+                <dl className="member-task-metadata">
+                  <div>
+                    <dt>예상 작업량</dt>
+                    <dd>{formatExpectedWorkload(task.weight)}</dd>
+                  </div>
+                  <div>
+                    <dt>본인 배분</dt>
+                    <dd>{task.allocationPercent}%</dd>
+                  </div>
+                  <div>
+                    <dt>시작일</dt>
+                    <dd>{formatDate(task.startAt)}</dd>
+                  </div>
+                  <div>
+                    <dt>마감</dt>
+                    <dd>{formatDate(task.dueAt)}</dd>
+                  </div>
+                </dl>
+                <div className="member-task-materials">
+                  <div className="member-task-description">
+                    <h3>본인이 작성한 수행 설명</h3>
+                    <p className="preserve-lines">
+                      {task.contributionDescription ||
+                        '아직 작성하지 않았습니다. 미작성만으로 수행 여부를 판단할 수 없습니다.'}
+                    </p>
+                    <p className="field-help">
+                      수행 설명 수정 {formatDate(task.contributionUpdatedAt)}
+                    </p>
+                  </div>
+                  <div className="member-task-deliverables">
+                    <h3>연결된 최신 산출물</h3>
+                    {task.deliverableSummary.length ? (
+                      task.deliverableSummary.map((item) => (
+                        <LinkedDeliverable
+                          key={`${item.id}:${item.version}:${task.taskVersion}`}
+                          item={item}
+                          teamId={context.team.id}
+                          taskId={task.taskId}
+                        />
+                      ))
+                    ) : (
+                      <p className="field-help">연결된 산출물이 없습니다.</p>
+                    )}
+                  </div>
+                </div>
               </section>
             ))
         ) : (
@@ -143,22 +158,12 @@ export default function MemberContributions({ context, targetUserId, onBack }) {
         !resource.data.some(
           (task) => statusFilter === 'ALL' || task.status === statusFilter,
         ) && <EmptyState>선택한 상태의 담당 작업이 없습니다.</EmptyState>}
-      {feedback.error &&
-      !['MID_FEEDBACK_NOT_READY', 'ROUND_NOT_FOUND'].includes(
-        feedback.error.code,
-      ) ? (
-        <ErrorNotice error={feedback.error} onRetry={feedback.reload} />
-      ) : ownFeedback ? (
-        <>
-          <h2>중간 평가 협업 평균과 개선 안내</h2>
-          <FeedbackSummary member={ownFeedback} />
-        </>
-      ) : (
-        <section className="panel">
-          <h2>중간 피드백</h2>
-          <p>{feedback.error?.message || '피드백을 준비하고 있습니다.'}</p>
-        </section>
-      )}
+      <MemberEvaluationResults
+        spaceId={context.space.id}
+        teamId={context.team.id}
+        targetUserId={targetUserId}
+        revision={evaluationRevision}
+      />
     </section>
   );
 }

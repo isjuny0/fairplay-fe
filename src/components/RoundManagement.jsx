@@ -1,6 +1,7 @@
 import ManagerPeerResponses from './ManagerPeerResponses.jsx';
 import { useState } from 'react';
 import DateTimeInput from './DateTimeInput.jsx';
+import { ProgressBar } from './PlanningUi.jsx';
 import { currentDateTime } from '../lib/dateTime.js';
 import {
   listEvaluationRounds,
@@ -92,143 +93,213 @@ export default function RoundManagement({ context, onChanged }) {
     return null;
   };
   return (
-    <section className="stack">
+    <section className="stack round-management-page">
       <div className="page-heading">
         <div>
           <span className="eyebrow">스페이스 단위 평가</span>
           <h1>평가 회차 관리</h1>
           <p>중간·최종 평가 일정을 정하고 제출 상태에 맞춰 운영하세요.</p>
         </div>
-        <button
-          className="primary-button"
-          disabled={busy || rounds.length >= 2}
-          onClick={() => openForm('create')}
-        >
-          평가 회차 만들기
-        </button>
+        <div className="heading-actions">
+          <button
+            className="secondary-button"
+            disabled={busy || resource.loading || submissions.loading}
+            onClick={resource.reload}
+          >
+            회차·제출 현황 새로고침
+          </button>
+          <button
+            className="primary-button"
+            disabled={busy || resource.loading || rounds.length >= 2}
+            onClick={() => openForm('create')}
+          >
+            평가 회차 만들기
+          </button>
+        </div>
       </div>
-      <ol className="process-steps" aria-label="평가 진행 순서">
-        <li>1. 일정 설정</li>
-        <li>2. 평가 시작·작성</li>
-        <li>3. 제출 확인·마감</li>
-      </ol>
+      <div className="round-operation-context">
+        <span
+          className={`status-badge ${context.space.membershipLockedAt ? 'task-state-todo' : 'task-state-in_progress'}`}
+        >
+          {context.space.membershipLockedAt
+            ? '팀 구성 고정'
+            : '팀 구성 확정 전'}
+        </span>
+        <p>중간 평가 → 최종 평가 → 팀별 리포트 검토·공개</p>
+        <span>스페이스별 중간·최종 각 1회</span>
+      </div>
+      <details className="round-operation-guide">
+        <summary>평가 운영 기준</summary>
+        <p>
+          최초 중간 평가 시작 시 팀 구성이 고정됩니다. 팀원 2명 미만인 팀이
+          있으면 시작할 수 없습니다.
+        </p>
+        <p>
+          최종 평가의 마감 시각부터 작업 변경이 제한됩니다. 마감 후 일정
+          수정·추가 제출·재개방은 제공하지 않습니다.
+        </p>
+      </details>
       {rounds.length >= 2 && (
         <p className="field-help">
           중간·최종 평가 회차가 모두 있습니다. 각 회차에서 일정을 수정하거나
           진행 상태를 확인하세요.
         </p>
       )}
-      <section className="panel">
-        <h2>팀 구성과 집계 기준</h2>
-        <p>
-          최초 중간 평가 시작 시 팀 구성이 고정됩니다. 팀원 2명 미만인 팀이
-          있으면 시작할 수 없습니다.
-        </p>
-        <p className="field-help">
-          최종 평가의 마감 시각부터 작업 변경이 제한됩니다. 마감 후 일정
-          수정·추가 제출·재개방은 제공하지 않습니다.
-        </p>
-      </section>
-      <button
-        className="secondary-button"
-        disabled={busy}
-        onClick={resource.reload}
-      >
-        회차·제출 현황 새로고침
-      </button>
-      <ErrorNotice error={submissions.error || error} />
+      <ErrorNotice error={submissions.error} onRetry={submissions.reload} />
+      <ErrorNotice error={error} />
       <ResourceState resource={resource}>
         {rounds.length ? (
-          <div className="two-column">
-            {rounds.map((round) => (
-              <section className="panel round-card" key={round.id}>
-                <div className="page-heading">
-                  <h2>{roundLabels[round.type]}</h2>
-                  <span
-                    className={`status-badge ${round.status === 'CLOSED' ? 'task-state-done' : round.status === 'OPEN' ? 'task-state-in_progress' : ''}`}
-                  >
-                    {roundStatusLabels[round.status]}
-                  </span>
-                </div>
-                <dl className="detail-list">
-                  <div>
-                    <dt>시작</dt>
-                    <dd>{formatDate(round.opensAt)}</dd>
-                  </div>
-                  <div>
-                    <dt>마감</dt>
-                    <dd>{formatDate(round.closesAt)}</dd>
-                  </div>
-                  <div>
-                    <dt>고정 참여자</dt>
-                    <dd>{round.participantCount}명</dd>
-                  </div>
-                  <div>
-                    <dt>작업 집계 기준</dt>
-                    <dd>
-                      {round.type === 'MID'
-                        ? '해당 없음 · 최종 평가에서 고정'
-                        : formatDate(round.closesAt)}
-                    </dd>
-                  </div>
-                </dl>
-                {blockReason(round) && (
-                  <p className="notice">{blockReason(round)}</p>
-                )}
-                {submissions.data?.missingPeerSubmissions
-                  .find((item) => item.roundId === round.id)
-                  ?.teams.map((team) => (
-                    <p key={team.teamId} className="count-row">
-                      <span>
-                        {context.teamContexts.find(
-                          (entry) => entry.team.id === team.teamId,
-                        )?.team.name || '팀'}
-                      </span>
-                      <strong>
-                        {round.status === 'DRAFT'
-                          ? '참여자 고정 전'
-                          : `${team.submittedCount}/${team.requiredCount}명 제출`}
-                      </strong>
-                    </p>
-                  ))}
-                <div className="heading-actions">
-                  {round.status === 'DRAFT' && (
-                    <>
-                      <button
-                        className="secondary-button"
-                        disabled={busy}
-                        onClick={() => openForm('edit', round)}
-                      >
-                        {roundLabels[round.type]} 일정 수정
-                      </button>
-                      <button
-                        className="primary-button"
-                        disabled={busy || Boolean(blockReason(round))}
-                        onClick={() => openRound(round)}
-                      >
-                        {roundLabels[round.type]} 시작
-                      </button>
-                    </>
-                  )}
-                  {round.status === 'OPEN' && (
-                    <button
-                      className="secondary-button"
-                      disabled={busy}
-                      onClick={() => openForm('edit', round)}
+          <div className="round-management-list">
+            {rounds.map((round) => {
+              const teamSubmissions =
+                submissions.data?.missingPeerSubmissions.find(
+                  (item) => item.roundId === round.id,
+                )?.teams || [];
+              const openingBlockReason = blockReason(round);
+              return (
+                <section className="panel round-card" key={round.id}>
+                  <div className="page-heading">
+                    <h2>{roundLabels[round.type]}</h2>
+                    <span
+                      className={`status-badge ${round.status === 'CLOSED' ? 'task-state-todo' : round.status === 'OPEN' ? 'task-state-in_progress' : ''}`}
                     >
-                      {roundLabels[round.type]} 마감 시각 수정
-                    </button>
+                      {roundStatusLabels[round.status]}
+                    </span>
+                  </div>
+                  <div className="round-card-body">
+                    <dl className="detail-list round-schedule-facts">
+                      <div>
+                        <dt>시작</dt>
+                        <dd>{formatDate(round.opensAt)}</dd>
+                      </div>
+                      <div>
+                        <dt>마감</dt>
+                        <dd>{formatDate(round.closesAt)}</dd>
+                      </div>
+                      <div>
+                        <dt>고정 참여자</dt>
+                        <dd>
+                          {round.status === 'DRAFT'
+                            ? '평가 시작 시 확정'
+                            : `${round.participantCount}명`}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>작업 집계 기준</dt>
+                        <dd>
+                          {round.type === 'MID'
+                            ? '해당 없음 · 최종 평가에서 고정'
+                            : formatDate(round.closesAt)}
+                        </dd>
+                      </div>
+                    </dl>
+                    <section
+                      className="round-team-submissions"
+                      aria-label={`${roundLabels[round.type]} 팀별 제출 현황`}
+                    >
+                      <h3>팀별 제출 현황</h3>
+                      {submissions.loading ? (
+                        <p className="field-help">제출 현황을 불러오는 중…</p>
+                      ) : submissions.error ? (
+                        <p className="field-help">
+                          제출 현황을 확인할 수 없습니다.
+                        </p>
+                      ) : round.status === 'DRAFT' ? (
+                        <p className="field-help">
+                          평가를 시작하면 참여자와 팀별 제출 현황이 확정됩니다.
+                        </p>
+                      ) : teamSubmissions.length === 0 ? (
+                        <p className="field-help">집계할 참여 팀이 없습니다.</p>
+                      ) : (
+                        teamSubmissions.map((team) => {
+                          const teamName =
+                            context.teamContexts.find(
+                              (entry) => entry.team.id === team.teamId,
+                            )?.team.name || '팀';
+                          return (
+                            <div
+                              key={team.teamId}
+                              className="round-team-submission"
+                            >
+                              <div className="round-team-submission-heading">
+                                <strong>{teamName}</strong>
+                                <span>
+                                  {team.submittedCount}/{team.requiredCount}명
+                                  제출
+                                </span>
+                              </div>
+                              {team.requiredCount > 0 && (
+                                <ProgressBar
+                                  value={
+                                    (team.submittedCount / team.requiredCount) *
+                                    100
+                                  }
+                                  label={`${roundLabels[round.type]} ${teamName} 제출률`}
+                                />
+                              )}
+                              <span
+                                className={
+                                  team.missingCount > 0
+                                    ? 'dashboard-count-attention'
+                                    : 'field-help'
+                                }
+                              >
+                                {team.requiredCount === 0
+                                  ? '평가 대상 없음'
+                                  : team.missingCount > 0
+                                    ? `미제출 ${team.missingCount}명`
+                                    : '전원 제출'}
+                              </span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </section>
+                  </div>
+                  {openingBlockReason && (
+                    <p className="notice">{openingBlockReason}</p>
                   )}
-                </div>
-                <p className="field-help">
-                  {round.status === 'DRAFT'
-                    ? '일정 대기 상태입니다. 기간과 참여 조건이 충족되면 평가를 시작할 수 있습니다.'
-                    : round.status === 'OPEN'
-                      ? '설정된 마감 시각에 자동으로 종료합니다. 종료 전에는 마감 시각을 수정할 수 있습니다.'
-                      : '마감된 회차는 일정 수정·추가 제출을 허용하지 않습니다.'}
-                </p>
-              </section>
-            ))}
+                  {round.status !== 'CLOSED' && (
+                    <div className="heading-actions">
+                      {round.status === 'DRAFT' && (
+                        <>
+                          <button
+                            className="secondary-button"
+                            disabled={busy}
+                            onClick={() => openForm('edit', round)}
+                          >
+                            {roundLabels[round.type]} 일정 수정
+                          </button>
+                          <button
+                            className="primary-button"
+                            disabled={busy || Boolean(openingBlockReason)}
+                            onClick={() => openRound(round)}
+                          >
+                            {roundLabels[round.type]} 시작
+                          </button>
+                        </>
+                      )}
+                      {round.status === 'OPEN' && (
+                        <button
+                          className="secondary-button"
+                          disabled={busy}
+                          onClick={() => openForm('edit', round)}
+                        >
+                          {roundLabels[round.type]} 마감 시각 수정
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  <p className="field-help">
+                    {round.status === 'DRAFT'
+                      ? '일정 대기 상태입니다. 기간과 참여 조건이 충족되면 평가를 시작할 수 있습니다.'
+                      : round.status === 'OPEN'
+                        ? '설정된 마감 시각에 자동으로 종료합니다. 종료 전에는 마감 시각을 수정할 수 있습니다.'
+                        : '마감된 회차는 일정 수정·추가 제출을 허용하지 않습니다.'}
+                  </p>
+                </section>
+              );
+            })}
           </div>
         ) : (
           <EmptyState>
