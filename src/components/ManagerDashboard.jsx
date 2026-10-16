@@ -6,9 +6,36 @@ import useAppNavigate from '../hooks/useAppNavigate.js';
 import { formatDate } from '../lib/domain.js';
 import { spacePath } from '../lib/routes.js';
 import { completedWorkShare, formatPercent } from '../lib/evaluation.js';
-import { MetricCard } from './PlanningUi.jsx';
+import { MetricCard, ProgressBar } from './PlanningUi.jsx';
 import Icon from './Icon.jsx';
 import { EmptyState, Field, ResourceState } from './ui.jsx';
+
+const teamFilters = {
+  all: '모든 팀',
+  overdue: '마감 지연 있음',
+  stale: '장기 정체 있음',
+  approval: '승인 대기 있음',
+  applications: '가입 대기 있음',
+  understaffed: '팀원 2명 미만',
+};
+const teamSorts = {
+  name: '팀 이름순',
+  overdue: '마감 지연 많은 순',
+  progress: '진행률 낮은 순',
+};
+function TeamProgress({ team }) {
+  return (
+    <div className="dashboard-progress">
+      <span>{formatPercent(team.completionRate, '작업 없음')}</span>
+      {team.completionRate != null && (
+        <ProgressBar
+          value={team.completionRate}
+          label={`${team.teamName} 팀 전체 진행률`}
+        />
+      )}
+    </div>
+  );
+}
 
 export default function ManagerDashboard({ context }) {
   const [params, setParams] = useSearchParams();
@@ -25,6 +52,71 @@ export default function ManagerDashboard({ context }) {
   const selectedTeamName = context.teamContexts.find(
     ({ team }) => String(team.id) === teamId,
   )?.team.name;
+  const teamQuery = params.get('teamQuery') || '';
+  const teamFilter = Object.hasOwn(teamFilters, params.get('teamFilter'))
+    ? params.get('teamFilter')
+    : 'all';
+  const teamSort = Object.hasOwn(teamSorts, params.get('teamSort'))
+    ? params.get('teamSort')
+    : 'name';
+  const listConditionsChanged = Boolean(
+    teamQuery || teamFilter !== 'all' || teamSort !== 'name',
+  );
+  const visibleTeams = (dashboard?.teams || [])
+    .filter((team) => {
+      const matchesQuery = `${team.teamName} ${team.leaderName}`
+        .toLocaleLowerCase('ko')
+        .includes(teamQuery.trim().toLocaleLowerCase('ko'));
+      const matchesFilter =
+        teamFilter === 'all' ||
+        (teamFilter === 'overdue' && team.overdueTaskCount > 0) ||
+        (teamFilter === 'stale' && team.staleTaskCount > 0) ||
+        (teamFilter === 'approval' && team.pendingApprovalCount > 0) ||
+        (teamFilter === 'applications' && team.pendingApplications > 0) ||
+        (teamFilter === 'understaffed' && team.hasMinimumMembers === false);
+      return matchesQuery && matchesFilter;
+    })
+    .sort((first, second) => {
+      if (
+        teamSort === 'overdue' &&
+        first.overdueTaskCount !== second.overdueTaskCount
+      )
+        return second.overdueTaskCount - first.overdueTaskCount;
+      if (
+        teamSort === 'progress' &&
+        first.completionRate !== second.completionRate
+      ) {
+        if (first.completionRate == null) return 1;
+        if (second.completionRate == null) return -1;
+        return Number(first.completionRate) - Number(second.completionRate);
+      }
+      return first.teamName.localeCompare(second.teamName, 'ko');
+    });
+  const attentionTeams = (dashboard?.teams || [])
+    .filter(
+      (team) =>
+        team.overdueTaskCount ||
+        team.staleTaskCount ||
+        team.pendingApprovalCount,
+    )
+    .sort(
+      (first, second) =>
+        second.overdueTaskCount - first.overdueTaskCount ||
+        first.teamName.localeCompare(second.teamName, 'ko'),
+    );
+  const changeListCondition = (name, value) => {
+    const next = new URLSearchParams(params);
+    if (value) next.set(name, value);
+    else next.delete(name);
+    setParams(next, { replace: true, preventScrollReset: true });
+  };
+  const resetListConditions = () => {
+    const next = new URLSearchParams(params);
+    ['teamQuery', 'teamFilter', 'teamSort'].forEach((name) =>
+      next.delete(name),
+    );
+    setParams(next, { replace: true, preventScrollReset: true });
+  };
   const selectTeam = (nextTeamId) => {
     const next = new URLSearchParams(params);
     if (nextTeamId) next.set('teamId', String(nextTeamId));
@@ -135,10 +227,7 @@ export default function ManagerDashboard({ context }) {
                       <div>
                         <dt>진행률 · 예상 작업량</dt>
                         <dd>
-                          {formatPercent(
-                            selectedTeam.completionRate,
-                            '작업 없음',
-                          )}
+                          <TeamProgress team={selectedTeam} />
                         </dd>
                       </div>
                       <div>
@@ -186,38 +275,41 @@ export default function ManagerDashboard({ context }) {
                   <h2>먼저 확인할 팀</h2>
                   <p className="field-help">
                     마감 지연·작업 정체·승인 대기를 확인하고 필요한 지원을
-                    준비하세요.
+                    준비하세요. 지연 작업이 많은 순서입니다.
                   </p>
                   <div className="dashboard-attention-list">
-                    {dashboard.teams
-                      .filter(
-                        (team) =>
-                          team.overdueTaskCount ||
-                          team.staleTaskCount ||
-                          team.pendingApprovalCount,
-                      )
-                      .map((team) => (
-                        <button
-                          className="dashboard-team-link"
-                          key={team.teamId}
-                          aria-pressed={teamId === String(team.teamId)}
-                          onClick={() => selectTeam(team.teamId)}
-                        >
-                          <strong>{team.teamName}</strong>
-                          <span>
-                            지연 {team.overdueTaskCount} · 정체{' '}
-                            {team.staleTaskCount} · 승인 대기{' '}
-                            {team.pendingApprovalCount}
-                          </span>
-                          <Icon name="arrow" />
-                        </button>
-                      ))}
-                    {!dashboard.teams.some(
-                      (team) =>
-                        team.overdueTaskCount ||
-                        team.staleTaskCount ||
-                        team.pendingApprovalCount,
-                    ) && <p>현재 지연·정체·승인 대기 작업이 없습니다.</p>}
+                    {attentionTeams.map((team) => (
+                      <button
+                        className="dashboard-team-link"
+                        key={team.teamId}
+                        onClick={() => selectTeam(team.teamId)}
+                      >
+                        <strong>{team.teamName}</strong>
+                        <span className="dashboard-attention-reasons">
+                          {team.overdueTaskCount > 0 && (
+                            <span className="dashboard-signal signal-overdue">
+                              지연 {team.overdueTaskCount}
+                            </span>
+                          )}
+                          {team.staleTaskCount > 0 && (
+                            <span className="dashboard-signal signal-stale">
+                              정체 {team.staleTaskCount}
+                            </span>
+                          )}
+                          {team.pendingApprovalCount > 0 && (
+                            <span className="dashboard-signal signal-approval">
+                              승인 대기 {team.pendingApprovalCount}
+                            </span>
+                          )}
+                        </span>
+                        <Icon name="arrow" />
+                      </button>
+                    ))}
+                    {!attentionTeams.length && (
+                      <p className="dashboard-quiet-state">
+                        현재 지연·정체·승인 대기 작업이 없습니다.
+                      </p>
+                    )}
                   </div>
                 </section>
               )}
@@ -238,21 +330,55 @@ export default function ManagerDashboard({ context }) {
                 </p>
                 {dashboard.missingPeerSubmissions.length ? (
                   dashboard.missingPeerSubmissions.map((round) => (
-                    <div className="count-row" key={round.roundId}>
-                      <span>
-                        {round.type === 'MID' ? '중간' : '최종'} 평가 ·{' '}
-                        {round.status === 'CLOSED'
-                          ? '마감'
-                          : round.status === 'DRAFT'
-                            ? '대기'
-                            : '작성 중'}
-                      </span>
-                      <strong>
-                        {round.status === 'DRAFT'
-                          ? '참여자 고정 전'
-                          : `${round.submittedCount} / ${round.requiredCount}명 제출`}
-                      </strong>
-                    </div>
+                    <article
+                      className="dashboard-round-submission"
+                      key={round.roundId}
+                      aria-label={`${round.type === 'MID' ? '중간' : '최종'} 평가 제출 현황`}
+                    >
+                      <div className="dashboard-round-heading">
+                        <h3>{round.type === 'MID' ? '중간' : '최종'} 평가</h3>
+                        <span
+                          className={`dashboard-round-status round-${round.status.toLowerCase()}`}
+                        >
+                          {round.status === 'CLOSED'
+                            ? '마감'
+                            : round.status === 'DRAFT'
+                              ? '대기'
+                              : '작성 중'}
+                        </span>
+                      </div>
+                      {round.status === 'DRAFT' ? (
+                        <p className="field-help">참여자 고정 전</p>
+                      ) : round.requiredCount === 0 ? (
+                        <p className="field-help">평가 대상 없음</p>
+                      ) : (
+                        <>
+                          <div className="dashboard-submission-count">
+                            <strong>
+                              {round.submittedCount} / {round.requiredCount}명
+                              제출
+                            </strong>
+                            <span
+                              className={
+                                round.missingCount > 0
+                                  ? 'dashboard-count-attention'
+                                  : ''
+                              }
+                            >
+                              {round.missingCount > 0
+                                ? `미제출 ${round.missingCount}명`
+                                : '전원 제출'}
+                            </span>
+                          </div>
+                          <ProgressBar
+                            value={
+                              (round.submittedCount / round.requiredCount) * 100
+                            }
+                            label={`${round.type === 'MID' ? '중간' : '최종'} 평가 제출률`}
+                          />
+                        </>
+                      )}
+                    </article>
                   ))
                 ) : (
                   <p>평가 회차가 없습니다.</p>
@@ -270,7 +396,79 @@ export default function ManagerDashboard({ context }) {
                     </p>
                   </div>
                 </div>
-                {dashboard.teams.length ? (
+                {dashboard.teams.length > 0 && (
+                  <>
+                    <div
+                      className="dashboard-list-toolbar"
+                      role="group"
+                      aria-label="팀 목록 조건"
+                    >
+                      <Field label="팀·리더 검색">
+                        <input
+                          type="search"
+                          value={teamQuery}
+                          placeholder="팀 이름 또는 리더 이름"
+                          onChange={(event) =>
+                            changeListCondition('teamQuery', event.target.value)
+                          }
+                        />
+                      </Field>
+                      <Field label="팀 상태">
+                        <select
+                          value={teamFilter}
+                          onChange={(event) =>
+                            changeListCondition(
+                              'teamFilter',
+                              event.target.value === 'all'
+                                ? ''
+                                : event.target.value,
+                            )
+                          }
+                        >
+                          {Object.entries(teamFilters).map(([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="팀 정렬">
+                        <select
+                          value={teamSort}
+                          onChange={(event) =>
+                            changeListCondition(
+                              'teamSort',
+                              event.target.value === 'name'
+                                ? ''
+                                : event.target.value,
+                            )
+                          }
+                        >
+                          {Object.entries(teamSorts).map(([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      {listConditionsChanged && (
+                        <button
+                          className="ghost-button"
+                          onClick={resetListConditions}
+                        >
+                          목록 조건 초기화
+                        </button>
+                      )}
+                    </div>
+                    <div className="dashboard-list-context">
+                      <span role="status">
+                        목록 {visibleTeams.length} / {dashboard.teams.length}팀
+                      </span>
+                      <span>목록 조건은 아래 팀 목록에만 적용됩니다.</span>
+                    </div>
+                  </>
+                )}
+                {visibleTeams.length ? (
                   <div className="table-scroll desktop-data-table">
                     <table className="data-table dashboard-teams-table">
                       <caption className="sr-only">팀별 진행 현황</caption>
@@ -288,7 +486,7 @@ export default function ManagerDashboard({ context }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {dashboard.teams.map((team) => (
+                        {visibleTeams.map((team) => (
                           <tr key={team.teamId}>
                             <th scope="row">
                               <button
@@ -306,12 +504,38 @@ export default function ManagerDashboard({ context }) {
                             <td>{team.approvedMemberCount}명</td>
                             <td>{team.todoTaskCount}</td>
                             <td>{team.inProgressTaskCount}</td>
-                            <td>{team.pendingApprovalCount}</td>
-                            <td>
-                              {formatPercent(team.completionRate, '작업 없음')}
+                            <td
+                              className={
+                                team.pendingApprovalCount > 0
+                                  ? 'dashboard-count-attention'
+                                  : ''
+                              }
+                            >
+                              {team.pendingApprovalCount}
                             </td>
                             <td>
-                              {team.overdueTaskCount} / {team.staleTaskCount}
+                              <TeamProgress team={team} />
+                            </td>
+                            <td>
+                              <span
+                                className={
+                                  team.overdueTaskCount > 0
+                                    ? 'dashboard-count-attention'
+                                    : ''
+                                }
+                              >
+                                {team.overdueTaskCount}
+                              </span>{' '}
+                              /{' '}
+                              <span
+                                className={
+                                  team.staleTaskCount > 0
+                                    ? 'dashboard-count-attention'
+                                    : ''
+                                }
+                              >
+                                {team.staleTaskCount}
+                              </span>
                             </td>
                             <td>{team.deliverableCount}</td>
                             <td>
@@ -341,12 +565,34 @@ export default function ManagerDashboard({ context }) {
                     </table>
                   </div>
                 ) : (
-                  <EmptyState>생성된 팀이 없습니다.</EmptyState>
+                  <EmptyState>
+                    {dashboard.teams.length ? (
+                      <>
+                        <p>조건에 맞는 팀이 없습니다.</p>
+                        <button
+                          className="secondary-button"
+                          onClick={resetListConditions}
+                        >
+                          목록 조건 초기화
+                        </button>
+                      </>
+                    ) : (
+                      '생성된 팀이 없습니다.'
+                    )}
+                  </EmptyState>
                 )}
                 <div className="mobile-data-cards">
-                  {dashboard.teams.map((team) => (
+                  {visibleTeams.map((team) => (
                     <article key={team.teamId}>
-                      <h3>{team.teamName}</h3>
+                      <h3>
+                        <button
+                          className="table-name-button"
+                          aria-label={`${team.teamName} 현황 보기`}
+                          onClick={() => selectTeam(team.teamId)}
+                        >
+                          {team.teamName}
+                        </button>
+                      </h3>
                       <p className="field-help">
                         {team.leaderName} · 리더 · 팀원{' '}
                         {team.approvedMemberCount}명
@@ -355,7 +601,7 @@ export default function ManagerDashboard({ context }) {
                         <div>
                           <dt>진행률 · 예상 작업량</dt>
                           <dd>
-                            {formatPercent(team.completionRate, '작업 없음')}
+                            <TeamProgress team={team} />
                           </dd>
                         </div>
                         <div>

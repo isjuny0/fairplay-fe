@@ -111,3 +111,84 @@ test('팀 빌딩 기간은 저장된 값과 저장 전 입력을 구분하고 �
     page.getByRole('status').filter({ hasText: '저장 전 입력' }),
   ).toHaveCount(0);
 });
+
+for (const width of [1440, 390]) {
+  test(`관리자는 ${width}px에서 팀 목록을 검색·필터하고 조회 조건을 복원한다`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await openManagerPreview(page, '/spaces/1/dashboard');
+    const summary = page.getByRole('region', {
+      name: '조회 범위의 작업 현황',
+      exact: true,
+    });
+    await page.getByLabel('팀·리더 검색', { exact: true }).fill('최유진');
+    await expect(
+      page.getByRole('status').filter({ hasText: '목록 1 / 2팀' }),
+    ).toBeVisible();
+    const table = page.getByRole('table', {
+      name: '팀별 진행 현황',
+      exact: true,
+    });
+    if (width > 720) {
+      await expect(
+        table.getByRole('button', { name: '파도 현황 보기', exact: true }),
+      ).toBeVisible();
+      await expect(
+        table.getByRole('button', { name: '삼위일체 현황 보기', exact: true }),
+      ).toHaveCount(0);
+    } else {
+      await expect(
+        page.getByRole('button', { name: '파도 현황 보기', exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole('button', { name: '삼위일체 현황 보기', exact: true }),
+      ).toHaveCount(0);
+    }
+    await expect(summary.getByText('2건', { exact: true })).toHaveCount(3);
+    await page.getByLabel('팀 상태', { exact: true }).selectOption('overdue');
+    await page.getByLabel('팀 정렬', { exact: true }).selectOption('progress');
+    await page.reload();
+    await expect(page.getByLabel('팀·리더 검색', { exact: true })).toHaveValue(
+      '최유진',
+    );
+    await expect(page.getByLabel('팀 상태', { exact: true })).toHaveValue(
+      'overdue',
+    );
+    await expect(page.getByLabel('팀 정렬', { exact: true })).toHaveValue(
+      'progress',
+    );
+    await page
+      .getByLabel('팀 상태', { exact: true })
+      .selectOption('applications');
+    await expect(
+      page.getByText('조건에 맞는 팀이 없습니다.', { exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole('button', { name: '목록 조건 초기화', exact: true })
+      .last()
+      .click();
+    await expect(page.getByLabel('팀·리더 검색', { exact: true })).toHaveValue(
+      '',
+    );
+    await expect(page.getByLabel('팀 상태', { exact: true })).toHaveValue(
+      'all',
+    );
+    await expect(page.getByLabel('팀 정렬', { exact: true })).toHaveValue(
+      'name',
+    );
+    await expect(
+      page.getByRole('status').filter({ hasText: '목록 2 / 2팀' }),
+    ).toBeVisible();
+    await page
+      .getByRole('button', { name: '파도 현황 보기', exact: true })
+      .click();
+    await expect(page).toHaveURL(/teamId=2/);
+    await expect(
+      page.getByRole('heading', { name: '파도 · 팀원 수행 현황', exact: true }),
+    ).toBeVisible();
+    await expect(page.getByLabel('팀·리더 검색', { exact: true })).toHaveCount(
+      0,
+    );
+  });
+}
