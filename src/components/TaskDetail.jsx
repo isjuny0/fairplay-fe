@@ -179,7 +179,7 @@ export default function TaskDetail({
         ← 목록으로
       </button>
       <ErrorNotice error={error} onRetry={resource.reload} />
-      <ResourceState resource={resource}>
+      <ResourceState resource={resource} label="작업 상세">
         {task && (
           <>
             <div className="page-heading">

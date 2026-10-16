@@ -211,7 +211,7 @@ export default function SpaceWorkspace({
         onBack={onBack}
       />
       <main className={`main-content ${contentLayout}`}>
-        <ResourceState resource={resource}>
+        <ResourceState resource={resource} label="스페이스 정보">
           {space && (
             <>
               {isManager && (

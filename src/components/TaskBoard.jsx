@@ -406,7 +406,7 @@ export default function TaskBoard({
           ))}
         </div>
       )}
-      <ResourceState resource={resource}>
+      <ResourceState resource={resource} label="작업 목록">
         <div className="list-summary" aria-live="polite">
           <span>
             검색 결과 {tasks.length}개 · 전체 {resource.data?.length || 0}개

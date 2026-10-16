@@ -84,7 +84,7 @@ export default function Approvals({
         </button>
       </div>
       <ErrorNotice error={taskResource.error} onRetry={taskResource.reload} />
-      <ResourceState resource={resource}>
+      <ResourceState resource={resource} label="승인 요청 목록">
         {resource.data?.length ? (
           <div
             className="table-scroll collection-table-scroll"

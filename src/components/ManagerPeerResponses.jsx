@@ -46,7 +46,7 @@ function SubmittedResponses({ roundId, teamId }) {
           마감 정리가 아직 끝나지 않았습니다. 잠시 후 다시 불러와 주세요.
         </p>
       ) : (
-        <ResourceState resource={resource}>
+        <ResourceState resource={resource} label="최종 제출 평가 원문">
           {result && (
             <>
               <div
@@ -184,7 +184,7 @@ function PeerResponseContent({ context, teamId }) {
           원문 조회 회차 새로고침
         </button>
       </div>
-      <ResourceState resource={rounds}>
+      <ResourceState resource={rounds} label="평가 회차">
         <div className="manager-peer-scope" aria-label="원문 조회 범위">
           {!teamId ? (
             <Field label="평가 원문 대상 팀">

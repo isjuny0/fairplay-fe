@@ -147,7 +147,7 @@ export default function Spaces({ onSelect }) {
           </button>
         </div>
       </div>
-      <ResourceState resource={resource}>
+      <ResourceState resource={resource} label="스페이스 목록">
         {resource.data?.length ? (
           <section className="directory-section" aria-label="스페이스 목록">
             <div className="directory-toolbar">

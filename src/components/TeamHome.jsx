@@ -37,7 +37,7 @@ export default function TeamHome({ context, onNavigate }) {
           </button>
         </div>
       </div>
-      <ResourceState resource={resource}>
+      <ResourceState resource={resource} label="본인 작업 현황">
         {summary && (
           <>
             <div className="team-home-summary">
