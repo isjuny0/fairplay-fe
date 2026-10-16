@@ -1,5 +1,5 @@
 import Icon from './Icon.jsx';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   assignTeamDeputy,
   getTeamApplications,
@@ -12,7 +12,7 @@ import { formatDate, isApprovedMember, memberRole } from '../lib/domain.js';
 import { EmptyState, ErrorNotice, ResourceState } from './ui.jsx';
 
 export default function TeamMembers({ team, user, onChanged }) {
-  const { notify } = useInteractions();
+  const { notify, confirm } = useInteractions();
   const isLeader = isApprovedMember(team) && team.leaderId === user.id;
   const resource = useResource(
     async () => ({
@@ -21,22 +21,55 @@ export default function TeamMembers({ team, user, onChanged }) {
     }),
     [team.id, isLeader],
   );
-  const [busy, setBusy] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
+  const busy = Boolean(pendingAction);
   const [error, setError] = useState(null);
-  const run = async (action) => {
-    setBusy(true);
+  useEffect(() => {
+    setError(null);
+  }, [resource.data]);
+  const currentDeputy = resource.data?.members.find(
+    (member) => member.role === 'DEPUTY',
+  );
+  const run = async ({ action, pendingMessage, successMessage }) => {
+    setPendingAction(pendingMessage);
     setError(null);
     try {
       await action();
-      notify('팀원 상태를 변경했습니다.');
+      notify(successMessage);
       resource.reload();
       onChanged();
     } catch (requestError) {
       setError(requestError);
     } finally {
-      setBusy(false);
+      setPendingAction(null);
     }
   };
+  const changeDeputy = async (member) => {
+    const removing = member.role === 'DEPUTY';
+    if (!removing && currentDeputy) {
+      const accepted = await confirm({
+        title: '부리더 변경',
+        message: `${currentDeputy.name}님의 부리더 역할을 해제하고 ${member.name}님을 새 부리더로 지정합니다. 변경할까요?`,
+        label: '부리더 변경',
+      });
+      if (!accepted) return;
+    }
+    await run({
+      action: () => assignTeamDeputy(team.id, removing ? null : member.userId),
+      pendingMessage: removing
+        ? `${member.name}님의 부리더 역할을 해제하는 중…`
+        : `${member.name}님을 부리더로 지정하는 중…`,
+      successMessage: removing
+        ? `${member.name}님의 부리더 역할을 해제했습니다.`
+        : `${member.name}님을 부리더로 지정했습니다.`,
+    });
+  };
+  const reviewApplication = (application, status) =>
+    run({
+      action: () => reviewTeamApplication(application.id, status),
+      pendingMessage: `${application.name}님의 가입 신청을 ${status === 'APPROVED' ? '승인' : '반려'}하는 중…`,
+      successMessage: `${application.name}님의 가입 신청을 ${status === 'APPROVED' ? '승인' : '반려'}했습니다.`,
+    });
   return (
     <section className="stack team-member-directory">
       <div className="page-heading">
@@ -57,6 +90,11 @@ export default function TeamMembers({ team, user, onChanged }) {
           새로고침
         </button>
       </div>
+      {pendingAction && (
+        <p className="field-help" role="status">
+          {pendingAction}
+        </p>
+      )}
       <ErrorNotice error={error} onRetry={resource.reload} />
       <ResourceState resource={resource}>
         {resource.data && (
@@ -90,19 +128,14 @@ export default function TeamMembers({ team, user, onChanged }) {
                     {isLeader && member.role !== 'LEADER' && (
                       <button
                         className="secondary-button"
-                        disabled={busy}
-                        onClick={() =>
-                          run(() =>
-                            assignTeamDeputy(
-                              team.id,
-                              member.role === 'DEPUTY' ? null : member.userId,
-                            ),
-                          )
-                        }
+                        disabled={busy || resource.loading}
+                        onClick={() => changeDeputy(member)}
                       >
                         {member.role === 'DEPUTY'
                           ? '부리더 해제'
-                          : '부리더 지정'}
+                          : currentDeputy
+                            ? '부리더 변경'
+                            : '부리더 지정'}
                       </button>
                     )}
                   </li>
@@ -136,28 +169,22 @@ export default function TeamMembers({ team, user, onChanged }) {
                         <div className="heading-actions">
                           <button
                             className="secondary-button"
-                            disabled={busy}
+                            disabled={busy || resource.loading}
                             onClick={() =>
-                              run(() =>
-                                reviewTeamApplication(
-                                  application.id,
-                                  'REJECTED',
-                                ),
-                              )
+                              reviewApplication(application, 'REJECTED')
                             }
                           >
                             반려
                           </button>
                           <button
                             className="primary-button"
-                            disabled={busy || !application.canApprove}
+                            disabled={
+                              busy ||
+                              resource.loading ||
+                              !application.canApprove
+                            }
                             onClick={() =>
-                              run(() =>
-                                reviewTeamApplication(
-                                  application.id,
-                                  'APPROVED',
-                                ),
-                              )
+                              reviewApplication(application, 'APPROVED')
                             }
                           >
                             가입 승인

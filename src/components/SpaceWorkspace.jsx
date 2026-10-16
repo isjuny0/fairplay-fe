@@ -72,6 +72,9 @@ export default function SpaceWorkspace({
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  useEffect(() => {
+    setError(null);
+  }, [resource.data]);
   const space = resource.data?.space;
   const teams = resource.data?.teams || [];
   const isManager = space?.myRole === 'MANAGER';
@@ -150,12 +153,26 @@ export default function SpaceWorkspace({
     space?.teamBuildingStatus === 'OPEN' &&
     new Date(space.teamBuildingOpensAt) <= new Date() &&
     new Date(space.teamBuildingClosesAt) > new Date();
+  const teamCreationRestriction = joinedTeam
+    ? `이미 ${joinedTeam.name} 팀에 소속되어 있습니다. 스페이스에서는 한 팀에만 소속될 수 있습니다.`
+    : buildingOpen
+      ? ''
+      : {
+          NOT_CONFIGURED:
+            '관리자가 팀 빌딩 기간을 지정하면 팀을 만들 수 있습니다.',
+          SCHEDULED: `팀 빌딩이 시작되는 ${formatDate(space?.teamBuildingOpensAt)}부터 팀을 만들 수 있습니다.`,
+          CLOSED: '팀 빌딩 기간이 종료되어 팀을 만들 수 없습니다.',
+          LOCKED: '평가가 시작되어 팀 구성이 고정되었습니다.',
+        }[space?.teamBuildingStatus] ||
+        '현재 팀을 만들 수 없습니다. 최신 팀 빌딩 상태를 확인해 주세요.';
   const apply = async (target) => {
     setBusy(true);
     setError(null);
     try {
       await requestTeamJoin(target.id);
-      notify('팀 가입을 신청했습니다. 가입 승인 후 작업을 시작할 수 있습니다.');
+      notify(
+        `${target.name} 팀에 가입을 신청했습니다. 리더의 승인을 기다려 주세요.`,
+      );
       resource.reload();
     } catch (requestError) {
       setError(requestError);
@@ -342,17 +359,33 @@ export default function SpaceWorkspace({
                       <h1>{space.name}</h1>
                       <p>{space.description}</p>
                     </div>
-                    <button
-                      className="primary-button"
-                      disabled={!buildingOpen || Boolean(joinedTeam)}
-                      onClick={() => {
-                        setError(null);
-                        setName('');
-                        setCreating(true);
-                      }}
-                    >
-                      <Icon name="plus" />팀 만들기
-                    </button>
+                    <div className="team-create-action">
+                      <button
+                        className="primary-button"
+                        disabled={
+                          busy ||
+                          resource.loading ||
+                          Boolean(teamCreationRestriction)
+                        }
+                        aria-describedby={
+                          teamCreationRestriction
+                            ? 'team-create-restriction'
+                            : undefined
+                        }
+                        onClick={() => {
+                          setError(null);
+                          setName('');
+                          setCreating(true);
+                        }}
+                      >
+                        <Icon name="plus" />팀 만들기
+                      </button>
+                      {teamCreationRestriction && (
+                        <p id="team-create-restriction" className="field-help">
+                          {teamCreationRestriction}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   <SpaceGuide
                     space={space}
@@ -415,7 +448,7 @@ export default function SpaceWorkspace({
                           ? `내 소속 · ${joinedTeam.name}`
                           : isManager
                             ? '각 팀의 구성원과 자료를 확인하세요.'
-                            : '가입 신청 후 리더·부리더의 승인이 필요합니다.'}
+                            : '가입 신청 후 리더의 승인이 필요합니다.'}
                       </p>
                     </div>
                     <button

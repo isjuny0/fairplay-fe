@@ -2,6 +2,7 @@ import Icon from './Icon.jsx';
 import DateTimeInput from './DateTimeInput.jsx';
 import { currentDateTime } from '../lib/dateTime.js';
 import { useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { createSpace, joinSpace, listSpaces } from '../api/spaces.js';
 import useResource from '../hooks/useResource.js';
 import { useInteractions } from '../hooks/useInteractions.js';
@@ -22,8 +23,25 @@ import {
 export default function Spaces({ onSelect }) {
   const { notify, clearChanges } = useInteractions();
   const resource = useResource(listSpaces, []);
-  const [search, setSearch] = useState('');
-  const [role, setRole] = useState('ALL');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const search = searchParams.get('q') || '';
+  const requestedRole = searchParams.get('role');
+  const role = ['MANAGER', 'USER'].includes(requestedRole)
+    ? requestedRole
+    : 'ALL';
+  const updateFilters = (changes) => {
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        for (const [key, value] of Object.entries(changes)) {
+          if (value && value !== 'ALL') next.set(key, value);
+          else next.delete(key);
+        }
+        return next;
+      },
+      { replace: true },
+    );
+  };
   const visibleSpaces = (resource.data || []).filter(
     (space) =>
       space.name
@@ -139,14 +157,16 @@ export default function Spaces({ onSelect }) {
                   type="search"
                   placeholder="스페이스 이름 검색"
                   value={search}
-                  onChange={(event) => setSearch(event.target.value)}
+                  onChange={(event) => updateFilters({ q: event.target.value })}
                 />
               </label>
               <label>
                 <span className="sr-only">내 역할 필터</span>
                 <select
                   value={role}
-                  onChange={(event) => setRole(event.target.value)}
+                  onChange={(event) =>
+                    updateFilters({ role: event.target.value })
+                  }
                 >
                   <option value="ALL">모든 역할</option>
                   <option value="MANAGER">관리자</option>
@@ -205,8 +225,7 @@ export default function Spaces({ onSelect }) {
                 <button
                   className="secondary-button"
                   onClick={() => {
-                    setSearch('');
-                    setRole('ALL');
+                    updateFilters({ q: '', role: 'ALL' });
                   }}
                 >
                   검색·필터 초기화

@@ -325,3 +325,26 @@
     flex-direction: column;
   }
 }
+
+.team-create-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 320px;
+}
+.team-create-action .field-help {
+  margin: 0;
+  text-align: right;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .team-create-action {
+    max-width: 100%;
+    align-items: flex-start;
+  }
+  .team-create-action .field-help {
+    text-align: left;
+  }
+}
