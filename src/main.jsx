@@ -14,6 +14,7 @@ import './admin-workspace.css';
 import './entry-workspace.css';
 import './task-detail.css';
 import './task-review.css';
+import './task-editor.css';
 
 const router = createBrowserRouter([
   {

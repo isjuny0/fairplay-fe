@@ -88,6 +88,11 @@ export default function TaskForm({
     (sum, assignment) => sum + Number(assignment.allocationPercent),
     0,
   );
+  const allMembersAssigned =
+    editingMembers.length > 0 &&
+    editingMembers.every((member) =>
+      form.assignees.some((assignment) => assignment.userId === member.userId),
+    );
   const toggle = (member, checked) =>
     update(
       'assignees',
@@ -202,7 +207,12 @@ export default function TaskForm({
       editor
       dirty={dirty}
     >
-      <form ref={formElement} onSubmit={submit} noValidate>
+      <form
+        className="task-editor-form"
+        ref={formElement}
+        onSubmit={submit}
+        noValidate
+      >
         {mobile && (
           <ol className="task-form-steps" aria-label="작업 입력 단계">
             {['작업 내용', '담당·승인', '저장 전 확인'].map((label, index) => (
@@ -261,7 +271,7 @@ export default function TaskForm({
               <p className="character-count">
                 {form.description.length} / 1000자
               </p>
-              <div className="two-columns">
+              <div className="task-workload-field">
                 <Field
                   label="예상 작업량"
                   help="모든 담당자의 준비·수행·검토 시간을 합산합니다. 대기 시간은 제외합니다."
@@ -280,28 +290,36 @@ export default function TaskForm({
                   </select>
                 </Field>
               </div>
-              <div className="two-columns">
-                <Field
-                  label="시작일"
-                  error={fieldErrors.startAt}
-                  help="계획 일정이며 시작일 전에도 작업할 수 있습니다."
-                >
-                  <DateTimeInput
-                    name="startAt"
-                    required
-                    value={form.startAt}
-                    onChange={(event) => update('startAt', event.target.value)}
-                  />
-                </Field>
-                <Field label="마감" error={fieldErrors.dueAt}>
-                  <DateTimeInput
-                    name="dueAt"
-                    required
-                    value={form.dueAt}
-                    onChange={(event) => update('dueAt', event.target.value)}
-                  />
-                </Field>
-              </div>
+              <section
+                className="task-schedule-fields"
+                aria-label="계획 일정 입력"
+              >
+                <h4>계획 일정</h4>
+                <div className="two-columns">
+                  <Field
+                    label="시작일"
+                    error={fieldErrors.startAt}
+                    help="계획 일정이며 시작일 전에도 작업할 수 있습니다."
+                  >
+                    <DateTimeInput
+                      name="startAt"
+                      required
+                      value={form.startAt}
+                      onChange={(event) =>
+                        update('startAt', event.target.value)
+                      }
+                    />
+                  </Field>
+                  <Field label="마감" error={fieldErrors.dueAt}>
+                    <DateTimeInput
+                      name="dueAt"
+                      required
+                      value={form.dueAt}
+                      onChange={(event) => update('dueAt', event.target.value)}
+                    />
+                  </Field>
+                </div>
+              </section>
               <details className="form-help">
                 <summary>예상 작업량과 담당 비율은 어떻게 사용되나요?</summary>
                 <p className="field-help">
@@ -325,7 +343,7 @@ export default function TaskForm({
                   담당·승인 설정
                 </h3>
                 <div className="section-heading">
-                  <h3>담당자와 배분 · 합계 {total}%</h3>
+                  <h4>담당자와 배분</h4>
                   <button
                     type="button"
                     className="secondary-button"
@@ -344,6 +362,14 @@ export default function TaskForm({
                   >
                     균등 배분
                   </button>
+                </div>
+                <div className="allocation-summary" role="status">
+                  <span>담당 {form.assignees.length}명</span>
+                  <strong
+                    className={total === 100 ? 'allocation-complete' : ''}
+                  >
+                    합계 {total}%
+                  </strong>
                 </div>
                 <p
                   id="assignment-help"
@@ -364,7 +390,7 @@ export default function TaskForm({
                     );
                     return (
                       <div key={member.userId} className="allocation-row">
-                        <label>
+                        <label className="allocation-member">
                           <input
                             name="assignees"
                             aria-describedby="assignment-help"
@@ -375,11 +401,16 @@ export default function TaskForm({
                               toggle(member, event.target.checked)
                             }
                           />{' '}
-                          {member.name} · {memberRole(member)}
+                          <span>
+                            {member.name}{' '}
+                            <span className="allocation-role">
+                              · {memberRole(member)}
+                            </span>
+                          </span>
                         </label>
                         {assignment && (
-                          <label>
-                            배분 %
+                          <label className="allocation-value">
+                            <span className="sr-only">배분</span>
                             <input
                               name={`allocation-${member.userId}`}
                               aria-invalid={Boolean(
@@ -410,6 +441,7 @@ export default function TaskForm({
                                 )
                               }
                             />
+                            <span aria-hidden="true">%</span>
                             {fieldErrors[`allocation-${member.userId}`] && (
                               <span
                                 id={`allocation-error-${member.userId}`}
@@ -446,7 +478,7 @@ export default function TaskForm({
               <Field
                 label="완료 승인자"
                 error={fieldErrors.completionReviewerId}
-                help="비담당 리더 → 비담당 부리더 → 비담당 팀원 순서입니다. 전원 담당이면 리더·부리더를 선택할 수 있습니다."
+                help="비담당 리더 → 비담당 부리더 → 비담당 팀원 순서로 제공합니다. 목록에서 승인자를 직접 선택해 주세요."
               >
                 <select
                   name="completionReviewerId"
@@ -464,6 +496,18 @@ export default function TaskForm({
                   ))}
                 </select>
               </Field>
+              {form.completionReviewerId && !selectedReviewer && (
+                <p className="notice" role="status">
+                  담당자 구성이 바뀌어 이전 승인자를 선택할 수 없습니다.
+                  목록에서 다시 선택해 주세요.
+                </p>
+              )}
+              {allMembersAssigned && (
+                <p className="task-reviewer-exception">
+                  전원 담당 작업은 리더·부리더를 승인자로 선택할 수 있습니다.
+                  완료 요청은 선택한 승인자와 다른 담당자가 진행해야 합니다.
+                </p>
+              )}
               {task &&
                 task.assignees.some(
                   (assignment) => assignment.userId === user.id,
