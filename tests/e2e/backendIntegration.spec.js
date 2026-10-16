@@ -1250,3 +1250,126 @@ test('관리자 원문 회차 새로고침으로 마감된 회차를 조회한�
     ),
   ).toBe(true);
 });
+
+test('관리자 목록 정렬은 지연 건수와 실제 진행률을 사용하며 작업 없는 팀을 0%로 취급하지 않는다', async ({
+  page,
+}) => {
+  const { requests } = await backend(page, { manager: true });
+  const teamOverview = {
+    leaderName: '승인자',
+    approvedMemberCount: 2,
+    hasMinimumMembers: true,
+    pendingApplications: 0,
+    totalTaskCount: 4,
+    todoTaskCount: 1,
+    inProgressTaskCount: 2,
+    pendingApprovalCount: 0,
+    doneTaskCount: 1,
+    completionRate: 25,
+    overdueTaskCount: 0,
+    staleTaskCount: 0,
+    deliverableCount: 1,
+    reportId: null,
+    reportStatus: null,
+  };
+  await page.route('**/api/spaces/1/manager-dashboard*', (route) =>
+    route.fulfill({
+      json: {
+        spaceId: 1,
+        spaceName: '실제 API 스페이스',
+        teamId: null,
+        asOf: '2026-10-14T10:00:00Z',
+        totalTeamCount: 3,
+        unassignedCount: 0,
+        pendingApplications: 0,
+        overdueTaskCount: 4,
+        staleTaskCount: 0,
+        pendingApprovalCount: 0,
+        teams: [
+          {
+            ...teamOverview,
+            teamId: 1,
+            teamName: '가 팀',
+            completionRate: 0,
+            doneTaskCount: 0,
+            overdueTaskCount: 1,
+          },
+          {
+            ...teamOverview,
+            teamId: 2,
+            teamName: '나 팀',
+            completionRate: 75,
+            doneTaskCount: 3,
+            overdueTaskCount: 3,
+          },
+          {
+            ...teamOverview,
+            teamId: 3,
+            teamName: '다 팀',
+            completionRate: null,
+            totalTaskCount: 0,
+            todoTaskCount: 0,
+            inProgressTaskCount: 0,
+            doneTaskCount: 0,
+          },
+        ],
+        missingPeerSubmissions: [
+          {
+            roundId: 11,
+            type: 'MID',
+            status: 'DRAFT',
+            requiredCount: 0,
+            submittedCount: 0,
+            missingCount: 0,
+          },
+          {
+            roundId: 12,
+            type: 'FINAL',
+            status: 'OPEN',
+            requiredCount: 6,
+            submittedCount: 2,
+            missingCount: 4,
+          },
+        ],
+      },
+    }),
+  );
+  await page.goto('/spaces/1/dashboard');
+  const table = page.getByRole('table', {
+    name: '팀별 진행 현황',
+    exact: true,
+  });
+  const names = table.getByRole('rowheader');
+  await page.getByLabel('팀 정렬', { exact: true }).selectOption('overdue');
+  await expect(names).toHaveText([/나 팀/, /가 팀/, /다 팀/]);
+  await page.getByLabel('팀 정렬', { exact: true }).selectOption('progress');
+  await expect(names).toHaveText([/가 팀/, /나 팀/, /다 팀/]);
+  const emptyTeam = table.getByRole('row').filter({ hasText: '다 팀' });
+  await expect(emptyTeam.getByText('작업 없음', { exact: true })).toBeVisible();
+  await expect(emptyTeam.getByRole('progressbar')).toHaveCount(0);
+  await expect(
+    table.getByRole('progressbar', {
+      name: '가 팀 팀 전체 진행률',
+      exact: true,
+    }),
+  ).toHaveAttribute('aria-valuenow', '0');
+  const draft = page.getByRole('article', {
+    name: '중간 평가 제출 현황',
+    exact: true,
+  });
+  await expect(draft).toContainText('참여자 고정 전');
+  await expect(draft.getByRole('progressbar')).toHaveCount(0);
+  const openRound = page.getByRole('article', {
+    name: '최종 평가 제출 현황',
+    exact: true,
+  });
+  await expect(openRound).toContainText('미제출 4명');
+  expect(
+    Number(
+      await openRound.getByRole('progressbar').getAttribute('aria-valuenow'),
+    ),
+  ).toBeCloseTo(33.33, 2);
+  expect(requests.some((request) => request.path.endsWith('/responses'))).toBe(
+    false,
+  );
+});

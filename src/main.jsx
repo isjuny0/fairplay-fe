@@ -10,6 +10,7 @@ import './styles.css';
 import './workspace-theme.css';
 import './workspace-components.css';
 import './member-workspace.css';
+import './admin-workspace.css';
 
 const router = createBrowserRouter([
   {
