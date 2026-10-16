@@ -1,0 +1,462 @@
+/* Administrative screens: clear query scope, comparison tables, and setting rows. */
+.main-content > .manager-dashboard {
+  gap: 20px;
+}
+.dashboard-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.dashboard-toolbar .form-field {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  max-width: 100%;
+}
+.dashboard-toolbar select {
+  width: 200px;
+  max-width: 100%;
+  margin: 0;
+}
+.dashboard-query-context {
+  display: grid;
+  gap: 4px;
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: var(--text-support);
+  text-align: right;
+}
+.dashboard-query-context p {
+  margin: 0;
+}
+.dashboard-query-context time {
+  font-variant-numeric: tabular-nums;
+}
+.dashboard-summary h2 {
+  font-size: var(--text-subheading);
+  margin: 0;
+}
+.dashboard-summary .section-heading {
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.dashboard-summary .metric-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+}
+.dashboard-summary .metric-card {
+  padding: 4px 20px;
+  border: 0;
+  border-left: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--surface);
+}
+.dashboard-summary .metric-card:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+.dashboard-summary .metric-card > span {
+  margin-bottom: 8px;
+  font-size: var(--text-support);
+}
+.dashboard-summary .metric-card > strong {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+.dashboard-summary .metric-card > p {
+  margin: 6px 0 0;
+  font-size: var(--text-caption);
+  line-height: 1.6;
+}
+.dashboard-attention-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 1fr);
+  align-items: start;
+  gap: 32px;
+  padding-block: 20px;
+  border-block: 1px solid var(--border);
+}
+.dashboard-attention-grid h2 {
+  margin: 0;
+  font-size: var(--text-subheading);
+}
+.dashboard-attention-grid .field-help {
+  margin: 8px 0 12px;
+}
+.dashboard-submissions .section-heading {
+  align-items: center;
+  gap: 12px;
+}
+.dashboard-attention-list {
+  display: grid;
+}
+.dashboard-team-link {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 16px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  min-height: 44px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--text-primary);
+  text-align: left;
+}
+.dashboard-team-link strong {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.dashboard-team-link :is(span, .ui-icon) {
+  color: var(--text-muted);
+  font-size: var(--text-support);
+}
+.dashboard-team-link:hover,
+.dashboard-team-link[aria-pressed='true'] {
+  color: var(--brand-dark);
+  background: var(--surface-secondary);
+}
+.dashboard-submissions .count-row {
+  min-height: 44px;
+  padding-block: 12px;
+  gap: 12px;
+  font-size: var(--text-support);
+}
+.dashboard-submissions .count-row strong {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.main-content
+  .manager-dashboard
+  > .panel:is(.dashboard-team-overview, .dashboard-member-overview) {
+  padding: 0 0 24px;
+}
+.manager-dashboard
+  :is(.dashboard-team-overview, .dashboard-member-overview)
+  > .section-heading {
+  margin-bottom: 16px;
+}
+.manager-dashboard .dashboard-member-overview > .field-help {
+  margin-bottom: 16px;
+}
+.manager-dashboard .data-table {
+  font-variant-numeric: tabular-nums;
+}
+.dashboard-teams-table {
+  min-width: 920px;
+}
+.dashboard-members-table {
+  min-width: 800px;
+}
+.manager-dashboard .data-table :is(th, td) {
+  padding: 12px 10px;
+}
+.manager-dashboard .data-table thead th {
+  font-size: var(--text-support);
+  font-weight: 500;
+}
+.manager-dashboard .data-table tbody td {
+  text-align: right;
+}
+.manager-dashboard .data-table tbody td:last-child {
+  text-align: left;
+}
+.manager-dashboard .data-table tbody th {
+  min-width: 150px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.manager-dashboard .data-table tbody th small {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.table-name-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--brand-dark);
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: transparent;
+  overflow-wrap: anywhere;
+}
+.table-name-button:hover {
+  text-decoration-color: currentColor;
+}
+.dashboard-report-state {
+  display: block;
+  margin-bottom: 6px;
+  font-size: var(--text-support);
+  color: var(--text-muted);
+}
+.dashboard-reading-guide > summary {
+  cursor: pointer;
+  padding-block: 8px;
+  font-size: var(--text-support);
+  font-weight: 500;
+}
+.dashboard-reading-guide .field-help {
+  max-width: 84ch;
+  margin: 8px 0;
+}
+.settings-space-overview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+  margin: 0;
+}
+.settings-space-overview > div,
+.settings-current-period > div,
+.settings-code-dates > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+}
+.settings-space-overview dt,
+.settings-current-period dt,
+.settings-code-dates dt {
+  color: var(--text-muted);
+  font-size: var(--text-support);
+}
+:is(.settings-space-overview, .settings-current-period, .settings-code-dates)
+  dd {
+  margin: 0;
+  font-size: var(--text-support);
+  font-variant-numeric: tabular-nums;
+}
+.space-settings .settings-grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+.main-content :is(.space-settings, .team-settings) .panel.settings-section {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+  padding: 28px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--surface);
+}
+.settings-section-heading h2 {
+  margin: 0 0 8px;
+  font-size: var(--text-section);
+  font-weight: 500;
+}
+.settings-section-heading p {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-support);
+  line-height: 1.7;
+}
+.settings-section-content {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.settings-section-content > :is(form, dl) {
+  width: 100%;
+  max-width: 560px;
+}
+.settings-section-content > :is(p, ol, ul, div) {
+  min-width: 0;
+}
+.settings-section-content > p {
+  margin: 0;
+}
+.settings-section-content h3 {
+  margin: 0;
+  font-size: var(--text-body);
+  font-weight: 500;
+}
+.settings-section-content .section-heading {
+  align-items: center;
+  gap: 12px;
+}
+.settings-section-content > button {
+  justify-self: start;
+}
+.settings-section-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.settings-current-period,
+.settings-code-dates {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.settings-current-period {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.space-settings .form-fields {
+  padding: 0;
+  gap: 16px;
+}
+.space-settings .form-fields > .form-field {
+  margin: 0;
+}
+.space-settings .join-code-content {
+  display: grid;
+  gap: 16px;
+}
+.space-settings .join-code {
+  justify-self: start;
+  padding: 8px 0;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  overflow-wrap: anywhere;
+}
+.join-code-issuance {
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.join-code-issuance h3 {
+  margin-bottom: 16px;
+}
+.join-code-issuance select {
+  max-width: 240px;
+}
+.team-settings .lifecycle-steps {
+  gap: 16px;
+}
+.team-settings .lifecycle-steps li {
+  padding: 8px 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: var(--text-support);
+}
+.team-settings .lifecycle-steps .active {
+  border-bottom-color: var(--brand);
+  color: var(--brand-dark);
+  font-weight: 500;
+}
+.team-settings .deletion-empty {
+  padding: 8px 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--surface);
+  text-align: left;
+}
+.team-settings .deletion-scope {
+  padding: 12px 0;
+  border-block: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--surface);
+  font-size: var(--text-support);
+}
+.team-settings :is(.deletion-status, .consent-state) {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: var(--text-caption);
+  font-weight: 500;
+}
+.team-settings .consent-list .row-item {
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--surface);
+}
+.team-settings .consent-list small {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+}
+.team-settings .handoff-checklist {
+  margin: 0;
+  padding-left: 20px;
+}
+@media (max-width: 1100px) {
+  .dashboard-attention-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+  .dashboard-summary .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 0;
+  }
+  .dashboard-summary .metric-card:nth-child(odd) {
+    padding-left: 0;
+    border-left: 0;
+  }
+  .main-content :is(.space-settings, .team-settings) .panel.settings-section {
+    grid-template-columns: 160px minmax(0, 1fr);
+    gap: 24px;
+  }
+}
+@media (max-width: 720px) {
+  .dashboard-toolbar {
+    align-items: flex-start;
+  }
+  .dashboard-toolbar .form-field {
+    width: 100%;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .dashboard-toolbar select {
+    width: 100%;
+  }
+  .dashboard-query-context {
+    margin-left: 0;
+    text-align: left;
+  }
+  .dashboard-summary .section-heading {
+    gap: 4px;
+  }
+  .dashboard-summary .metric-card {
+    padding-inline: 12px;
+  }
+  .dashboard-team-link {
+    grid-template-columns: minmax(0, 1fr) 16px;
+    gap: 4px 12px;
+  }
+  .dashboard-team-link span {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .dashboard-team-link .ui-icon {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  .main-content :is(.space-settings, .team-settings) .panel.settings-section {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    padding-block: 24px;
+  }
+  .settings-space-overview {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .settings-space-overview > div {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .team-settings .lifecycle-steps {
+    gap: 12px;
+  }
+}
