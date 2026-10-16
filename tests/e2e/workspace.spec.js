@@ -445,7 +445,7 @@ for (const [label, weight] of [
     const request = requests.find(({ method, path }) =>
       method === 'POST' && path === '/api/teams/1/tasks');
     expect(JSON.parse(request.body).weight).toBe(weight);
-    await expect(page.getByText(`예상 작업량: ${label}`, { exact: false })).toBeVisible();
+    await expect(page.getByLabel('작업 기본 정보').getByText(label, { exact: true })).toBeVisible();
     await page.getByRole('button', { name: '작업 수정', exact: true }).click();
     await expect(dialog.getByLabel('예상 작업량', { exact: true })).toHaveValue(String(weight));
     const changedLabel = weight === 8 ? '1시간 미만의 작업' : '12시간 이상의 작업';
@@ -456,7 +456,7 @@ for (const [label, weight] of [
       method === 'PATCH' && path === '/api/tasks/10');
     expect(JSON.parse(update.body)).toMatchObject({ weight: weight === 8 ? 1 : 8, expectedVersion: 0 });
     await page.reload();
-    await expect(page.getByText(`예상 작업량: ${changedLabel}`, { exact: false })).toBeVisible();
+    await expect(page.getByLabel('작업 기본 정보').getByText(changedLabel, { exact: true })).toBeVisible();
   });
 
 test('담당자가 작업을 생성하고 버전으로 완료 요청하면 수정이 잠긴다', async ({
@@ -1571,7 +1571,7 @@ test('작업 시작일은 생성 시 필수이며 일정 검증 후 오프셋과
   await expect(dialog).toHaveCount(0);
   const created = requests.find(({ method, path }) => method === 'POST' && path === '/api/teams/1/tasks');
   expect(JSON.parse(created.body)).toMatchObject({ startAt: '2030-12-01T18:00:00+09:00', dueAt: '2030-12-01T18:00:00+09:00' });
-  await expect(page.getByText('시작일 2030. 12. 01. 18:00', { exact: false })).toBeVisible();
+  await expect(page.getByLabel('작업 기본 정보').locator('div').filter({ has: page.getByText('시작일', { exact: true }) }).getByText('2030. 12. 01. 18:00', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '작업 수정', exact: true }).click();
   await expect(dialog.getByLabel('시작일 날짜', { exact: true })).toHaveValue('2030-12-01');
   await fillDateTime(dialog, '시작일', '2030-11-30T09:00');
@@ -1598,4 +1598,35 @@ test('저장된 시작일은 비울 수 없고 제목만 수정할 때 기존 �
   await expect(dialog).toHaveCount(0);
   const update = requests.find(({ method, path }) => method === 'PATCH' && path === '/api/tasks/10');
   expect(JSON.parse(update.body)).not.toHaveProperty('startAt');
+});
+
+
+test('적격 승인자 입력으로 이동하고 조회 복구가 변경 요청을 재전송하지 않는다', async ({ page }) => {
+  const { changeTask } = await workspace(page);
+  changeTask({ completionReviewerId: 'unavailable', completionBlockReason: 'REVIEWER_UNAVAILABLE' });
+  await page.route('**/api/tasks/10/ai-review', route => route.fulfill({ status: 404, json: { code: 'AI_REVIEW_NOT_FOUND', message: '아직 요청한 검토가 없습니다.' } }));
+  await page.goto('/spaces/1/teams/1/tasks/10');
+  await page.getByRole('button', { name: '승인자 선택', exact: true }).click();
+  const reviewer = page.getByLabel('승인자 변경', { exact: true });
+  await expect(reviewer).toBeFocused();
+  await reviewer.selectOption('leader');
+  let changes = 0;
+  await page.route('**/api/tasks/10', async route => {
+    if (route.request().method() !== 'PATCH') return route.fallback();
+    changes++;
+    return route.fulfill({ status: 409, json: { code: 'VERSION_CONFLICT', message: '승인자를 저장하지 못했습니다.' } });
+  });
+  await page.getByRole('button', { name: '승인자 저장', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('승인자를 저장하지 못했습니다.');
+  await page.getByRole('button', { name: '다시 불러오기', exact: true }).click();
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  expect(changes).toBe(1);
+});
+
+test('현재 승인자를 다시 선택하면 중복 저장을 막는다', async ({ page }) => {
+  const { requests } = await workspace(page);
+  await page.goto('/spaces/1/teams/1/tasks/10');
+  await page.getByLabel('승인자 변경', { exact: true }).selectOption('leader');
+  await expect(page.getByRole('button', { name: '승인자 저장', exact: true })).toBeDisabled();
+  expect(requests.filter(({ method, path }) => method === 'PATCH' && path === '/api/tasks/10')).toHaveLength(0);
 });
