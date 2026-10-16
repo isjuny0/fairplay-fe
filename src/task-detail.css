@@ -1,0 +1,168 @@
+/* A task keeps its schedule, work evidence, and next action in clear groups. */
+.task-detail-page > .page-heading {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.task-detail-page > .page-heading h1 {
+  overflow-wrap: anywhere;
+}
+.task-overview-facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px 24px;
+  margin: 0;
+  padding: 20px 0;
+  border-block: 1px solid var(--border);
+}
+.task-overview-facts > div {
+  min-width: 0;
+}
+.task-overview-facts dt {
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+  margin-bottom: 8px;
+}
+.task-overview-facts dd {
+  margin: 0;
+  font-size: var(--text-support);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.task-detail-page .task-detail-layout {
+  gap: 32px;
+}
+.task-detail-page .task-detail-layout > .stack {
+  min-width: 0;
+  gap: 24px;
+}
+.task-detail-page .task-detail-layout > .stack > .panel {
+  padding: 0 0 24px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+}
+.task-detail-page .task-detail-layout h2 {
+  font-size: var(--text-subheading);
+  font-weight: 600;
+}
+.task-detail-page .contribution-entry {
+  padding-block: 16px;
+}
+.contribution-entry-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.contribution-entry-heading h3 {
+  margin: 0;
+  font-size: var(--text-body);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.contribution-description-state {
+  flex-shrink: 0;
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+}
+.contribution-description-state.is-written {
+  color: var(--brand);
+}
+.contribution-save-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+.contribution-save-row .field-help {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.task-section-anchor,
+#own-contribution-description,
+#task-reviewer-select {
+  scroll-margin-top: 88px;
+}
+.task-detail-page .task-review-sidebar {
+  gap: 16px;
+}
+.main-content .task-detail-page .task-review-sidebar > .panel {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+.task-detail-page .task-review-sidebar > .task-next-action {
+  background: var(--surface-secondary);
+}
+.task-detail-page .task-review-sidebar .completion-readiness {
+  font-size: var(--text-support);
+  gap: 10px;
+}
+.readiness-link {
+  display: block;
+  margin-top: 4px;
+  padding: 0;
+  font-size: var(--text-caption);
+  text-align: left;
+}
+.task-assignment-panel .field-help {
+  margin: 0 0 12px;
+}
+.task-assignment-panel .row-item {
+  padding: 10px 0;
+  gap: 12px;
+}
+.task-assignment-panel .row-item > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.task-assignment-panel .row-item strong {
+  flex-shrink: 0;
+  font-size: var(--text-support);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.task-assignment-panel .row-item small {
+  display: inline;
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+}
+@media (max-width: 1200px) {
+  .task-overview-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .task-overview-facts {
+    gap: 16px;
+  }
+  .task-detail-page .task-detail-layout {
+    gap: 20px;
+  }
+  .task-detail-page .task-review-sidebar > .task-next-action {
+    order: -1;
+  }
+}
+
+.task-detail-page .task-review-sidebar h2 {
+  margin: 0 0 12px;
+}
+.main-content .task-detail-page .task-review-sidebar > .panel.task-next-action {
+  background: var(--surface-secondary);
+  gap: 16px;
+}
+.task-detail-page .task-review-sidebar .task-next-action > h2 {
+  margin: 0;
+}
+.task-detail-page > .page-heading > button {
+  align-self: center;
+}
+.task-overview-facts dd {
+  word-break: keep-all;
+}
