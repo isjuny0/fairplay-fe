@@ -1373,3 +1373,191 @@ test('관리자 목록 정렬은 지연 건수와 실제 진행률을 사용하�
     false,
   );
 });
+
+test('수행 상세는 대상 팀원의 중간·최종 수신 평균을 구분하고 개선 피드백을 조회하지 않는다', async ({
+  page,
+}) => {
+  const fixture = await backend(page, {
+    manager: true,
+    roundStatus: 'CLOSED',
+    reportReady: true,
+  });
+  const response = (targetId, evaluatorId, scores) => ({
+    targetId,
+    targetName: '평가 대상자',
+    evaluatorId,
+    evaluatorName: '평가자',
+    scores,
+    reason: '상세에 노출하지 않을 평가 사유',
+    submittedAt: '2026-10-15T10:00:00Z',
+  });
+  await page.route('**/api/evaluation-rounds/*/teams/1/responses', (route) => {
+    const isMid = route.request().url().includes('/11/');
+    return route.fulfill({
+      json: {
+        roundId: isMid ? 11 : 12,
+        type: isMid ? 'MID' : 'FINAL',
+        teamId: 1,
+        requiredCount: 3,
+        submittedCount: isMid ? 2 : 3,
+        missingCount: isMid ? 1 : 0,
+        responses: isMid
+          ? [
+              response(members[0].userId, members[1].userId, {
+                taskExecution: 4,
+                responsibility: 3,
+                collaboration: 2,
+                communication: 5,
+              }),
+              response(
+                members[0].userId,
+                '00000000-0000-4000-8000-000000000003',
+                {
+                  taskExecution: 5,
+                  responsibility: 4,
+                  collaboration: 3,
+                  communication: 4,
+                },
+              ),
+              response(members[1].userId, members[0].userId, {
+                taskExecution: 1,
+                responsibility: 1,
+                collaboration: 1,
+                communication: 1,
+              }),
+            ]
+          : [
+              response(members[0].userId, members[1].userId, {
+                taskExecution: 2,
+                responsibility: 3,
+                collaboration: 4,
+                communication: 5,
+              }),
+            ],
+      },
+    });
+  });
+  await page.goto(`/spaces/1/manager/teams/1/members/${members[0].userId}`);
+  const mid = page.getByRole('region', { name: '중간 평가 결과', exact: true });
+  const final = page.getByRole('region', {
+    name: '최종 평가 결과',
+    exact: true,
+  });
+  await expect(mid.getByRole('definition')).toHaveText([
+    '4.50 / 5',
+    '3.50 / 5',
+    '2.50 / 5',
+    '4.50 / 5',
+  ]);
+  await expect(final.getByRole('definition')).toHaveText([
+    '2.00 / 5',
+    '3.00 / 5',
+    '4.00 / 5',
+    '5.00 / 5',
+  ]);
+  await expect(mid).toContainText('수신 평가 2건');
+  await expect(mid).toContainText('팀 전체 미제출 1명');
+  await expect(
+    page.getByText('상세에 노출하지 않을 평가 사유', { exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole('heading', {
+      name: /개선 안내|중간 피드백|다음 작업에서 확인할 점/,
+    }),
+  ).toHaveCount(0);
+  expect(
+    fixture.requests.some((request) => request.path.endsWith('/mid-feedback')),
+  ).toBe(false);
+});
+
+for (const roundStatus of ['DRAFT', 'OPEN']) {
+  test(`수행 상세의 ${roundStatus} 회차는 점수를 조회하지 않고 미설정 최종 회차와 구분한다`, async ({
+    page,
+  }) => {
+    const fixture = await backend(page, { manager: true, roundStatus });
+    await page.goto(`/spaces/1/manager/teams/1/members/${members[0].userId}`);
+    await expect(
+      page.getByRole('region', { name: '중간 평가 결과', exact: true }),
+    ).toContainText('회차 마감 후 결과를 확인할 수 있습니다.');
+    await expect(
+      page.getByRole('region', { name: '최종 평가 결과', exact: true }),
+    ).toContainText('아직 평가 회차가 생성되지 않았습니다.');
+    expect(
+      fixture.requests.some((request) =>
+        /teams\/1\/responses$|mid-feedback$/.test(request.path),
+      ),
+    ).toBe(false);
+  });
+}
+
+test('수행 상세는 수신 평가 없음·마감 정리 대기·권한 오류를 점수 0으로 대체하지 않는다', async ({
+  page,
+}) => {
+  await backend(page, {
+    manager: true,
+    roundStatus: 'CLOSED',
+    reportReady: true,
+  });
+  let responseState = 'waiting';
+  await page.route('**/api/evaluation-rounds/11/teams/1/responses', (route) =>
+    responseState === 'waiting'
+      ? route.fulfill({ status: 409, json: { code: 'ROUND_NOT_CLOSED' } })
+      : responseState === 'forbidden'
+        ? route.fulfill({
+            status: 403,
+            json: {
+              code: 'FORBIDDEN',
+              message: '스페이스 관리자 권한이 없습니다.',
+            },
+          })
+        : route.fulfill({
+            json: {
+              roundId: 11,
+              type: 'MID',
+              teamId: 1,
+              requiredCount: 2,
+              submittedCount: 1,
+              missingCount: 1,
+              responses: [
+                {
+                  targetId: members[0].userId,
+                  scores: {
+                    taskExecution: 4,
+                    responsibility: 4,
+                    collaboration: 4,
+                    communication: 4,
+                  },
+                },
+              ],
+            },
+          }),
+  );
+  await page.goto(`/spaces/1/manager/teams/1/members/${members[0].userId}`);
+  const mid = page.getByRole('region', { name: '중간 평가 결과', exact: true });
+  const final = page.getByRole('region', {
+    name: '최종 평가 결과',
+    exact: true,
+  });
+  await expect(mid).toContainText('마감 정리가 아직 끝나지 않았습니다.');
+  await expect(final).toContainText('이 팀원에게 최종 제출된 평가가 없습니다.');
+  await expect(final.getByRole('definition')).toHaveCount(0);
+  responseState = 'ready';
+  await mid
+    .getByRole('button', { name: '평가 결과 다시 불러오기', exact: true })
+    .click();
+  await expect(mid.getByRole('definition')).toHaveText([
+    '4.00 / 5',
+    '4.00 / 5',
+    '4.00 / 5',
+    '4.00 / 5',
+  ]);
+  responseState = 'forbidden';
+  await page
+    .getByRole('button', { name: '수행 상세 새로고침', exact: true })
+    .click();
+  await expect(mid.getByRole('alert')).toContainText(
+    '스페이스 관리자 권한이 없습니다.',
+  );
+  await expect(mid.getByRole('definition')).toHaveCount(0);
+  await expect(final).toContainText('이 팀원에게 최종 제출된 평가가 없습니다.');
+});

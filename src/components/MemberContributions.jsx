@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { ErrorNotice } from './ui.jsx';
 import { getMemberContributions } from '../api/dashboard.js';
-import { getMidFeedback } from '../api/evaluations.js';
 import { listDeliverables, downloadDeliverable } from '../api/deliverables.js';
 import { ApiError } from '../api/client.js';
 import useResource from '../hooks/useResource.js';
@@ -11,7 +10,7 @@ import {
   formatExpectedWorkload,
   statusLabels,
 } from '../lib/domain.js';
-import { FeedbackSummary } from './PlanningUi.jsx';
+import MemberEvaluationResults from './MemberEvaluationResults.jsx';
 import { EmptyState, ResourceState } from './ui.jsx';
 
 export default function MemberContributions({ context, targetUserId, onBack }) {
@@ -26,13 +25,7 @@ export default function MemberContributions({ context, targetUserId, onBack }) {
     () => getMemberContributions(context.team.id, targetUserId),
     [context.team.id, targetUserId],
   );
-  const feedback = useResource(
-    () => getMidFeedback(context.team.id),
-    [context.team.id, targetUserId],
-  );
-  const ownFeedback = feedback.data?.members.find(
-    (member) => member.userId === targetUserId,
-  );
+  const [evaluationRevision, setEvaluationRevision] = useState(0);
   return (
     <section className="stack member-contributions-page">
       <button className="secondary-button back-button" onClick={onBack}>
@@ -46,10 +39,10 @@ export default function MemberContributions({ context, targetUserId, onBack }) {
         </div>
         <button
           className="secondary-button"
-          disabled={resource.loading || feedback.loading}
+          disabled={resource.loading}
           onClick={() => {
             resource.reload();
-            feedback.reload();
+            setEvaluationRevision((revision) => revision + 1);
           }}
         >
           수행 상세 새로고침
@@ -165,22 +158,12 @@ export default function MemberContributions({ context, targetUserId, onBack }) {
         !resource.data.some(
           (task) => statusFilter === 'ALL' || task.status === statusFilter,
         ) && <EmptyState>선택한 상태의 담당 작업이 없습니다.</EmptyState>}
-      {feedback.error &&
-      !['MID_FEEDBACK_NOT_READY', 'ROUND_NOT_FOUND'].includes(
-        feedback.error.code,
-      ) ? (
-        <ErrorNotice error={feedback.error} onRetry={feedback.reload} />
-      ) : ownFeedback ? (
-        <>
-          <h2>중간 평가 협업 평균과 개선 안내</h2>
-          <FeedbackSummary member={ownFeedback} />
-        </>
-      ) : (
-        <section className="panel">
-          <h2>중간 피드백</h2>
-          <p>{feedback.error?.message || '피드백을 준비하고 있습니다.'}</p>
-        </section>
-      )}
+      <MemberEvaluationResults
+        spaceId={context.space.id}
+        teamId={context.team.id}
+        targetUserId={targetUserId}
+        revision={evaluationRevision}
+      />
     </section>
   );
 }
