@@ -21,6 +21,7 @@ import {
   isMutable,
   isTeamEditor,
   memberName,
+  memberRole,
   reviewerCandidates,
   statusLabels,
   teamWorkBlocked,
@@ -35,15 +36,16 @@ function OwnContribution({ task, contribution, busy, blocked, onSave }) {
   const [description, setDescription] = useState(contribution || '');
   const [error, setError] = useState(null);
   const descriptionInput = useRef(null);
+  const hasChanges = description.trim() !== (contribution || '').trim();
   useEffect(() => {
     if (!isMutable(task)) setDescription(contribution || '');
   }, [task.status, contribution]);
-  useUnsavedChanges(isMutable(task) && description !== (contribution || ''));
+  useUnsavedChanges(isMutable(task) && hasChanges);
   return (
     <form
       onSubmit={(event) => {
         event.preventDefault();
-        if (blocked) return;
+        if (busy || blocked || !isMutable(task) || !hasChanges) return;
         const trimmed = description.trim();
         if (trimmed && trimmed.length < 10) {
           setError(
@@ -74,15 +76,21 @@ function OwnContribution({ task, contribution, busy, blocked, onSave }) {
           }}
         />
       </Field>
-      {isMutable(task) && description !== (contribution || '') && (
+      {isMutable(task) && hasChanges && (
         <p className="field-help" role="status">
           저장하지 않은 수행 설명이 있습니다.
         </p>
       )}
       {isMutable(task) && (
-        <button className="secondary-button" disabled={busy || blocked}>
-          수행 설명 저장
-        </button>
+        <div className="contribution-save-row">
+          <span className="field-help">{description.length} / 1000자</span>
+          <button
+            className="secondary-button"
+            disabled={busy || blocked || !hasChanges}
+          >
+            수행 설명 저장
+          </button>
+        </div>
       )}
     </form>
   );
@@ -109,6 +117,9 @@ export default function TaskDetail({
   }, [taskId, team.id]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  useEffect(() => {
+    setError(null);
+  }, [resource.data]);
   const [editing, setEditing] = useState(false);
   const [reviewerId, setReviewerId] = useState('');
   const { confirm, confirmDiscard, notify } = useInteractions();
@@ -156,6 +167,12 @@ export default function TaskDetail({
     hasDeliverables &&
     hasEligibleReviewer;
 
+  const focusTaskSection = (id) => {
+    const target = document.getElementById(id);
+    target?.focus({ preventScroll: true });
+    target?.scrollIntoView({ block: 'start' });
+  };
+
   return (
     <section className="stack task-detail-page">
       <button className="secondary-button back-button" onClick={onBack}>
@@ -173,10 +190,6 @@ export default function TaskDetail({
                   {statusLabels[task.status]}
                 </span>
                 <h1>{task.title}</h1>
-                <p>
-                  예상 작업량: {formatExpectedWorkload(task.weight)} · 시작일{' '}
-                  {formatDate(task.startAt)} · 마감 {formatDate(task.dueAt)}
-                </p>
               </div>
               {canEditTask(task, team, user.id) && (
                 <button
@@ -191,6 +204,24 @@ export default function TaskDetail({
                 </button>
               )}
             </div>
+            <dl className="task-overview-facts" aria-label="작업 기본 정보">
+              <div>
+                <dt>예상 작업량</dt>
+                <dd>{formatExpectedWorkload(task.weight)}</dd>
+              </div>
+              <div>
+                <dt>시작일</dt>
+                <dd>{formatDate(task.startAt)}</dd>
+              </div>
+              <div>
+                <dt>마감</dt>
+                <dd>{formatDate(task.dueAt)}</dd>
+              </div>
+              <div>
+                <dt>완료 승인자</dt>
+                <dd>{memberName(members, task.completionReviewerId)}</dd>
+              </div>
+            </dl>
             {isMutable(task) && latestDecision?.status === 'REJECTED' && (
               <section
                 className="notice rejection-notice"
@@ -210,17 +241,6 @@ export default function TaskDetail({
                 <section className="panel">
                   <h2>작업 설명</h2>
                   <p className="preserve-lines">{task.description}</p>
-                  <p>
-                    승인자 · {memberName(members, task.completionReviewerId)}
-                  </p>
-                  <ul className="clean-list">
-                    {task.assignees.map((assignment) => (
-                      <li className="row-item" key={assignment.userId}>
-                        {memberName(members, assignment.userId)}
-                        <strong>{assignment.allocationPercent}%</strong>
-                      </li>
-                    ))}
-                  </ul>
                 </section>
                 <section className="panel">
                   <h2>담당자 수행 설명</h2>
@@ -229,10 +249,19 @@ export default function TaskDetail({
                       className="contribution-entry"
                       key={contribution.userId}
                     >
-                      <h3>
-                        {memberName(members, contribution.userId)}
-                        {contribution.userId === user.id && ' · 나'}
-                      </h3>
+                      <div className="contribution-entry-heading">
+                        <h3>
+                          {memberName(members, contribution.userId)}
+                          {contribution.userId === user.id && ' · 나'}
+                        </h3>
+                        <span
+                          className={`contribution-description-state ${contribution.contributionDescription?.trim() ? 'is-written' : ''}`}
+                        >
+                          {contribution.contributionDescription?.trim()
+                            ? '작성 완료'
+                            : '미작성'}
+                        </span>
+                      </div>
                       {contribution.userId === user.id ? (
                         <OwnContribution
                           key={`${task.id}-${contribution.contributionDescription || ''}`}
@@ -258,14 +287,20 @@ export default function TaskDetail({
                     </div>
                   ))}
                 </section>
-                <Deliverables
-                  team={team}
-                  user={user}
-                  members={members}
-                  tasks={[task]}
-                  taskId={task.id}
-                  onChanged={resource.reload}
-                />
+                <div
+                  id="task-deliverables-section"
+                  className="task-section-anchor"
+                  tabIndex={-1}
+                >
+                  <Deliverables
+                    team={team}
+                    user={user}
+                    members={members}
+                    tasks={[task]}
+                    taskId={task.id}
+                    onChanged={resource.reload}
+                  />
+                </div>
                 {(isAssignee(task, user.id) ||
                   user.id ===
                     (task.status === 'PENDING_APPROVAL'
@@ -303,6 +338,16 @@ export default function TaskDetail({
                         {hasDeliverables
                           ? '✓ 연결 산출물 등록 완료'
                           : '○ 연결 산출물 미등록'}
+                        {!hasDeliverables && (
+                          <button
+                            className="text-button readiness-link"
+                            onClick={() =>
+                              focusTaskSection('task-deliverables-section')
+                            }
+                          >
+                            산출물 확인
+                          </button>
+                        )}
                       </li>
                       {task.assignees.length > 1 &&
                         task.assignees.map((assignment) => (
@@ -318,12 +363,39 @@ export default function TaskDetail({
                             )
                               ? '미작성'
                               : '작성 완료'}
+                            {assignment.userId === user.id &&
+                              canModifyTeamWork(team) &&
+                              missingContributions.some(
+                                (entry) => entry.userId === user.id,
+                              ) && (
+                                <button
+                                  className="text-button readiness-link"
+                                  onClick={() =>
+                                    focusTaskSection(
+                                      'own-contribution-description',
+                                    )
+                                  }
+                                >
+                                  내 수행 설명 작성
+                                </button>
+                              )}
                           </li>
                         ))}
                       <li>
                         {hasEligibleReviewer
                           ? '✓ 승인자 지정 완료'
                           : '○ 적격한 승인자 지정 필요'}
+                        {!hasEligibleReviewer &&
+                          canEditTask(task, team, user.id) && (
+                            <button
+                              className="text-button readiness-link"
+                              onClick={() =>
+                                focusTaskSection('task-reviewer-select')
+                              }
+                            >
+                              승인자 선택
+                            </button>
+                          )}
                       </li>
                     </ul>
                     <div className="heading-actions">
@@ -371,11 +443,39 @@ export default function TaskDetail({
                     )}
                   </section>
                 )}
+                <section
+                  className="panel task-assignment-panel"
+                  aria-label="담당자와 배분"
+                >
+                  <h2>담당자와 배분</h2>
+                  <p className="field-help">예상 작업량을 나누는 비율입니다.</p>
+                  <ul className="clean-list">
+                    {task.assignees.map((assignment) => (
+                      <li className="row-item" key={assignment.userId}>
+                        <span>
+                          {memberName(members, assignment.userId)}
+                          {assignment.userId === user.id && (
+                            <small> · 나</small>
+                          )}
+                        </span>
+                        <strong>{assignment.allocationPercent}%</strong>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
                 {canEditTask(task, team, user.id) && (
                   <section className="panel">
                     <form
                       onSubmit={(event) => {
                         event.preventDefault();
+                        if (
+                          busy ||
+                          reviewerId === task.completionReviewerId ||
+                          !candidates.some(
+                            (member) => member.userId === reviewerId,
+                          )
+                        )
+                          return;
                         mutate(() =>
                           updateTask(task.id, {
                             completionReviewerId: reviewerId,
@@ -386,6 +486,7 @@ export default function TaskDetail({
                     >
                       <Field label="승인자 변경">
                         <select
+                          id="task-reviewer-select"
                           required
                           value={reviewerId}
                           disabled={busy}
@@ -396,7 +497,7 @@ export default function TaskDetail({
                           <option value="">승인자를 선택하세요</option>
                           {candidates.map((member, index) => (
                             <option key={member.userId} value={member.userId}>
-                              {index + 1}. {member.name}
+                              {index + 1}. {member.name} · {memberRole(member)}
                             </option>
                           ))}
                         </select>
@@ -405,6 +506,7 @@ export default function TaskDetail({
                         className="secondary-button"
                         disabled={
                           busy ||
+                          reviewerId === task.completionReviewerId ||
                           !candidates.some(
                             (member) => member.userId === reviewerId,
                           )

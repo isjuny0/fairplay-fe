@@ -232,3 +232,28 @@ for (const width of [1440, 390])
       ),
     ).toBe(true);
   });
+
+
+test('완료 요청 준비 목록에서 내 수행 설명으로 이동하고 변경된 내용만 저장한다', async ({ page }) => {
+  await preview(page, '/spaces/1/teams/1/tasks/102', 'member');
+  const save = page.getByRole('button', { name: '수행 설명 저장', exact: true });
+  const description = page.getByLabel('내 수행 설명', { exact: true });
+  await expect(save).toBeDisabled();
+  await page.getByRole('button', { name: '내 수행 설명 작성', exact: true }).click();
+  await expect(description).toBeFocused();
+  const value = '응답을 분류하고 분석 기준과 검증 결과를 정리했습니다.';
+  await description.fill(value);
+  await expect(save).toBeEnabled();
+  await save.click();
+  await expect(save).toBeDisabled();
+  await description.fill(` ${value} `);
+  await expect(save).toBeDisabled();
+  await expect(page.getByText('저장하지 않은 수행 설명이 있습니다.', { exact: true })).toHaveCount(0);
+});
+
+test('연결 산출물이 없으면 준비 목록에서 등록 영역으로 바로 이동한다', async ({ page }) => {
+  await preview(page, '/spaces/1/teams/1/tasks/104', 'member');
+  await page.getByRole('button', { name: '산출물 확인', exact: true }).click();
+  await expect(page.locator('#task-deliverables-section')).toBeFocused();
+  await expect(page.getByRole('button', { name: '산출물 등록', exact: true })).toBeInViewport();
+});
