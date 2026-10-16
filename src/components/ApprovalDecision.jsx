@@ -1,11 +1,17 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { approveCompletion, rejectCompletion } from '../api/approvals.js';
+import { formatDate, memberName } from '../lib/domain.js';
 import { ErrorNotice, Field } from './ui.jsx';
-import { useInteractions } from '../hooks/useInteractions.js';
+import {
+  useInteractions,
+  useUnsavedChanges,
+} from '../hooks/useInteractions.js';
 
 export default function ApprovalDecision({
   approval,
   user,
+  members,
+  onReviewSection,
   blocked = false,
   onChanged,
 }) {
@@ -15,14 +21,17 @@ export default function ApprovalDecision({
   const [error, setError] = useState(null);
   const [reasonError, setReasonError] = useState('');
   const reasonInput = useRef(null);
-  if (
-    approval.status !== 'PENDING' ||
-    approval.reviewerId !== user.id ||
-    approval.requesterId === user.id
-  )
-    return null;
+  const canReview =
+    approval.status === 'PENDING' &&
+    approval.reviewerId === user.id &&
+    approval.requesterId !== user.id;
+  useUnsavedChanges(canReview && reason.trim().length > 0);
+  useEffect(() => {
+    setError(null);
+  }, [approval]);
+  if (!canReview) return null;
   const decide = async (decision) => {
-    if (blocked) return;
+    if (busy || blocked || !canReview) return;
     const trimmedReason = reason.trim();
     if (
       decision === 'reject' &&
@@ -37,7 +46,10 @@ export default function ApprovalDecision({
       !(await confirm({
         title: '작업 완료 승인',
         message:
-          '최신 산출물과 담당 배분·수행 설명을 확인했나요? 승인하면 작업이 완료되고 수정이 잠깁니다.',
+          '최신 산출물과 담당 배분·수행 설명을 확인했나요? 승인하면 작업이 완료되고 수정이 잠깁니다.' +
+          (reason.trim()
+            ? ' 작성한 반려 사유는 승인에 포함되지 않습니다.'
+            : ''),
         label: '승인 확정',
       }))
     )
@@ -52,6 +64,8 @@ export default function ApprovalDecision({
           ? '작업 완료를 승인했습니다.'
           : '반려 사유를 전달했습니다.',
       );
+      setReason('');
+      setReasonError('');
       onChanged();
     } catch (requestError) {
       setError(requestError);
@@ -60,13 +74,39 @@ export default function ApprovalDecision({
     }
   };
   return (
-    <section className="panel task-next-action approval-decision">
+    <section
+      className="panel task-next-action approval-decision"
+      aria-label="완료 검토"
+    >
       <h2>완료 검토</h2>
+      <dl className="approval-request-context">
+        <div>
+          <dt>요청자</dt>
+          <dd>{memberName(members, approval.requesterId)}</dd>
+        </div>
+        <div>
+          <dt>요청 시각</dt>
+          <dd>{formatDate(approval.requestedAt)}</dd>
+        </div>
+      </dl>
       <p>작업 내용과 수행 결과를 확인한 뒤 완료 여부를 결정하세요.</p>
       <ol className="review-guide" aria-label="검토할 내용">
-        <li>작업 설명과 담당 배분 확인</li>
-        <li>담당자의 개인 수행 설명 확인</li>
-        <li>연결된 최신 산출물 확인</li>
+        {[
+          ['작업 설명 확인', 'task-description-section'],
+          ['담당 배분 확인', 'task-assignment-section'],
+          ['수행 설명 확인', 'task-contributions-section'],
+          ['산출물 확인', 'task-deliverables-section'],
+        ].map(([label, target]) => (
+          <li key={target}>
+            <button
+              type="button"
+              className="text-button"
+              onClick={() => onReviewSection(target)}
+            >
+              {label}
+            </button>
+          </li>
+        ))}
       </ol>
       <Field
         label="반려 사유"
@@ -85,7 +125,14 @@ export default function ApprovalDecision({
           }}
         />
       </Field>
-      <p className="character-count">{reason.length} / 500자</p>
+      <div className="approval-reason-status">
+        {reason.trim() && (
+          <p className="field-help" role="status">
+            작성 중인 반려 사유는 아직 전달되지 않았습니다.
+          </p>
+        )}
+        <p className="character-count">{reason.length} / 500자</p>
+      </div>
       {blocked && (
         <p className="notice" role="status">
           현재 팀 상태에서는 승인·반려할 수 없습니다. 팀 상태를 확인해 주세요.

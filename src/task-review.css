@@ -1,0 +1,214 @@
+/* Keep a review request, its evidence, and the decision easy to follow. */
+.task-detail-page .approval-decision > h2 {
+  margin: 0 0 12px;
+}
+.approval-request-context {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.approval-request-context > div {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 12px;
+  font-size: var(--text-support);
+}
+.approval-request-context dt {
+  color: var(--text-muted);
+}
+.approval-request-context dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.approval-decision > p {
+  font-size: var(--text-support);
+  line-height: 1.6;
+  margin: 0 0 12px;
+}
+.approval-decision .review-guide {
+  display: grid;
+  gap: 2px;
+  margin: 0 0 16px;
+}
+.approval-decision .review-guide button {
+  padding: 2px 0;
+  text-align: left;
+  font-size: var(--text-support);
+}
+.approval-reason-status {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin: 8px 0 12px;
+}
+.approval-reason-status :is(p, .character-count) {
+  margin: 0;
+}
+.approval-reason-status .character-count {
+  margin-left: auto;
+}
+.approval-decision > .modal-actions {
+  position: static;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--border);
+}
+.approval-decision > .modal-actions button {
+  min-width: 0;
+}
+.ai-review-panel {
+  gap: 20px;
+}
+.ai-review-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+.ai-review-heading h2 {
+  margin: 4px 0 0;
+}
+.ai-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ai-review-introduction {
+  display: grid;
+  gap: 8px;
+}
+.ai-review-introduction p {
+  margin: 0;
+  font-size: var(--text-support);
+  line-height: 1.7;
+}
+.ai-review-result {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+}
+.ai-review-result-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.ai-review-result h3 {
+  margin: 0 0 12px;
+  font-size: var(--text-body);
+  font-weight: 600;
+}
+.ai-review-summary > p {
+  margin: 0;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+.ai-review-findings {
+  min-width: 0;
+}
+.ai-finding-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ai-finding-list > li {
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+}
+.ai-finding-list > li:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.ai-finding-list > li > p {
+  margin: 0 0 12px;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.ai-finding-type {
+  display: inline-block;
+  margin-bottom: 12px;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+}
+.ai-improvement-facts {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 12px;
+}
+.ai-improvement-facts > div {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 12px;
+}
+.ai-improvement-facts dt {
+  color: var(--text-muted);
+  font-size: var(--text-support);
+}
+.ai-improvement-facts dd {
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+}
+.ai-review-panel .ai-evidence {
+  margin-top: 12px;
+  padding: 8px 0 8px 12px;
+  border-left: 2px solid #cbd5cf;
+  border-radius: 0;
+  background: transparent;
+}
+.ai-review-panel .ai-evidence .eyebrow {
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+  font-weight: 400;
+}
+.ai-review-panel .ai-evidence p {
+  margin: 8px 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  font-size: var(--text-support);
+  line-height: 1.7;
+}
+.ai-review-limitations {
+  padding: 16px;
+  border-left: 2px solid var(--border);
+  background: var(--surface-secondary);
+}
+.ai-review-limitations ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-muted);
+  font-size: var(--text-support);
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .ai-review-actions {
+    width: 100%;
+  }
+  .ai-review-actions button {
+    flex: 1;
+    min-width: 0;
+    padding-inline: 8px;
+  }
+  .ai-improvement-facts > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}

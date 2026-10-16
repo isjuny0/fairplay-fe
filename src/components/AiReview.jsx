@@ -108,29 +108,57 @@ export default function AiReview({ context }) {
     }
   };
   return (
-    <section className="panel stack" aria-label="AI 검토">
-      <div className="page-heading">
+    <section className="panel stack ai-review-panel" aria-label="AI 검토">
+      <div className="ai-review-heading">
         <div>
           <span className="eyebrow">완료 요청 전 선택 사항</span>
           <h2>AI 검토</h2>
         </div>
-        <button
-          className="secondary-button"
-          disabled={busy || resource.loading}
-          onClick={resource.reload}
-        >
-          검토 상태 확인
-        </button>
+        <div className="ai-review-actions">
+          {canRequest && (
+            <button
+              className="secondary-button"
+              disabled={
+                busy ||
+                active ||
+                resource.loading ||
+                (review?.isCurrent &&
+                  review.status === 'COMPLETED' &&
+                  !resource.error)
+              }
+              onClick={requestReview}
+            >
+              {busy
+                ? '검토 요청 중…'
+                : active
+                  ? '검토 진행 중'
+                  : review?.isCurrent &&
+                      review.status === 'COMPLETED' &&
+                      !resource.error
+                    ? '현재 입력 검토 완료'
+                    : 'AI 검토 요청'}
+            </button>
+          )}
+          <button
+            className="secondary-button"
+            disabled={busy || resource.loading}
+            onClick={resource.reload}
+          >
+            검토 상태 확인
+          </button>
+        </div>
       </div>
-      <p>
-        작업 설명과 제출 자료를 바탕으로 잘된 점과 보완할 내용을 안내합니다. AI
-        제안과 근거를 확인하고 필요한 내용을 수정해 주세요.
-      </p>
-      <p className="field-help">
-        검토 실행과 결과는 완료 요청·승인의 필수 조건이 아닙니다. 지정 승인자가
-        최종 완료 여부를 판단합니다. 저장 가능한 파일도 AI 검토에서는 지원하지
-        않을 수 있습니다.
-      </p>
+      <div className="ai-review-introduction">
+        <p>
+          작업 설명과 제출 자료를 바탕으로 잘된 점과 보완할 내용을 안내합니다.
+          AI 제안과 근거를 확인하고 필요한 내용을 수정해 주세요.
+        </p>
+        <p className="field-help">
+          검토 실행과 결과는 완료 요청·승인의 필수 조건이 아닙니다. 지정
+          승인자가 최종 완료 여부를 판단합니다. 저장 가능한 파일도 AI 검토에서는
+          지원하지 않을 수 있습니다.
+        </p>
+      </div>
       {(context.task.completionBlockReason === 'WORK_PERIOD_CLOSED' ||
         error?.code === 'TASK_WORK_CLOSED') && (
         <p className="notice">
@@ -138,32 +166,12 @@ export default function AiReview({ context }) {
           조회할 수 있습니다.
         </p>
       )}
-      {canRequest && (
-        <button
-          className="secondary-button"
-          disabled={
-            busy ||
-            active ||
-            resource.loading ||
-            (review?.isCurrent &&
-              review.status === 'COMPLETED' &&
-              !resource.error)
-          }
-          onClick={requestReview}
-        >
-          {busy
-            ? '검토 요청 중…'
-            : active
-              ? '검토 진행 중'
-              : review?.isCurrent &&
-                  review.status === 'COMPLETED' &&
-                  !resource.error
-                ? '현재 입력 검토 완료'
-                : 'AI 검토 요청'}
-        </button>
-      )}
       <ErrorNotice error={error} />
-      {notice && <p role="status">{notice}</p>}
+      {notice && (
+        <p className="field-help" role="status">
+          {notice}
+        </p>
+      )}
       {resource.error?.code === 'AI_REVIEW_NOT_FOUND' ? (
         <EmptyState>
           아직 요청한 AI 검토가 없습니다. 담당자가 완료 요청 전에 선택적으로
@@ -172,12 +180,17 @@ export default function AiReview({ context }) {
       ) : (
         <ResourceState resource={resource}>
           {review && (
-            <>
-              <span
-                className={`status-badge ${review.status === 'COMPLETED' ? 'task-state-done' : ''}`}
-              >
-                {statusLabels[review.status]}
-              </span>
+            <div className="ai-review-result">
+              <div className="ai-review-result-context">
+                <span
+                  className={`status-badge ${review.status === 'COMPLETED' ? 'task-state-done' : ''}`}
+                >
+                  {statusLabels[review.status]}
+                </span>
+                <span>
+                  {review.isCurrent ? '현재 입력 기준' : '이전 입력 기준'}
+                </span>
+              </div>
               {!review.isCurrent && (
                 <p className="notice">
                   검토 접수 후 입력이 변경되었습니다. 아래 결과는 현재 자료의
@@ -185,7 +198,7 @@ export default function AiReview({ context }) {
                 </p>
               )}
               {active && (
-                <p role="status">
+                <p className="field-help" role="status">
                   결과를 준비하고 있습니다. 진행 중에만 5초 간격으로 상태를
                   확인합니다.
                 </p>
@@ -200,48 +213,77 @@ export default function AiReview({ context }) {
               )}
               {review.status === 'COMPLETED' && (
                 <>
-                  <p>{review.summary}</p>
-                  <h3>잘된 점</h3>
-                  {review.strengths.length ? (
-                    review.strengths.map((strength, index) => (
-                      <article key={index}>
-                        <p>{strength.message}</p>
-                        <References references={strength.references} />
-                      </article>
-                    ))
-                  ) : (
-                    <p>별도로 제시된 내용이 없습니다.</p>
-                  )}
-                  <h3>보완할 내용·확인할 질문</h3>
-                  {review.improvements.length ? (
-                    review.improvements.map((improvement, index) => (
-                      <article key={index} className="stack">
-                        <strong>
-                          {improvement.type === 'QUESTION'
-                            ? '확인 질문'
-                            : '확인된 문제'}
-                        </strong>
-                        <p>{improvement.issue}</p>
-                        <p>{improvement.suggestion}</p>
-                        <References references={improvement.references} />
-                      </article>
-                    ))
-                  ) : (
-                    <p>별도로 제시된 보완 사항이 없습니다.</p>
-                  )}
+                  <section className="ai-review-summary" aria-label="검토 요약">
+                    <h3>검토 요약</h3>
+                    <p>{review.summary}</p>
+                  </section>
+                  <section className="ai-review-findings" aria-label="잘된 점">
+                    <h3>잘된 점</h3>
+                    {review.strengths.length ? (
+                      <ol className="ai-finding-list">
+                        {review.strengths.map((strength, index) => (
+                          <li key={index}>
+                            <p>{strength.message}</p>
+                            <References references={strength.references} />
+                          </li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <p className="field-help">
+                        별도로 제시된 내용이 없습니다.
+                      </p>
+                    )}
+                  </section>
+                  <section
+                    className="ai-review-findings"
+                    aria-label="보완할 내용·확인할 질문"
+                  >
+                    <h3>보완할 내용·확인할 질문</h3>
+                    {review.improvements.length ? (
+                      <ol className="ai-finding-list">
+                        {review.improvements.map((improvement, index) => (
+                          <li key={index}>
+                            <span className="ai-finding-type">
+                              {improvement.type === 'QUESTION'
+                                ? '확인 질문'
+                                : '확인된 문제'}
+                            </span>
+                            <dl className="ai-improvement-facts">
+                              <div>
+                                <dt>확인 내용</dt>
+                                <dd>{improvement.issue}</dd>
+                              </div>
+                              <div>
+                                <dt>제안</dt>
+                                <dd>{improvement.suggestion}</dd>
+                              </div>
+                            </dl>
+                            <References references={improvement.references} />
+                          </li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <p className="field-help">
+                        별도로 제시된 보완 사항이 없습니다.
+                      </p>
+                    )}
+                  </section>
                   {review.limitations.length > 0 && (
-                    <div className="notice-panel">
+                    <section
+                      className="ai-review-limitations"
+                      aria-label="검토 한계"
+                    >
                       <h3>검토 한계</h3>
                       <ul>
                         {review.limitations.map((limitation, index) => (
                           <li key={index}>{limitation}</li>
                         ))}
                       </ul>
-                    </div>
+                    </section>
                   )}
                 </>
               )}
-            </>
+            </div>
           )}
         </ResourceState>
       )}
