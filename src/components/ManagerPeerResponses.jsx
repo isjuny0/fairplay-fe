@@ -30,10 +30,17 @@ function SubmittedResponses({ roundId, teamId }) {
       )
     : [];
   return (
-    <div className="stack">
-      <button className="secondary-button" onClick={resource.reload}>
-        평가 원문 새로고침
-      </button>
+    <div className="stack manager-peer-results">
+      <div className="manager-peer-results-heading">
+        <h3>최종 제출 현황</h3>
+        <button
+          className="secondary-button"
+          disabled={resource.loading}
+          onClick={resource.reload}
+        >
+          평가 원문 새로고침
+        </button>
+      </div>
       {resource.error?.code === 'ROUND_NOT_CLOSED' ? (
         <p className="notice">
           마감 정리가 아직 끝나지 않았습니다. 잠시 후 다시 불러와 주세요.
@@ -42,10 +49,15 @@ function SubmittedResponses({ roundId, teamId }) {
         <ResourceState resource={resource}>
           {result && (
             <>
-              <p>
-                필수 {result.requiredCount}명 · 최종 제출{' '}
-                {result.submittedCount}명 · 미제출 {result.missingCount}명
-              </p>
+              <div
+                className="manager-peer-submission-summary"
+                role="group"
+                aria-label="평가 제출 현황"
+              >
+                <span>필수 {result.requiredCount}명</span>
+                <span>최종 제출 {result.submittedCount}명</span>
+                <span>미제출 {result.missingCount}명</span>
+              </div>
               {result.missingCount > 0 && (
                 <p className="notice">
                   일부 평가자가 미제출했습니다. 최종 제출된 응답만 표시합니다.
@@ -60,34 +72,63 @@ function SubmittedResponses({ roundId, teamId }) {
                     <summary>
                       {group.name} 받은 평가 · {group.responses.length}건
                     </summary>
-                    <div className="stack">
-                      {group.responses.map((response) => (
-                        <article
-                          className="submitted-peer-response"
-                          key={`${response.evaluatorId}:${response.targetId}`}
-                        >
-                          <h3>
-                            {response.evaluatorName} → {response.targetName}
-                          </h3>
-                          <dl className="card-facts">
+                    <div className="manager-peer-table-container">
+                      <table className="manager-peer-table">
+                        <caption className="sr-only">
+                          {group.name}님이 받은 최종 제출 평가
+                        </caption>
+                        <thead>
+                          <tr>
+                            <th scope="col">평가자 → 대상자</th>
                             {Object.entries(peerCriteria).map(
                               ([code, label]) => (
-                                <div key={code}>
-                                  <dt>{label}</dt>
-                                  <dd>{response.scores[code]} / 5</dd>
-                                </div>
+                                <th key={code} scope="col">
+                                  {label}
+                                </th>
                               ),
                             )}
-                          </dl>
-                          <h4>작성한 사유</h4>
-                          <p className="preserve-lines">
-                            {response.reason || '작성한 사유가 없습니다.'}
-                          </p>
-                          <p className="field-help">
-                            최종 제출 {formatDate(response.submittedAt)}
-                          </p>
-                        </article>
-                      ))}
+                            <th scope="col">최종 제출</th>
+                          </tr>
+                        </thead>
+                        {group.responses.map((response) => (
+                          <tbody
+                            key={`${response.evaluatorId}:${response.targetId}`}
+                          >
+                            <tr className="manager-peer-score-row">
+                              <th scope="row">
+                                {response.evaluatorName} → {response.targetName}
+                              </th>
+                              {Object.entries(peerCriteria).map(
+                                ([code, label]) => (
+                                  <td key={code} data-label={label}>
+                                    <span>
+                                      {response.scores[code]} <small>/ 5</small>
+                                    </span>
+                                  </td>
+                                ),
+                              )}
+                              <td
+                                className="manager-peer-submitted-at"
+                                data-label="최종 제출"
+                              >
+                                <time dateTime={response.submittedAt}>
+                                  {formatDate(response.submittedAt)}
+                                </time>
+                              </td>
+                            </tr>
+                            <tr className="manager-peer-reason-row">
+                              <td colSpan={6}>
+                                <span className="manager-peer-reason-label">
+                                  작성한 사유
+                                </span>
+                                <p className="preserve-lines">
+                                  {response.reason || '작성한 사유가 없습니다.'}
+                                </p>
+                              </td>
+                            </tr>
+                          </tbody>
+                        ))}
+                      </table>
                     </div>
                   </details>
                 ))
@@ -121,40 +162,50 @@ function PeerResponseContent({ context, teamId }) {
     next.set(name, value);
     setParams(next);
   };
+  const selectedTeamName = context.teamContexts.find(
+    ({ team }) => String(team.id) === String(selectedTeamId),
+  )?.team.name;
   return (
     <div className="stack peer-response-content">
-      <div>
-        <span className="eyebrow">관리자 전용 · 읽기 전용</span>
-        <h2>동료 평가 원문</h2>
-        <p>
-          마감된 회차의 최종 제출 점수와 사유입니다. 임시 저장 응답은 표시하지
-          않습니다.
-        </p>
+      <div className="manager-peer-heading">
+        <div>
+          <span className="eyebrow">관리자 전용 · 읽기 전용</span>
+          <h2>동료 평가 원문</h2>
+          <p>
+            마감된 회차의 최종 제출 점수와 사유입니다. 임시 저장 응답은 표시하지
+            않습니다.
+          </p>
+        </div>
+        <button
+          className="secondary-button"
+          disabled={rounds.loading}
+          onClick={rounds.reload}
+        >
+          원문 조회 회차 새로고침
+        </button>
       </div>
-      <button
-        className="secondary-button"
-        disabled={rounds.loading}
-        onClick={rounds.reload}
-      >
-        원문 조회 회차 새로고침
-      </button>
-      {!teamId && (
-        <Field label="평가 원문 대상 팀">
-          <select
-            value={selectedTeamId || ''}
-            onChange={(event) => select('peerTeamId', event.target.value)}
-          >
-            {context.teamContexts.map(({ team }) => (
-              <option key={team.id} value={team.id}>
-                {team.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-      )}
       <ResourceState resource={rounds}>
-        {selectedRound && selectedTeamId ? (
-          <>
+        <div className="manager-peer-scope" aria-label="원문 조회 범위">
+          {!teamId ? (
+            <Field label="평가 원문 대상 팀">
+              <select
+                value={selectedTeamId || ''}
+                onChange={(event) => select('peerTeamId', event.target.value)}
+              >
+                {context.teamContexts.map(({ team }) => (
+                  <option key={team.id} value={team.id}>
+                    {team.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          ) : (
+            <div className="manager-peer-fixed-team">
+              <span>조회 팀</span>
+              <strong>{selectedTeamName || `팀 #${selectedTeamId}`}</strong>
+            </div>
+          )}
+          {selectedRound && (
             <Field label="원문 조회 회차">
               <select
                 value={selectedRound.id}
@@ -168,6 +219,10 @@ function PeerResponseContent({ context, teamId }) {
                 ))}
               </select>
             </Field>
+          )}
+        </div>
+        {selectedRound && selectedTeamId ? (
+          <>
             {selectedRound.status === 'CLOSED' ? (
               <SubmittedResponses
                 key={`${selectedRound.id}:${selectedTeamId}`}

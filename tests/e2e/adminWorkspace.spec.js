@@ -10,6 +10,50 @@ async function openManagerPreview(page, path, scenario = 'active') {
   await page.goto(`/preview${path}`);
 }
 
+for (const width of [1440, 320]) {
+  test(`관리자 원문 ${width}px: 대상별 평가를 읽고 패널을 다시 열면 원문을 접는다`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await openManagerPreview(page, '/spaces/1/rounds', 'review');
+    const panel = page.getByRole('region', { name: '관리자 동료 평가 상세' });
+    const toggle = panel.getByText('동료 평가 원문 보기', { exact: true });
+    await toggle.click();
+    await panel.getByText('김하늘 받은 평가 · 2건', { exact: true }).click();
+    const table = panel.getByRole('table', {
+      name: '김하늘님이 받은 최종 제출 평가',
+      exact: true,
+    });
+    await expect(
+      table.getByText('이지원 → 김하늘', { exact: true }),
+    ).toBeVisible();
+    await expect(
+      table.getByText('박서연 → 김하늘', { exact: true }),
+    ).toBeVisible();
+    for (const criterion of ['작업 수행', '책임감', '협업', '의사소통'])
+      await expect(
+        table.getByRole('columnheader', { name: criterion, exact: true }),
+      ).toHaveCount(1);
+    await expect(table.getByText('작성한 사유', { exact: true })).toHaveCount(
+      2,
+    );
+    await toggle.click();
+    await expect(table).toHaveCount(0);
+    await toggle.click();
+    await expect(
+      panel.getByText('김하늘 받은 평가 · 2건', { exact: true }),
+    ).toBeVisible();
+    await expect(
+      panel.getByText('이지원 → 김하늘', { exact: true }),
+    ).toBeHidden();
+    expect(
+      await panel.evaluate(
+        (element) => element.scrollWidth <= element.clientWidth,
+      ),
+    ).toBe(true);
+  });
+}
+
 for (const width of [1440, 390]) {
   test(`관리자는 ${width}px에서 팀 현황을 선택하고 주소를 복원한 뒤 전체 팀으로 돌아간다`, async ({
     page,
