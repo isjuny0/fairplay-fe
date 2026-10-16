@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { createSpace, joinSpace, listSpaces } from '../api/spaces.js';
 import useResource from '../hooks/useResource.js';
 import { useInteractions } from '../hooks/useInteractions.js';
-import { buildingLabels, fromDateInput } from '../lib/domain.js';
+import { buildingLabels, formatDate, fromDateInput } from '../lib/domain.js';
 import {
   collectFieldErrors,
   focusFirstFieldError,
@@ -22,6 +22,15 @@ import {
 export default function Spaces({ onSelect }) {
   const { notify, clearChanges } = useInteractions();
   const resource = useResource(listSpaces, []);
+  const [search, setSearch] = useState('');
+  const [role, setRole] = useState('ALL');
+  const visibleSpaces = (resource.data || []).filter(
+    (space) =>
+      space.name
+        .toLocaleLowerCase()
+        .includes(search.trim().toLocaleLowerCase()) &&
+      (role === 'ALL' || space.myRole === role),
+  );
   const [modal, setModal] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -103,7 +112,7 @@ export default function Spaces({ onSelect }) {
     }
   };
   return (
-    <section>
+    <section className="space-directory stack">
       <div className="page-heading">
         <div>
           <span className="eyebrow">함께 만드는 프로젝트</span>
@@ -122,34 +131,89 @@ export default function Spaces({ onSelect }) {
       </div>
       <ResourceState resource={resource}>
         {resource.data?.length ? (
-          <ul className="space-list">
-            {resource.data.map((space) => (
-              <li key={space.id}>
-                <button onClick={() => onSelect(space.id)}>
-                  <span className="space-card-top">
-                    <span className="space-symbol">
-                      <Icon name="grid" />
-                    </span>
-                    <span
-                      className={`role-badge ${space.myRole === 'MANAGER' ? 'role-manager' : ''}`}
-                    >
-                      {space.myRole === 'MANAGER' ? '관리자' : '참여자'}
-                    </span>
-                  </span>
-                  <strong>{space.name}</strong>
-                  <span className="space-card-footer">
-                    <span className="building-status">
+          <section className="directory-section" aria-label="스페이스 목록">
+            <div className="directory-toolbar">
+              <label className="directory-search">
+                <span className="sr-only">스페이스 이름 검색</span>
+                <input
+                  type="search"
+                  placeholder="스페이스 이름 검색"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </label>
+              <label>
+                <span className="sr-only">내 역할 필터</span>
+                <select
+                  value={role}
+                  onChange={(event) => setRole(event.target.value)}
+                >
+                  <option value="ALL">모든 역할</option>
+                  <option value="MANAGER">관리자</option>
+                  <option value="USER">참여자</option>
+                </select>
+              </label>
+              <span className="directory-count" role="status">
+                {visibleSpaces.length} / {resource.data.length}개
+              </span>
+              <button
+                className="secondary-button directory-refresh"
+                onClick={resource.reload}
+                disabled={resource.loading}
+              >
+                <Icon name="refresh" />
+                새로고침
+              </button>
+            </div>
+            <div className="space-directory-columns" aria-hidden="true">
+              <span>스페이스</span>
+              <span>내 역할</span>
+              <span>팀 빌딩</span>
+              <span />
+            </div>
+            {visibleSpaces.length ? (
+              <ul className="space-list">
+                {visibleSpaces.map((space) => (
+                  <li key={space.id}>
+                    <button onClick={() => onSelect(space.id)}>
+                      <span className="directory-space-name">
+                        <strong>{space.name}</strong>
+                        <small>
+                          프로젝트 · {formatDate(space.startAt)} ~{' '}
+                          {formatDate(space.endAt)}
+                        </small>
+                      </span>
                       <span
-                        className={`status-dot building-${space.teamBuildingStatus.toLowerCase()}`}
-                      />
-                      {buildingLabels[space.teamBuildingStatus]}
-                    </span>
-                    <Icon name="arrow" />
-                  </span>
+                        className={`role-badge ${space.myRole === 'MANAGER' ? 'role-manager' : ''}`}
+                      >
+                        {space.myRole === 'MANAGER' ? '관리자' : '참여자'}
+                      </span>
+                      <span className="building-status">
+                        <span
+                          className={`status-dot building-${space.teamBuildingStatus.toLowerCase()}`}
+                        />
+                        {buildingLabels[space.teamBuildingStatus]}
+                      </span>
+                      <Icon name="arrow" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <EmptyState>
+                <p>조건에 맞는 스페이스가 없습니다.</p>
+                <button
+                  className="secondary-button"
+                  onClick={() => {
+                    setSearch('');
+                    setRole('ALL');
+                  }}
+                >
+                  검색·필터 초기화
                 </button>
-              </li>
-            ))}
-          </ul>
+              </EmptyState>
+            )}
+          </section>
         ) : (
           <EmptyState>
             <p>아직 참여한 스페이스가 없습니다.</p>
@@ -200,10 +264,7 @@ export default function Spaces({ onSelect }) {
                       }
                     />
                   </Field>
-                  <Field
-                    label="프로젝트 시작"
-                    error={fieldErrors.startAt}
-                  >
+                  <Field label="프로젝트 시작" error={fieldErrors.startAt}>
                     <DateTimeInput
                       name="startAt"
                       required
@@ -213,10 +274,7 @@ export default function Spaces({ onSelect }) {
                       }
                     />
                   </Field>
-                  <Field
-                    label="프로젝트 종료"
-                    error={fieldErrors.endAt}
-                  >
+                  <Field label="프로젝트 종료" error={fieldErrors.endAt}>
                     <DateTimeInput
                       name="endAt"
                       required

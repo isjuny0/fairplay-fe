@@ -1,0 +1,327 @@
+/* Space selection and team formation share quiet, comparable rows. */
+.space-directory .page-heading,
+.team-directory .page-heading,
+.team-member-directory .page-heading {
+  margin-bottom: 0;
+}
+.directory-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 16px;
+}
+.directory-search {
+  width: 320px;
+  max-width: 100%;
+}
+.directory-toolbar input,
+.directory-toolbar select {
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text-primary);
+  width: 100%;
+  font-size: var(--text-support);
+}
+.directory-count {
+  color: var(--text-muted);
+  font-size: var(--text-support);
+  font-variant-numeric: tabular-nums;
+}
+.directory-refresh {
+  margin-left: auto;
+}
+.space-directory-columns,
+.space-directory .space-list button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 100px 160px 18px;
+  align-items: center;
+  gap: 24px;
+}
+.space-directory-columns {
+  padding: 10px 16px;
+  background: var(--surface-secondary);
+  border-block: 1px solid var(--border);
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+}
+.space-directory .space-list {
+  display: block;
+  margin: 0;
+  border: 0;
+}
+.space-directory .space-list li {
+  border-bottom: 1px solid var(--border);
+}
+.space-directory .space-list button {
+  min-height: 88px;
+  padding: 16px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--surface);
+}
+.space-directory .space-list button:hover {
+  background: var(--surface-secondary);
+  box-shadow: none;
+}
+.directory-space-name {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+.space-directory .space-list strong {
+  font-size: var(--text-body);
+  font-weight: 600;
+  letter-spacing: 0;
+  padding: 0;
+  margin: 0;
+}
+.directory-space-name small {
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+  line-height: 1.6;
+}
+.space-directory .role-badge {
+  justify-self: start;
+}
+.space-directory .space-list .ui-icon {
+  color: var(--text-muted);
+}
+.team-building-overview {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 16px 24px;
+  padding: 20px 0;
+  border-block: 1px solid var(--border);
+}
+.team-building-status {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+.team-building-status strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+.team-building-overview dl {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+.team-building-overview dl > div {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 12px;
+}
+.team-building-overview dt {
+  color: var(--text-muted);
+  font-size: var(--text-support);
+}
+.team-building-overview dd {
+  margin: 0;
+  font-size: var(--text-support);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.team-building-overview .field-help {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.directory-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.directory-section-heading h2 {
+  margin: 0;
+  font-size: var(--text-subheading);
+  font-weight: 600;
+}
+.directory-section-heading h2 > span {
+  color: var(--text-muted);
+  font-size: var(--text-support);
+  font-weight: 400;
+  margin-left: 8px;
+}
+.directory-section-heading p {
+  color: var(--text-muted);
+  font-size: var(--text-support);
+  margin: 6px 0 0;
+  line-height: 1.6;
+}
+.team-directory .team-list {
+  margin: -8px 0 0;
+  gap: 0;
+  border-top: 1px solid var(--border);
+}
+.team-directory .team-card {
+  padding: 20px 16px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: none;
+  gap: 16px;
+  background: var(--surface);
+}
+.team-directory .team-card.is-joined {
+  background: #f7faf8;
+}
+.team-directory .team-card h2 {
+  font-size: var(--text-body);
+  margin: 0 0 8px;
+}
+.team-directory .team-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: var(--text-support);
+}
+.team-membership {
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+}
+.team-membership.membership-approved {
+  color: var(--brand);
+  font-weight: 500;
+}
+.team-membership.membership-pending {
+  color: #8a6118;
+}
+.team-membership.membership-rejected {
+  color: #a54742;
+}
+.team-directory .team-card-main {
+  min-width: 0;
+  flex: 1;
+}
+.team-directory .team-card-main h2 {
+  overflow-wrap: anywhere;
+}
+.team-directory .team-action {
+  flex-shrink: 0;
+}
+.member-directory-sections {
+  display: grid;
+  gap: 32px;
+}
+.member-directory-section > .directory-section-heading {
+  padding-bottom: 16px;
+}
+.team-member-directory .clean-list {
+  border-top: 1px solid var(--border);
+}
+.team-member-directory .row-item {
+  min-height: 76px;
+  padding: 16px;
+  gap: 16px;
+}
+.team-member-directory .member-identity {
+  min-width: 0;
+}
+.team-member-directory .member-identity strong {
+  overflow-wrap: anywhere;
+}
+.team-member-directory .row-item > .secondary-button {
+  flex-shrink: 0;
+}
+.team-member-directory .row-item small {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+}
+.member-self {
+  display: inline-block;
+  margin-left: 8px;
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+}
+.team-member-directory .application-directory .row-item > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.team-member-directory .application-directory .heading-actions {
+  flex-shrink: 0;
+}
+@media (max-width: 900px) {
+  .space-directory-columns,
+  .space-directory .space-list button {
+    grid-template-columns: minmax(0, 1fr) 80px 135px 18px;
+    gap: 16px;
+  }
+  .team-building-overview {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .directory-toolbar {
+    gap: 8px;
+  }
+  .directory-search {
+    width: 100%;
+  }
+  .directory-refresh {
+    margin-left: auto;
+  }
+  .directory-toolbar select {
+    max-width: 120px;
+  }
+  .space-directory-columns {
+    display: none;
+  }
+  .space-directory .space-list {
+    border-top: 1px solid var(--border);
+  }
+  .space-directory .space-list button {
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    padding: 16px 8px;
+  }
+  .directory-space-name {
+    grid-column: 1 / -1;
+  }
+  .space-directory .space-list .building-status {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .space-directory .space-list button > .ui-icon {
+    grid-column: 2;
+    grid-row: 2 / 4;
+  }
+  .team-building-overview dl > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .team-directory .team-card {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 16px 8px;
+  }
+  .team-directory .team-action {
+    width: 100%;
+  }
+  .team-directory .team-action button {
+    width: 100%;
+  }
+  .team-member-directory .row-item {
+    padding: 16px 0;
+    align-items: flex-start;
+  }
+  .team-member-directory .member-identity {
+    gap: 8px;
+  }
+  .team-member-directory .member-avatar {
+    display: none;
+  }
+  .team-member-directory .application-directory .row-item {
+    flex-direction: column;
+  }
+}

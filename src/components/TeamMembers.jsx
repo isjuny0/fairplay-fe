@@ -1,3 +1,4 @@
+import Icon from './Icon.jsx';
 import { useState } from 'react';
 import {
   assignTeamDeputy,
@@ -37,21 +38,40 @@ export default function TeamMembers({ team, user, onChanged }) {
     }
   };
   return (
-    <section className="stack">
+    <section className="stack team-member-directory">
       <div className="page-heading">
         <div>
           <h1>팀원 관리</h1>
-          <p>팀의 구성원과 역할을 확인하세요.</p>
+          <p>
+            {isLeader
+              ? '팀원 역할을 관리하고 가입 신청을 검토하세요.'
+              : '팀의 구성원과 역할을 확인하세요.'}
+          </p>
         </div>
+        <button
+          className="secondary-button"
+          onClick={resource.reload}
+          disabled={busy || resource.loading}
+        >
+          <Icon name="refresh" />
+          새로고침
+        </button>
       </div>
       <ErrorNotice error={error} onRetry={resource.reload} />
       <ResourceState resource={resource}>
         {resource.data && (
-          <div
-            className={`member-management-grid ${isLeader ? 'has-applications' : ''}`}
-          >
-            <section className="panel">
-              <h2>승인된 팀원 · {resource.data.members.length}명</h2>
+          <div className="member-directory-sections">
+            <section className="member-directory-section">
+              <div className="directory-section-heading">
+                <div>
+                  <h2>승인된 팀원 · {resource.data.members.length}명</h2>
+                  <p>
+                    {isLeader
+                      ? '부리더는 한 명만 지정할 수 있습니다.'
+                      : '역할 변경과 가입 신청 검토는 리더가 관리합니다.'}
+                  </p>
+                </div>
+              </div>
               <ul className="clean-list">
                 {resource.data.members.map((member) => (
                   <li className="row-item" key={member.userId}>
@@ -62,7 +82,9 @@ export default function TeamMembers({ team, user, onChanged }) {
                       <span>
                         <strong>{member.name}</strong>{' '}
                         <span className="role-badge">{memberRole(member)}</span>
-                        {member.userId === user.id && ' · 나'}
+                        {member.userId === user.id && (
+                          <span className="member-self">나</span>
+                        )}
                       </span>
                     </span>
                     {isLeader && member.role !== 'LEADER' && (
@@ -78,7 +100,9 @@ export default function TeamMembers({ team, user, onChanged }) {
                           )
                         }
                       >
-                        {member.role === 'DEPUTY' ? '부리더 해제' : '부리더 지정'}
+                        {member.role === 'DEPUTY'
+                          ? '부리더 해제'
+                          : '부리더 지정'}
                       </button>
                     )}
                   </li>
@@ -86,8 +110,16 @@ export default function TeamMembers({ team, user, onChanged }) {
               </ul>
             </section>
             {isLeader && (
-              <section className="panel">
-                <h2>가입 신청 · {resource.data.applications.length}건</h2>
+              <section className="member-directory-section application-directory">
+                <div className="directory-section-heading">
+                  <div>
+                    <h2>가입 신청 · {resource.data.applications.length}건</h2>
+                    <p>
+                      승인하면 팀원으로 합류합니다. 가입 승인 조건이 충족되지
+                      않아도 반려할 수 있습니다.
+                    </p>
+                  </div>
+                </div>
                 {resource.data.applications.length ? (
                   <ul className="clean-list">
                     {resource.data.applications.map((application) => (
