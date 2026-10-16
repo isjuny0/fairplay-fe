@@ -12,36 +12,69 @@ import {
   useInteractions,
   useUnsavedChanges,
 } from '../hooks/useInteractions.js';
+import useAppNavigate from '../hooks/useAppNavigate.js';
+import { useLocation } from 'react-router';
 const ModalCloseContext = createContext(null);
 export function ErrorNotice({ error, onRetry }) {
+  const unavailable = error?.status === 403 || error?.status === 404;
+  const guidance = {
+    401: '다시 로그인한 뒤 이용해 주세요.',
+    403: '스페이스·팀 참여 상태와 이 화면을 볼 수 있는 역할을 확인해 주세요.',
+    404: '목록으로 돌아가 대상이 남아 있는지 확인해 주세요.',
+  }[error?.status];
   return error ? (
     <div className="inline-error" role="alert">
-      <span>{errorMessage(error)}</span>
-      {onRetry && <button onClick={onRetry}>다시 불러오기</button>}
+      <div className="error-notice-message">
+        <p>{errorMessage(error)}</p>
+        {guidance && <p className="error-notice-guidance">{guidance}</p>}
+      </div>
+      {onRetry && !unavailable && error.status !== 401 && (
+        <button type="button" onClick={onRetry}>
+          다시 불러오기
+        </button>
+      )}
     </div>
   ) : null;
 }
-export function ResourceState({ resource, children }) {
+export function ResourceState({ resource, children, label = '화면 정보' }) {
+  const navigate = useAppNavigate();
+  const { pathname } = useLocation();
   if (resource.loading && resource.data == null)
     return (
       <div
         className="loading-placeholder"
         role="status"
-        aria-label="불러오는 중"
+        aria-label={`${label} 불러오는 중`}
       >
-        <span>불러오는 중…</span>
-        <div />
-        <div />
-        <div />
+        <span>{label} 불러오는 중…</span>
+        <div aria-hidden="true" />
+        <div aria-hidden="true" />
+        <div aria-hidden="true" />
       </div>
     );
-  if (resource.error)
-    return <ErrorNotice error={resource.error} onRetry={resource.reload} />;
+  if (resource.error) {
+    const canReturnToSpaces =
+      [403, 404].includes(resource.error.status) && !pathname.endsWith('/main');
+    return (
+      <div className="resource-error-state">
+        <ErrorNotice error={resource.error} onRetry={resource.reload} />
+        {canReturnToSpaces && (
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => navigate('/main')}
+          >
+            내 스페이스로 이동
+          </button>
+        )}
+      </div>
+    );
+  }
   return (
     <>
       {resource.loading && (
         <p className="field-help" role="status">
-          최신 정보를 불러오는 중…
+          최신 정보를 불러오는 중… 이전 조회 결과를 표시하고 있습니다.
         </p>
       )}
       {children}

@@ -43,6 +43,7 @@ export default function TaskTable({ tasks, members, onOpenTask, now }) {
                 <span className="task-number">#{task.id}</span>
                 <button
                   className="task-title-button"
+                  title={task.title}
                   onClick={() => onOpenTask(task.id)}
                 >
                   {task.title}

@@ -27,6 +27,7 @@ export default function RouteViewport() {
     window.addEventListener('scroll', recordPosition, { passive: true });
     let observer;
     let timeout;
+    let restoreFrame;
     if (shouldMove) {
       const targetPosition = shouldRestore ? restoredPosition : 0;
       window.scrollTo({ top: targetPosition, behavior: 'instant' });
@@ -47,8 +48,11 @@ export default function RouteViewport() {
           return;
         title.setAttribute('tabindex', '-1');
         title.focus({ preventScroll: true });
-        window.scrollTo({ top: targetPosition, behavior: 'instant' });
-        lastPosition = window.scrollY;
+        // 로딩 영역 교체에 따른 브라우저 스크롤 보정 이후 위치를 복원한다.
+        restoreFrame = requestAnimationFrame(() => {
+          window.scrollTo({ top: targetPosition, behavior: 'instant' });
+          lastPosition = window.scrollY;
+        });
         observer?.disconnect();
         clearTimeout(timeout);
       };
@@ -62,6 +66,7 @@ export default function RouteViewport() {
       window.removeEventListener('scroll', recordPosition);
       observer?.disconnect();
       clearTimeout(timeout);
+      cancelAnimationFrame(restoreFrame);
     };
   }, [
     location.key,

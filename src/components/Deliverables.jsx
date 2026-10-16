@@ -601,7 +601,7 @@ export default function Deliverables({
         </button>
       </div>
       <ErrorNotice error={error} onRetry={resource.reload} />
-      <ResourceState resource={resource}>
+      <ResourceState resource={resource} label="산출물 목록">
         {resource.data?.length ? (
           taskId == null ? (
             <DeliverableTable

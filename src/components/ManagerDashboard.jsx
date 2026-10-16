@@ -170,7 +170,7 @@ export default function ManagerDashboard({ context }) {
           </div>
         )}
       </div>
-      <ResourceState resource={resource}>
+      <ResourceState resource={resource} label="팀 현황">
         {dashboard && (
           <>
             <section
