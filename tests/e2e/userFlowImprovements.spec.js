@@ -257,3 +257,54 @@ test('연결 산출물이 없으면 준비 목록에서 등록 영역으로 바�
   await expect(page.locator('#task-deliverables-section')).toBeFocused();
   await expect(page.getByRole('button', { name: '산출물 등록', exact: true })).toBeInViewport();
 });
+
+test('승인자는 요청 맥락과 검토 대상별 위치를 바로 확인한다', async ({ page }) => {
+  await preview(page, '/spaces/1/teams/1/approvals/tasks/103', 'reviewer');
+  const decision = page.getByRole('region', { name: '완료 검토', exact: true });
+  await expect(decision.locator('dl')).toContainText('요청자');
+  await expect(decision.locator('dl')).toContainText('김하늘');
+  await expect(decision.locator('dl')).toContainText('요청 시각');
+  for (const [label, target] of [
+    ['작업 설명 확인', 'task-description-section'],
+    ['담당 배분 확인', 'task-assignment-section'],
+    ['수행 설명 확인', 'task-contributions-section'],
+    ['산출물 확인', 'task-deliverables-section'],
+  ]) {
+    await decision.getByRole('button', { name: label, exact: true }).click();
+    await expect(page.locator(`#${target}`)).toBeFocused();
+  }
+});
+
+test('전달하지 않은 반려 사유는 화면 이동을 확인하고 계속 작성할 수 있다', async ({ page }) => {
+  await preview(page, '/spaces/1/teams/1/approvals/tasks/103', 'reviewer');
+  const reason = page.getByLabel('반려 사유', { exact: true });
+  const value = '자료의 예외 처리 결과와 검증 근거를 보완해 주세요.';
+  await reason.fill(value);
+  await page.getByRole('button', { name: '← 목록으로', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '저장하지 않은 변경 사항', exact: true });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: '계속 작성', exact: true }).click();
+  await expect(reason).toHaveValue(value);
+  await page.getByRole('button', { name: '← 목록으로', exact: true }).click();
+  await dialog.getByRole('button', { name: '변경 사항 버리고 이동', exact: true }).click();
+  await expect(page).toHaveURL(/\/approvals$/);
+});
+
+test('반려 사유를 작성한 상태의 승인에는 미전송을 안내하고 승인 후 입력 경고를 정리한다', async ({ page }) => {
+  await preview(page, '/spaces/1/teams/1/approvals/tasks/103', 'reviewer');
+  const reason = page.getByLabel('반려 사유', { exact: true });
+  const value = '기존 자료로 완료 조건을 충족하는지 확인했습니다.';
+  await reason.fill(value);
+  await page.getByRole('button', { name: '완료 승인', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '작업 완료 승인', exact: true });
+  await expect(dialog).toContainText('작성한 반려 사유는 승인에 포함되지 않습니다.');
+  await dialog.getByRole('button', { name: '취소', exact: true }).click();
+  await expect(reason).toHaveValue(value);
+  await page.getByRole('button', { name: '완료 승인', exact: true }).click();
+  await dialog.getByRole('button', { name: '승인 확정', exact: true }).click();
+  await expect(page.getByText('작업 완료를 승인했습니다.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: '완료 검토', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: '← 목록으로', exact: true }).click();
+  await expect(page).toHaveURL(/\/approvals$/);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});

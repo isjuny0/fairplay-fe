@@ -238,11 +238,19 @@ export default function TaskDetail({
             )}
             <div className="task-detail-layout">
               <div className="stack">
-                <section className="panel">
+                <section
+                  id="task-description-section"
+                  tabIndex={-1}
+                  className="panel task-section-anchor"
+                >
                   <h2>작업 설명</h2>
                   <p className="preserve-lines">{task.description}</p>
                 </section>
-                <section className="panel">
+                <section
+                  id="task-contributions-section"
+                  tabIndex={-1}
+                  className="panel task-section-anchor"
+                >
                   <h2>담당자 수행 설명</h2>
                   {resource.data.contributions.map((contribution) => (
                     <div
@@ -443,8 +451,21 @@ export default function TaskDetail({
                     )}
                   </section>
                 )}
+                {currentApproval && (
+                  <ApprovalDecision
+                    key={currentApproval.id}
+                    approval={currentApproval}
+                    user={user}
+                    members={members}
+                    onReviewSection={focusTaskSection}
+                    blocked={teamWorkBlocked(team)}
+                    onChanged={resource.reload}
+                  />
+                )}
                 <section
-                  className="panel task-assignment-panel"
+                  id="task-assignment-section"
+                  tabIndex={-1}
+                  className="panel task-assignment-panel task-section-anchor"
                   aria-label="담당자와 배분"
                 >
                   <h2>담당자와 배분</h2>
@@ -516,15 +537,6 @@ export default function TaskDetail({
                       </button>
                     </form>
                   </section>
-                )}
-                {currentApproval && (
-                  <ApprovalDecision
-                    key={currentApproval.id}
-                    approval={currentApproval}
-                    user={user}
-                    blocked={teamWorkBlocked(team)}
-                    onChanged={resource.reload}
-                  />
                 )}
                 <details className="panel">
                   <summary>완료 요청 이력 · {history.length}건</summary>
