@@ -64,6 +64,17 @@ for (const width of [1440, 390]) {
         exact: true,
       }),
     ).toBeVisible();
+    await page
+      .getByRole('button', { name: '김하늘 수행 상세', exact: true })
+      .click();
+    await expect(
+      page.getByRole('heading', { name: '김하늘님의 수행 상세', exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole('button', { name: '← 대시보드로', exact: true })
+      .click();
+    await expect(page).toHaveURL(/dashboard\?teamId=1/);
+    await expect(page.getByLabel('조회할 팀')).toHaveValue('1');
     await page.reload();
     await expect(page.getByLabel('조회할 팀')).toHaveValue('1');
     await expect(attention).toHaveCount(0);

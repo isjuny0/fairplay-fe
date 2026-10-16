@@ -296,7 +296,11 @@ export default function SpaceWorkspace({
                       )?.members || [],
                   }}
                   targetUserId={targetUserId}
-                  onBack={() => navigate(`${spacePath(spaceId)}/dashboard`)}
+                  onBack={() =>
+                    navigate(
+                      `${spacePath(spaceId)}/dashboard?teamId=${team.id}`,
+                    )
+                  }
                 />
               ) : view === 'contributions' ? (
                 <UnavailablePage title="팀을 열 수 없습니다." />
