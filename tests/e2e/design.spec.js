@@ -129,13 +129,14 @@ for (const width of [1440, 390]) {
 }
 
 for (const width of [1440, 768, 390, 320]) {
-  test(`새 레이아웃 ${width}px: 갤러리와 로그인 영역의 반응형 배치`, async ({ page }) => {
+  test(`새 레이아웃 ${width}px: 스페이스 목록과 로그인 영역의 반응형 배치`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/preview/main');
     await expect(page.locator('.topbar .logo-mark')).toHaveCSS('background-color', 'rgb(36, 87, 71)');
     await expect(page.locator('.space-list')).toBeVisible();
-    const columns = await page.locator('.space-list').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length);
-    expect(columns).toBe(width > 1100 ? 3 : width > 720 ? 2 : 1);
+    await expect(page.getByLabel('스페이스 이름 검색')).toBeVisible();
+    await expect(page.getByLabel('내 역할 필터')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
     await page.goto('/preview/login');
     const intro = await page.locator('.login-introduction').boundingBox();
     const actions = await page.locator('.login-actions').boundingBox();

@@ -72,6 +72,9 @@ export default function SpaceWorkspace({
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  useEffect(() => {
+    setError(null);
+  }, [resource.data]);
   const space = resource.data?.space;
   const teams = resource.data?.teams || [];
   const isManager = space?.myRole === 'MANAGER';
@@ -150,12 +153,26 @@ export default function SpaceWorkspace({
     space?.teamBuildingStatus === 'OPEN' &&
     new Date(space.teamBuildingOpensAt) <= new Date() &&
     new Date(space.teamBuildingClosesAt) > new Date();
+  const teamCreationRestriction = joinedTeam
+    ? `이미 ${joinedTeam.name} 팀에 소속되어 있습니다. 스페이스에서는 한 팀에만 소속될 수 있습니다.`
+    : buildingOpen
+      ? ''
+      : {
+          NOT_CONFIGURED:
+            '관리자가 팀 빌딩 기간을 지정하면 팀을 만들 수 있습니다.',
+          SCHEDULED: `팀 빌딩이 시작되는 ${formatDate(space?.teamBuildingOpensAt)}부터 팀을 만들 수 있습니다.`,
+          CLOSED: '팀 빌딩 기간이 종료되어 팀을 만들 수 없습니다.',
+          LOCKED: '평가가 시작되어 팀 구성이 고정되었습니다.',
+        }[space?.teamBuildingStatus] ||
+        '현재 팀을 만들 수 없습니다. 최신 팀 빌딩 상태를 확인해 주세요.';
   const apply = async (target) => {
     setBusy(true);
     setError(null);
     try {
       await requestTeamJoin(target.id);
-      notify('팀 가입을 신청했습니다. 가입 승인 후 작업을 시작할 수 있습니다.');
+      notify(
+        `${target.name} 팀에 가입을 신청했습니다. 리더의 승인을 기다려 주세요.`,
+      );
       resource.reload();
     } catch (requestError) {
       setError(requestError);
@@ -333,7 +350,7 @@ export default function SpaceWorkspace({
                   }}
                 />
               ) : (
-                <section className="stack">
+                <section className="stack team-directory">
                   <div className="page-heading">
                     <div>
                       <span className="role-badge">
@@ -342,17 +359,33 @@ export default function SpaceWorkspace({
                       <h1>{space.name}</h1>
                       <p>{space.description}</p>
                     </div>
-                    <button
-                      className="primary-button"
-                      disabled={!buildingOpen || Boolean(joinedTeam)}
-                      onClick={() => {
-                        setError(null);
-                        setName('');
-                        setCreating(true);
-                      }}
-                    >
-                      <Icon name="plus" />팀 만들기
-                    </button>
+                    <div className="team-create-action">
+                      <button
+                        className="primary-button"
+                        disabled={
+                          busy ||
+                          resource.loading ||
+                          Boolean(teamCreationRestriction)
+                        }
+                        aria-describedby={
+                          teamCreationRestriction
+                            ? 'team-create-restriction'
+                            : undefined
+                        }
+                        onClick={() => {
+                          setError(null);
+                          setName('');
+                          setCreating(true);
+                        }}
+                      >
+                        <Icon name="plus" />팀 만들기
+                      </button>
+                      {teamCreationRestriction && (
+                        <p id="team-create-restriction" className="field-help">
+                          {teamCreationRestriction}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   <SpaceGuide
                     space={space}
@@ -367,19 +400,37 @@ export default function SpaceWorkspace({
                       setCreating(true);
                     }}
                   />
-                  <section className="panel building-panel">
-                    <h2>
-                      <Icon name="calendar" />
-                      {buildingLabels[space.teamBuildingStatus]}
-                    </h2>
-                    <p>
-                      프로젝트 · {formatDate(space.startAt)} ~{' '}
-                      {formatDate(space.endAt)}
-                    </p>
-                    <p>
-                      팀 빌딩 · {formatDate(space.teamBuildingOpensAt)} ~{' '}
-                      {formatDate(space.teamBuildingClosesAt)}
-                    </p>
+                  <section
+                    className="team-building-overview"
+                    aria-label="팀 빌딩 일정"
+                  >
+                    <div className="team-building-status">
+                      <span className="eyebrow">팀 구성</span>
+                      <strong>
+                        <span
+                          className={`status-dot building-${space.teamBuildingStatus.toLowerCase()}`}
+                        />
+                        {buildingLabels[space.teamBuildingStatus]}
+                      </strong>
+                    </div>
+                    <dl>
+                      <div>
+                        <dt>프로젝트 기간</dt>
+                        <dd>
+                          {formatDate(space.startAt)} ~{' '}
+                          {formatDate(space.endAt)}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>팀 빌딩 기간</dt>
+                        <dd>
+                          {space.teamBuildingOpensAt &&
+                          space.teamBuildingClosesAt
+                            ? `${formatDate(space.teamBuildingOpensAt)} ~ ${formatDate(space.teamBuildingClosesAt)}`
+                            : '관리자가 아직 지정하지 않았습니다.'}
+                        </dd>
+                      </div>
+                    </dl>
                     {!buildingOpen && (
                       <p className="field-help">
                         현재 팀 생성과 가입 신청이 제한됩니다. 가입 대기는 팀
@@ -387,6 +438,28 @@ export default function SpaceWorkspace({
                       </p>
                     )}
                   </section>
+                  <div className="directory-section-heading">
+                    <div>
+                      <h2>
+                        팀 목록 <span>{teams.length}개</span>
+                      </h2>
+                      <p>
+                        {joinedTeam
+                          ? `내 소속 · ${joinedTeam.name}`
+                          : isManager
+                            ? '각 팀의 구성원과 자료를 확인하세요.'
+                            : '가입 신청 후 리더의 승인이 필요합니다.'}
+                      </p>
+                    </div>
+                    <button
+                      className="secondary-button"
+                      onClick={resource.reload}
+                      disabled={resource.loading || busy}
+                    >
+                      <Icon name="refresh" />
+                      새로고침
+                    </button>
+                  </div>
                   <ErrorNotice error={error} onRetry={resource.reload} />
                   {teams.length ? (
                     <ul
@@ -400,18 +473,22 @@ export default function SpaceWorkspace({
                           className={`team-card ${isApprovedMember(item) ? 'is-joined' : ''}`}
                           key={item.id}
                         >
-                          <span className="team-symbol" aria-hidden="true">
-                            <Icon name="users" />
-                          </span>
                           <div className="team-card-main">
                             <h2>{item.name}</h2>
                             <p className="team-meta">
-                              승인 팀원 {item.approvedMemberCount}명 ·{' '}
-                              {{
-                                APPROVED: '내 팀',
-                                PENDING: '가입 승인 대기',
-                                REJECTED: '가입 신청 반려',
-                              }[item.myMembershipStatus] || '미가입'}
+                              <span>
+                                승인 팀원 {item.approvedMemberCount}명
+                              </span>
+                              <span
+                                className={`team-membership membership-${item.myMembershipStatus?.toLowerCase() || 'none'}`}
+                              >
+                                {{
+                                  APPROVED: '내 팀',
+                                  PENDING: '가입 승인 대기',
+                                  REJECTED: '가입 신청 반려',
+                                }[item.myMembershipStatus] ||
+                                  (isManager ? '관리자 조회' : '미가입')}
+                              </span>
                             </p>
                             {!isManager &&
                               !isApprovedMember(item) &&

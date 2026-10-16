@@ -56,16 +56,12 @@ export default function SpaceGuide({
     action = ready ? '담당 작업 확인' : '팀원 확인';
     onAction = () =>
       navigate(
-        teamMenuPath(
-          space.id,
-          joinedTeam.id,
-          ready ? '작업' : '팀원 관리',
-        ),
+        teamMenuPath(space.id, joinedTeam.id, ready ? '작업' : '팀원 관리'),
       );
   } else if (pendingTeam) {
     title = `${pendingTeam.name}의 가입 승인을 기다리고 있습니다`;
     description =
-      '리더·부리더가 가입을 승인하면 팀 작업을 시작할 수 있습니다. 가입 신청만으로는 팀원이 되지 않습니다.';
+      '리더가 가입을 승인하면 팀 작업을 시작할 수 있습니다. 가입 신청만으로는 팀원이 되지 않습니다.';
     action = '가입 상태 새로 확인';
     onAction = onReload;
   } else if (buildingOpen) {
