@@ -1,0 +1,106 @@
+.deliverable-editor-form .deliverable-form-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.4fr);
+  gap: 32px;
+}
+.deliverable-editor-form .deliverable-metadata-only {
+  grid-template-columns: minmax(0, 1fr);
+}
+.deliverable-form-section {
+  display: grid;
+  align-content: start;
+  gap: 20px;
+  min-width: 0;
+}
+.deliverable-form-section .form-section-title {
+  margin: 0;
+  padding-bottom: 16px;
+  font-size: var(--text-subheading);
+  font-weight: 600;
+}
+.deliverable-form-section > .form-field {
+  margin: 0;
+}
+.deliverable-content-section {
+  padding-left: 32px;
+  border-left: 1px solid var(--border);
+}
+.deliverable-form-section textarea[name='text'] {
+  min-height: 360px;
+  line-height: 1.8;
+  resize: vertical;
+}
+.deliverable-form-section .character-count {
+  margin: -12px 0 0;
+}
+.deliverable-edit-context {
+  display: grid;
+  gap: 12px;
+  padding-top: 16px;
+  margin: 0;
+  border-top: 1px solid var(--border);
+  font-size: var(--text-support);
+}
+.deliverable-edit-context > div {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 12px;
+}
+.deliverable-edit-context dt {
+  color: var(--text-muted);
+}
+.deliverable-edit-context dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.deliverable-form-section > .field-help {
+  margin: -8px 0 0;
+}
+.deliverable-current-file,
+.deliverable-content-section .file-selection {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface-secondary);
+}
+.deliverable-content-section
+  :is(.deliverable-current-file, .file-selection)
+  strong {
+  font-size: var(--text-body);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.deliverable-content-section :is(.deliverable-current-file, .file-selection) p {
+  margin: 0;
+  font-size: var(--text-support);
+  line-height: 1.7;
+}
+.deliverable-content-section .file-selection {
+  background: var(--surface);
+}
+.deliverable-content-section .file-selection button {
+  justify-self: start;
+}
+.deliverable-current-file .eyebrow,
+.deliverable-content-section .file-selection .eyebrow {
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+}
+@media (max-width: 900px) {
+  .deliverable-editor-form .deliverable-form-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+  }
+  .deliverable-content-section {
+    padding: 24px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+  .deliverable-form-section textarea[name='text'] {
+    min-height: 240px;
+  }
+}
