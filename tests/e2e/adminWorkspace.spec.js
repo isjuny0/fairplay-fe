@@ -20,6 +20,16 @@ for (const width of [1440, 390]) {
       name: '조회 범위의 작업 현황',
       exact: true,
     });
+    const attention = page.getByRole('heading', {
+      name: '먼저 확인할 팀',
+      exact: true,
+    });
+    const teamOverview = page.getByRole('heading', {
+      name: '팀별 진행 현황',
+      exact: true,
+    });
+    await expect(attention).toBeVisible();
+    await expect(teamOverview).toBeVisible();
     await expect(summary.getByText('2건', { exact: true })).toHaveCount(3);
     if (width > 720)
       await page
@@ -32,6 +42,19 @@ for (const width of [1440, 390]) {
       page.getByRole('heading', { name: '삼위일체 현황', exact: true }),
     ).toBeVisible();
     await expect(summary.getByText('1건', { exact: true })).toHaveCount(3);
+    await expect(attention).toHaveCount(0);
+    await expect(teamOverview).toHaveCount(0);
+    const teamInfo = page.getByRole('region', {
+      name: '선택한 팀 정보',
+      exact: true,
+    });
+    await expect(teamInfo).toContainText('진행률 · 예상 작업량');
+    await expect(
+      teamInfo.getByRole('button', { name: /리포트 .* 화면/ }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: '평가 제출 현황', exact: true }),
+    ).toBeVisible();
     await expect(
       page.getByText('스페이스 전체 · 2팀 · 팀 미소속 0명', { exact: true }),
     ).toBeVisible();
@@ -43,10 +66,19 @@ for (const width of [1440, 390]) {
     ).toBeVisible();
     await page.reload();
     await expect(page.getByLabel('조회할 팀')).toHaveValue('1');
+    await expect(attention).toHaveCount(0);
+    await expect(teamOverview).toHaveCount(0);
+    await teamInfo.getByRole('button', { name: /리포트 .* 화면/ }).click();
+    await expect(page).toHaveURL(/\/reports\?teamId=1/);
+    await page.goBack();
+    await expect(page.getByLabel('조회할 팀')).toHaveValue('1');
     await page
       .getByRole('button', { name: '전체 팀 보기', exact: true })
       .click();
     await expect(page.getByLabel('조회할 팀')).toHaveValue('');
+    await expect(attention).toBeVisible();
+    await expect(teamOverview).toBeVisible();
+    await expect(teamInfo).toHaveCount(0);
     expect(new URL(page.url()).searchParams.has('teamId')).toBe(false);
     await expect(
       page.getByRole('heading', { name: '전체 팀 현황', exact: true }),

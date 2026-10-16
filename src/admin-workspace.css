@@ -94,6 +94,29 @@
   align-items: center;
   gap: 12px;
 }
+.dashboard-team-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 32px;
+  margin: 16px 0;
+}
+.dashboard-team-facts dt {
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+}
+.dashboard-team-facts dd {
+  margin: 6px 0 0;
+  font-size: var(--text-body);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.dashboard-team-report {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: var(--text-support);
+}
 .dashboard-attention-list {
   display: grid;
 }

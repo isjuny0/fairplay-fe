@@ -19,6 +19,9 @@ export default function ManagerDashboard({ context }) {
     [context.space.id, teamId],
   );
   const dashboard = resource.data;
+  const selectedTeam = dashboard?.teams.find(
+    (team) => String(team.teamId) === teamId,
+  );
   const selectedTeamName = context.teamContexts.find(
     ({ team }) => String(team.id) === teamId,
   )?.team.name;
@@ -114,44 +117,110 @@ export default function ManagerDashboard({ context }) {
               </div>
             </section>
             <div className="dashboard-attention-grid">
-              <section className="dashboard-attention">
-                <h2>먼저 확인할 팀</h2>
-                <p className="field-help">
-                  마감 지연·작업 정체·승인 대기를 확인하고 필요한 지원을
-                  준비하세요.
-                </p>
-                <div className="dashboard-attention-list">
-                  {dashboard.teams
-                    .filter(
+              {teamId ? (
+                selectedTeam && (
+                  <section
+                    className="dashboard-selected-team"
+                    aria-label="선택한 팀 정보"
+                  >
+                    <h2>팀 정보</h2>
+                    <p className="field-help">
+                      {selectedTeam.leaderName} · 리더 · 팀원{' '}
+                      {selectedTeam.approvedMemberCount}명
+                    </p>
+                    {selectedTeam.hasMinimumMembers === false && (
+                      <p className="field-help">팀원 2명 이상이 필요합니다.</p>
+                    )}
+                    <dl className="dashboard-team-facts">
+                      <div>
+                        <dt>진행률 · 예상 작업량</dt>
+                        <dd>
+                          {formatPercent(
+                            selectedTeam.completionRate,
+                            '작업 없음',
+                          )}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>할 일 / 진행 중</dt>
+                        <dd>
+                          {selectedTeam.todoTaskCount} /{' '}
+                          {selectedTeam.inProgressTaskCount}건
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>산출물</dt>
+                        <dd>{selectedTeam.deliverableCount}개</dd>
+                      </div>
+                    </dl>
+                    <p className="field-help">
+                      진행률은 예상 작업량을 반영하며 실제 수행 시간이나 최종
+                      기여도 점수가 아닙니다.
+                    </p>
+                    <div className="dashboard-team-report">
+                      <span>
+                        리포트 ·{' '}
+                        {selectedTeam.reportStatus === 'PUBLISHED'
+                          ? '공개'
+                          : selectedTeam.reportStatus === 'UNPUBLISHED'
+                            ? '비공개'
+                            : '미생성'}
+                      </span>
+                      <button
+                        className="secondary-button"
+                        onClick={() =>
+                          navigate(
+                            `${spacePath(context.space.id)}/reports?teamId=${selectedTeam.teamId}`,
+                          )
+                        }
+                      >
+                        {selectedTeam.reportId == null
+                          ? '리포트 생성 화면'
+                          : '리포트 검토 화면'}
+                      </button>
+                    </div>
+                  </section>
+                )
+              ) : (
+                <section className="dashboard-attention">
+                  <h2>먼저 확인할 팀</h2>
+                  <p className="field-help">
+                    마감 지연·작업 정체·승인 대기를 확인하고 필요한 지원을
+                    준비하세요.
+                  </p>
+                  <div className="dashboard-attention-list">
+                    {dashboard.teams
+                      .filter(
+                        (team) =>
+                          team.overdueTaskCount ||
+                          team.staleTaskCount ||
+                          team.pendingApprovalCount,
+                      )
+                      .map((team) => (
+                        <button
+                          className="dashboard-team-link"
+                          key={team.teamId}
+                          aria-pressed={teamId === String(team.teamId)}
+                          onClick={() => selectTeam(team.teamId)}
+                        >
+                          <strong>{team.teamName}</strong>
+                          <span>
+                            지연 {team.overdueTaskCount} · 정체{' '}
+                            {team.staleTaskCount} · 승인 대기{' '}
+                            {team.pendingApprovalCount}
+                          </span>
+                          <Icon name="arrow" />
+                        </button>
+                      ))}
+                    {!dashboard.teams.some(
                       (team) =>
                         team.overdueTaskCount ||
                         team.staleTaskCount ||
                         team.pendingApprovalCount,
-                    )
-                    .map((team) => (
-                      <button
-                        className="dashboard-team-link"
-                        key={team.teamId}
-                        aria-pressed={teamId === String(team.teamId)}
-                        onClick={() => selectTeam(team.teamId)}
-                      >
-                        <strong>{team.teamName}</strong>
-                        <span>
-                          지연 {team.overdueTaskCount} · 정체{' '}
-                          {team.staleTaskCount} · 승인 대기{' '}
-                          {team.pendingApprovalCount}
-                        </span>
-                        <Icon name="arrow" />
-                      </button>
-                    ))}
-                  {!dashboard.teams.some(
-                    (team) =>
-                      team.overdueTaskCount ||
-                      team.staleTaskCount ||
-                      team.pendingApprovalCount,
-                  ) && <p>현재 지연·정체·승인 대기 작업이 없습니다.</p>}
-                </div>
-              </section>
+                    ) && <p>현재 지연·정체·승인 대기 작업이 없습니다.</p>}
+                  </div>
+                </section>
+              )}
               <section className="dashboard-submissions">
                 <div className="section-heading">
                   <h2>평가 제출 현황</h2>
@@ -190,155 +259,157 @@ export default function ManagerDashboard({ context }) {
                 )}
               </section>
             </div>
-            <section className="panel dashboard-team-overview">
-              <div className="section-heading">
-                <div>
-                  <h2>팀별 진행 현황</h2>
-                  <p>
-                    예상 작업량을 반영한 팀 진행률입니다. 실제 수행 시간이나
-                    최종 기여도 점수가 아닙니다.
-                  </p>
-                </div>
-              </div>
-              {dashboard.teams.length ? (
-                <div className="table-scroll desktop-data-table">
-                  <table className="data-table dashboard-teams-table">
-                    <caption className="sr-only">팀별 진행 현황</caption>
-                    <thead>
-                      <tr>
-                        <th>팀</th>
-                        <th>인원</th>
-                        <th>할 일</th>
-                        <th>진행</th>
-                        <th>승인 대기</th>
-                        <th>팀 전체 진행률</th>
-                        <th>지연 / 정체</th>
-                        <th>산출물</th>
-                        <th>리포트</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dashboard.teams.map((team) => (
-                        <tr key={team.teamId}>
-                          <th scope="row">
-                            <button
-                              className="table-name-button"
-                              aria-label={`${team.teamName} 현황 보기`}
-                              onClick={() => selectTeam(team.teamId)}
-                            >
-                              {team.teamName}
-                            </button>
-                            <small>{team.leaderName} · 리더</small>
-                            {team.hasMinimumMembers === false && (
-                              <small>팀원 2명 이상 필요</small>
-                            )}
-                          </th>
-                          <td>{team.approvedMemberCount}명</td>
-                          <td>{team.todoTaskCount}</td>
-                          <td>{team.inProgressTaskCount}</td>
-                          <td>{team.pendingApprovalCount}</td>
-                          <td>
-                            {formatPercent(team.completionRate, '작업 없음')}
-                          </td>
-                          <td>
-                            {team.overdueTaskCount} / {team.staleTaskCount}
-                          </td>
-                          <td>{team.deliverableCount}</td>
-                          <td>
-                            <span className="dashboard-report-state">
-                              {team.reportStatus === 'PUBLISHED'
-                                ? '공개'
-                                : team.reportStatus === 'UNPUBLISHED'
-                                  ? '비공개'
-                                  : '미생성'}
-                            </span>
-                            <button
-                              className="secondary-button"
-                              onClick={() =>
-                                navigate(
-                                  `${spacePath(context.space.id)}/reports?teamId=${team.teamId}`,
-                                )
-                              }
-                            >
-                              {team.reportId == null
-                                ? '리포트 생성 화면'
-                                : '리포트 검토 화면'}
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <EmptyState>생성된 팀이 없습니다.</EmptyState>
-              )}
-              <div className="mobile-data-cards">
-                {dashboard.teams.map((team) => (
-                  <article key={team.teamId}>
-                    <h3>{team.teamName}</h3>
-                    <p className="field-help">
-                      {team.leaderName} · 리더 · 팀원 {team.approvedMemberCount}
-                      명
-                    </p>
-                    <dl className="card-facts">
-                      <div>
-                        <dt>진행률 · 예상 작업량</dt>
-                        <dd>
-                          {formatPercent(team.completionRate, '작업 없음')}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>승인 대기</dt>
-                        <dd>{team.pendingApprovalCount}건</dd>
-                      </div>
-                      <div>
-                        <dt>마감 지연 / 장기 정체</dt>
-                        <dd>
-                          {team.overdueTaskCount} / {team.staleTaskCount}건
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>할 일 / 진행 중</dt>
-                        <dd>
-                          {team.todoTaskCount} / {team.inProgressTaskCount}건
-                        </dd>
-                      </div>
-                    </dl>
+            {!teamId && (
+              <section className="panel dashboard-team-overview">
+                <div className="section-heading">
+                  <div>
+                    <h2>팀별 진행 현황</h2>
                     <p>
-                      리포트 ·{' '}
-                      {team.reportStatus === 'PUBLISHED'
-                        ? '공개'
-                        : team.reportStatus === 'UNPUBLISHED'
-                          ? '비공개'
-                          : '미생성'}
+                      예상 작업량을 반영한 팀 진행률입니다. 실제 수행 시간이나
+                      최종 기여도 점수가 아닙니다.
                     </p>
-                    <button
-                      className="secondary-button"
-                      onClick={() =>
-                        navigate(
-                          `${spacePath(context.space.id)}/reports?teamId=${team.teamId}`,
-                        )
-                      }
-                    >
-                      {team.reportId == null
-                        ? '리포트 생성 화면'
-                        : '리포트 검토 화면'}
-                    </button>
-                    <details>
-                      <summary>산출물·팀 참여 상태</summary>
-                      <p>
-                        산출물 {team.deliverableCount}개 · 가입 대기{' '}
-                        {team.pendingApplications}명
+                  </div>
+                </div>
+                {dashboard.teams.length ? (
+                  <div className="table-scroll desktop-data-table">
+                    <table className="data-table dashboard-teams-table">
+                      <caption className="sr-only">팀별 진행 현황</caption>
+                      <thead>
+                        <tr>
+                          <th>팀</th>
+                          <th>인원</th>
+                          <th>할 일</th>
+                          <th>진행</th>
+                          <th>승인 대기</th>
+                          <th>팀 전체 진행률</th>
+                          <th>지연 / 정체</th>
+                          <th>산출물</th>
+                          <th>리포트</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dashboard.teams.map((team) => (
+                          <tr key={team.teamId}>
+                            <th scope="row">
+                              <button
+                                className="table-name-button"
+                                aria-label={`${team.teamName} 현황 보기`}
+                                onClick={() => selectTeam(team.teamId)}
+                              >
+                                {team.teamName}
+                              </button>
+                              <small>{team.leaderName} · 리더</small>
+                              {team.hasMinimumMembers === false && (
+                                <small>팀원 2명 이상 필요</small>
+                              )}
+                            </th>
+                            <td>{team.approvedMemberCount}명</td>
+                            <td>{team.todoTaskCount}</td>
+                            <td>{team.inProgressTaskCount}</td>
+                            <td>{team.pendingApprovalCount}</td>
+                            <td>
+                              {formatPercent(team.completionRate, '작업 없음')}
+                            </td>
+                            <td>
+                              {team.overdueTaskCount} / {team.staleTaskCount}
+                            </td>
+                            <td>{team.deliverableCount}</td>
+                            <td>
+                              <span className="dashboard-report-state">
+                                {team.reportStatus === 'PUBLISHED'
+                                  ? '공개'
+                                  : team.reportStatus === 'UNPUBLISHED'
+                                    ? '비공개'
+                                    : '미생성'}
+                              </span>
+                              <button
+                                className="secondary-button"
+                                onClick={() =>
+                                  navigate(
+                                    `${spacePath(context.space.id)}/reports?teamId=${team.teamId}`,
+                                  )
+                                }
+                              >
+                                {team.reportId == null
+                                  ? '리포트 생성 화면'
+                                  : '리포트 검토 화면'}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <EmptyState>생성된 팀이 없습니다.</EmptyState>
+                )}
+                <div className="mobile-data-cards">
+                  {dashboard.teams.map((team) => (
+                    <article key={team.teamId}>
+                      <h3>{team.teamName}</h3>
+                      <p className="field-help">
+                        {team.leaderName} · 리더 · 팀원{' '}
+                        {team.approvedMemberCount}명
                       </p>
-                      {!team.hasMinimumMembers && (
-                        <p>팀원 2명 이상이 필요합니다.</p>
-                      )}
-                    </details>
-                  </article>
-                ))}
-              </div>
-            </section>
+                      <dl className="card-facts">
+                        <div>
+                          <dt>진행률 · 예상 작업량</dt>
+                          <dd>
+                            {formatPercent(team.completionRate, '작업 없음')}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>승인 대기</dt>
+                          <dd>{team.pendingApprovalCount}건</dd>
+                        </div>
+                        <div>
+                          <dt>마감 지연 / 장기 정체</dt>
+                          <dd>
+                            {team.overdueTaskCount} / {team.staleTaskCount}건
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>할 일 / 진행 중</dt>
+                          <dd>
+                            {team.todoTaskCount} / {team.inProgressTaskCount}건
+                          </dd>
+                        </div>
+                      </dl>
+                      <p>
+                        리포트 ·{' '}
+                        {team.reportStatus === 'PUBLISHED'
+                          ? '공개'
+                          : team.reportStatus === 'UNPUBLISHED'
+                            ? '비공개'
+                            : '미생성'}
+                      </p>
+                      <button
+                        className="secondary-button"
+                        onClick={() =>
+                          navigate(
+                            `${spacePath(context.space.id)}/reports?teamId=${team.teamId}`,
+                          )
+                        }
+                      >
+                        {team.reportId == null
+                          ? '리포트 생성 화면'
+                          : '리포트 검토 화면'}
+                      </button>
+                      <details>
+                        <summary>산출물·팀 참여 상태</summary>
+                        <p>
+                          산출물 {team.deliverableCount}개 · 가입 대기{' '}
+                          {team.pendingApplications}명
+                        </p>
+                        {!team.hasMinimumMembers && (
+                          <p>팀원 2명 이상이 필요합니다.</p>
+                        )}
+                      </details>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            )}
             {dashboard.teams
               .filter((team) => team.members)
               .map((team) => (
