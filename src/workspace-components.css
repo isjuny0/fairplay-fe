@@ -293,6 +293,47 @@
 .approval-table th:first-child {
   width: 27%;
 }
+.approval-list-toolbar > label {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+  font-size: var(--text-support);
+  font-weight: 500;
+}
+.approval-list-toolbar select {
+  max-width: 180px;
+}
+.approval-list-toolbar .approval-search-field {
+  flex: 1 1 240px;
+  max-width: 340px;
+}
+.approval-search-field input {
+  flex: none;
+  min-width: 0;
+  width: 100%;
+  min-height: var(--control-height);
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+  margin: 0;
+}
+.approval-list-toolbar > button {
+  margin-left: auto;
+  align-self: flex-end;
+}
+.approval-list-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
 .approval-table th:nth-child(2) {
   width: 11%;
 }
