@@ -1265,9 +1265,9 @@ test('승인 상태 필터와 산출물 작업 범위·페이지는 주소에서
 }) => {
   await workspace(page);
   await page.goto('/spaces/1/teams/1/approvals?status=REJECTED');
-  await expect(page.getByRole('main').getByRole('combobox')).toHaveValue('REJECTED');
+  await expect(page.getByLabel('요청 상태')).toHaveValue('REJECTED');
   await page.reload();
-  await expect(page.getByRole('main').getByRole('combobox')).toHaveValue('REJECTED');
+  await expect(page.getByLabel('요청 상태')).toHaveValue('REJECTED');
   await page.goto('/spaces/1/teams/1/deliverables?taskId=10&page=2');
   await expect(page.getByLabel('작업별 조회')).toHaveValue('10');
   await expect(page.getByText('3 페이지', { exact: true })).toBeVisible();
