@@ -1,43 +1,63 @@
-import { apiRequest } from './client.js';
+import { apiRequest } from "./client.js";
 export const listDeliverables = (
   teamId,
-  { taskId, page = 0, size = 20 } = {},
+  {
+    taskId,
+    page = 0,
+    size = 20,
+    q,
+    type,
+    category,
+    authorId,
+    unlinkedOnly,
+    sort,
+  } = {},
 ) => {
   const query = new URLSearchParams({ page, size });
-  if (taskId != null) query.set('taskId', taskId);
+  if (taskId != null) query.set("taskId", taskId);
+  for (const [key, value] of Object.entries({
+    q,
+    type,
+    category,
+    authorId,
+    sort,
+  })) {
+    if (value) query.set(key, value);
+  }
+  if (unlinkedOnly) query.set("unlinkedOnly", "true");
   return apiRequest(`/api/teams/${teamId}/deliverables?${query}`);
 };
 export const createDeliverable = (teamId, body) =>
-  apiRequest(`/api/teams/${teamId}/deliverables`, { method: 'POST', body });
+  apiRequest(`/api/teams/${teamId}/deliverables`, { method: "POST", body });
 export const uploadDeliverable = (teamId, input, file) => {
   const body = new FormData();
   body.append(
-    'metadata',
-    new Blob([JSON.stringify(input)], { type: 'application/json' }),
+    "metadata",
+    new Blob([JSON.stringify(input)], { type: "application/json" }),
   );
-  body.append('file', file);
+  body.append("file", file);
   return apiRequest(`/api/teams/${teamId}/deliverables/files`, {
-    method: 'POST',
+    method: "POST",
     body,
   });
 };
 export const updateDeliverable = (id, metadata, file) => {
   if (!file)
     return apiRequest(`/api/deliverables/${id}`, {
-      method: 'PATCH',
+      method: "PATCH",
       body: metadata,
     });
   const body = new FormData();
   body.append(
-    'metadata',
-    new Blob([JSON.stringify(metadata)], { type: 'application/json' }),
+    "metadata",
+    new Blob([JSON.stringify(metadata)], { type: "application/json" }),
   );
-  body.append('file', file);
-  return apiRequest(`/api/deliverables/${id}`, { method: 'PATCH', body });
+  body.append("file", file);
+  return apiRequest(`/api/deliverables/${id}`, { method: "PATCH", body });
 };
 export const deleteDeliverable = (id, expectedVersion) =>
   apiRequest(`/api/deliverables/${id}?expectedVersion=${expectedVersion}`, {
-    method: 'DELETE',
+    method: "DELETE",
   });
 export const downloadDeliverable = (id) =>
-  apiRequest(`/api/deliverables/${id}/file`, { responseType: 'blob' });
+  apiRequest(`/api/deliverables/${id}/file`, { responseType: "blob" });
