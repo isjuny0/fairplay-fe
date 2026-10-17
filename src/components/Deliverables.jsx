@@ -459,6 +459,7 @@ export default function Deliverables({
   const isCollection = taskId == null;
   const query = isCollection ? searchParams.get("q") || "" : "";
   const [queryInput, setQueryInput] = useState(query);
+  const searchToolbar = useRef(null);
   useEffect(() => setQueryInput(query), [query]);
   const type =
     isCollection && ["TEXT", "FILE"].includes(searchParams.get("type"))
@@ -524,6 +525,33 @@ export default function Deliverables({
       else if (value !== "ALL") next.set("taskId", value);
       return next;
     });
+  const appliedFilters = [
+    query && { key: "q", label: "검색", value: query },
+    scope !== "ALL" && {
+      key: "scope",
+      label: "작업",
+      value:
+        scope === "COMMON"
+          ? "팀 공용"
+          : tasks.find((task) => String(task.id) === scope)?.title ||
+            `작업 #${scope}`,
+    },
+    type && {
+      key: "type",
+      label: "유형",
+      value: type === "FILE" ? "파일" : "문서",
+    },
+    category && {
+      key: "category",
+      label: "분류",
+      value: categoryLabels[category],
+    },
+    authorId && {
+      key: "authorId",
+      label: "등록자",
+      value: memberName(members, authorId),
+    },
+  ].filter(Boolean);
   const selectedTaskId =
     taskId ?? (["ALL", "COMMON"].includes(scope) ? undefined : Number(scope));
   const searchOptions = {
@@ -661,54 +689,77 @@ export default function Deliverables({
           )}
         </div>
       </div>
-      <div
-        className={`collection-toolbar ${isCollection ? "deliverable-search-toolbar" : ""}`}
-      >
-        {isCollection && (
-          <form
-            role="search"
-            className="deliverable-query-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              setSearchOption("q", queryInput.trim());
-            }}
-          >
-            <label htmlFor="deliverable-search">산출물 검색</label>
-            <div>
-              <input
-                id="deliverable-search"
-                type="search"
-                placeholder="제목·원본 파일명"
-                maxLength={100}
-                value={queryInput}
-                onChange={(event) => setQueryInput(event.target.value)}
-              />
-              <button className="secondary-button" type="submit">
-                검색
-              </button>
-            </div>
-          </form>
-        )}
-        {isCollection && (
-          <Field label="작업별 조회">
-            <select
-              value={scope}
-              onChange={(event) => setScope(event.target.value)}
+      {isCollection ? (
+        <div className="deliverable-search-toolbar" ref={searchToolbar}>
+          <div className="deliverable-search-primary">
+            <form
+              role="search"
+              className="deliverable-query-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                setSearchOption("q", queryInput.trim());
+              }}
             >
-              <option value="ALL">전체 산출물</option>
-              <option value="COMMON">팀 공용 산출물</option>
-              {tasks.map((task) => (
-                <option key={task.id} value={task.id}>
-                  {task.title}
-                </option>
-              ))}
-            </select>
-          </Field>
-        )}
-        {isCollection && (
-          <>
-            <Field label="산출물 유형">
+              <label className="sr-only" htmlFor="deliverable-search">
+                산출물 검색
+              </label>
+              <div className="deliverable-query-input">
+                <Icon name="search" />
+                <input
+                  id="deliverable-search"
+                  type="search"
+                  placeholder="제목 또는 원본 파일명으로 검색"
+                  maxLength={100}
+                  value={queryInput}
+                  onChange={(event) => setQueryInput(event.target.value)}
+                />
+                <button className="secondary-button" type="submit">
+                  검색
+                </button>
+              </div>
+            </form>
+            <label className="deliverable-sort-field">
+              <span>정렬</span>
               <select
+                aria-label="산출물 정렬"
+                value={sort}
+                onChange={(event) =>
+                  setSearchOption("sort", event.target.value)
+                }
+              >
+                <option value="">최근 등록 순</option>
+                <option value="UPDATED_DESC">최근 수정 순</option>
+                <option value="TITLE_ASC">이름 순</option>
+              </select>
+            </label>
+          </div>
+          <div className="deliverable-filter-row">
+            <label
+              className="deliverable-filter-field"
+              data-active={scope !== "ALL"}
+            >
+              <span>작업 범위</span>
+              <select
+                aria-label="작업별 조회"
+                value={scope}
+                onChange={(event) => setScope(event.target.value)}
+              >
+                <option value="ALL">전체 산출물</option>
+                <option value="COMMON">팀 공용 산출물</option>
+                {tasks.map((task) => (
+                  <option key={task.id} value={task.id}>
+                    {task.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label
+              className="deliverable-filter-field"
+              data-active={Boolean(type)}
+            >
+              <span>유형</span>
+              <select
+                aria-label="산출물 유형"
                 value={type}
                 onChange={(event) =>
                   setSearchOption("type", event.target.value)
@@ -718,9 +769,14 @@ export default function Deliverables({
                 <option value="TEXT">문서</option>
                 <option value="FILE">파일</option>
               </select>
-            </Field>
-            <Field label="산출물 분류">
+            </label>
+            <label
+              className="deliverable-filter-field"
+              data-active={Boolean(category)}
+            >
+              <span>분류</span>
               <select
+                aria-label="산출물 분류"
                 value={category}
                 onChange={(event) =>
                   setSearchOption("category", event.target.value)
@@ -733,9 +789,14 @@ export default function Deliverables({
                   </option>
                 ))}
               </select>
-            </Field>
-            <Field label="산출물 등록자">
+            </label>
+            <label
+              className="deliverable-filter-field"
+              data-active={Boolean(authorId)}
+            >
+              <span>등록자</span>
               <select
+                aria-label="산출물 등록자"
                 value={authorId}
                 onChange={(event) =>
                   setSearchOption("authorId", event.target.value)
@@ -754,53 +815,80 @@ export default function Deliverables({
                     </option>
                   )}
               </select>
-            </Field>
-            <Field label="산출물 정렬">
-              <select
-                value={sort}
-                onChange={(event) =>
-                  setSearchOption("sort", event.target.value)
-                }
-              >
-                <option value="">최근 등록 순</option>
-                <option value="UPDATED_DESC">최근 수정 순</option>
-                <option value="TITLE_ASC">이름 순</option>
-              </select>
-            </Field>
-          </>
-        )}
-        {!isCollection && (
-          <>
-            <span className="collection-count" role="status">
-              {!resource.loading &&
-                !resource.error &&
-                `현재 페이지 ${resource.data?.length || 0}건`}
-            </span>
-            <button
-              className="secondary-button"
-              disabled={resource.loading}
-              onClick={resource.reload}
+            </label>
+          </div>
+          {appliedFilters.length > 0 && (
+            <div
+              className="deliverable-applied-filters"
+              role="group"
+              aria-label="적용된 조회 조건"
             >
-              <Icon name="refresh" />
-              새로고침
-            </button>
-          </>
-        )}
-      </div>
+              <span className="deliverable-filter-caption">적용 중</span>
+              {appliedFilters.map((filter) => (
+                <button
+                  key={filter.key}
+                  className="deliverable-filter-chip"
+                  title={`${filter.label}: ${filter.value}`}
+                  aria-label={`${filter.label}: ${filter.value} 조건 해제`}
+                  onClick={() => {
+                    const controlLabels = {
+                      q: "산출물 검색",
+                      scope: "작업별 조회",
+                      type: "산출물 유형",
+                      category: "산출물 분류",
+                      authorId: "산출물 등록자",
+                    };
+                    const selector =
+                      filter.key === "q"
+                        ? "input"
+                        : `select[aria-label="${controlLabels[filter.key]}"]`;
+                    searchToolbar.current?.querySelector(selector)?.focus();
+                    if (filter.key === "scope") setScope("ALL");
+                    else setSearchOption(filter.key, "");
+                  }}
+                >
+                  <span className="deliverable-chip-label">{filter.label}</span>
+                  <span className="deliverable-chip-value">{filter.value}</span>
+                  <Icon name="close" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="collection-toolbar">
+          <span className="collection-count" role="status">
+            {!resource.loading &&
+              !resource.error &&
+              `현재 페이지 ${resource.data?.length || 0}건`}
+          </span>
+          <button
+            className="secondary-button"
+            disabled={resource.loading}
+            onClick={resource.reload}
+          >
+            <Icon name="refresh" />
+            새로고침
+          </button>
+        </div>
+      )}
       {isCollection && (
         <div className="deliverable-search-scope">
           <div>
-            <p className="field-help">팀 전체 산출물에 조건을 적용합니다.</p>
+            <h2>자료 목록</h2>
             {!resource.loading && !resource.error && (
-              <span className="field-help" role="status">
+              <span role="status">
                 현재 페이지 {resource.data?.length || 0}건
               </span>
             )}
           </div>
-          {hasSearch && (
-            <button className="secondary-button" onClick={clearSearch}>
+          {hasSearch ? (
+            <button className="ghost-button" onClick={clearSearch}>
+              <Icon name="refresh" />
               조회 조건 초기화
             </button>
+          ) : (
+            <p className="field-help">팀 전체 산출물에서 조회합니다.</p>
           )}
         </div>
       )}
