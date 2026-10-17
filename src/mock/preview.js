@@ -1,4 +1,5 @@
 import { reviewerCandidates } from '../lib/domain.js';
+import { searchPreviewDeliverables } from './deliverableSearch.js';
 import { previewAiReview, invalidateReview } from './aiReviews.js';
 import {
   previewUsers,
@@ -340,14 +341,7 @@ export async function previewRequest(
       result = task;
     } else if (parts[3] === 'deliverables') {
       if (method === 'GET') {
-        const taskId = Number(url.searchParams.get('taskId'));
-        const size = Number(url.searchParams.get('size') || 20);
-        return entry.deliverables
-          .filter((item) => !taskId || item.taskId === taskId)
-          .slice(
-            Number(url.searchParams.get('page') || 0) * size,
-            (Number(url.searchParams.get('page') || 0) + 1) * size,
-          );
+        return searchPreviewDeliverables(entry.deliverables, url.searchParams);
       }
       let fields = { ...body, type: 'TEXT' };
       if (body instanceof FormData) {

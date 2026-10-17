@@ -18,6 +18,7 @@ import './task-editor.css';
 import './deliverable-editor.css';
 import './manager-peer-review.css';
 import './resource-states.css';
+import './deliverable-search.css';
 
 const router = createBrowserRouter([
   {

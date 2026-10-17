@@ -1,10 +1,10 @@
-import Icon from './Icon.jsx';
+import Icon from "./Icon.jsx";
 import {
   categoryLabels,
   deliverablePermissions,
   formatDate,
   memberName,
-} from '../lib/domain.js';
+} from "../lib/domain.js";
 
 export default function DeliverableTable({
   deliverables,
@@ -56,7 +56,12 @@ export default function DeliverableTable({
                       className="collection-title-button"
                       onClick={() => onOpen(deliverable.id)}
                     >
-                      <Icon name="file" />
+                      <span
+                        className="deliverable-file-mark"
+                        aria-hidden="true"
+                      >
+                        <Icon name="file" />
+                      </span>
                       <span>{deliverable.title}</span>
                     </button>
                   </h3>
@@ -71,22 +76,29 @@ export default function DeliverableTable({
                 </th>
                 <td>
                   <span className="collection-type">
-                    {deliverable.type === 'FILE' ? '파일' : '문서'}
+                    {deliverable.type === "FILE" ? "파일" : "문서"}
                   </span>
                   <small>
                     {categoryLabels[deliverable.category] ||
                       {
-                        RESEARCH: '조사·분석',
-                        PRESENTATION: '발표',
-                        OPERATION: '행사·운영',
+                        RESEARCH: "조사·분석",
+                        PRESENTATION: "발표",
+                        OPERATION: "행사·운영",
                       }[deliverable.category] ||
                       deliverable.category}
                   </small>
                 </td>
                 <td className="collection-task-cell">
-                  <span title={taskMap.get(deliverable.taskId)?.title}>
+                  <span
+                    className={
+                      deliverable.taskId == null
+                        ? "deliverable-common-label"
+                        : ""
+                    }
+                    title={taskMap.get(deliverable.taskId)?.title}
+                  >
                     {deliverable.taskId == null
-                      ? '팀 공용'
+                      ? "팀 공용"
                       : taskMap.get(deliverable.taskId)?.title ||
                         `작업 #${deliverable.taskId}`}
                   </span>
@@ -99,17 +111,19 @@ export default function DeliverableTable({
                 </td>
                 <td>
                   <div className="collection-actions">
-                    {deliverable.type === 'FILE' && (
+                    {deliverable.type === "FILE" && (
                       <button
-                        className="secondary-button"
+                        className="ghost-button deliverable-download"
+                        aria-label="파일 다운로드"
+                        title="파일 다운로드"
                         onClick={() => onDownload(deliverable)}
                       >
-                        파일 다운로드
+                        <Icon name="download" />
                       </button>
                     )}
                     {permissions.metadata && (
                       <button
-                        className="secondary-button"
+                        className="ghost-button"
                         disabled={busy}
                         onClick={() => {
                           onEdit(deliverable);
@@ -129,7 +143,7 @@ export default function DeliverableTable({
                     )}
                     {!permissions.metadata &&
                       !permissions.remove &&
-                      deliverable.type !== 'FILE' && (
+                      deliverable.type !== "FILE" && (
                         <span className="field-help">조회만 가능</span>
                       )}
                   </div>

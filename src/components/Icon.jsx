@@ -11,8 +11,11 @@ import {
   Plus,
   RefreshCw,
   SlidersHorizontal,
+  Search,
+  X,
+  Download,
   Users,
-} from 'lucide-react';
+} from "lucide-react";
 
 const icons = {
   grid: LayoutGrid,
@@ -28,9 +31,12 @@ const icons = {
   clock: Clock3,
   calendar: CalendarDays,
   refresh: RefreshCw,
+  search: Search,
+  close: X,
+  download: Download,
 };
 
-export default function Icon({ name, className = '' }) {
+export default function Icon({ name, className = "" }) {
   const LucideIcon = icons[name];
   return (
     <LucideIcon
