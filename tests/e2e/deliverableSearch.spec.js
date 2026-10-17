@@ -98,6 +98,47 @@ test("다른 페이지의 원본 파일명을 서버 검색으로 찾아 조건�
   expect(new URL(page.url()).search).toBe("");
 });
 
+test("적용된 조건을 개별 해제해도 다른 조건·정렬을 유지하고 입력으로 초점을 돌린다", async ({
+  page,
+}) => {
+  await fixture(page);
+  const query = new URLSearchParams({
+    q: "policy",
+    unlinkedOnly: "true",
+    type: "FILE",
+    category: "POLICY",
+    authorId: members[0].userId,
+    sort: "TITLE_ASC",
+  });
+  await page.goto(`/spaces/1/teams/1/deliverables?${query}`);
+  await expect(rows(page)).toHaveCount(1);
+  const filters = page.getByRole("group", { name: "적용된 조회 조건" });
+  await expect(filters.getByRole("button")).toHaveCount(5);
+  const steps = [
+    ["검색: policy 조건 해제", "산출물 검색", "q"],
+    ["작업: 팀 공용 조건 해제", "작업별 조회", "unlinkedOnly"],
+    ["유형: 파일 조건 해제", "산출물 유형", "type"],
+    ["분류: 정책 조건 해제", "산출물 분류", "category"],
+    [`등록자: ${members[0].name} 조건 해제`, "산출물 등록자", "authorId"],
+  ];
+  for (const [button, control, key] of steps) {
+    const focused = page.getByLabel(control, { exact: true });
+    await filters.getByRole("button", { name: button, exact: true }).focus();
+    await page.keyboard.press("Enter");
+    await expect(focused).toBeFocused();
+    await expect
+      .poll(() => new URL(page.url()).searchParams.has(key))
+      .toBe(false);
+    expect(new URL(page.url()).searchParams.get("sort")).toBe("TITLE_ASC");
+    await expect(page.getByText("1 페이지", { exact: true })).toBeVisible();
+  }
+  await expect(filters).toHaveCount(0);
+  await expect(rows(page)).toHaveCount(20);
+  await expect(page.getByLabel("산출물 검색", { exact: true })).toHaveValue("");
+  await page.getByRole("button", { name: "조회 조건 초기화" }).click();
+  expect(new URL(page.url()).search).toBe("");
+});
+
 test("서버 정렬·필터 후 페이지를 이동하고 조건 변경은 첫 페이지로 돌아간다", async ({
   page,
 }) => {
@@ -195,6 +236,17 @@ test("웹과 좁은 화면에서 모든 탐색 제어를 사용할 수 있고 �
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
+    if (width >= 1280) {
+      const table = page.getByRole("region", {
+        name: "산출물 목록",
+        exact: true,
+      });
+      expect(
+        await table.evaluate(
+          (element) => element.scrollWidth <= element.clientWidth + 1,
+        ),
+      ).toBe(true);
+    }
   }
 });
 
