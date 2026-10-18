@@ -135,7 +135,7 @@ export default function TeamHome({ context, onNavigate }) {
                   />
                   <strong className="hero-number">{formatPercent(summary.teamProgressRate)}</strong>
                 </div>
-                <p className="field-help">현재 등록된 작업의 예상 작업량을 반영합니다. 실제 소요 시간이나 최종 기여도 점수가 아닙니다.</p>
+                <p className="field-help">현재 등록된 작업의 예상 작업량을 반영한 진행률입니다. 실제 소요 시간이나 최종 기여도 점수가 아닙니다.</p>
               </section>
             </div>
             <section className="panel collaboration-panel">
