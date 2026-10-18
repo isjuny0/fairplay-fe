@@ -113,7 +113,7 @@ test("적용된 조건을 개별 해제해도 다른 조건·정렬을 유지하
   await page.goto(`/spaces/1/teams/1/deliverables?${query}`);
   await expect(rows(page)).toHaveCount(1);
   const filters = page.getByRole("group", { name: "적용된 조회 조건" });
-  await expect(filters.getByRole("button")).toHaveCount(5);
+  await expect(filters.getByRole("button")).toHaveCount(6);
   const steps = [
     ["검색: policy 조건 해제", "산출물 검색", "q"],
     ["작업: 팀 공용 조건 해제", "작업별 조회", "unlinkedOnly"],
@@ -132,10 +132,16 @@ test("적용된 조건을 개별 해제해도 다른 조건·정렬을 유지하
     expect(new URL(page.url()).searchParams.get("sort")).toBe("TITLE_ASC");
     await expect(page.getByText("1 페이지", { exact: true })).toBeVisible();
   }
+  await expect(filters.getByRole("button")).toHaveCount(1);
+  await filters.getByRole("button", { name: "정렬: 이름 순 조건 해제", exact: true }).click();
+  await expect(page.getByLabel("산출물 정렬", { exact: true })).toBeFocused();
+  await expect(page.getByLabel("산출물 정렬", { exact: true })).toHaveValue("");
   await expect(filters).toHaveCount(0);
   await expect(rows(page)).toHaveCount(20);
   await expect(page.getByLabel("산출물 검색", { exact: true })).toHaveValue("");
+  await page.getByLabel("산출물 분류", { exact: true }).selectOption("POLICY");
   await page.getByRole("button", { name: "조회 조건 초기화" }).click();
+  await expect(page.getByLabel("산출물 검색", { exact: true })).toBeFocused();
   expect(new URL(page.url()).search).toBe("");
 });
 

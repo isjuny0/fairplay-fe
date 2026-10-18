@@ -1,0 +1,137 @@
+/* Shared visual rules; each collection keeps its own search and reset scope. */
+.collection-controls :is(select, input[type='search']) {
+  font-size: var(--text-support);
+}
+.collection-controls select,
+.approval-search-field input,
+.task-board-page .collection-controls input[type='search'] {
+  min-height: var(--control-height);
+}
+.collection-controls [data-active='true'] > select {
+  border-color: #adc4b9;
+  background: #f5f9f6;
+  color: var(--brand-dark);
+}
+.collection-applied-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.collection-filter-caption {
+  padding-right: 4px;
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+}
+.collection-applied-filters .collection-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: min(340px, 100%);
+  min-height: 30px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--text-caption);
+  line-height: 1.5;
+  cursor: pointer;
+}
+.collection-filter-chip > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.collection-filter-chip .deliverable-chip-label {
+  color: inherit;
+}
+.collection-filter-chip .deliverable-chip-label::after {
+  content: ':';
+}
+.collection-filter-chip > .ui-icon {
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+}
+.collection-applied-filters .collection-filter-chip:hover {
+  border-color: #bdc7c1;
+  background: var(--brand-light);
+}
+.collection-filter-chip:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+button.collection-reset-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-height: 32px;
+  padding: 4px 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--text-caption);
+  cursor: pointer;
+  text-decoration: none;
+}
+button.collection-reset-button:hover {
+  color: var(--brand);
+  background: transparent;
+  text-decoration: underline;
+}
+.collection-reset-button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+.approval-list-toolbar {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.approval-list-toolbar > label {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-caption);
+  font-weight: 400;
+  white-space: nowrap;
+}
+.approval-list-toolbar .approval-search-field {
+  flex: 1 1 200px;
+  max-width: 300px;
+  flex-wrap: nowrap;
+}
+.approval-search-field input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.approval-list-toolbar > button {
+  align-self: center;
+}
+.approvals-page .approval-list-summary,
+.task-board-page .list-summary {
+  min-height: 32px;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+}
+.deliverable-query-input {
+  min-height: 36px;
+  padding-block: 1px;
+}
+@media (max-width: 720px) {
+  .approval-list-toolbar > label {
+    flex-wrap: nowrap;
+  }
+  .approval-list-toolbar .approval-search-field {
+    flex-basis: 100%;
+    max-width: none;
+  }
+}

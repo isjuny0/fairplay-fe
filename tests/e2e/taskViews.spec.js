@@ -656,3 +656,26 @@ test('작업 표는 날짜와 시간을 생략 없이 한 줄로 표시하고 �
   await page.keyboard.press('Enter');
   await expect(page.getByRole('heading', { name: secondTitle, exact: true })).toBeVisible();
 });
+
+
+test('접힌 모바일 필터의 조건을 해제하면 필터 버튼으로 복귀하고 초기화는 보기·월을 보존한다', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await seed(page, 'list', '&mine=1&sort=newest&q=설문&keep=1');
+  await expect(page.getByLabel('작업 정렬')).toBeHidden();
+  const filters = page.getByRole('group', { name: '적용 중인 검색·필터' });
+  await filters.getByRole('button', { name: '정렬: 최근 생성 순 해제', exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('button', { name: '필터 · 2', exact: true })).toBeFocused();
+  expect(new URL(page.url()).searchParams.get('sort')).toBeNull();
+  expect(new URL(page.url()).searchParams.get('mine')).toBe('1');
+  await filters.getByRole('button', { name: '검색: 설문 해제', exact: true }).click();
+  await expect(page.getByLabel('작업 제목 검색')).toBeFocused();
+  await page.getByRole('button', { name: '검색·필터 초기화', exact: true }).click();
+  await expect(page.getByLabel('작업 제목 검색')).toBeFocused();
+  await expect(filters).toHaveCount(0);
+  const params = new URL(page.url()).searchParams;
+  expect(params.get('view')).toBe('list');
+  expect(params.get('month')).toBe('2026-11');
+  expect(params.get('keep')).toBe('1');
+  expect(params.has('mine')).toBe(false);
+});

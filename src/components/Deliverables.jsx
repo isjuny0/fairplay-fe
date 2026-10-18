@@ -485,6 +485,7 @@ export default function Deliverables({
       return next;
     });
   const clearSearch = () => {
+    searchToolbar.current?.querySelector("input")?.focus();
     setQueryInput("");
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
@@ -526,6 +527,7 @@ export default function Deliverables({
       return next;
     });
   const appliedFilters = [
+    sort && { key: "sort", label: "정렬", value: sort === "TITLE_ASC" ? "이름 순" : "최근 수정 순" },
     query && { key: "q", label: "검색", value: query },
     scope !== "ALL" && {
       key: "scope",
@@ -690,7 +692,7 @@ export default function Deliverables({
         </div>
       </div>
       {isCollection ? (
-        <div className="deliverable-search-toolbar" ref={searchToolbar}>
+        <div className="deliverable-search-toolbar collection-controls" ref={searchToolbar}>
           <div className="deliverable-search-primary">
             <form
               role="search"
@@ -819,20 +821,21 @@ export default function Deliverables({
           </div>
           {appliedFilters.length > 0 && (
             <div
-              className="deliverable-applied-filters"
+              className="deliverable-applied-filters collection-applied-filters"
               role="group"
               aria-label="적용된 조회 조건"
             >
-              <span className="deliverable-filter-caption">적용 중</span>
+              <span className="deliverable-filter-caption collection-filter-caption">적용 중</span>
               {appliedFilters.map((filter) => (
                 <button
                   key={filter.key}
-                  className="deliverable-filter-chip"
+                  className="deliverable-filter-chip collection-filter-chip"
                   title={`${filter.label}: ${filter.value}`}
                   aria-label={`${filter.label}: ${filter.value} 조건 해제`}
                   onClick={() => {
                     const controlLabels = {
                       q: "산출물 검색",
+                      sort: "산출물 정렬",
                       scope: "작업별 조회",
                       type: "산출물 유형",
                       category: "산출물 분류",
@@ -883,8 +886,7 @@ export default function Deliverables({
             )}
           </div>
           {hasSearch ? (
-            <button className="ghost-button" onClick={clearSearch}>
-              <Icon name="refresh" />
+            <button className="text-button collection-reset-button" title="검색·유형·분류·등록자·작업 범위·정렬을 초기화하고 첫 페이지로 이동합니다." onClick={clearSearch}>
               조회 조건 초기화
             </button>
           ) : (

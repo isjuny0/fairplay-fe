@@ -42,6 +42,8 @@ export default function TaskBoard({
   const now = useCurrentTime();
   const resource = useResource(() => listTasks(team.id), [team.id, taskId]);
   const [searchParams, setSearchParams] = useSearchParams();
+  const filterControls = useRef({});
+  const filterToggle = useRef(null);
   const filter = Object.hasOwn(statusLabels, searchParams.get('status'))
     ? searchParams.get('status')
     : 'ALL';
@@ -98,13 +100,15 @@ export default function TaskBoard({
       },
       { replace },
     );
-  const clearFilters = () =>
+  const clearFilters = () => {
+    filterControls.current.q?.focus();
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
       for (const key of ['status', 'mine', 'q', 'overdue', 'sort'])
         next.delete(key);
       return next;
     });
+  };
   const setFilter = (status) =>
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
@@ -287,10 +291,11 @@ export default function TaskBoard({
           승인된 팀원이 2명 이상이어야 작업을 생성할 수 있습니다.
         </p>
       )}
-      <div className="toolbar">
-        <label className="task-status-filter">
+      <div className="toolbar collection-controls">
+        <label className="task-status-filter" data-active={filter !== 'ALL'}>
           상태{' '}
           <select
+            ref={(node) => { filterControls.current.status = node; }}
             aria-label="작업 상태"
             value={filter}
             onChange={(event) => setFilter(event.target.value)}
@@ -307,6 +312,7 @@ export default function TaskBoard({
           <span className="sr-only">제목 검색</span>
           <input
             type="search"
+            ref={(node) => { filterControls.current.q = node; }}
             aria-label="작업 제목 검색"
             placeholder="작업 제목 입력"
             value={query}
@@ -315,6 +321,7 @@ export default function TaskBoard({
           />
         </label>
         <button
+          ref={filterToggle}
           className="secondary-button mobile-filter-toggle"
           aria-expanded={filtersOpen}
           aria-controls={filterPanelId}
@@ -326,9 +333,10 @@ export default function TaskBoard({
           id={filterPanelId}
           className={`task-filter-fields ${filtersOpen ? 'is-open' : ''}`}
         >
-          <label>
+          <label data-active={sort !== defaultSort}>
             정렬
             <select
+              ref={(node) => { filterControls.current.sort = node; }}
               aria-label="작업 정렬"
               value={sort}
               onChange={(event) =>
@@ -346,6 +354,7 @@ export default function TaskBoard({
           <label>
             <input
               type="checkbox"
+              ref={(node) => { filterControls.current.mine = node; }}
               checked={onlyMine}
               onChange={(event) => setOnlyMine(event.target.checked)}
             />{' '}
@@ -354,6 +363,7 @@ export default function TaskBoard({
           <label>
             <input
               type="checkbox"
+              ref={(node) => { filterControls.current.overdue = node; }}
               checked={onlyOverdue}
               onChange={(event) =>
                 setListOption('overdue', event.target.checked ? '1' : '')
@@ -386,17 +396,22 @@ export default function TaskBoard({
         </div>
       )}
       {!!activeFilters.length && (
-        <div className="task-active-filters" role="group" aria-label="적용 중인 검색·필터">
+        <div className="task-active-filters collection-applied-filters" role="group" aria-label="적용 중인 검색·필터">
+          <span className="collection-filter-caption">적용 중</span>
           {activeFilters.map(({ key, label }) => (
             <button
               key={key}
-              className="task-filter-chip"
+              className="task-filter-chip collection-filter-chip"
               aria-label={`${label} 해제`}
               title={`${label} 해제`}
-              onClick={() => setListOption(key, '')}
+              onClick={() => {
+                const control = filterControls.current[key];
+                (control?.getClientRects().length ? control : filterToggle.current)?.focus();
+                setListOption(key, '');
+              }}
             >
               <span>{label}</span>
-              <span aria-hidden="true">×</span>
+              <Icon name="close" />
             </button>
           ))}
         </div>
@@ -410,7 +425,7 @@ export default function TaskBoard({
             {sortLabel}
           </span>
           {hasFilters && (
-            <button className="text-button" onClick={clearFilters}>
+            <button className="text-button collection-reset-button" title="검색·상태·담당·마감·정렬 조건을 초기화하고 보기와 조회 기간은 유지합니다." onClick={clearFilters}>
               검색·필터 초기화
             </button>
           )}

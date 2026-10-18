@@ -21,6 +21,7 @@ import './resource-states.css';
 import './deliverable-search.css';
 import './review-workflow.css';
 import './task-collection.css';
+import './collection-filters.css';
 
 const router = createBrowserRouter([
   {
