@@ -1,0 +1,447 @@
+/* Clear navigation hierarchy and saturated, semantic accents on white. */
+.context-dot {
+  background: var(--brand);
+}
+.workspace-sidebar .nav-item,
+.directory-sidebar-link {
+  color: #344253;
+  font-weight: 500;
+}
+.workspace-sidebar .nav-item > .ui-icon,
+.directory-sidebar-link > .ui-icon {
+  color: var(--brand);
+  stroke-width: 1.9;
+}
+.workspace-sidebar .nav-item:hover,
+.directory-sidebar-link:hover {
+  background: #e8eeeb;
+  color: var(--brand-dark);
+}
+.workspace-sidebar .nav-item.active,
+.directory-sidebar-link.active {
+  color: var(--brand);
+  background: var(--brand-light);
+  box-shadow: none;
+  font-weight: 600;
+}
+.workspace-sidebar .nav-item.active > .ui-icon,
+.directory-sidebar-link.active > .ui-icon,
+.directory-sidebar-link.active > small {
+  color: var(--brand);
+}
+.workspace-sidebar .nav-section {
+  color: #526259;
+  font-weight: 600;
+}
+.workspace-sidebar .workspace-navigation-context {
+  border-bottom-color: #cfd9d3;
+}
+.workspace-sidebar .workspace-navigation-context > .nav-item:last-child {
+  margin-top: 8px;
+}
+.workspace-sidebar .workspace-nav-group[data-navigation-group='팀 관리'] {
+  border-top: 1px solid #d4dcd7;
+  padding-top: 12px;
+  margin-top: 6px;
+}
+.workspace-sidebar .desktop-team-navigation {
+  border: 0;
+}
+.workspace-sidebar .workspace-navigation-links {
+  padding-top: 14px;
+}
+.profile-avatar {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+.role-badge {
+  background: #d5f0df;
+  color: #07663f;
+}
+.role-badge.role-manager {
+  background: #dcecff;
+  color: #1759bf;
+}
+.task-view-navigation button.active,
+.mobile-team-navigation button.active,
+.mobile-manager-navigation button.active {
+  background: var(--brand-light);
+  color: var(--brand);
+  border-color: #b9dec9;
+}
+.status-badge.task-state-todo {
+  background: var(--task-todo-background);
+  color: var(--task-todo-text);
+}
+.status-badge.task-state-in_progress {
+  background: var(--task-progress-background);
+  color: var(--task-progress-text);
+}
+.status-badge.task-state-pending_approval {
+  background: var(--task-review-background);
+  color: var(--task-review-text);
+}
+.status-badge.task-state-done {
+  background: var(--task-done-background);
+  color: var(--task-done-text);
+}
+.status-badge.approval-pending {
+  background: var(--task-review-background);
+  color: var(--task-review-text);
+}
+.status-badge.approval-approved {
+  background: var(--task-done-background);
+  color: var(--task-done-text);
+}
+.status-badge.approval-rejected {
+  background: var(--notice-coral-background);
+  color: var(--notice-coral-text);
+}
+.status-badge[class*='task-state-']::before,
+.status-badge[class*='approval-']::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 5px;
+  border-radius: 50%;
+  vertical-align: middle;
+  background: currentColor;
+}
+.task-board-page .board-task-card .is-overdue {
+  background: var(--notice-coral-background);
+  color: var(--notice-coral-text);
+}
+.task-table td:has(> .is-overdue) > time {
+  color: var(--notice-coral-text);
+}
+.team-home-visual .home-action-icon {
+  background: transparent;
+  border-radius: 0;
+}
+.team-home-visual .home-action-icon > svg {
+  width: 23px;
+  height: 23px;
+}
+.team-home-visual .has-overdue .home-overdue-icon {
+  background: transparent;
+  color: var(--notice-coral);
+}
+.team-home-visual .home-pending-icon {
+  background: transparent;
+  color: var(--brand);
+}
+.team-home-visual .has-overdue .home-action-title strong {
+  color: var(--notice-coral-text);
+}
+.schedule-task-todo {
+  --schedule-color: var(--task-todo);
+  --schedule-background: var(--task-todo-background);
+  --schedule-text: var(--task-todo-text);
+}
+.schedule-task-in_progress {
+  --schedule-color: var(--task-progress);
+  --schedule-background: var(--task-progress-background);
+  --schedule-text: var(--task-progress-text);
+}
+.schedule-task-pending_approval {
+  --schedule-color: var(--task-review);
+  --schedule-background: var(--task-review-background);
+  --schedule-text: var(--task-review-text);
+}
+.schedule-task-done {
+  --schedule-color: var(--task-done);
+  --schedule-background: var(--task-done-background);
+  --schedule-text: var(--task-done-text);
+}
+.timeline-period,
+.timeline-task-state {
+  background: var(--schedule-background);
+  color: var(--schedule-text);
+  border: 1px solid var(--schedule-color);
+  box-shadow: none;
+}
+.timeline-period {
+  border-left-width: 3px;
+}
+.timeline-period.continues-before,
+.timeline-period.continues-after {
+  border-color: var(--schedule-color);
+}
+.timeline-period:hover {
+  filter: brightness(0.98);
+}
+.timeline-assignee {
+  border-color: var(--schedule-color);
+  color: var(--schedule-text);
+}
+.calendar-period {
+  color: var(--schedule-text);
+}
+.timeline-row.is-late .timeline-period {
+  box-shadow: none;
+  border-bottom-color: var(--notice-coral);
+  border-bottom-width: 2px;
+}
+.timeline-delay {
+  border-color: var(--notice-coral);
+  background: repeating-linear-gradient(
+    135deg,
+    #ffe1e4,
+    #ffe1e4 4px,
+    #fff 4px,
+    #fff 8px
+  );
+}
+.timeline-late-label,
+.timeline-late-filter.is-overdue {
+  color: var(--notice-coral-text);
+}
+.timeline-task-meta > .timeline-late-label,
+.timeline-late-filter.is-overdue {
+  background: var(--notice-coral-background);
+}
+.timeline-task-meta > .timeline-start-label {
+  color: #866000;
+  background: #fff3c4;
+}
+.timeline-late-filter:hover,
+.timeline-late-filter[aria-pressed='true'] {
+  border-color: var(--notice-coral);
+  background: var(--notice-coral-background);
+}
+.status-badge.task-state-todo::before {
+  background: var(--task-todo);
+}
+.status-badge.task-state-in_progress::before {
+  background: var(--task-progress);
+}
+.status-badge.task-state-pending_approval::before,
+.status-badge.approval-pending::before {
+  background: var(--task-review);
+}
+.status-badge.task-state-done::before,
+.status-badge.approval-approved::before {
+  background: var(--task-done);
+}
+.status-badge.approval-rejected::before {
+  background: var(--notice-coral);
+}
+.home-ring-value {
+  stroke: var(--brand);
+}
+.home-work-metric.assigned .progress-track > span {
+  background: #2563eb;
+}
+.home-work-metric.completed .progress-track > span {
+  background: #15966c;
+}
+.home-work-metric.completion .progress-track > span {
+  background: var(--brand);
+}
+.home-progress-title > span,
+.home-metric-scope {
+  color: #5c6b61;
+}
+.home-quick-icon {
+  color: var(--brand);
+}
+.home-quick-link:hover {
+  border-color: var(--brand);
+}
+.directory-sidebar-heading strong {
+  color: var(--brand-dark);
+}
+.directory-shortcut-symbol {
+  color: var(--brand);
+  border-color: #bfd1c5;
+  font-weight: 600;
+}
+.landing-page {
+  --landing-green: var(--brand);
+}
+.showcase-column.progress {
+  --showcase-state-color: var(--task-progress);
+  background: #f6f8fc;
+}
+.showcase-column.review {
+  --showcase-state-color: var(--task-review);
+  background: #faf8f3;
+}
+.showcase-column.done {
+  --showcase-state-color: var(--task-done);
+  background: #f4f8f5;
+}
+.showcase-column {
+  border-top: 3px solid var(--showcase-state-color);
+}
+.showcase-sidebar-item.active {
+  background: var(--brand-light);
+  color: var(--brand);
+}
+.showcase-chart-row i {
+  background: #087c55;
+}
+.showcase-chart-row:nth-child(3) i {
+  background: #0b9366;
+}
+.showcase-chart-row:nth-child(4) i {
+  background: #12a879;
+}
+.showcase-chart-row:nth-child(5) i {
+  background: #24b88a;
+}
+.workspace-context-select {
+  position: relative;
+  min-width: 0;
+}
+.workspace-context-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 54px;
+  padding: 9px 11px;
+  border: 1px solid #cfd8d3;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text-primary);
+  text-align: left;
+}
+.workspace-context-trigger:hover:not(:disabled),
+.workspace-context-trigger[aria-expanded='true'] {
+  border-color: var(--brand);
+}
+.workspace-context-trigger:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.workspace-context-trigger:disabled {
+  color: var(--text-muted);
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+.workspace-context-trigger > .ui-icon {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  color: var(--brand);
+}
+.workspace-context-copy {
+  display: grid;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.workspace-context-copy > small {
+  font-size: 10px;
+  line-height: 1.3;
+  color: #64736b;
+  font-weight: 400;
+}
+.workspace-context-copy > strong {
+  display: block;
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.workspace-context-chevron {
+  flex-shrink: 0;
+  color: #687b6f;
+}
+.workspace-context-trigger[aria-expanded='true'] .workspace-context-chevron {
+  transform: rotate(180deg);
+}
+.workspace-context-options {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  max-height: min(260px, 50dvh);
+  overflow-y: auto;
+  padding: 5px;
+  border: 1px solid #c7d9ce;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 24px #153e2c1a;
+  scrollbar-width: thin;
+  overscroll-behavior: contain;
+}
+.workspace-context-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 36px;
+  padding: 9px;
+  border-radius: 5px;
+  color: #344253;
+  font-size: 12px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.workspace-context-option > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.workspace-context-option > svg {
+  flex-shrink: 0;
+  color: var(--brand);
+}
+.workspace-context-option.is-highlighted {
+  background: #f1f6f3;
+}
+.workspace-context-option[aria-selected='true'] {
+  background: var(--brand-light);
+  color: var(--brand);
+  font-weight: 600;
+}
+@media (min-width: 721px) {
+  .workspace-sidebar,
+  .space-directory-sidebar {
+    padding: 20px 14px;
+  }
+  .workspace-sidebar .nav-item.workspace-back-link {
+    margin-bottom: 12px;
+    padding-inline: 12px;
+  }
+  .workspace-sidebar .workspace-selectors {
+    gap: 10px;
+    padding: 0;
+  }
+  .workspace-sidebar .workspace-navigation-context {
+    padding-bottom: 12px;
+  }
+  .workspace-sidebar .workspace-navigation-context > .nav-item:last-child {
+    min-height: 32px;
+    font-size: 12px;
+    padding-block: 6px;
+  }
+  .workspace-sidebar .desktop-team-navigation {
+    gap: 16px;
+    padding-top: 0;
+  }
+  .workspace-sidebar .workspace-nav-group {
+    gap: 3px;
+  }
+  .workspace-sidebar .nav-section {
+    padding-inline: 10px;
+    margin-bottom: 5px;
+    font-size: 11px;
+  }
+  .workspace-sidebar .nav-item {
+    min-height: 38px;
+    padding: 9px 12px;
+    gap: 10px;
+    border-radius: 6px;
+  }
+  .workspace-sidebar .nav-item > .ui-icon {
+    width: 17px;
+    height: 17px;
+  }
+}

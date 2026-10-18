@@ -1,6 +1,14 @@
 import { fillDateTime } from './helpers/dateTime.js';
 import { test, expect } from '@playwright/test';
 
+async function selectWorkspaceOption(page, label, value) {
+  await page.getByRole('combobox', { name: label, exact: true }).click();
+  await page
+    .getByRole('listbox', { name: label, exact: true })
+    .locator(`[role="option"][data-value="${value}"]`)
+    .click();
+}
+
 async function openPreview(page, path, role = 'leader', scenario = 'active') {
   await page.goto('/preview/main');
   if (!(await page.getByLabel('미리보기 역할').isVisible()))
@@ -12,8 +20,15 @@ async function openPreview(page, path, role = 'leader', scenario = 'active') {
 }
 
 async function fillEvaluation(page, member, score = 4) {
-  if (!(await page.getByLabel(`${member} 작업 수행 ${score}점`, { exact: true }).isVisible()))
-    await page.getByRole('group', { name: '평가할 팀원 선택', exact: true }).getByRole('button', { name: new RegExp(`^${member}`) }).click();
+  if (
+    !(await page
+      .getByLabel(`${member} 작업 수행 ${score}점`, { exact: true })
+      .isVisible())
+  )
+    await page
+      .getByRole('group', { name: '평가할 팀원 선택', exact: true })
+      .getByRole('button', { name: new RegExp(`^${member}`) })
+      .click();
   for (const criterion of ['작업 수행', '책임감', '협업', '의사소통'])
     await page
       .getByLabel(`${member} ${criterion} ${score}점`, { exact: true })
@@ -35,7 +50,9 @@ test('저장 후 바꾼 평가는 제출을 막고 다시 저장한 최신 점�
   await expect(
     page.getByRole('button', { name: '최종 제출', exact: true }),
   ).toBeEnabled();
-  await page.getByRole('button', { name: '이지원 저장됨', exact: true }).click();
+  await page
+    .getByRole('button', { name: '이지원 저장됨', exact: true })
+    .click();
   await page.getByLabel('이지원 작업 수행 5점', { exact: true }).check();
   await expect(page.getByText('미저장 변경', { exact: true })).toBeVisible();
   await expect(
@@ -113,45 +130,48 @@ test('작업 입력창의 Escape와 취소는 미저장 내용을 확인하고 �
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
-for (const width of [1440, 390]) test(`평가 대상 전환 ${width}px: 다른 대상 저장에도 미저장 점수를 보존한다`, async ({
-  page,
-}) => {
-  await page.setViewportSize({ width, height: 844 });
-  await openPreview(page, '/spaces/1/teams/1');
-  if (width < 721) {
-    await expect(page.getByLabel('미리보기 역할')).toBeHidden();
-    await expect(page.getByRole('navigation', { name: '팀 메뉴', exact: true })).toBeHidden();
-    await page.getByText('더보기 ⌄', { exact: true }).click();
-  }
-  await page.getByRole('button', { name: '동료 평가', exact: true }).click();
-  await fillEvaluation(page, '이지원');
-  await page
-    .getByRole('button', { name: '이지원 평가 저장', exact: true })
-    .click();
-  await page.getByLabel('이지원 작업 수행 5점', { exact: true }).check();
-  await page
-    .getByRole('button', { name: '박서연 작성 필요', exact: true })
-    .click();
-  await fillEvaluation(page, '박서연');
-  await page
-    .getByRole('button', { name: '박서연 평가 저장', exact: true })
-    .click();
-  await expect(
-    page.getByRole('button', { name: '최종 제출', exact: true }),
-  ).toBeDisabled();
-  await page
-    .getByRole('button', { name: '이지원 미저장', exact: true })
-    .click();
-  await expect(
-    page.getByLabel('이지원 작업 수행 5점', { exact: true }),
-  ).toBeChecked();
-  await page
-    .getByRole('button', { name: '이지원 평가 저장', exact: true })
-    .click();
-  await expect(
-    page.getByRole('button', { name: '최종 제출', exact: true }),
-  ).toBeEnabled();
-});
+for (const width of [1440, 390])
+  test(`평가 대상 전환 ${width}px: 다른 대상 저장에도 미저장 점수를 보존한다`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await openPreview(page, '/spaces/1/teams/1');
+    if (width < 721) {
+      await expect(page.getByLabel('미리보기 역할')).toBeHidden();
+      await expect(
+        page.getByRole('navigation', { name: '팀 메뉴', exact: true }),
+      ).toBeHidden();
+      await page.getByText('더보기 ⌄', { exact: true }).click();
+    }
+    await page.getByRole('button', { name: '동료 평가', exact: true }).click();
+    await fillEvaluation(page, '이지원');
+    await page
+      .getByRole('button', { name: '이지원 평가 저장', exact: true })
+      .click();
+    await page.getByLabel('이지원 작업 수행 5점', { exact: true }).check();
+    await page
+      .getByRole('button', { name: '박서연 작성 필요', exact: true })
+      .click();
+    await fillEvaluation(page, '박서연');
+    await page
+      .getByRole('button', { name: '박서연 평가 저장', exact: true })
+      .click();
+    await expect(
+      page.getByRole('button', { name: '최종 제출', exact: true }),
+    ).toBeDisabled();
+    await page
+      .getByRole('button', { name: '이지원 미저장', exact: true })
+      .click();
+    await expect(
+      page.getByLabel('이지원 작업 수행 5점', { exact: true }),
+    ).toBeChecked();
+    await page
+      .getByRole('button', { name: '이지원 평가 저장', exact: true })
+      .click();
+    await expect(
+      page.getByRole('button', { name: '최종 제출', exact: true }),
+    ).toBeEnabled();
+  });
 
 for (const height of [844, 500])
   test(`390×${height} 작업 입력창은 스크롤 전후 저장 버튼과 입력 초점이 가려지지 않는다`, async ({
@@ -209,7 +229,9 @@ test('세 담당자 균등 배분과 필수 승인자 선택으로 작업을 생
   await dialog.getByRole('button', { name: '균등 배분', exact: true }).click();
   await expect(dialog.getByText('담당 3명', { exact: true })).toBeVisible();
   await expect(dialog.getByText('합계 100%', { exact: true })).toBeVisible();
-  await expect(dialog.getByText(/전원 담당 작업은 리더·부리더를 승인자로 선택/)).toBeVisible();
+  await expect(
+    dialog.getByText(/전원 담당 작업은 리더·부리더를 승인자로 선택/),
+  ).toBeVisible();
   await expect(dialog.getByLabel('김하늘 배분율')).toHaveValue('34');
   await expect(dialog.getByLabel('이지원 배분율')).toHaveValue('33');
   await expect(dialog.getByLabel('박서연 배분율')).toHaveValue('33');
@@ -264,8 +286,12 @@ test('데스크톱 팀 메뉴는 왼쪽에 묶이고 메뉴 이동과 새로고�
     exact: true,
   });
   await expect(teamMenus.getByRole('button')).toHaveCount(9);
-  await expect(teamMenus.getByRole('paragraph').filter({ hasText: /^작업$/ })).toBeVisible();
-  await expect(teamMenus.getByText('평가', { exact: true })).toBeVisible();
+  await expect(
+    teamMenus.getByRole('paragraph').filter({ hasText: /^팀 작업$/ }),
+  ).toBeVisible();
+  await expect(
+    teamMenus.getByText('평가·리포트', { exact: true }),
+  ).toBeVisible();
   await expect(teamMenus.getByText('팀 관리', { exact: true })).toBeVisible();
   await expect(page.locator('.tab-bar')).toHaveCount(0);
   await teamMenus.getByRole('button', { name: '산출물', exact: true }).click();
@@ -297,7 +323,7 @@ test('스페이스 선택은 현재 공간을 전환하고 뒤로가기로 이�
   await expect(
     page.getByRole('heading', { name: '두 번째 프로젝트', exact: true }),
   ).toBeVisible();
-  await page.getByLabel('스페이스 선택', { exact: true }).selectOption('1');
+  await selectWorkspaceOption(page, '스페이스 선택', '1');
   await expect(page).toHaveURL(/spaces\/1$/);
   await expect(
     page.getByRole('heading', {
@@ -310,16 +336,16 @@ test('스페이스 선택은 현재 공간을 전환하고 뒤로가기로 이�
   await expect(
     page.getByRole('heading', { name: '두 번째 프로젝트', exact: true }),
   ).toBeVisible();
-  await expect(page.getByLabel('스페이스 선택', { exact: true })).toHaveValue(
-    '3',
-  );
+  await expect(
+    page.getByLabel('스페이스 선택', { exact: true }),
+  ).toHaveAttribute('data-value', '3');
 });
 
 test('관리자는 팀 선택으로 자료 조회에 진입하고 팀 작업 메뉴는 제공하지 않는다', async ({
   page,
 }) => {
   await openPreview(page, '/spaces/1/dashboard', 'manager');
-  await page.getByLabel('팀 선택', { exact: true }).selectOption('2');
+  await selectWorkspaceOption(page, '팀 선택', '2');
   await expect(page).toHaveURL(/teams\/2\/members$/);
   await expect(
     page.getByRole('heading', { name: '팀원 관리', exact: true }),
@@ -357,7 +383,7 @@ test('모바일 공간·팀 선택은 하나의 접힌 영역에 있고 작업 �
   await expect(page.getByLabel('팀 선택', { exact: true })).toBeHidden();
   await page.getByRole('button', { name: /공간·팀 선택/ }).click();
   await expect(page.getByLabel('스페이스 선택', { exact: true })).toBeVisible();
-  await page.getByLabel('팀 선택', { exact: true }).selectOption('1');
+  await selectWorkspaceOption(page, '팀 선택', '1');
   await expect(page).toHaveURL(/teams\/1$/);
   await expect(page.getByLabel('팀 선택', { exact: true })).toBeHidden();
   await page
@@ -390,12 +416,16 @@ test('데스크톱 홈은 확인할 작업을 먼저 배치하고 입력·읽기
     .boundingBox();
   const progress = await page.locator('.progress-panel').boundingBox();
   expect(own.y).toBeGreaterThanOrEqual(action.y + action.height);
-  expect(progress.y).toBeGreaterThanOrEqual(own.y + own.height);
-  expect(Math.abs(own.width - action.width)).toBeLessThan(2);
+  expect(progress.y).toBeGreaterThanOrEqual(action.y + action.height);
+  expect(Math.abs(progress.y - own.y)).toBeLessThan(2);
+  expect(progress.x + progress.width).toBeLessThan(own.x);
+  expect(Math.abs(own.x + own.width - (action.x + action.width))).toBeLessThan(
+    2,
+  );
   const wide = await page.getByRole('main').boundingBox();
   await page.getByRole('button', { name: '중간 피드백', exact: true }).click();
   const reading = await page.getByRole('main').boundingBox();
-  expect(reading.width).toBeLessThan(wide.width);
+  expect(reading.width).toBe(wide.width);
   expect(reading.width).toBeGreaterThan(900);
   await page.getByRole('button', { name: '작업', exact: true }).click();
   await page
@@ -431,7 +461,9 @@ test('데스크톱 작업 상세를 스크롤해도 작업 진행 버튼은 검�
     sidebar.getByRole('button', { name: '완료 요청', exact: true }),
   ).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 700));
-  const navigation = await page.locator('.task-detail-navigation').boundingBox();
+  const navigation = await page
+    .locator('.task-detail-navigation')
+    .boundingBox();
   await expect
     .poll(async () => (await sidebar.boundingBox()).y)
     .toBeLessThanOrEqual(navigation.y + navigation.height + 24);
@@ -669,7 +701,9 @@ test('팀 홈의 본인·승인 대기·마감 지연은 각 조건의 작업 �
   await expect(page.locator('.board-task-card')).toHaveCount(4);
   await page.goBack();
   await page.getByRole('button', { name: /내 승인 대기/ }).click();
-  await expect(page.getByLabel('작업 상태', { exact: true })).toHaveValue('PENDING_APPROVAL');
+  await expect(page.getByLabel('작업 상태', { exact: true })).toHaveValue(
+    'PENDING_APPROVAL',
+  );
   await expect(page.getByLabel('내 담당 작업만')).toBeChecked();
   await expect(
     page.getByRole('button', { name: '서비스 흐름 설계', exact: true }),
@@ -760,7 +794,9 @@ test('200% 확대와 모바일 목록 전환에서도 입력 단계와 주요 �
     document.documentElement.style.zoom = '';
   });
   await page.setViewportSize({ width: 320, height: 500 });
-  await expect(page.getByRole('group', { name: '작업 상태 선택' })).toBeVisible();
+  await expect(
+    page.getByRole('group', { name: '작업 상태 선택' }),
+  ).toBeVisible();
   await page
     .getByRole('button', { name: '새 작업 만들기', exact: true })
     .click();
@@ -853,65 +889,118 @@ test('두 창에서 수정한 산출물은 최신 내용을 비교하고 본문 
 });
 
 for (const width of [1440, 320]) {
-  test(`산출물 표 ${width}px: 제목에서 본문을 열고 닫으면 조회 범위와 초점을 유지한다`, async ({ page }) => {
+  test(`산출물 표 ${width}px: 제목에서 본문을 열고 닫으면 조회 범위와 초점을 유지한다`, async ({
+    page,
+  }) => {
     await page.setViewportSize({ width, height: 900 });
     await openPreview(page, '/spaces/1/teams/1/deliverables?taskId=101');
     const list = page.getByRole('region', { name: '산출물 목록', exact: true });
-    await expect(list.getByRole('columnheader', { name: '등록자', exact: true })).toBeVisible();
-    const title = list.getByRole('button', { name: '인터뷰 계획과 질문 목록', exact: true });
+    await expect(
+      list.getByRole('columnheader', { name: '등록자', exact: true }),
+    ).toBeVisible();
+    const title = list.getByRole('button', {
+      name: '인터뷰 계획과 질문 목록',
+      exact: true,
+    });
     await title.focus();
     await page.keyboard.press('Enter');
-    const dialog = page.getByRole('dialog', { name: '산출물 상세', exact: true });
-    await expect(dialog.getByRole('heading', { name: '본문', exact: true })).toBeVisible();
-    await expect(dialog.getByText('사용자 인터뷰 계획', { exact: true })).toBeVisible();
-    await expect(dialog.getByRole('button', { name: '수정', exact: true })).toHaveCount(0);
+    const dialog = page.getByRole('dialog', {
+      name: '산출물 상세',
+      exact: true,
+    });
+    await expect(
+      dialog.getByRole('heading', { name: '본문', exact: true }),
+    ).toBeVisible();
+    await expect(
+      dialog.getByText('사용자 인터뷰 계획', { exact: true }),
+    ).toBeVisible();
+    await expect(
+      dialog.getByRole('button', { name: '수정', exact: true }),
+    ).toHaveCount(0);
     await page.keyboard.press('Escape');
     await expect(dialog).toHaveCount(0);
     await expect(title).toBeFocused();
     await expect(page.getByLabel('작업별 조회')).toHaveValue('101');
     expect(new URL(page.url()).searchParams.get('taskId')).toBe('101');
-    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > innerWidth,
+      ),
+    ).toBe(false);
     await page.reload();
     await expect(page.getByLabel('작업별 조회')).toHaveValue('101');
-    await expect(list.getByRole('button', { name: '파일 다운로드', exact: true })).toBeVisible();
-    await list.getByRole('button', { name: '인터뷰 결과 기록 파일', exact: true }).click();
-    await expect(dialog.getByRole('heading', { name: '현재 파일', exact: true })).toBeVisible();
+    await expect(
+      list.getByRole('button', { name: '파일 다운로드', exact: true }),
+    ).toBeVisible();
+    await list
+      .getByRole('button', { name: '인터뷰 결과 기록 파일', exact: true })
+      .click();
+    await expect(
+      dialog.getByRole('heading', { name: '현재 파일', exact: true }),
+    ).toBeVisible();
     const downloaded = page.waitForEvent('download');
-    await dialog.getByRole('button', { name: '파일 다운로드', exact: true }).click();
+    await dialog
+      .getByRole('button', { name: '파일 다운로드', exact: true })
+      .click();
     expect((await downloaded).suggestedFilename()).toBe('인터뷰-기록.txt');
   });
 }
 
-test('팀 홈 수행 지연에서 승인 대기는 제외하고 일반 마감 필터에서는 함께 확인한다', async ({ page }) => {
+test('팀 홈 수행 지연에서 승인 대기는 제외하고 일반 마감 필터에서는 함께 확인한다', async ({
+  page,
+}) => {
   await openPreview(page, '/spaces/1/teams/1');
   await page.evaluate(() => {
     const key = 'fairplay:mock:v5:preview:1';
     const state = JSON.parse(localStorage.getItem(key));
-    state.teams[1].tasks.find(task => task.id === 103).dueAt = new Date(Date.now() - 60000).toISOString();
+    state.teams[1].tasks.find((task) => task.id === 103).dueAt = new Date(
+      Date.now() - 60000,
+    ).toISOString();
     localStorage.setItem(key, JSON.stringify(state));
   });
   await page.reload();
-  await expect(page.getByRole('button', { name: /내 마감 지연.*1건/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /내 승인 대기.*1건/ })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: /내 마감 지연.*1건/ }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: /내 승인 대기.*1건/ }),
+  ).toBeVisible();
   await page.getByRole('button', { name: /내 마감 지연/ }).click();
-  await expect(page.getByRole('button', { name: '서비스 흐름 설계', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: '설문 결과 분석', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: '수행 지연: 할 일·진행 중 해제', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: '서비스 흐름 설계', exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: '설문 결과 분석', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', {
+      name: '수행 지연: 할 일·진행 중 해제',
+      exact: true,
+    }),
+  ).toBeVisible();
   await page.reload();
   expect(new URL(page.url()).searchParams.get('overdue')).toBe('work');
-  await expect(page.getByRole('button', { name: '서비스 흐름 설계', exact: true })).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: '서비스 흐름 설계', exact: true }),
+  ).toHaveCount(0);
   await page.getByLabel('마감 지난 작업만').uncheck();
   await page.getByLabel('마감 지난 작업만').check();
-  await expect(page.getByRole('button', { name: '서비스 흐름 설계', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: '서비스 흐름 설계', exact: true }),
+  ).toBeVisible();
 });
 
-test('평가 마감 시각이 지나면 열린 작성 화면도 조회 전용으로 바뀐다', async ({ page }) => {
+test('평가 마감 시각이 지나면 열린 작성 화면도 조회 전용으로 바뀐다', async ({
+  page,
+}) => {
   await page.clock.install({ time: new Date('2026-10-16T09:00:00+09:00') });
   await openPreview(page, peerPath);
   await page.evaluate(() => {
     const key = 'fairplay:mock:v5:preview:1';
     const state = JSON.parse(localStorage.getItem(key));
-    state.rounds.find(round => round.status === 'OPEN').closesAt = new Date(Date.now() + 30000).toISOString();
+    state.rounds.find((round) => round.status === 'OPEN').closesAt = new Date(
+      Date.now() + 30000,
+    ).toISOString();
     localStorage.setItem(key, JSON.stringify(state));
   });
   await page.reload();
@@ -919,16 +1008,34 @@ test('평가 마감 시각이 지나면 열린 작성 화면도 조회 전용으
   await expect(score).toBeEnabled();
   for (const member of ['이지원', '박서연']) {
     await fillEvaluation(page, member);
-    await page.getByRole('button', { name: `${member} 평가 저장`, exact: true }).click();
+    await page
+      .getByRole('button', { name: `${member} 평가 저장`, exact: true })
+      .click();
   }
   await page.getByRole('button', { name: '최종 제출', exact: true }).click();
-  const confirmation = page.getByRole('dialog', { name: '동료 평가 최종 제출', exact: true });
-  await expect(confirmation.getByRole('button', { name: '제출 확정', exact: true })).toBeEnabled();
+  const confirmation = page.getByRole('dialog', {
+    name: '동료 평가 최종 제출',
+    exact: true,
+  });
+  await expect(
+    confirmation.getByRole('button', { name: '제출 확정', exact: true }),
+  ).toBeEnabled();
   await page.clock.fastForward(60000);
-  await expect(confirmation.getByRole('button', { name: '제출 확정', exact: true })).toBeDisabled();
+  await expect(
+    confirmation.getByRole('button', { name: '제출 확정', exact: true }),
+  ).toBeDisabled();
   await confirmation.getByRole('button', { name: '취소', exact: true }).click();
-  await page.getByRole('button', { name: '이지원 저장됨', exact: true }).click();
+  await page
+    .getByRole('button', { name: '이지원 저장됨', exact: true })
+    .click();
   await expect(score).toBeDisabled();
-  await expect(page.getByText('평가 시간이 마감되어 저장·제출할 수 없습니다. 저장한 응답을 확인하세요.', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: '최종 제출', exact: true })).toHaveCount(0);
+  await expect(
+    page.getByText(
+      '평가 시간이 마감되어 저장·제출할 수 없습니다. 저장한 응답을 확인하세요.',
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: '최종 제출', exact: true }),
+  ).toHaveCount(0);
 });

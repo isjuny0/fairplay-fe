@@ -107,13 +107,14 @@ for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('/preview/spaces/1/teams/1/tasks');
     await expect(page.locator('.sidebar')).toHaveCSS('background-color', 'rgb(248, 249, 250)');
-    await expect(page.locator('.nav-item.active').first()).toHaveCSS('background-color', 'rgb(234, 243, 238)');
+    await expect(page.locator('.nav-item.active').first()).toHaveCSS('background-color', 'rgb(231, 244, 237)');
+    await expect(page.locator('.nav-item.active').first()).toHaveCSS('color', 'rgb(8, 124, 85)');
     await expect(page.locator('.board-task-card').first()).toHaveCSS('border-radius', '6px');
     await expect(page.locator('.board-task-card').first()).toHaveCSS('box-shadow', 'none');
-    await expect(page.locator('.task-board-page .primary-button').first()).toHaveCSS('background-color', 'rgb(36, 87, 71)');
-    await expect(page.locator('.task-state-in_progress .status-dot')).toHaveCSS('background-color', 'rgb(41, 116, 215)');
-    await expect(page.locator('.task-state-pending_approval .status-dot')).toHaveCSS('background-color', 'rgb(167, 117, 23)');
-    await expect(page.locator('.task-state-done .status-dot')).toHaveCSS('background-color', 'rgb(38, 146, 105)');
+    await expect(page.locator('.task-board-page .primary-button').first()).toHaveCSS('background-color', 'rgb(8, 124, 85)');
+    await expect(page.locator('.task-state-in_progress .status-dot')).toHaveCSS('background-color', 'rgb(85, 185, 0)');
+    await expect(page.locator('.task-state-pending_approval .status-dot')).toHaveCSS('background-color', 'rgb(0, 181, 232)');
+    await expect(page.locator('.task-state-done .status-dot')).toHaveCSS('background-color', 'rgb(18, 184, 134)');
     if (width === 1440) await page.screenshot({ path: testInfo.outputPath('desktop-task-board.png') });
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
     if (!await page.getByLabel('미리보기 역할').isVisible())
@@ -130,7 +131,7 @@ for (const width of [1440, 768, 390, 320]) {
   test(`새 레이아웃 ${width}px: 스페이스 목록과 로그인 영역의 반응형 배치`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/preview/main');
-    await expect(page.locator('.topbar .logo-mark')).toHaveCSS('background-color', 'rgb(36, 87, 71)');
+    await expect(page.locator('.topbar .logo-mark')).toHaveCSS('background-color', 'rgb(8, 124, 85)');
     await expect(page.locator('.space-list')).toBeVisible();
     await expect(page.getByLabel('스페이스 이름 검색')).toBeVisible();
     await expect(page.getByLabel('내 역할 필터')).toBeVisible();

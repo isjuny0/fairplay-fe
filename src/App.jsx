@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 import { getCurrentUser, loginWithGoogle, logout } from './api/auth.js';
 import AppRoutes from './components/AppRoutes.jsx';
+import LandingPage from './components/LandingPage.jsx';
 import { loginReturnPath } from './lib/routes.js';
 import { ErrorNotice } from './components/ui.jsx';
 import { useInteractions } from './hooks/useInteractions.js';
@@ -20,6 +21,7 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const preview = isPreviewPath(location.pathname);
+  const landing = location.pathname === '/';
   const prefix = preview ? '/preview' : '';
   const [user, setUser] = useState(() => (preview ? getPreviewUser() : null));
   const [checking, setChecking] = useState(!preview);
@@ -49,6 +51,11 @@ export default function App() {
     let active = true;
     setChecking(true);
     setError(null);
+    // 소개 화면은 백엔드 연결 여부와 관계없이 바로 표시한다.
+    if (landing) {
+      setChecking(false);
+      return;
+    }
     if (preview) setScenario(getMockState(previewContext()).scenario);
     const expired = () => {
       setUser(null);
@@ -73,7 +80,7 @@ export default function App() {
       active = false;
       window.removeEventListener('fairplay:session-expired', expired);
     };
-  }, [preview]);
+  }, [preview, landing]);
   const authenticate = async () => {
     setBusy(true);
     setError(null);
@@ -108,6 +115,7 @@ export default function App() {
       setBusy(false);
     }
   };
+  if (landing) return <LandingPage />;
   if (checking || (preview && user?.id !== getPreviewUser().id))
     return (
       <main className="login-page">
@@ -117,17 +125,22 @@ export default function App() {
         </section>
       </main>
     );
-  if (!user && location.pathname !== '/')
+  if (!user && location.pathname !== '/login')
     return (
       <Navigate
-        to="/"
+        to="/login"
         replace
         state={{ returnTo: location.pathname + location.search }}
       />
     );
+  if (user && location.pathname === '/login')
+    return <Navigate to={loginReturnPath(location.state?.returnTo)} replace />;
   if (!user || location.pathname === '/preview/login')
     return (
       <main className="login-page">
+        <button className="login-home-link" onClick={() => navigate('/')}>
+          ← Fairplay 소개로
+        </button>
         <section className="login-card">
           <div className="login-introduction">
             <span className="logo-mark">F</span>

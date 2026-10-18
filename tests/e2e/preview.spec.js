@@ -61,6 +61,8 @@ test('팀 홈과 관리자 현황은 가중치 숫자 대신 비율과 계산 �
 }) => {
   await preview(page);
   await expect(page.getByText('완료 가중치', { exact: false })).toHaveCount(0);
+  await expect(page.locator('.home-definition-body')).toBeHidden();
+  await page.locator('.home-definitions > summary').click();
   await expect(
     page.getByText('예상 작업량을 반영한 진행률입니다.', { exact: false }),
   ).toBeVisible();
@@ -293,7 +295,7 @@ test('실제 로그인 화면에서 인증 없이 미리보기를 시작할 수 
     if (new URL(request.url()).pathname.startsWith('/api/'))
       apiCalls.push(request.url());
   });
-  await page.goto('/');
+  await page.goto('/login');
   await expect(
     page.getByRole('button', { name: 'Google로 계속하기' }),
   ).toBeVisible();

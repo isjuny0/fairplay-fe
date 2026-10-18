@@ -1,25 +1,25 @@
 /* Shared workspace foundations. Component layouts live in their own styles. */
 :root {
   font-family:
-    "Pretendard Variable",
+    'Pretendard Variable',
     -apple-system,
     BlinkMacSystemFont,
-    "Apple SD Gothic Neo",
-    "Malgun Gothic",
+    'Apple SD Gothic Neo',
+    'Malgun Gothic',
     sans-serif;
   font-synthesis: none;
   color: #20242b;
   background: #fff;
-  --font-brand: ui-rounded, "Avenir Next", "Arial Rounded MT Bold", sans-serif;
+  --font-brand: ui-rounded, 'Avenir Next', 'Arial Rounded MT Bold', sans-serif;
   --text-primary: #20242b;
-  --text-muted: #666b74;
+  --text-muted: #556170;
   --surface: #fff;
   --surface-secondary: #f8f9fa;
-  --border: #e5e7eb;
+  --border: #dbe1e7;
   --neutral-action: #57554f;
-  --brand: #245747;
-  --brand-dark: #1b4437;
-  --brand-light: #eaf3ee;
+  --brand: #087c55;
+  --brand-dark: #075c40;
+  --brand-light: #e7f4ed;
   --text-body: 14px;
   --text-support: 13px;
   --text-caption: 12px;
@@ -39,8 +39,19 @@
   --control-height: 36px;
   --header-height: 56px;
   --page-width: 1480px;
-  --task-todo: #697586;
-  --task-progress: #2974d7;
-  --task-review: #a77517;
-  --task-done: #269269;
+  --task-todo: #94a3b8;
+  --task-todo-background: #edf1f5;
+  --task-todo-text: #536174;
+  --task-progress: #55b900;
+  --task-progress-background: #d0e8bf;
+  --task-progress-text: #247309;
+  --task-review: #00b5e8;
+  --task-review-background: #bfe9fa;
+  --task-review-text: #005cba;
+  --task-done: #12b886;
+  --task-done-background: #c7f1e3;
+  --task-done-text: #087457;
+  --notice-coral: #ff555c;
+  --notice-coral-text: #d83b45;
+  --notice-coral-background: #fff0f1;
 }
