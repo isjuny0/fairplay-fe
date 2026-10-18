@@ -1,3 +1,5 @@
+import { screenLoaders } from '../lib/routeScreens.js';
+import { deferScreen } from './DeferredScreen.jsx';
 import Icon from './Icon.jsx';
 import { useRef } from 'react';
 import { useSearchParams } from 'react-router';
@@ -5,8 +7,10 @@ import { listApprovals } from '../api/approvals.js';
 import { listTasks } from '../api/tasks.js';
 import useResource from '../hooks/useResource.js';
 import { formatDate, memberName } from '../lib/domain.js';
-import TaskDetail from './TaskDetail.jsx';
+
 import { EmptyState, ResourceState } from './ui.jsx';
+
+const TaskDetail = deferScreen(screenLoaders.TaskDetail, '작업 상세');
 
 const approvalStatusLabels = {
   PENDING: '승인 대기',

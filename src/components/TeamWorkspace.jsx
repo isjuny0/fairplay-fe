@@ -1,3 +1,5 @@
+import { screenLoaders } from '../lib/routeScreens.js';
+import { deferScreen } from './DeferredScreen.jsx';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router';
 import useAppNavigate from '../hooks/useAppNavigate.js';
@@ -6,18 +8,20 @@ import { listTasks } from '../api/tasks.js';
 import useResource from '../hooks/useResource.js';
 import { isApprovedMember } from '../lib/domain.js';
 import { availableTeamMenus } from '../lib/teamNavigation.js';
-import Approvals from './Approvals.jsx';
-import Deliverables from './Deliverables.jsx';
-import TaskBoard from './TaskBoard.jsx';
-import TeamMembers from './TeamMembers.jsx';
-import TeamSettings from './TeamSettings.jsx';
+
 import UnavailablePage from './UnavailablePage.jsx';
 import { teamMenuPath } from '../lib/routes.js';
 import { ErrorNotice, ResourceState } from './ui.jsx';
-import TeamHome from './TeamHome.jsx';
-import PeerEvaluation from './PeerEvaluation.jsx';
-import MidFeedback from './MidFeedback.jsx';
-import ContributionReport from './ContributionReport.jsx';
+
+const Approvals = deferScreen(screenLoaders.Approvals, '승인 검토');
+const Deliverables = deferScreen(screenLoaders.Deliverables, '산출물');
+const TaskBoard = deferScreen(screenLoaders.TaskBoard, '작업');
+const TeamMembers = deferScreen(screenLoaders.TeamMembers, '팀원 관리');
+const TeamSettings = deferScreen(screenLoaders.TeamSettings, '팀 설정');
+const TeamHome = deferScreen(screenLoaders.TeamHome, '팀 홈');
+const PeerEvaluation = deferScreen(screenLoaders.PeerEvaluation, '동료 평가');
+const MidFeedback = deferScreen(screenLoaders.MidFeedback, '중간 피드백');
+const ContributionReport = deferScreen(screenLoaders.ContributionReport, '기여도 리포트');
 
 function TeamDeliverables({ team, user, members }) {
   const resource = useResource(

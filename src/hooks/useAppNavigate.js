@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router';
-import { isPreviewPath } from '../mock/preview.js';
+import { isPreviewPath } from '../lib/previewPath.js';
 
 export default function useAppNavigate() {
   const navigate = useNavigate();

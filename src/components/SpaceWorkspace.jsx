@@ -1,3 +1,5 @@
+import { screenLoaders } from '../lib/routeScreens.js';
+import { deferScreen } from './DeferredScreen.jsx';
 import Icon from './Icon.jsx';
 import { useContext, useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
@@ -15,14 +17,10 @@ import useResource from '../hooks/useResource.js';
 import { useInteractions } from '../hooks/useInteractions.js';
 import SpaceGuide from './SpaceGuide.jsx';
 import { buildingLabels, formatDate, isApprovedMember } from '../lib/domain.js';
-import SpaceSettings from './SpaceSettings.jsx';
-import TeamWorkspace from './TeamWorkspace.jsx';
+
 import UnavailablePage from './UnavailablePage.jsx';
 import { spacePath, teamMenuPath } from '../lib/routes.js';
-import ManagerDashboard from './ManagerDashboard.jsx';
-import RoundManagement from './RoundManagement.jsx';
-import ReportReview from './ReportReview.jsx';
-import MemberContributions from './MemberContributions.jsx';
+
 import WorkspaceNavigation from './WorkspaceNavigation.jsx';
 import {
   EmptyState,
@@ -32,6 +30,13 @@ import {
   Modal,
   ResourceState,
 } from './ui.jsx';
+
+const SpaceSettings = deferScreen(screenLoaders.SpaceSettings, '스페이스 관리');
+const TeamWorkspace = deferScreen(screenLoaders.TeamWorkspace, '팀 화면');
+const ManagerDashboard = deferScreen(screenLoaders.ManagerDashboard, '관리자 대시보드');
+const RoundManagement = deferScreen(screenLoaders.RoundManagement, '평가 회차 관리');
+const ReportReview = deferScreen(screenLoaders.ReportReview, '리포트 검토·공개');
+const MemberContributions = deferScreen(screenLoaders.MemberContributions, '팀원 수행 상세');
 
 export default function SpaceWorkspace({
   spaceId,

@@ -1,3 +1,5 @@
+import { screenLoaders } from '../lib/routeScreens.js';
+import { deferScreen } from './DeferredScreen.jsx';
 import Icon from './Icon.jsx';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
@@ -13,9 +15,9 @@ import {
   memberName,
   statusLabels,
 } from '../lib/domain.js';
-import TaskForm from './TaskForm.jsx';
+
 import { isTaskExecutionOverdue } from '../lib/evaluation.js';
-import TaskDetail from './TaskDetail.jsx';
+
 import TaskTable from './TaskTable.jsx';
 import { MonthNavigation, TaskCalendar, TaskTimeline } from './TaskSchedule.jsx';
 import {
@@ -28,6 +30,9 @@ import {
 } from '../lib/taskSchedule.js';
 import { EmptyState, Modal, ResourceState } from './ui.jsx';
 import { readTaskViewPreferences, saveTaskViewPreferences } from '../lib/taskViewPreferences.js';
+
+const TaskForm = deferScreen(screenLoaders.TaskForm, '작업 입력');
+const TaskDetail = deferScreen(screenLoaders.TaskDetail, '작업 상세');
 
 export default function TaskBoard({
   team,

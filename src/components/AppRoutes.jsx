@@ -1,9 +1,14 @@
-import { Navigate, Route, Routes, useParams } from 'react-router';
+import { screenLoaders, preloadRoute } from '../lib/routeScreens.js';
+import { deferScreen } from './DeferredScreen.jsx';
+import { useEffect } from 'react';
+import { Navigate, Route, Routes, useParams, useLocation } from 'react-router';
 import { parseRouteId, spacePath, teamMenuPaths } from '../lib/routes.js';
-import Spaces from './Spaces.jsx';
-import SpaceWorkspace from './SpaceWorkspace.jsx';
+
 import UnavailablePage from './UnavailablePage.jsx';
 import useAppNavigate from '../hooks/useAppNavigate.js';
+
+const Spaces = deferScreen(screenLoaders.Spaces, '스페이스 목록');
+const SpaceWorkspace = deferScreen(screenLoaders.SpaceWorkspace, '스페이스 화면');
 
 function WorkspaceRoute({ user, view = 'teams', teamMenu = '팀 홈' }) {
   const params = useParams();
@@ -42,6 +47,11 @@ function SpacesRoute() {
 }
 
 export default function AppRoutes({ user, prefix = '' }) {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    // The screen boundary handles import failures; preloading must not reject globally.
+    preloadRoute(pathname).catch(() => {});
+  }, [pathname]);
   return (
     <Routes>
       <Route
