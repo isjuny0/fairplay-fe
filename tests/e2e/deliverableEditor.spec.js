@@ -10,6 +10,39 @@ async function openDeliverables(page, role = 'leader') {
   ).toBeVisible();
 }
 
+test('산출물 등록·수정·검색은 서버에서 허용하는 여섯 분류만 제공한다', async ({ page }) => {
+  const categories = [
+    ['PLANNING', '기획'],
+    ['POLICY', '정책'],
+    ['DESIGN', '디자인·설계'],
+    ['DEVELOPMENT', '제작·구현'],
+    ['TEST', '검증'],
+    ['OTHER', '기타'],
+  ];
+  await openDeliverables(page);
+  const filterOptions = page.getByLabel('산출물 분류', { exact: true }).locator('option');
+  await expect(filterOptions).toHaveText(['전체 분류', ...categories.map(([, label]) => label)]);
+  await page.getByRole('button', { name: '산출물 등록', exact: true }).click();
+  let dialog = page.getByRole('dialog', { name: '산출물 등록', exact: true });
+  const options = dialog.getByLabel('분류', { exact: true }).locator('option');
+  await expect(options).toHaveText(categories.map(([, label]) => label));
+  expect(await options.evaluateAll(elements => elements.map(option => option.value)))
+    .toEqual(categories.map(([value]) => value));
+  await dialog.getByRole('button', { name: '닫기', exact: true }).click();
+  const row = page.getByRole('row').filter({
+    has: page.getByRole('button', { name: '프로젝트 기획서', exact: true }),
+  });
+  await row.getByRole('button', { name: '수정', exact: true }).click();
+  dialog = page.getByRole('dialog', { name: '산출물 수정', exact: true });
+  await expect(dialog.getByLabel('분류', { exact: true }).locator('option'))
+    .toHaveText(categories.map(([, label]) => label));
+  await dialog.getByLabel('분류', { exact: true }).selectOption('POLICY');
+  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await expect(row).toContainText('정책');
+  await page.getByLabel('산출물 분류', { exact: true }).selectOption('POLICY');
+  await expect(row).toBeVisible();
+});
+
 test('파일 선택을 해제하면 필수 파일 검증을 유지하고 수정에서는 기존 원본을 보존한다', async ({
   page,
 }) => {
