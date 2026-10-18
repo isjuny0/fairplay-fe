@@ -1003,14 +1003,8 @@ h1[tabindex="-1"]:focus {
   }
 }
 
-/* Desktop workspace: clear reading widths, grouped controls and compact data. */
+/* Desktop workspace: shared canvas, grouped controls and compact data. */
 @media (min-width: 901px) {
-  .main-content.content-reading {
-    max-width: 1200px;
-  }
-  .main-content.content-settings {
-    max-width: 1120px;
-  }
   .main-content h1 {
     font-size: var(--text-page);
     line-height: 1.35;

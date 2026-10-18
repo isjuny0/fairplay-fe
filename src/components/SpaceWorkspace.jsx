@@ -141,14 +141,6 @@ export default function SpaceWorkspace({
         : isApprovedMember(team)
           ? '팀원'
           : '관리자 조회';
-  const contentLayout =
-    view === 'dashboard' ||
-    (view === 'team' &&
-      ['팀 홈', '작업', '산출물', '승인 검토', '팀원 관리'].includes(teamMenu))
-      ? 'content-wide'
-      : view === 'settings' || (view === 'team' && teamMenu === '팀 설정')
-        ? 'content-settings'
-        : 'content-reading';
   const buildingOpen =
     space?.teamBuildingStatus === 'OPEN' &&
     new Date(space.teamBuildingOpensAt) <= new Date() &&
@@ -210,7 +202,7 @@ export default function SpaceWorkspace({
         user={user}
         onBack={onBack}
       />
-      <main className={`main-content ${contentLayout}`}>
+      <main className="main-content">
         <ResourceState resource={resource} label="스페이스 정보">
           {space && (
             <>

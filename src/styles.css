@@ -2919,12 +2919,6 @@ details > summary {
 .breadcrumb-role {
   margin-left: auto;
 }
-.main-content.content-reading {
-  max-width: var(--page-width);
-}
-.main-content.content-settings {
-  max-width: var(--page-width);
-}
 .team-home-summary {
   display: grid;
   grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.65fr);
