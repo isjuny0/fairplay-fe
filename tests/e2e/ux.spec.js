@@ -431,9 +431,13 @@ test('데스크톱 작업 상세를 스크롤해도 작업 진행 버튼은 검�
     sidebar.getByRole('button', { name: '완료 요청', exact: true }),
   ).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 700));
+  const navigation = await page.locator('.task-detail-navigation').boundingBox();
   await expect
     .poll(async () => (await sidebar.boundingBox()).y)
-    .toBeLessThanOrEqual(90);
+    .toBeLessThanOrEqual(navigation.y + navigation.height + 24);
+  expect((await sidebar.boundingBox()).y).toBeGreaterThanOrEqual(
+    navigation.y + navigation.height,
+  );
   await expect(
     sidebar.getByRole('button', { name: '완료 요청', exact: true }),
   ).toBeInViewport();
