@@ -99,7 +99,8 @@ for (const width of [1440, 390]) {
     expect(saved.endAt).toBe('2028-03-01T12:30:00+09:00');
     await page.goto('/preview/main');
     await expect(
-      page.getByRole('button', { name: /날짜 선택 프로젝트/ }),
+      page.getByRole('region', { name: '스페이스 목록', exact: true })
+        .getByRole('button', { name: /날짜 선택 프로젝트/ }),
     ).toBeVisible();
   });
 }
