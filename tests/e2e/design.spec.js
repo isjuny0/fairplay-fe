@@ -21,6 +21,7 @@ for (const width of [1440, 390]) {
     await expect(breadcrumb).not.toContainText('2026 서비스 디자인 프로젝트');
     await page.getByRole('button', { name: 'Fairplay', exact: true }).click();
     await expect(header.locator('strong')).toHaveText('내 스페이스');
+    await page.locator('.preview-toolbar').waitFor({ state: 'visible' });
     if (!await page.getByLabel('미리보기 역할').isVisible())
       await page.getByText('미리보기 설정', { exact: true }).click();
     await page.getByLabel('미리보기 역할').selectOption('manager');
@@ -117,6 +118,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('.task-state-done .status-dot')).toHaveCSS('background-color', 'rgb(18, 184, 134)');
     if (width === 1440) await page.screenshot({ path: testInfo.outputPath('desktop-task-board.png') });
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+    await page.locator('.preview-toolbar').waitFor({ state: 'visible' });
     if (!await page.getByLabel('미리보기 역할').isVisible())
       await page.getByText('미리보기 설정', { exact: true }).click();
     await page.getByLabel('미리보기 역할').selectOption('manager');
