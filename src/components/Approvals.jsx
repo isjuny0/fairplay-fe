@@ -1,4 +1,5 @@
 import Icon from './Icon.jsx';
+import { useRef } from 'react';
 import { useSearchParams } from 'react-router';
 import { listApprovals } from '../api/approvals.js';
 import { listTasks } from '../api/tasks.js';
@@ -23,6 +24,7 @@ export default function Approvals({
   onTaskBack,
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const filterControls = useRef({});
   const status = ['PENDING', 'APPROVED', 'REJECTED'].includes(
     searchParams.get('status'),
   )
@@ -53,12 +55,14 @@ export default function Approvals({
       },
       { replace },
     );
-  const clearSearch = () =>
+  const clearSearch = () => {
+    filterControls.current.q?.focus();
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
       for (const key of ['q', 'requester', 'sort']) next.delete(key);
       return next;
     });
+  };
   const reload = () => {
     resource.reload();
     taskResource.reload();
@@ -84,6 +88,12 @@ export default function Approvals({
   ];
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const hasSearch = Boolean(normalizedQuery || requesterId || sort !== 'newest');
+  const requesterName = (id) => members.find((member) => member.userId === id)?.name || '현재 팀원 목록에 없는 요청자';
+  const appliedFilters = [
+    ...(normalizedQuery ? [{ key: 'q', label: `검색: ${query.trim()}` }] : []),
+    ...(requesterId ? [{ key: 'requester', label: `요청자: ${requesterName(requesterId)}` }] : []),
+    ...(sort !== 'newest' ? [{ key: 'sort', label: '정렬: 오래된 요청 순' }] : []),
+  ];
   const visibleApprovals = approvals
     .filter(
       (approval) =>
@@ -120,8 +130,8 @@ export default function Approvals({
           <p>내가 승인자로 지정된 완료 요청입니다.</p>
         </div>
       </div>
-      <div className="collection-toolbar approval-list-toolbar">
-        <label>
+      <div className="collection-toolbar approval-list-toolbar collection-controls">
+        <label data-active={status !== 'PENDING'}>
           요청 상태{' '}
           <select
             value={status}
@@ -136,6 +146,7 @@ export default function Approvals({
           작업 검색
           <input
             type="search"
+            ref={(node) => { filterControls.current.q = node; }}
             aria-label="승인 작업 검색"
             placeholder="작업명 또는 #번호"
             value={query}
@@ -143,9 +154,10 @@ export default function Approvals({
             onChange={(event) => setSearchOption('q', event.target.value, true)}
           />
         </label>
-        <label>
+        <label data-active={Boolean(requesterId)}>
           요청자
           <select
+            ref={(node) => { filterControls.current.requester = node; }}
             aria-label="승인 요청자"
             value={requesterId}
             onChange={(event) => setSearchOption('requester', event.target.value)}
@@ -153,15 +165,15 @@ export default function Approvals({
             <option value="">전체 요청자</option>
             {requesterIds.map((id) => (
               <option key={id} value={id}>
-                {members.find((member) => member.userId === id)?.name ||
-                  '현재 팀원 목록에 없는 요청자'}
+                {requesterName(id)}
               </option>
             ))}
           </select>
         </label>
-        <label>
+        <label data-active={sort !== 'newest'}>
           정렬
           <select
+            ref={(node) => { filterControls.current.sort = node; }}
             aria-label="승인 요청 정렬"
             value={sort}
             onChange={(event) =>
@@ -184,6 +196,26 @@ export default function Approvals({
           새로고침
         </button>
       </div>
+      {!!appliedFilters.length && (
+        <div className="collection-applied-filters" role="group" aria-label="적용 중인 승인 검색 조건">
+          <span className="collection-filter-caption">적용 중</span>
+          {appliedFilters.map(({ key, label }) => (
+            <button
+              key={key}
+              className="collection-filter-chip"
+              aria-label={`${label} 해제`}
+              title={`${label} 해제`}
+              onClick={() => {
+                filterControls.current[key]?.focus();
+                setSearchOption(key, '');
+              }}
+            >
+              <span>{label}</span>
+              <Icon name="close" />
+            </button>
+          ))}
+        </div>
+      )}
       <ResourceState resource={listResource} label="승인 요청 목록">
         <div className="list-summary approval-list-summary" aria-live="polite">
           <span>
@@ -192,7 +224,7 @@ export default function Approvals({
           </span>
           {hasSearch && (
             <button
-              className="secondary-button"
+              className="text-button collection-reset-button"
               title="요청 상태는 유지하고 작업 검색·요청자·정렬을 초기화합니다."
               onClick={clearSearch}
             >
