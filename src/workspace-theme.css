@@ -483,10 +483,10 @@
   background: #eaf3ee;
 }
 
-/* Team overview: metrics first, then next actions and team progress side by side. */
+/* Team overview: next actions, personal metrics, then overall progress. */
 .team-home-summary {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-areas: 'work work' 'action progress';
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'action' 'work' 'progress';
   align-items: stretch;
 }
 .team-home-summary .own-work-panel {
@@ -663,10 +663,6 @@
   }
 }
 @media (max-width: 900px) {
-  .team-home-summary {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: 'work' 'action' 'progress';
-  }
   .login-introduction {
     padding: 32px;
   }

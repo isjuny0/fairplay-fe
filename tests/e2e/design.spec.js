@@ -55,15 +55,13 @@ for (const width of [1440, 1024, 390, 320]) {
     await page.goto('/preview/spaces/1/teams/1');
     await expect(page.getByRole('heading', { name: '지금 확인할 작업', exact: true })).toBeVisible();
     const buttons = await page.locator('.action-summary button').evaluateAll(elements => elements.map(button => {
-      const parts = [...button.children].map(el => {
-        const range = document.createRange();
-        range.selectNodeContents(el);
-        return range.getBoundingClientRect();
-      });
+      const title = button.querySelector('.home-action-title');
+      const parts = [...title.children].map(el => el.getBoundingClientRect());
+      const lineHeight = Math.max(...[...title.children].map(el => parseFloat(getComputedStyle(el).lineHeight)));
       return {
-        oneLine: parts.every(rect => rect.height <= parseFloat(getComputedStyle(button).lineHeight) + 1),
-        aligned: Math.abs(parts[0].top - parts[1].top) <= 1,
-        fits: button.scrollWidth <= button.clientWidth,
+        oneLine: title.getBoundingClientRect().height <= lineHeight + 1,
+        aligned: parts[1].left >= parts[0].right && Math.max(parts[0].top, parts[1].top) < Math.min(parts[0].bottom, parts[1].bottom),
+        fits: button.scrollWidth <= button.clientWidth && title.scrollWidth <= title.clientWidth,
       };
     }));
     expect(buttons).toHaveLength(2);
