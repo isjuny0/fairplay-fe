@@ -516,10 +516,11 @@ test('지정 승인자가 사유를 입력해 반려하면 이력과 작업 수�
   state.setPending();
   await page.getByRole('button', { name: '승인 검토', exact: true }).click();
   await page.getByRole('button', { name: '작업 검토', exact: true }).click();
+  await page.getByRole('button', { name: '반려', exact: true }).click();
   await page
     .getByLabel('반려 사유')
     .fill('탈퇴 후 게시글 처리 테스트를 보완해 주세요.');
-  await page.getByRole('button', { name: '반려', exact: true }).click();
+  await page.getByRole('button', { name: '반려 확정', exact: true }).click();
   await page.getByText('완료 요청 이력 · 1건', { exact: true }).click();
   await expect(
     page.getByText('반려 사유: 탈퇴 후 게시글 처리 테스트를 보완해 주세요.'),

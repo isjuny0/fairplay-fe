@@ -155,6 +155,8 @@ test('관리자가 리포트를 공개하면 팀원은 본인 계산 근거를 �
     scenario: 'review',
     path: '/spaces/1/reports',
   });
+  await expect(page.getByRole('region', { name: '팀 최종 기여율', exact: true })).toBeVisible();
+  await page.getByText('평가 제출·생성 조건 확인', { exact: true }).click();
   await expect(
     page.getByRole('button', { name: '생성 완료', exact: true }),
   ).toBeDisabled();

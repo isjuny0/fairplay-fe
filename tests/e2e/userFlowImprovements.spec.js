@@ -69,6 +69,7 @@ test('반려 입력 오류는 사유 필드에서 수정하고 반려 후 사유
 }) => {
   await preview(page, '/spaces/1/teams/1/approvals/tasks/103', 'reviewer');
   await page.getByRole('button', { name: '반려', exact: true }).click();
+  await page.getByRole('button', { name: '반려 확정', exact: true }).click();
   await expect(page.getByLabel('반려 사유', { exact: true })).toBeFocused();
   await expect(page.getByLabel('반려 사유', { exact: true })).toHaveAttribute(
     'aria-invalid',
@@ -80,7 +81,7 @@ test('반려 입력 오류는 사유 필드에서 수정하고 반려 후 사유
   await page
     .getByLabel('반려 사유', { exact: true })
     .fill('예외 흐름과 자료의 원문 위치를 추가해 주세요.');
-  await page.getByRole('button', { name: '반려', exact: true }).click();
+  await page.getByRole('button', { name: '반려 확정', exact: true }).click();
   const rejection = page.getByRole('region', { name: '최근 반려 사유' });
   await expect(
     rejection.getByRole('heading', { name: '보완 필요' }),
@@ -277,6 +278,7 @@ test('승인자는 요청 맥락과 검토 대상별 위치를 바로 확인한�
 
 test('전달하지 않은 반려 사유는 화면 이동을 확인하고 계속 작성할 수 있다', async ({ page }) => {
   await preview(page, '/spaces/1/teams/1/approvals/tasks/103', 'reviewer');
+  await page.getByRole('button', { name: '반려', exact: true }).click();
   const reason = page.getByLabel('반려 사유', { exact: true });
   const value = '자료의 예외 처리 결과와 검증 근거를 보완해 주세요.';
   await reason.fill(value);
@@ -292,6 +294,7 @@ test('전달하지 않은 반려 사유는 화면 이동을 확인하고 계속 
 
 test('반려 사유를 작성한 상태의 승인에는 미전송을 안내하고 승인 후 입력 경고를 정리한다', async ({ page }) => {
   await preview(page, '/spaces/1/teams/1/approvals/tasks/103', 'reviewer');
+  await page.getByRole('button', { name: '반려', exact: true }).click();
   const reason = page.getByLabel('반려 사유', { exact: true });
   const value = '기존 자료로 완료 조건을 충족하는지 확인했습니다.';
   await reason.fill(value);
