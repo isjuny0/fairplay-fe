@@ -9,6 +9,7 @@ import {
 
 export default function ApprovalDecision({
   approval,
+  taskTitle,
   user,
   members,
   onReviewSection,
@@ -17,6 +18,8 @@ export default function ApprovalDecision({
 }) {
   const { confirm, notify } = useInteractions();
   const [reason, setReason] = useState('');
+  const [rejecting, setRejecting] = useState(false);
+  const rejectButton = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [reasonError, setReasonError] = useState('');
@@ -29,6 +32,9 @@ export default function ApprovalDecision({
   useEffect(() => {
     setError(null);
   }, [approval]);
+  useEffect(() => {
+    if (rejecting) reasonInput.current?.focus();
+  }, [rejecting]);
   if (!canReview) return null;
   const decide = async (decision) => {
     if (busy || blocked || !canReview) return;
@@ -108,30 +114,46 @@ export default function ApprovalDecision({
           </li>
         ))}
       </ol>
-      <Field
-        label="반려 사유"
-        error={reasonError}
-        help="반려할 때만 10~500자로 작성해 주세요. 담당자가 수정할 내용을 구체적으로 적어주세요."
-      >
-        <textarea
-          ref={reasonInput}
-          disabled={busy || blocked}
-          rows={3}
-          maxLength={500}
-          value={reason}
-          onChange={(event) => {
-            setReason(event.target.value);
-            setReasonError('');
-          }}
-        />
-      </Field>
-      <div className="approval-reason-status">
-        {reason.trim() && (
-          <p className="field-help" role="status">
-            작성 중인 반려 사유는 아직 전달되지 않았습니다.
-          </p>
-        )}
-        <p className="character-count">{reason.length} / 500자</p>
+      <div className="approval-rejection" hidden={!rejecting}>
+        <div className="section-heading">
+          <h3>반려 사유 작성</h3>
+          <button
+            type="button"
+            className="text-button"
+            disabled={busy}
+            onClick={() => {
+              setRejecting(false);
+              rejectButton.current?.focus();
+            }}
+          >
+            사유 접기
+          </button>
+        </div>
+        <Field
+          label="반려 사유"
+          error={reasonError}
+          help="반려할 때만 10~500자로 작성해 주세요. 담당자가 수정할 내용을 구체적으로 적어주세요."
+        >
+          <textarea
+            ref={reasonInput}
+            disabled={busy || blocked}
+            rows={3}
+            maxLength={500}
+            value={reason}
+            onChange={(event) => {
+              setReason(event.target.value);
+              setReasonError('');
+            }}
+          />
+        </Field>
+        <div className="approval-reason-status">
+          {reason.trim() && (
+            <p className="field-help" role="status">
+              작성 중인 반려 사유는 아직 전달되지 않았습니다.
+            </p>
+          )}
+          <p className="character-count">{reason.length} / 500자</p>
+        </div>
       </div>
       {blocked && (
         <p className="notice" role="status">
@@ -144,21 +166,35 @@ export default function ApprovalDecision({
           error?.status === 409 || error?.status >= 500 ? onChanged : undefined
         }
       />
-      <div className="modal-actions">
-        <button
-          className="secondary-button"
-          disabled={busy || blocked}
-          onClick={() => decide('reject')}
-        >
-          반려
-        </button>
-        <button
-          className="primary-button"
-          disabled={busy || blocked}
-          onClick={() => decide('approve')}
-        >
-          완료 승인
-        </button>
+      <div
+        className="review-action-dock approval-decision-actions"
+        role="group"
+        aria-label="완료 검토 처리"
+      >
+        <div className="review-action-context">
+          <strong>{taskTitle}</strong>
+          <span>
+            {memberName(members, approval.requesterId)}님의 완료 요청
+            {reason.trim() ? ' · 미전송 반려 사유 있음' : ''}
+          </span>
+        </div>
+        <div className="review-action-buttons">
+          <button
+            className="secondary-button"
+            disabled={busy || blocked}
+            ref={rejectButton}
+            onClick={() => (rejecting ? decide('reject') : setRejecting(true))}
+          >
+            {rejecting ? '반려 확정' : '반려'}
+          </button>
+          <button
+            className="primary-button"
+            disabled={busy || blocked}
+            onClick={() => decide('approve')}
+          >
+            완료 승인
+          </button>
+        </div>
       </div>
     </section>
   );
