@@ -15,6 +15,9 @@ import {
   X,
   Download,
   Users,
+  ClipboardCheck,
+  MessageSquareText,
+  ChartNoAxesCombined,
 } from "lucide-react";
 
 const icons = {
@@ -24,6 +27,9 @@ const icons = {
   board: Columns3,
   file: FileText,
   check: CircleCheck,
+  review: ClipboardCheck,
+  feedback: MessageSquareText,
+  chart: ChartNoAxesCombined,
   settings: SlidersHorizontal,
   arrow: ArrowRight,
   back: ArrowLeft,

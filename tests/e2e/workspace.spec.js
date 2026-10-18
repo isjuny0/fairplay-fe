@@ -369,7 +369,8 @@ async function workspace(
     );
   });
   await page.goto('/main');
-  await page.getByRole('button', { name: /프로젝트 스페이스/ }).click();
+  await page.getByRole('region', { name: '스페이스 목록', exact: true })
+    .getByRole('button', { name: /프로젝트 스페이스/ }).click();
   await page
     .getByRole('button', {
       name: manager ? '팀 자료 조회' : '팀 열기',
@@ -1382,7 +1383,7 @@ test('세션 만료 후 로그인하면 요청한 상세 URL과 필터로 복귀
   await expect(
     page.getByRole('button', { name: 'Google로 계속하기' }),
   ).toBeVisible();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/login$/);
   state.renew();
   await page.getByRole('button', { name: 'Google로 계속하기' }).click();
   await expect(
@@ -1399,7 +1400,7 @@ test('로그아웃 후 브라우저 뒤로가기로 보호된 화면이 복원�
   await page.getByRole('button', { name: '팀 설정', exact: true }).click();
   await page.getByRole('button', { name: '로그아웃', exact: true }).click();
   await expect(
-    page.getByRole('button', { name: 'Google로 계속하기' }),
+    page.getByRole('link', { name: 'Fairplay 시작하기', exact: true }),
   ).toBeVisible();
   await page.goBack();
   await expect(

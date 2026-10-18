@@ -1,21 +1,21 @@
 import { isApprovedMember } from './domain.js';
 
 export const teamNavigationGroups = [
-  { label: null, items: [['팀 홈', 'home']] },
   {
-    label: '작업',
+    label: '팀 작업',
     items: [
+      ['팀 홈', 'home'],
       ['작업', 'board'],
       ['산출물', 'file'],
-      ['승인 검토', 'check'],
+      ['승인 검토', 'review'],
     ],
   },
   {
-    label: '평가',
+    label: '평가·리포트',
     items: [
       ['동료 평가', 'users'],
-      ['중간 피드백', 'check'],
-      ['기여도 리포트', 'file'],
+      ['중간 피드백', 'feedback'],
+      ['기여도 리포트', 'chart'],
     ],
   },
   {
