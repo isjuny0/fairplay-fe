@@ -22,6 +22,7 @@ import './deliverable-search.css';
 import './review-workflow.css';
 import './task-collection.css';
 import './collection-filters.css';
+import './markdown.css';
 import './team-home.css';
 import './navigation-contrast.css';
 

@@ -1,5 +1,7 @@
 import Icon from "./Icon.jsx";
 import DeliverableTable from "./DeliverableTable.jsx";
+import MarkdownBody from "./MarkdownBody.jsx";
+import MarkdownEditor from "./MarkdownEditor.jsx";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { parseRouteId } from "../lib/routes.js";
@@ -305,15 +307,16 @@ function DeliverableForm({
                 <Field
                   label="본문"
                   error={fieldErrors.text}
-                  help="작업 결과와 확인할 내용을 기록하세요. 파일이 없는 활동도 문서로 남길 수 있습니다."
+                  help="작업 결과와 확인할 내용을 기록하세요. 제목·목록·표 등의 마크다운 서식을 사용할 수 있습니다."
                 >
-                  <textarea
+                  <MarkdownEditor
                     name="text"
                     required
                     maxLength={20000}
                     rows={14}
                     value={form.text}
                     onChange={(event) => update("text", event.target.value)}
+                    onValueChange={(value) => update("text", value)}
                   />
                 </Field>
               )}
@@ -944,9 +947,9 @@ export default function Deliverables({
                     {deliverable.type === "TEXT" && (
                       <details>
                         <summary>본문 보기</summary>
-                        <p className="preserve-lines deliverable-body">
+                        <MarkdownBody>
                           {deliverable.text}
-                        </p>
+                        </MarkdownBody>
                       </details>
                     )}
                     {deliverable.type === "FILE" && (
@@ -1106,7 +1109,7 @@ export default function Deliverables({
             {selectedDeliverable.type === "TEXT" ? (
               <section>
                 <h4>본문</h4>
-                <p className="preserve-lines">{selectedDeliverable.text}</p>
+                <MarkdownBody>{selectedDeliverable.text}</MarkdownBody>
               </section>
             ) : (
               <section>

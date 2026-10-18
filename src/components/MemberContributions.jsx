@@ -11,6 +11,7 @@ import {
   statusLabels,
 } from '../lib/domain.js';
 import MemberEvaluationResults from './MemberEvaluationResults.jsx';
+import MarkdownBody from './MarkdownBody.jsx';
 import { EmptyState, ResourceState } from './ui.jsx';
 
 export default function MemberContributions({ context, targetUserId, onBack }) {
@@ -253,7 +254,7 @@ function DeliverableContent({ teamId, taskId, deliverableId, summaryVersion }) {
               <ErrorNotice error={downloadError} />
             </>
           ) : (
-            <p className="preserve-lines">{item.text ?? item.textOrUrl}</p>
+            <MarkdownBody>{item.text ?? item.textOrUrl}</MarkdownBody>
           )}
         </>
       )}
