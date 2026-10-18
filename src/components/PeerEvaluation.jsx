@@ -21,7 +21,7 @@ import {
   validatePeerResponse,
   isLowScore,
 } from '../lib/evaluation.js';
-import { peerCriteria, peerGuides } from '../mock/fixtures.js';
+import { peerCriteria, peerGuides } from '../lib/peerCriteria.js';
 import { EmptyState, ErrorNotice, Field, Modal, ResourceState } from './ui.jsx';
 import { ProgressBar, RoundPicker } from './PlanningUi.jsx';
 

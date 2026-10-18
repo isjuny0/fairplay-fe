@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node --test tests/*.test.js",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:bundle": "playwright test -c playwright.bundle.config.js",
+    "measure:loading": "node scripts/measure-loading.mjs"
   },
   "dependencies": {
     "lucide-react": "1.57.0",

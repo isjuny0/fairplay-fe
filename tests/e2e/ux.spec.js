@@ -11,12 +11,14 @@ async function selectWorkspaceOption(page, label, value) {
 
 async function openPreview(page, path, role = 'leader', scenario = 'active') {
   await page.goto('/preview/main');
+  await page.locator('.preview-toolbar').waitFor({ state: 'visible' });
   if (!(await page.getByLabel('미리보기 역할').isVisible()))
     await page.getByText('미리보기 설정', { exact: true }).click();
   await page.getByLabel('미리보기 역할').selectOption(role);
   if (scenario !== 'active')
     await page.getByLabel('미리보기 상황').selectOption(scenario);
   await page.goto(`/preview${path}`);
+  await page.locator('.preview-toolbar').waitFor({ state: 'visible' });
 }
 
 async function fillEvaluation(page, member, score = 4) {
@@ -460,6 +462,8 @@ test('데스크톱 작업 상세를 스크롤해도 작업 진행 버튼은 검�
   await expect(
     sidebar.getByRole('button', { name: '완료 요청', exact: true }),
   ).toBeVisible();
+  // Wait for route focus/scroll restoration before measuring a manual scroll.
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.evaluate(() => window.scrollTo(0, 700));
   const navigation = await page
     .locator('.task-detail-navigation')
@@ -950,6 +954,7 @@ test('팀 홈 수행 지연에서 승인 대기는 제외하고 일반 마감 �
   page,
 }) => {
   await openPreview(page, '/spaces/1/teams/1');
+  await expect(page.getByRole('button', { name: /내 마감 지연.*1건/ })).toBeVisible();
   await page.evaluate(() => {
     const key = 'fairplay:mock:v5:preview:1';
     const state = JSON.parse(localStorage.getItem(key));
@@ -995,6 +1000,7 @@ test('평가 마감 시각이 지나면 열린 작성 화면도 조회 전용으
 }) => {
   await page.clock.install({ time: new Date('2026-10-16T09:00:00+09:00') });
   await openPreview(page, peerPath);
+  await expect(page.getByLabel('이지원 작업 수행 5점', { exact: true })).toBeEnabled();
   await page.evaluate(() => {
     const key = 'fairplay:mock:v5:preview:1';
     const state = JSON.parse(localStorage.getItem(key));

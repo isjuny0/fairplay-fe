@@ -5,7 +5,7 @@ import {
 import useResource from '../hooks/useResource.js';
 import { formatDate } from '../lib/domain.js';
 import { roundLabels, roundStatusLabels } from '../lib/evaluation.js';
-import { peerCriteria } from '../mock/fixtures.js';
+import { peerCriteria } from '../lib/peerCriteria.js';
 import { ResourceState } from './ui.jsx';
 
 function MemberRoundScores({ round, teamId, targetUserId, revision }) {

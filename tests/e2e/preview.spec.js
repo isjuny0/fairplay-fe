@@ -12,6 +12,7 @@ async function preview(
       apiCalls.push(request.url());
   });
   await page.goto('/preview/main');
+  await page.locator('.preview-toolbar').waitFor({ state: 'visible' });
   if (!(await page.getByLabel('미리보기 역할').isVisible()))
     await page.getByText('미리보기 설정', { exact: true }).click();
   await page.getByLabel('미리보기 역할').selectOption(role);
@@ -363,6 +364,7 @@ for (const width of [320, 768, 1440])
       '/spaces/1/teams/1/reports',
     ]) {
       await page.goto(`/preview${path}`);
+      await page.locator('.preview-toolbar').waitFor({ state: 'visible' });
       if (!(await page.getByLabel('미리보기 역할').isVisible()))
         await page.getByText('미리보기 설정', { exact: true }).click();
       await expect(page.locator('h1')).toBeVisible();

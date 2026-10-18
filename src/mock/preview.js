@@ -16,8 +16,7 @@ import {
   MockError,
 } from './planned.js';
 
-export const isPreviewPath = (path) =>
-  path === '/preview' || path.startsWith('/preview/');
+export { isPreviewPath } from '../lib/previewPath.js';
 export function previewRole() {
   return globalThis.localStorage?.getItem('fairplay:preview-role') || 'leader';
 }

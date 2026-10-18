@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 
 async function preview(page, path, role, scenario = 'active') {
   await page.goto('/preview/main');
+  await page.locator('.preview-toolbar').waitFor({ state: 'visible' });
   if (!(await page.getByLabel('미리보기 역할').isVisible()))
     await page.getByText('미리보기 설정', { exact: true }).click();
   await page.getByLabel('미리보기 역할').selectOption(role);

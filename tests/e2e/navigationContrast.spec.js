@@ -110,6 +110,7 @@ test('공간·팀 선택과 이전 사이드바 메뉴의 좌우 여백을 맞�
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/preview/main');
+  await expect(page.locator('.directory-sidebar-link').first()).toBeVisible();
   const directory = await page
     .locator('.directory-sidebar-link')
     .first()
@@ -121,6 +122,7 @@ test('공간·팀 선택과 이전 사이드바 메뉴의 좌우 여백을 맞�
       return [style.paddingTop, style.paddingLeft, style.paddingRight];
     });
   await page.goto('/preview/spaces/1/teams/1');
+  await expect(page.locator('.workspace-back-link')).toBeVisible();
   const workspace = await page.locator('.workspace-back-link').boundingBox();
   const workspacePadding = await page
     .locator('.workspace-sidebar')

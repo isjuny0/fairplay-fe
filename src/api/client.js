@@ -1,4 +1,3 @@
-import { previewRequest } from '../mock/preview.js';
 const apiBaseUrl = (import.meta.env?.VITE_API_BASE_URL || '').replace(
   /\/$/,
   '',
@@ -47,6 +46,7 @@ export async function apiRequest(
     (window.location?.pathname === '/preview' ||
       window.location?.pathname?.startsWith('/preview/'))
   ) {
+    const { previewRequest } = await import('../mock/preview.js');
     return previewRequest(path, { method, body, responseType });
   }
   const headers = {};

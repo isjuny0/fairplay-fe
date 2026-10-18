@@ -1,5 +1,5 @@
 import { roundLabels, roundStatusLabels } from '../lib/evaluation.js';
-import { peerCriteria } from '../mock/fixtures.js';
+import { peerCriteria } from '../lib/peerCriteria.js';
 
 export function MetricCard({ label, value, description, accent = false }) {
   return (
