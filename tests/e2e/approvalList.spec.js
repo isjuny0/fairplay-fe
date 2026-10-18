@@ -95,6 +95,33 @@ test('결과 없음은 빈 상태와 구분하고 초기화는 요청 상태와 
   await expect(page.getByText('검색 조건에 맞는 승인 요청이 없습니다.')).toBeVisible();
 });
 
+test('승인 검색 조건을 하나씩 해제하고 요청 상태·다른 조건을 유지하며 입력으로 복귀한다', async ({ page }) => {
+  await fixture(page);
+  await page.goto('/spaces/1/teams/1/approvals?status=REJECTED&q=검증&requester=colleague&sort=oldest&keep=1');
+  const filters = page.getByRole('group', { name: '적용 중인 승인 검색 조건' });
+  await expect(filters.getByRole('button')).toHaveCount(3);
+  await filters.getByRole('button', { name: '검색: 검증 해제', exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByLabel('승인 작업 검색')).toBeFocused();
+  expect(new URL(page.url()).searchParams.get('requester')).toBe('colleague');
+  expect(new URL(page.url()).searchParams.get('sort')).toBe('oldest');
+  const requester = members.find(member => member.userId === 'colleague');
+  await filters.getByRole('button', { name: `요청자: ${requester.name} 해제`, exact: true }).click();
+  await expect(page.getByLabel('승인 요청자')).toBeFocused();
+  expect(new URL(page.url()).searchParams.get('sort')).toBe('oldest');
+  await page.reload();
+  await expect(filters.getByRole('button')).toHaveCount(1);
+  await filters.getByRole('button', { name: '정렬: 오래된 요청 순 해제', exact: true }).click();
+  await expect(page.getByLabel('승인 요청 정렬')).toBeFocused();
+  await expect(filters).toHaveCount(0);
+  await expect(page.getByLabel('요청 상태')).toHaveValue('REJECTED');
+  expect(new URL(page.url()).searchParams.get('keep')).toBe('1');
+  await page.getByLabel('승인 작업 검색').fill('검증');
+  await page.getByRole('button', { name: '검색 조건 초기화', exact: true }).click();
+  await expect(page.getByLabel('승인 작업 검색')).toBeFocused();
+  await expect(page.getByLabel('요청 상태')).toHaveValue('REJECTED');
+});
+
 test('상태 조회 중에는 이전 요청과 검색 건수를 숨기고 실패는 재조회로 복구한다', async ({ page }) => {
   const state = await fixture(page);
   await page.goto('/spaces/1/teams/1/approvals?q=검증');
