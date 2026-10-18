@@ -79,13 +79,7 @@ export default function DeliverableTable({
                     {deliverable.type === "FILE" ? "파일" : "문서"}
                   </span>
                   <small>
-                    {categoryLabels[deliverable.category] ||
-                      {
-                        RESEARCH: "조사·분석",
-                        PRESENTATION: "발표",
-                        OPERATION: "행사·운영",
-                      }[deliverable.category] ||
-                      deliverable.category}
+                    {categoryLabels[deliverable.category] || deliverable.category}
                   </small>
                 </td>
                 <td className="collection-task-cell">
