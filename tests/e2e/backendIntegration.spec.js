@@ -367,6 +367,7 @@ async function backend(
 test('일반 팀 홈은 서버 본인 집계를 사용하고 null을 0%로 표시하지 않는다', async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
   const { requests } = await backend(page);
   await page.goto('/spaces/1/teams/1');
   await expect(
@@ -376,10 +377,41 @@ test('일반 팀 홈은 서버 본인 집계를 사용하고 null을 0%로 표�
     page.getByRole('button', { name: /내 마감 지연.*9건/ }),
   ).toBeVisible();
   await expect(page.getByText('계산할 작업 없음').first()).toBeVisible();
+  const actions = await page.getByRole('region', { name: '지금 확인할 작업' }).boundingBox();
+  const ownWork = await page.getByRole('region', { name: '본인 작업 현황' }).boundingBox();
+  expect(actions.y + actions.height).toBeLessThan(800);
+  expect(ownWork.y).toBeGreaterThanOrEqual(actions.y + actions.height);
+  const method = page.getByText('지표 계산 기준', { exact: true });
+  await expect(page.locator('.home-metric-help p')).toBeHidden();
+  await method.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.home-metric-help p')).toBeVisible();
   await expect(page.getByText('목업', { exact: true })).toHaveCount(0);
   expect(
     requests.some((request) => request.path.endsWith('/my-work-summary')),
   ).toBeTruthy();
+});
+test('팀 홈은 확인할 작업이 없음을 안내하고 계산할 작업 없음과 0%를 구분한다', async ({ page }) => {
+  await backend(page);
+  await page.route('**/api/teams/1/my-work-summary', route => route.fulfill({
+    json: {
+      teamId: 1, asOf: '2026-10-18T10:00:00Z',
+      teamTotalWeight: 3, teamDoneWeight: 0, myAssignedWeight: 0, myDoneWeight: 0,
+      teamProgressRate: 0, myAssignedShare: 0, myCompletedContributionRate: 0,
+      myTaskCompletionRate: null, myPendingApprovalCount: 0, myOverdueTaskCount: 0,
+    },
+  }));
+  await page.goto('/spaces/1/teams/1');
+  await expect(page.getByText('현재 마감 지연이나 승인 대기 중인 내 작업이 없습니다.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /내 마감 지연.*0건/ })).toBeEnabled();
+  await expect(page.getByRole('button', { name: /내 승인 대기.*0건/ })).toBeEnabled();
+  const ownWork = page.getByRole('region', { name: '본인 작업 현황' });
+  await expect(ownWork.getByText('0.00%', { exact: true })).toHaveCount(2);
+  await expect(ownWork.getByText('담당 작업 없음', { exact: true })).toBeVisible();
+  await expect(page.getByRole('progressbar', { name: '예상 작업량을 반영한 팀 진행률' })).toHaveAttribute('aria-valuenow', '0');
+  await page.getByRole('button', { name: /내 승인 대기/ }).click();
+  await expect(page).toHaveURL(/mine=1/);
+  await expect(page.getByLabel('작업 상태', { exact: true })).toHaveValue('PENDING_APPROVAL');
 });
 test('서버 조회 오류를 예시 현황으로 대체하지 않는다', async ({ page }) => {
   await backend(page);
