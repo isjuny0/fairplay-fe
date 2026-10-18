@@ -58,6 +58,7 @@ function PeerResponseForm({
   return (
     <form
       className="panel peer-card"
+      id={`peer-response-${round.id}-${target.targetId}`}
       ref={formElement}
       onSubmit={async (event) => {
         event.preventDefault();
@@ -94,13 +95,14 @@ function PeerResponseForm({
           notify(`${target.name}님의 평가를 저장했습니다.`);
         } catch (error) {
           setError(error);
+          formElement.current?.scrollIntoView({ block: 'start' });
         } finally {
           setBusy(false);
         }
       }}
     >
       <div className="page-heading">
-        <h2>{target.name}</h2>
+        <h2 tabIndex={-1}>{target.name}</h2>
         <span
           className={`status-badge ${!changed && response ? 'task-state-done' : ''}`}
         >
@@ -115,75 +117,78 @@ function PeerResponseForm({
                   : '작성 필요'}
         </span>
       </div>
-      {Object.entries(peerCriteria).map(([code, label]) => (
-        <fieldset
-          className="score-field"
-          key={code}
-          disabled={locked || busy}
-          aria-invalid={scoreError?.code === code}
-          aria-describedby={
-            scoreError?.code === code
-              ? `${target.targetId}-${code}-error`
-              : undefined
-          }
-        >
-          <legend>{label}</legend>
-          <div className="score-options">
-            {[1, 2, 3, 4, 5].map((score) => (
-              <label
-                key={score}
-                className={Number(scores[code]) === score ? 'selected' : ''}
-              >
-                <input
-                  type="radio"
-                  name={`${target.targetId}-${code}`}
-                  aria-label={`${target.name} ${label} ${score}점`}
-                  checked={Number(scores[code]) === score}
-                  onChange={() => {
-                    setScores((current) => ({ ...current, [code]: score }));
-                    setScoreError(null);
-                    setError(null);
-                  }}
-                />
-                <span>{score}</span>
-              </label>
-            ))}
-          </div>
-          <p className="score-scale" aria-label="점수 기준">
-            <span>
-              1점
-              <br />
-              기준 미달
-            </span>
-            <span>
-              3점
-              <br />
-              기준 충족
-            </span>
-            <span>
-              5점
-              <br />
-              기준 초과
-            </span>
-          </p>
-          {scoreError?.code === code && (
-            <p
-              className="field-error"
-              role="alert"
-              id={`${target.targetId}-${code}-error`}
-            >
-              {scoreError.message}
+      <ErrorNotice error={error} />
+      <div className="peer-score-grid">
+        {Object.entries(peerCriteria).map(([code, label]) => (
+          <fieldset
+            className="score-field"
+            key={code}
+            disabled={locked || busy}
+            aria-invalid={scoreError?.code === code}
+            aria-describedby={
+              scoreError?.code === code
+                ? `${target.targetId}-${code}-error`
+                : undefined
+            }
+          >
+            <legend>{label}</legend>
+            <div className="score-options">
+              {[1, 2, 3, 4, 5].map((score) => (
+                <label
+                  key={score}
+                  className={Number(scores[code]) === score ? 'selected' : ''}
+                >
+                  <input
+                    type="radio"
+                    name={`${target.targetId}-${code}`}
+                    aria-label={`${target.name} ${label} ${score}점`}
+                    checked={Number(scores[code]) === score}
+                    onChange={() => {
+                      setScores((current) => ({ ...current, [code]: score }));
+                      setScoreError(null);
+                      setError(null);
+                    }}
+                  />
+                  <span>{score}</span>
+                </label>
+              ))}
+            </div>
+            <p className="score-scale" aria-label="점수 기준">
+              <span>
+                1점
+                <br />
+                기준 미달
+              </span>
+              <span>
+                3점
+                <br />
+                기준 충족
+              </span>
+              <span>
+                5점
+                <br />
+                기준 초과
+              </span>
             </p>
-          )}
-          <details>
-            <summary>점수별 행동 기준</summary>
-            <p>1점 · {peerGuides[code][0]}</p>
-            <p>3점 · {peerGuides[code][1]}</p>
-            <p>5점 · {peerGuides[code][2]}</p>
-            <p>2·4점은 인접 기준 사이의 수행 행동입니다.</p>
-          </details>
-        </fieldset>
-      ))}
+            {scoreError?.code === code && (
+              <p
+                className="field-error"
+                role="alert"
+                id={`${target.targetId}-${code}-error`}
+              >
+                {scoreError.message}
+              </p>
+            )}
+            <details>
+              <summary>점수별 행동 기준</summary>
+              <p>1점 · {peerGuides[code][0]}</p>
+              <p>3점 · {peerGuides[code][1]}</p>
+              <p>5점 · {peerGuides[code][2]}</p>
+              <p>2·4점은 인접 기준 사이의 수행 행동입니다.</p>
+            </details>
+          </fieldset>
+        ))}
+      </div>
       <Field
         label="평가 사유"
         error={reasonError}
@@ -207,12 +212,6 @@ function PeerResponseForm({
         />
       </Field>
       <p className="character-count">{reason.length} / 500자</p>
-      <ErrorNotice error={error} />
-      {!locked && (
-        <button className="secondary-button" disabled={busy}>
-          {busy ? '저장 중…' : `${target.name} 평가 저장`}
-        </button>
-      )}
     </form>
   );
 }
@@ -260,6 +259,25 @@ function RoundResponses({ context, round, onSubmitted }) {
   )
     ? activeTargetId
     : targets[0]?.targetId;
+  const currentTarget = targets.find(
+    (target) => target.targetId === currentTargetId,
+  );
+  const currentState = formStates[currentTargetId];
+  const currentResponse = responses.find(
+    (response) => response.targetId === currentTargetId,
+  );
+  const nextTarget =
+    targets[
+      (targets.findIndex((target) => target.targetId === currentTargetId) + 1) %
+        targets.length
+    ];
+  useEffect(() => {
+    if (activeTargetId)
+      document
+        .getElementById(`peer-target-${round.id}-${activeTargetId}`)
+        ?.querySelector('h2')
+        ?.focus();
+  }, [activeTargetId, round.id]);
   const readyToSubmit =
     !locked &&
     targets.length > 0 &&
@@ -302,7 +320,9 @@ function RoundResponses({ context, round, onSubmitted }) {
                   </div>
                   <ProgressBar
                     value={
-                      targets.length ? (responses.length / targets.length) * 100 : 0
+                      targets.length
+                        ? (responses.length / targets.length) * 100
+                        : 0
                     }
                     label="내 평가 작성 진행률"
                   />
@@ -365,30 +385,76 @@ function RoundResponses({ context, round, onSubmitted }) {
                 })}
               </div>
             </div>
-            {!locked && (
-              <section className="peer-submit-bar" aria-label="평가 최종 제출">
-                <div>
-                  <strong>
-                    {responses.length} / {targets.length}명 저장
-                  </strong>
-                  <p>
-                    {hasChanges
-                      ? '미저장 변경 사항을 먼저 저장해 주세요.'
-                      : saving || resource.loading
-                        ? '저장 상태를 확인하고 있습니다.'
-                        : readyToSubmit
-                          ? '모든 평가를 저장했습니다. 최종 제출해 주세요.'
-                          : '모든 대상의 평가를 저장하면 제출할 수 있습니다.'}
-                  </p>
+            {!locked && currentTarget && (
+              <div
+                className="review-action-dock peer-evaluation-actions"
+                role="region"
+                aria-label="평가 저장 및 제출"
+              >
+                <div className="peer-current-action">
+                  <div className="review-action-context">
+                    <strong>현재 대상 · {currentTarget.name}</strong>
+                    <span>
+                      {currentState?.saving
+                        ? '현재 평가 저장 중'
+                        : currentState?.changed
+                          ? '변경 내용을 저장해 주세요.'
+                          : currentResponse
+                            ? '저장한 평가입니다.'
+                            : '점수를 선택하고 대상별로 저장하세요.'}
+                    </span>
+                  </div>
+                  <div className="review-action-buttons">
+                    <button
+                      type="submit"
+                      form={`peer-response-${round.id}-${currentTargetId}`}
+                      className="secondary-button"
+                      disabled={busy || saving || resource.loading}
+                    >
+                      {currentState?.saving
+                        ? '저장 중…'
+                        : `${currentTarget.name} 평가 저장`}
+                    </button>
+                    {targets.length > 1 && (
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        disabled={busy || saving}
+                        onClick={() => setActiveTargetId(nextTarget.targetId)}
+                        aria-label={`다음 팀원 · ${nextTarget.name}`}
+                      >
+                        다음 팀원 →
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <button
-                  className="primary-button"
-                  disabled={!readyToSubmit || busy}
-                  onClick={() => setConfirming(true)}
+                <section
+                  className="peer-submit-bar"
+                  aria-label="평가 최종 제출"
                 >
-                  최종 제출
-                </button>
-              </section>
+                  <div>
+                    <strong>
+                      {responses.length} / {targets.length}명 저장
+                    </strong>
+                    <p>
+                      {hasChanges
+                        ? '미저장 변경 사항을 먼저 저장해 주세요.'
+                        : saving || resource.loading
+                          ? '저장 상태를 확인하고 있습니다.'
+                          : readyToSubmit
+                            ? '모든 평가를 저장했습니다. 최종 제출해 주세요.'
+                            : '모든 대상의 평가를 저장하면 제출할 수 있습니다.'}
+                    </p>
+                  </div>
+                  <button
+                    className="primary-button"
+                    disabled={!readyToSubmit || busy}
+                    onClick={() => setConfirming(true)}
+                  >
+                    최종 제출
+                  </button>
+                </section>
+              </div>
             )}
           </>
         )}

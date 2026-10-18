@@ -1,0 +1,259 @@
+/* Actions stay available while the evidence or evaluation is being read. */
+.review-action-dock {
+  position: fixed;
+  inset: auto 0 0 240px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  max-height: 45dvh;
+  overflow-y: auto;
+  padding: 12px 24px max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-primary);
+}
+.review-action-context {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.review-action-context strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-body);
+  font-weight: 600;
+}
+.review-action-context > span {
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+  overflow-wrap: anywhere;
+}
+.review-action-buttons {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+}
+.review-action-buttons button {
+  white-space: nowrap;
+}
+.task-detail-page:has(.approval-decision),
+.peer-evaluation-page:has(.peer-evaluation-actions) {
+  padding-bottom: 128px;
+}
+html:has(.review-action-dock) {
+  scroll-padding-bottom: 140px;
+}
+.approval-rejection[hidden] {
+  display: none;
+}
+.approval-rejection {
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.approval-rejection .section-heading {
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.approval-rejection h3 {
+  margin: 0;
+  font-size: var(--text-support);
+}
+.approval-rejection .text-button {
+  font-size: var(--text-caption);
+}
+.approval-decision .approval-decision-actions {
+  background: var(--surface);
+}
+.peer-evaluation-actions {
+  align-items: stretch;
+}
+.peer-current-action {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+}
+.peer-evaluation-page .peer-evaluation-actions .peer-submit-bar {
+  display: flex;
+  flex: 0 1 360px;
+  min-width: 260px;
+  max-width: none;
+  margin: 0;
+  padding: 0 0 0 20px;
+  border: 0;
+  border-left: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+}
+.peer-evaluation-actions .peer-submit-bar strong {
+  font-size: var(--text-support);
+}
+.peer-evaluation-actions .peer-submit-bar p {
+  font-size: var(--text-caption);
+  line-height: 1.5;
+}
+.peer-score-grid {
+  display: grid;
+  gap: 8px 24px;
+}
+.peer-response-layout .peer-card > .page-heading {
+  margin-bottom: 8px;
+  padding-bottom: 12px;
+}
+.peer-response-layout .peer-score-grid .score-field {
+  margin: 8px 0;
+  padding: 8px 0 0;
+}
+.peer-score-grid .score-field details summary {
+  padding-block: 4px;
+  font-size: var(--text-caption);
+}
+.peer-card :is(input, textarea) {
+  scroll-margin-block: 120px 180px;
+}
+.peer-card h2:focus {
+  outline: none;
+}
+.peer-target:focus-within {
+  scroll-margin-top: 88px;
+}
+@media (min-width: 1200px) {
+  .peer-score-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.report-status-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+.report-review-page .report-status-toolbar .process-steps {
+  flex: 1 1 auto;
+  margin: 0;
+}
+.report-status-toolbar > .report-refresh {
+  margin-left: auto;
+  font-size: var(--text-support);
+}
+.report-review-page .team-report {
+  gap: 16px;
+}
+.report-review-page .report-team-result {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}
+.report-review-page .report-team-result .section-heading {
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+.report-review-page .report-team-result .section-heading p {
+  margin-bottom: 0;
+}
+.report-readiness-details {
+  border-block: 1px solid var(--border);
+}
+.report-readiness-details > summary {
+  padding: 14px 0;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: var(--text-support);
+}
+.report-readiness-details > .panel {
+  padding: 8px 0 16px;
+  border: 0;
+  border-radius: 0;
+}
+@media (max-width: 1100px) {
+  .peer-evaluation-actions {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .peer-current-action {
+    flex-basis: 100%;
+  }
+  .peer-evaluation-page .peer-evaluation-actions .peer-submit-bar {
+    flex-basis: 100%;
+    padding: 10px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+  .peer-evaluation-page:has(.peer-evaluation-actions) {
+    padding-bottom: 220px;
+  }
+}
+@media (max-width: 720px) {
+  .review-action-dock {
+    left: 0;
+    padding-inline: 16px;
+  }
+  .approval-decision-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .approval-decision-actions .review-action-context {
+    flex-basis: 100%;
+  }
+  .approval-decision-actions .review-action-buttons {
+    width: 100%;
+  }
+  .approval-decision-actions .review-action-buttons button {
+    flex: 1;
+  }
+  .task-detail-page:has(.approval-decision) {
+    padding-bottom: 180px;
+  }
+  .peer-current-action {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .peer-current-action .review-action-context {
+    flex-basis: 100%;
+  }
+  .peer-current-action .review-action-buttons {
+    flex: 1;
+    flex-wrap: wrap;
+  }
+  .peer-evaluation-actions .review-action-buttons > button:first-child {
+    flex: 1;
+  }
+  html:has(.review-action-dock) {
+    scroll-padding-bottom: 230px;
+  }
+  .report-status-toolbar > .report-refresh {
+    margin-left: 0;
+  }
+}
+
+/* A generated result should fit before routine readiness information. */
+.report-review-page > .page-heading {
+  padding-bottom: 16px;
+}
+.report-review-page .report-team-toolbar {
+  padding-block: 8px;
+}
+.report-review-page .report-status-toolbar .process-steps li {
+  padding-block: 6px;
+}
+.report-review-page .report-team-result .section-heading h2 {
+  margin: 4px 0;
+}
+.report-review-page .report-team-result .section-heading p {
+  font-size: var(--text-support);
+}
+@media (max-width: 720px) {
+  .peer-evaluation-page:has(.peer-evaluation-actions) {
+    padding-bottom: calc(290px + env(safe-area-inset-bottom));
+  }
+  html:has(.peer-evaluation-actions) {
+    scroll-padding-bottom: 290px;
+  }
+}

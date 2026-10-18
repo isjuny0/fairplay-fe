@@ -19,6 +19,7 @@ import './deliverable-editor.css';
 import './manager-peer-review.css';
 import './resource-states.css';
 import './deliverable-search.css';
+import './review-workflow.css';
 
 const router = createBrowserRouter([
   {

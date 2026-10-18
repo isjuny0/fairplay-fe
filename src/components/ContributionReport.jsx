@@ -228,21 +228,99 @@ export function TeamReport({ context, manager = false }) {
     !closedRounds ||
     !teamSubmissionComplete ||
     context.team.approvedMemberCount < 2;
+  const preparation = (
+    <section className="panel">
+      <ul
+        className="readiness-list round-readiness"
+        aria-label="회차별 리포트 준비 상태"
+      >
+        {['MID', 'FINAL'].map((type) => {
+          const round = readiness.data?.rounds.find(
+            (round) => round.type === type,
+          );
+          const submission = readiness.data?.dashboard.missingPeerSubmissions
+            .find((entry) => entry.type === type)
+            ?.teams.find((team) => team.teamId === context.team.id);
+          return (
+            <li key={type}>
+              <strong>{roundLabels[type]}</strong>
+              <span>
+                {readiness.loading
+                  ? '확인 중'
+                  : round
+                    ? roundStatusLabels[round.status]
+                    : '회차 미설정'}
+              </span>
+              <span>
+                {!round || round.status === 'DRAFT'
+                  ? '참여자 고정 전'
+                  : submission
+                    ? `${submission.submittedCount}/${submission.requiredCount}명 제출 · 미제출 ${submission.missingCount}명`
+                    : '제출 현황 확인 필요'}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      {!knownBlock && (
+        <p className="field-help">
+          두 회차 마감과 해당 팀의 필수 제출 조건을 충족했습니다. 최종 계산 가능
+          여부는 생성 시 확인합니다.
+        </p>
+      )}
+      {context.team.approvedMemberCount < 2 && (
+        <p className="notice">승인된 팀원 2명 이상이 필요합니다.</p>
+      )}
+      <button
+        className="secondary-button"
+        onClick={() => navigate(`${spacePath(context.space.id)}/rounds`)}
+      >
+        평가 회차 관리로
+      </button>
+      <div className="page-heading">
+        <div>
+          <h2>{context.team.name} 리포트</h2>
+          <p>
+            승인 작업과 우리 팀 중간·최종 평가 제출을 충족하면 현재 산식으로
+            계산합니다.
+          </p>
+        </div>
+        <button
+          className={selected ? 'secondary-button' : 'primary-button'}
+          disabled={
+            busy ||
+            resource.loading ||
+            Boolean(resource.error) ||
+            knownBlock ||
+            Boolean(selected)
+          }
+          onClick={async () => {
+            setBusy(true);
+            setError(null);
+            try {
+              await generateTeamReport(context.team.id);
+              notify('리포트를 생성했습니다.');
+              resource.reload();
+            } catch (error) {
+              setError(error);
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          {selected ? '생성 완료' : '리포트 생성'}
+        </button>
+      </div>
+      <p className="field-help">
+        확정된 입력으로 한 번 생성한 결과를 검토하고 공개합니다. 생성된 계산
+        결과는 변경할 수 없습니다.
+      </p>
+    </section>
+  );
   return (
     <div className="stack team-report">
-      <button
-        className="secondary-button report-refresh"
-        disabled={busy}
-        onClick={() => {
-          resource.reload();
-          readiness.reload();
-        }}
-      >
-        {manager ? '리포트·준비 상태 새로고침' : '리포트 새로고침'}
-      </button>
-      <ErrorNotice error={error} />
-      {manager && (
-        <section className="panel">
+      <div className="report-status-toolbar">
+        {manager && (
           <ol className="process-steps" aria-label="리포트 진행 단계">
             <li className={!selected ? 'active' : ''}>1. 리포트 생성</li>
             <li className={selected?.status === 'UNPUBLISHED' ? 'active' : ''}>
@@ -252,99 +330,27 @@ export function TeamReport({ context, manager = false }) {
               3. 공개
             </li>
           </ol>
-          <ul
-            className="readiness-list round-readiness"
-            aria-label="회차별 리포트 준비 상태"
-          >
-            {['MID', 'FINAL'].map((type) => {
-              const round = readiness.data?.rounds.find(
-                (round) => round.type === type,
-              );
-              const submission =
-                readiness.data?.dashboard.missingPeerSubmissions
-                  .find((entry) => entry.type === type)
-                  ?.teams.find((team) => team.teamId === context.team.id);
-              return (
-                <li key={type}>
-                  <strong>{roundLabels[type]}</strong>
-                  <span>
-                    {readiness.loading
-                      ? '확인 중'
-                      : round
-                        ? roundStatusLabels[round.status]
-                        : '회차 미설정'}
-                  </span>
-                  <span>
-                    {!round || round.status === 'DRAFT'
-                      ? '참여자 고정 전'
-                      : submission
-                        ? `${submission.submittedCount}/${submission.requiredCount}명 제출 · 미제출 ${submission.missingCount}명`
-                        : '제출 현황 확인 필요'}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-          {!knownBlock && (
-            <p className="field-help">
-              두 회차 마감과 해당 팀의 필수 제출 조건을 충족했습니다. 최종 계산
-              가능 여부는 생성 시 확인합니다.
-            </p>
-          )}
-          {context.team.approvedMemberCount < 2 && (
-            <p className="notice">승인된 팀원 2명 이상이 필요합니다.</p>
-          )}
-          <button
-            className="secondary-button"
-            onClick={() => navigate(`${spacePath(context.space.id)}/rounds`)}
-          >
-            평가 회차 관리로
-          </button>
-          <ErrorNotice error={readiness.error} onRetry={readiness.reload} />
-          <div className="page-heading">
-            <div>
-              <h2>{context.team.name} 리포트</h2>
-              <p>
-                승인 작업과 우리 팀 중간·최종 평가 제출을 충족하면 현재 산식으로
-                계산합니다.
-              </p>
-            </div>
-            <button
-              className={selected ? 'secondary-button' : 'primary-button'}
-              disabled={
-                busy ||
-                resource.loading ||
-                Boolean(resource.error) ||
-                knownBlock ||
-                Boolean(selected)
-              }
-              onClick={async () => {
-                setBusy(true);
-                setError(null);
-                try {
-                  await generateTeamReport(context.team.id);
-                  notify('리포트를 생성했습니다.');
-                  resource.reload();
-                } catch (error) {
-                  setError(error);
-                } finally {
-                  setBusy(false);
-                }
-              }}
-            >
-              {selected ? '생성 완료' : '리포트 생성'}
-            </button>
-          </div>
-          <p className="field-help">
-            확정된 입력으로 한 번 생성한 결과를 검토하고 공개합니다. 생성된 계산
-            결과는 변경할 수 없습니다.
-          </p>
-        </section>
+        )}
+        <button
+          className="secondary-button report-refresh"
+          disabled={busy}
+          onClick={() => {
+            resource.reload();
+            readiness.reload();
+          }}
+        >
+          {manager ? '리포트·준비 상태 새로고침' : '리포트 새로고침'}
+        </button>
+      </div>
+      <ErrorNotice error={error} />
+      {manager && (
+        <ErrorNotice error={readiness.error} onRetry={readiness.reload} />
       )}
+      {manager && !selected && preparation}
       <ResourceState resource={resource}>
         {selected ? (
           <>
-            {selected && <ReportDetail context={context} report={selected} />}
+            <ReportDetail context={context} report={selected} />
             {manager && selected?.status === 'UNPUBLISHED' && (
               <section className="panel">
                 <h2>검토 후 팀원에게 공개</h2>
@@ -360,6 +366,12 @@ export function TeamReport({ context, manager = false }) {
                   리포트 공개
                 </button>
               </section>
+            )}
+            {manager && (
+              <details className="report-readiness-details">
+                <summary>평가 제출·생성 조건 확인</summary>
+                {preparation}
+              </details>
             )}
           </>
         ) : (

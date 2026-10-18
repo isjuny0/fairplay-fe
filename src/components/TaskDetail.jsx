@@ -455,6 +455,7 @@ export default function TaskDetail({
                   <ApprovalDecision
                     key={currentApproval.id}
                     approval={currentApproval}
+                    taskTitle={task.title}
                     user={user}
                     members={members}
                     onReviewSection={focusTaskSection}
