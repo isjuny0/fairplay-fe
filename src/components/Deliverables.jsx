@@ -1,4 +1,3 @@
-import { isPreviewPath } from "../mock/preview.js";
 import Icon from "./Icon.jsx";
 import DeliverableTable from "./DeliverableTable.jsx";
 import { useEffect, useRef, useState } from "react";
@@ -70,15 +69,6 @@ function DeliverableForm({
     taskId: taskId ?? "",
   });
   const [form, setForm] = useState(initialForm);
-  const targetContract = isPreviewPath(window.location.pathname);
-  const categories = targetContract
-    ? {
-        ...categoryLabels,
-        RESEARCH: "조사·분석",
-        PRESENTATION: "발표",
-        OPERATION: "행사·운영",
-      }
-    : categoryLabels;
   const fileExtensions = /\.(txt|md|pdf|doc|docx|ppt|pptx|xls|xlsx)$/i;
   const fileHelp = "TXT, MD, PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX";
   const [file, setFile] = useState(null);
@@ -157,12 +147,6 @@ function DeliverableForm({
       }
     >
       <form className="deliverable-editor-form" onSubmit={submit} noValidate>
-        {targetContract && (
-          <p className="mock-notice">
-            최신 명세의 자료 유형·분류를 미리보기로 제공합니다. 실제 서버
-            업로드는 현재 구현된 형식을 따릅니다.
-          </p>
-        )}
         <fieldset
           disabled={busy || recovery.loading || blocked}
           className={`form-fields deliverable-form-layout${canEditContent ? "" : " deliverable-metadata-only"}`}
@@ -186,7 +170,7 @@ function DeliverableForm({
                 value={form.category}
                 onChange={(event) => update("category", event.target.value)}
               >
-                {Object.entries(categories).map(([category, label]) => (
+                {Object.entries(categoryLabels).map(([category, label]) => (
                   <option key={category} value={category}>
                     {label}
                   </option>
@@ -386,8 +370,8 @@ function DeliverableForm({
                   },
                   {
                     label: "분류",
-                    latest: categories[recovery.latest.deliverable.category],
-                    input: categories[form.category],
+                    latest: categoryLabels[recovery.latest.deliverable.category],
+                    input: categoryLabels[form.category],
                   },
                   ...(!permissions.content
                     ? []
@@ -937,11 +921,6 @@ export default function Deliverables({
                       <span className="role-badge">
                         {{ TEXT: "문서", FILE: "파일" }[deliverable.type]} ·{" "}
                         {categoryLabels[deliverable.category] ||
-                          {
-                            RESEARCH: "조사·분석",
-                            PRESENTATION: "발표",
-                            OPERATION: "행사·운영",
-                          }[deliverable.category] ||
                           deliverable.category}
                       </span>
                     </div>
