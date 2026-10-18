@@ -169,15 +169,38 @@ export default function TaskDetail({
 
   const focusTaskSection = (id) => {
     const target = document.getElementById(id);
+    if (target?.tagName === 'DETAILS') target.open = true;
     target?.focus({ preventScroll: true });
     target?.scrollIntoView({ block: 'start' });
   };
 
   return (
     <section className="stack task-detail-page">
-      <button className="secondary-button back-button" onClick={onBack}>
-        ← 목록으로
-      </button>
+      <div className="task-detail-navigation">
+        <button className="secondary-button back-button" onClick={onBack}>
+          ← 목록으로
+        </button>
+        {task && (
+          <nav className="task-section-navigation" aria-label="작업 상세 항목">
+            {[
+              ['task-description-section', '작업 설명'],
+              ['task-contributions-section', '수행 설명'],
+              ['task-deliverables-section', '산출물'],
+              ['task-assignment-section', '담당·배분'],
+              ['task-approval-history', '완료 요청 이력'],
+            ].map(([id, label]) => (
+              <button
+                key={id}
+                className="text-button"
+                aria-label={`${label} 영역으로 이동`}
+                onClick={() => focusTaskSection(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </nav>
+        )}
+      </div>
       <ErrorNotice error={error} onRetry={resource.reload} />
       <ResourceState resource={resource} label="작업 상세">
         {task && (
@@ -539,7 +562,11 @@ export default function TaskDetail({
                     </form>
                   </section>
                 )}
-                <details className="panel">
+                <details
+                  id="task-approval-history"
+                  tabIndex={-1}
+                  className="panel task-section-anchor"
+                >
                   <summary>완료 요청 이력 · {history.length}건</summary>
                   <p className="field-help">
                     과거 작업 내용·파일 사본은 보관하지 않습니다. 현재 산출물과

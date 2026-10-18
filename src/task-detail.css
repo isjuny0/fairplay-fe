@@ -86,7 +86,7 @@
 .task-section-anchor,
 #own-contribution-description,
 #task-reviewer-select {
-  scroll-margin-top: 88px;
+  scroll-margin-top: 132px;
 }
 .task-detail-page .task-review-sidebar {
   gap: 16px;
@@ -165,4 +165,64 @@
 }
 .task-overview-facts dd {
   word-break: keep-all;
+}
+
+/* Keep section navigation available while reading long task content. */
+.task-detail-navigation {
+  position: sticky;
+  top: 56px;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding-block: 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.task-detail-navigation .back-button {
+  flex: 0 0 auto;
+  margin: 0;
+}
+.task-section-navigation {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+.task-section-navigation .text-button {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 6px 10px;
+  border-radius: var(--radius-control);
+  color: var(--text-muted);
+  font-size: var(--text-support);
+  white-space: nowrap;
+  text-decoration: none;
+}
+.task-section-navigation .text-button:hover {
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+}
+.task-section-navigation .text-button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+@media (min-width: 901px) {
+  .task-detail-page .task-review-sidebar {
+    top: 128px;
+    max-height: calc(100dvh - 144px);
+  }
+}
+@media (max-width: 600px) {
+  .task-detail-navigation {
+    gap: 8px;
+  }
+  .task-detail-navigation .back-button {
+    padding-inline: 8px;
+    font-size: var(--text-support);
+  }
 }
