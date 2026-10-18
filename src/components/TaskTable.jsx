@@ -1,5 +1,6 @@
 import {
   formatDate,
+  formatBoardWorkload,
   formatExpectedWorkload,
   memberName,
   statusLabels,
@@ -9,8 +10,8 @@ import {
 function TaskDateTime({ value }) {
   const [date, time] = toDateInput(value).split('T');
   return (
-    <time dateTime={value} title={formatDate(value)}>
-      <span className="task-date-day">{date.replaceAll('-', '. ')}.</span>{' '}
+    <time dateTime={value} title={formatDate(value)} aria-label={formatDate(value)}>
+      <span className="task-date-day">{date.replaceAll('-', '.')}</span>{' '}
       <span className="task-date-clock">{time}</span>
     </time>
   );
@@ -65,7 +66,7 @@ export default function TaskTable({ tasks, members, onOpenTask, now }) {
                 ))}
               </td>
               <td>{memberName(members, task.completionReviewerId)}</td>
-              <td>{formatExpectedWorkload(task.weight)}</td>
+              <td title={formatExpectedWorkload(task.weight)}>{formatBoardWorkload(task.weight)}</td>
               <td>
                 <TaskDateTime value={task.startAt} />
               </td>

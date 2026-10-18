@@ -1361,7 +1361,7 @@ h1[tabindex="-1"]:focus {
 .calendar-count { float: right; font-size: 12px; color: var(--text-muted); padding: 3px 5px; min-height: 28px; background: transparent; border: 0; }
 .calendar-count:hover { color: var(--brand); text-decoration: underline; }
 .task-calendar-table .calendar-period-row td { padding: 0; border: 1px solid var(--border); border-top: 0; }
-.calendar-week-periods { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: repeat(3, 32px); gap: 4px 0; padding-bottom: 6px; }
+.calendar-week-periods { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: repeat(var(--calendar-lanes, 3), 32px); gap: 4px 0; padding-bottom: 6px; }
 .calendar-period-day { border-right: 1px solid var(--border); }
 .calendar-period-day:last-of-type { border-right: 0; }
 .calendar-period {
@@ -1575,10 +1575,3 @@ h1[tabindex="-1"]:focus {
 .task-schedule-help > summary { width: fit-content; padding: 4px 0; cursor: pointer; color: #536575; }
 .task-schedule-help > summary:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .task-schedule-help p { max-width: 760px; margin: 6px 0 0; }
-
-/* Two lines preserve the full date and time while keeping schedule columns compact. */
-.task-table { min-width: 900px; }
-.task-table thead th:nth-last-child(-n + 2) { width: 108px; min-width: 96px; }
-.task-table time { line-height: 1.5; font-variant-numeric: tabular-nums; }
-.task-date-day { display: block; font-size: 13px; }
-.task-date-clock { display: block; margin-top: 2px; color: #626e7d; font-size: 12px; }

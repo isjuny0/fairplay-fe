@@ -1,0 +1,135 @@
+.task-board-page {
+  gap: 12px;
+}
+.task-board-page .task-collection-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  padding-bottom: 12px;
+  margin: 0;
+}
+.task-collection-heading h1 {
+  margin: 0;
+  font-size: 22px;
+}
+.task-collection-heading .primary-button {
+  margin-left: auto;
+}
+.task-collection-heading .task-view-navigation {
+  margin: 0;
+  padding: 3px;
+}
+.task-collection-heading .task-view-navigation button {
+  min-height: 34px;
+  padding: 5px 12px;
+  font-size: 13px;
+}
+.modal-fullscreen .task-board-page > .task-collection-heading {
+  display: flex;
+  padding: 0;
+  border: 0;
+}
+.modal-fullscreen .task-collection-heading > :is(h1, .primary-button) {
+  display: none;
+}
+.task-board-page .task-schedule-controls {
+  justify-content: space-between;
+  gap: 8px;
+}
+.task-schedule-controls .task-month-navigation {
+  gap: 8px 12px;
+}
+.task-schedule-controls .secondary-button {
+  min-height: 34px;
+  padding: 5px 9px;
+  font-size: 13px;
+}
+.task-board-page .list-summary {
+  min-height: 20px;
+}
+.timeline-overview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 20px;
+  margin-bottom: 10px;
+}
+.timeline-overview .timeline-summary,
+.timeline-overview .timeline-legend {
+  padding: 0;
+  margin: 0;
+}
+.task-table {
+  min-width: 900px;
+}
+.task-table :is(th, td) {
+  padding: 12px 10px;
+  vertical-align: middle;
+  font-size: 13px;
+}
+.task-table th:first-child { width: 23%; }
+.task-table th:nth-child(2) { width: 9%; }
+.task-table th:nth-child(3) { width: 12%; }
+.task-table th:nth-child(4) { width: 8%; }
+.task-table th:nth-child(5) { width: 18%; }
+.task-table thead th:nth-last-child(-n + 2) { width: 15%; min-width: 0; }
+.task-table th:first-child .task-number {
+  margin-bottom: 2px;
+}
+.task-table .task-title-button {
+  font-size: 13px;
+}
+.task-table time {
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+.task-table :is(.task-date-day, .task-date-clock) {
+  display: inline;
+  margin: 0;
+  font-size: inherit;
+}
+.task-table .is-overdue {
+  margin-top: 4px;
+}
+@media (min-width: 901px) {
+  .task-board-page .toolbar {
+    gap: 8px 12px;
+    padding: 0 0 12px;
+  }
+  .task-board-page .task-search-filter {
+    flex: 1 1 160px;
+    max-width: 240px;
+  }
+  .task-board-page .toolbar :is(input[type='search'], select, .secondary-button) {
+    min-height: 34px;
+    padding: 5px 8px;
+    font-size: 13px;
+  }
+  .task-board-page .task-filter-fields {
+    gap: 10px;
+  }
+  .task-board-page .toolbar label {
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .task-board-page .toolbar > button:last-child {
+    margin-left: auto;
+  }
+}
+@media (max-width: 900px) {
+  .task-collection-heading .task-view-navigation {
+    order: 1;
+    width: 100%;
+    justify-content: stretch;
+  }
+  .task-collection-heading .task-view-navigation button {
+    flex: 1;
+  }
+  .task-board-page .task-collection-heading {
+    gap: 12px;
+  }
+}
