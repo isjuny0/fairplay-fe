@@ -369,7 +369,8 @@ async function workspace(
     );
   });
   await page.goto('/main');
-  await page.getByRole('button', { name: /프로젝트 스페이스/ }).click();
+  await page.getByRole('region', { name: '스페이스 목록', exact: true })
+    .getByRole('button', { name: /프로젝트 스페이스/ }).click();
   await page
     .getByRole('button', {
       name: manager ? '팀 자료 조회' : '팀 열기',
