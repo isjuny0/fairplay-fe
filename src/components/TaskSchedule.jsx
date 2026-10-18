@@ -127,10 +127,6 @@ export function TaskCalendar({
   const today = taskDate(new Date(now).toISOString());
   return (
     <section className="task-schedule" aria-label="작업 캘린더">
-      <details className="task-schedule-help">
-        <summary>캘린더 읽는 법</summary>
-        <p>막대는 시작일부터 마감일까지 이어집니다. 날짜별 작업 수를 선택하면 해당 날짜의 모든 작업을 확인할 수 있습니다.</p>
-      </details>
       <div
         className="task-calendar-scroll"
         role="region"
@@ -154,6 +150,9 @@ export function TaskCalendar({
             {Array.from({ length: days.length / 7 }, (_, week) => {
               const dates = days.slice(week * 7, week * 7 + 7);
               const segments = calendarWeekTasks(tasks, dates);
+              const visibleLaneCount = Math.min(3, segments.reduce(
+                (count, { lane }) => Math.max(count, lane + 1), 1,
+              ));
               return (
                 <Fragment key={week}>
                   <tr className="calendar-dates">
@@ -195,12 +194,12 @@ export function TaskCalendar({
                   </tr>
                   <tr className="calendar-period-row">
                     <td colSpan={7}>
-                      <div className="calendar-week-periods">
+                      <div className="calendar-week-periods" style={{ '--calendar-lanes': visibleLaneCount }}>
                         {dates.map((date, index) => (
                           <div
                             key={index}
                             className={`calendar-period-day ${date === today ? 'is-today' : ''}`}
-                            style={{ gridColumn: index + 1, gridRow: '1 / 4' }}
+                            style={{ gridColumn: index + 1, gridRow: '1 / -1' }}
                           />
                         ))}
                         {segments
@@ -247,6 +246,10 @@ export function TaskCalendar({
           </tbody>
         </table>
       </div>
+      <details className="task-schedule-help">
+        <summary>캘린더 읽는 법</summary>
+        <p>막대는 시작일부터 마감일까지 이어집니다. 날짜별 작업 수를 선택하면 해당 날짜의 모든 작업을 확인할 수 있습니다.</p>
+      </details>
       {selectedDate && (
         <Modal
           title={`${selectedDate} 작업 일정`}
@@ -384,28 +387,30 @@ export function TaskTimeline({
   ).length;
   return (
     <section className="task-schedule" aria-label="작업 타임라인" style={{ '--timeline-label-width': `${labelWidth}px` }}>
-      <div className="timeline-summary" aria-label="조회 기간 작업 현황">
-        <button
-          className={`timeline-late-filter${lateCount ? ' is-overdue' : ''}`}
-          aria-pressed={onlyOverdue}
-          onClick={onToggleOverdue}
-        >
-          마감 지남 <strong>{lateCount}</strong>
-        </button>
-        <span>
-          시작 예정일 지남 <strong>{startPassedCount}</strong>
-        </span>
-      </div>
-      <div className="timeline-legend" aria-label="타임라인 상태 범례">
-        {Object.entries(statusLabels).map(([status, label]) => (
-          <span
-            key={status}
-            className={`schedule-task-${status.toLowerCase()}`}
+      <div className="timeline-overview">
+        <div className="timeline-summary" aria-label="조회 기간 작업 현황">
+          <button
+            className={`timeline-late-filter${lateCount ? ' is-overdue' : ''}`}
+            aria-pressed={onlyOverdue}
+            onClick={onToggleOverdue}
           >
-            <span className="status-dot" aria-hidden="true" />
-            {label}
+            마감 지남 <strong>{lateCount}</strong>
+          </button>
+          <span>
+            시작 예정일 지남 <strong>{startPassedCount}</strong>
           </span>
-        ))}
+        </div>
+        <div className="timeline-legend" aria-label="타임라인 상태 범례">
+          {Object.entries(statusLabels).map(([status, label]) => (
+            <span
+              key={status}
+              className={`schedule-task-${status.toLowerCase()}`}
+            >
+              <span className="status-dot" aria-hidden="true" />
+              {label}
+            </span>
+          ))}
+        </div>
       </div>
       <div
         className="task-timeline-scroll"

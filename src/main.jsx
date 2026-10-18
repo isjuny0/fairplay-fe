@@ -20,6 +20,7 @@ import './manager-peer-review.css';
 import './resource-states.css';
 import './deliverable-search.css';
 import './review-workflow.css';
+import './task-collection.css';
 
 const router = createBrowserRouter([
   {

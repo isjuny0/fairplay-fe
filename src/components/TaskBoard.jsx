@@ -211,23 +211,8 @@ export default function TaskBoard({
   ];
   const content = (
     <section className="stack task-board-page">
-      <div className="page-heading">
-        <div>
-          <h1>작업</h1>
-          <p>담당 작업을 수행하고 지정 승인자의 검토를 요청하세요.</p>
-        </div>
-        <button
-          className="primary-button"
-          disabled={!canCreate}
-          onClick={() => {
-            setError(null);
-            setCreating(true);
-          }}
-        >
-          <Icon name="plus" />새 작업 만들기
-        </button>
-      </div>
-      <div className="task-view-controls">
+      <div className="page-heading task-collection-heading">
+        <h1>작업</h1>
         <div
           className="view-switch task-view-navigation"
           role="group"
@@ -252,24 +237,16 @@ export default function TaskBoard({
             </button>
           ))}
         </div>
-        {isSchedule && (
-          <div className="task-schedule-controls">
-            <MonthNavigation
-              month={month}
-              span={view === 'timeline' ? 3 : 1}
-              onMonthChange={(next) => setListOption('month', next)}
-              tasks={tasks}
-            />
-            <button
-              ref={expandButton}
-              className="secondary-button"
-              aria-pressed={expanded}
-              onClick={() => setExpanded(!expanded)}
-            >
-              {expanded ? '원래 크기로' : '일정 넓게 보기'}
-            </button>
-          </div>
-        )}
+        <button
+          className="primary-button"
+          disabled={!canCreate}
+          onClick={() => {
+            setError(null);
+            setCreating(true);
+          }}
+        >
+          <Icon name="plus" />새 작업 만들기
+        </button>
       </div>
       <div
         className={`mobile-status-tabs ${view === 'list' ? 'list-status-tabs' : ''}`}
@@ -327,7 +304,7 @@ export default function TaskBoard({
           </select>
         </label>
         <label className="task-search-filter">
-          제목 검색
+          <span className="sr-only">제목 검색</span>
           <input
             type="search"
             aria-label="작업 제목 검색"
@@ -390,6 +367,24 @@ export default function TaskBoard({
           새로고침
         </button>
       </div>
+      {isSchedule && (
+        <div className="task-schedule-controls">
+          <MonthNavigation
+            month={month}
+            span={view === 'timeline' ? 3 : 1}
+            onMonthChange={(next) => setListOption('month', next)}
+            tasks={tasks}
+          />
+          <button
+            ref={expandButton}
+            className="secondary-button"
+            aria-pressed={expanded}
+            onClick={() => setExpanded(!expanded)}
+          >
+            {expanded ? '원래 크기로' : '일정 넓게 보기'}
+          </button>
+        </div>
+      )}
       {!!activeFilters.length && (
         <div className="task-active-filters" role="group" aria-label="적용 중인 검색·필터">
           {activeFilters.map(({ key, label }) => (
