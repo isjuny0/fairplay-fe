@@ -631,16 +631,18 @@ test('캘린더의 오늘 표시는 화면을 열어 둔 채 날짜가 바뀌어
   await expect(page.getByRole('cell', { name: '2026-11-15 작업 일정', exact: true }).locator('time')).not.toHaveAttribute('aria-current', 'date');
 });
 
-test('작업 표는 날짜와 시간을 두 줄로 표시하고 타임라인은 작업당 한 번씩 Tab 이동한다', async ({ page }, testInfo) => {
+test('작업 표는 날짜와 시간을 생략 없이 한 줄로 표시하고 타임라인은 작업당 한 번씩 Tab 이동한다', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1280, height: 1000 });
   await seed(page, 'list');
   const firstStart = page.getByRole('table', { name: '정렬된 작업 목록' }).locator('tbody tr').first().locator('time').first();
-  await expect(firstStart.locator('.task-date-day')).toHaveText('2026. 10. 20.');
+  await expect(firstStart.locator('.task-date-day')).toHaveText('2026.10.20');
   await expect(firstStart.locator('.task-date-clock')).toHaveText('09:00');
-  await expect(firstStart).toHaveText('2026. 10. 20. 09:00');
+  await expect(firstStart).toHaveText('2026.10.20 09:00');
   const date = await firstStart.locator('.task-date-day').boundingBox();
   const time = await firstStart.locator('.task-date-clock').boundingBox();
-  expect(time.y).toBeGreaterThan(date.y);
+  expect(Math.abs(time.y - date.y)).toBeLessThanOrEqual(2);
+  await expect(firstStart).toHaveAttribute('datetime', '2026-10-20T00:00:00Z');
+  await expect(firstStart).toHaveAttribute('aria-label', '2026. 10. 20. 09:00');
   const table = page.getByRole('region', { name: '작업 표', exact: true });
   expect(await table.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('task-table-dates.png'), fullPage: true });
