@@ -79,9 +79,13 @@ export default function SpaceWorkspace({
   );
   const selectedTeamResource = useResource(async () => {
     if (teamId == null) return null;
-    const summaries = await listTeams(spaceId);
-    if (!summaries.some((team) => team.id === teamId)) return null;
-    const detail = await getTeam(teamId);
+    let detail;
+    try {
+      detail = await getTeam(teamId);
+    } catch (error) {
+      if (error.status === 404 && error.code === 'TEAM_NOT_FOUND') return null;
+      throw error;
+    }
     if (detail.spaceId !== spaceId)
       throw new Error(
         '이 스페이스에 속한 팀이 아닙니다. 팀 목록에서 다시 선택해 주세요.',
