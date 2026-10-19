@@ -137,6 +137,22 @@ test('세션 만료 후에는 캐시된 스페이스 목록을 다시 사용하�
   await assert.rejects(listSpaces(), { status: 401 });
 });
 
+test('삭제 요청이 없는 정상 404는 공통 팀원 조회를 무효화하지 않는다', async () => {
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, ...options });
+    return url.endsWith('/deletion-request')
+      ? jsonResponse({ code: 'TEAM_DELETION_REQUEST_NOT_FOUND' }, 404)
+      : jsonResponse([{ userId: 'member' }]);
+  };
+  await getTeamMembers(7);
+  await assert.rejects(getTeamDeletionRequest(7), {
+    status: 404,
+    code: 'TEAM_DELETION_REQUEST_NOT_FOUND',
+  });
+  assert.deepEqual(await getTeamMembers(7), [{ userId: 'member' }]);
+  assert.equal(calls.filter((call) => call.url.endsWith('/members')).length, 1);
+});
+
 test('실패한 조회는 저장하지 않고 재조회 오류를 그대로 전달한다', async () => {
   globalThis.fetch = async () =>
     jsonResponse(

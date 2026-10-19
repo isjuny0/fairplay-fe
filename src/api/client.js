@@ -85,7 +85,7 @@ async function executeRequest(path, { method, body, responseType }, retryCsrf) {
           : JSON.stringify(body),
   });
   if (!response.ok) {
-    invalidateSharedReads();
+    if ([401, 403].includes(response.status)) invalidateSharedReads();
     const result = await response.json().catch(() => null);
     if (
       response.status === 403 &&
