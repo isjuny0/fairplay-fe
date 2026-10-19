@@ -1,0 +1,413 @@
+/* Restore the local team-home design without changing workspace navigation. */
+.team-home.team-home-restored {
+  --team-home-panel: #f7faf8;
+  background: var(--surface);
+  gap: 24px;
+}
+.team-home.team-home-restored .page-heading {
+  padding-bottom: 8px;
+}
+.team-home-restored .home-eyebrow {
+  display: block;
+  color: var(--brand);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1.3px;
+}
+.team-home-restored .page-heading h1 {
+  margin-top: 10px;
+}
+.main-content .team-home.team-home-restored .home-visual-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  grid-template-areas: none;
+  gap: 24px;
+}
+.team-home.team-home-restored .home-visual-summary > section {
+  grid-area: auto;
+}
+.team-home.team-home-restored .home-visual-summary .home-team-progress {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 132px;
+  align-items: center;
+  gap: 22px 16px;
+  min-height: 270px;
+  padding: 30px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--team-home-panel);
+}
+.team-home-restored .home-progress-title {
+  gap: 10px;
+  text-align: left;
+}
+.team-home-restored .home-progress-title h2 {
+  font-size: 23px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.team-home-restored .home-progress-title > span:last-child {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.team-home-restored .home-progress-ring {
+  width: 132px;
+  height: 132px;
+  margin: 0;
+}
+.team-home-restored .home-ring-track {
+  stroke: var(--brand-light);
+}
+.team-home-restored .home-ring-value {
+  stroke: var(--brand);
+  stroke-linecap: butt;
+}
+.team-home-restored .home-progress-ring strong {
+  color: var(--brand);
+  font-size: 24px;
+}
+.team-home-restored .home-team-progress > .progress-track {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 5px;
+  margin: 0;
+  background: var(--brand-light);
+}
+.team-home-restored .home-team-progress > .progress-track > span {
+  background: var(--brand);
+}
+.team-home-restored .home-progress-footnote {
+  grid-column: 1 / -1;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.team-home.team-home-restored .home-visual-summary .home-actions {
+  min-width: 0;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+}
+.team-home-restored .home-summary-context {
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-bottom: 20px;
+}
+.team-home-restored .home-summary-context h2 {
+  font-size: 18px;
+}
+.team-home-restored .home-summary-context > .ui-icon {
+  margin-left: auto;
+  color: var(--brand);
+}
+.team-home-restored .home-summary-context time {
+  order: 1;
+  width: 100%;
+  margin-left: 0;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+.team-home.team-home-restored .action-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  margin: 0 0 14px;
+}
+.team-home.team-home-restored .home-action-link {
+  grid-template-columns: 36px minmax(0, 1fr) 16px;
+  gap: 12px;
+  min-height: 64px;
+  padding: 10px 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+}
+.team-home-restored .home-action-link:hover {
+  background: var(--team-home-panel);
+}
+.team-home.team-home-restored .home-action-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+.team-home.team-home-restored .home-overdue-icon {
+  background: var(--notice-coral-background);
+  color: var(--notice-coral);
+}
+.team-home.team-home-restored .home-pending-icon {
+  background: #fff4c2;
+  color: #eab308;
+}
+.team-home.team-home-restored .home-action-title strong {
+  color: var(--brand);
+  font-size: 18px;
+}
+.team-home-restored .home-action-help {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.team-home-restored .home-quick-links {
+  gap: 24px;
+}
+.team-home-restored .home-quick-link {
+  gap: 16px;
+  min-height: 94px;
+  padding: 22px;
+  border-color: var(--border);
+  border-radius: 16px;
+}
+.team-home-restored .home-quick-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  color: var(--brand);
+  background: var(--brand-light);
+}
+.team-home-restored .home-shortcut-copy {
+  display: grid;
+  gap: 6px;
+}
+.team-home-restored .home-shortcut-copy strong {
+  font-size: 15px;
+}
+.team-home-restored .home-shortcut-copy small {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+/* Personal metrics and definitions use the same card language as the overview. */
+.team-home-restored .home-insights {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+}
+.team-home.team-home-restored :is(.home-my-work, .home-definitions) {
+  margin: 0;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+}
+.team-home.team-home-restored :is(.home-metric-heading, .home-definition-heading) {
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.team-home-restored .home-metric-heading h2 {
+  margin: 8px 0 0;
+  font-size: 18px;
+}
+.team-home-restored .home-metric-heading > .ui-icon {
+  color: var(--brand);
+}
+.team-home-restored .home-work-metrics {
+  gap: 16px;
+  align-items: stretch;
+}
+.team-home.team-home-restored .home-work-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--team-home-panel);
+}
+.team-home-restored .home-work-metric .home-metric-scope {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.team-home-restored .home-work-metric h3 {
+  margin: 8px 0 18px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+}
+.team-home-restored .home-work-metric > strong {
+  margin: auto 0 20px;
+  color: var(--brand);
+  font-size: 28px;
+}
+.team-home-restored .home-work-metric > strong.is-empty {
+  min-height: 35px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.team-home.team-home-restored .home-work-metric .progress-track {
+  height: 5px;
+  margin: 0;
+  background: var(--brand-light);
+}
+.team-home.team-home-restored .home-work-metric .progress-track > span {
+  background: var(--brand);
+}
+.team-home-restored .home-definition-heading h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.team-home.team-home-restored .home-definitions > summary {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  list-style: none;
+}
+.team-home-restored .home-definitions > summary::-webkit-details-marker {
+  display: none;
+}
+.team-home-restored .home-definition-heading p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.team-home-restored .home-definition-heading .home-definition-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--brand);
+  white-space: nowrap;
+}
+.team-home-restored .home-definition-toggle .ui-icon {
+  width: 16px;
+  transform: rotate(90deg);
+}
+.team-home-restored .home-definitions .when-open,
+.team-home-restored .home-definitions[open] .when-closed {
+  display: none;
+}
+.team-home-restored .home-definitions[open] .when-open {
+  display: inline;
+}
+.team-home-restored .home-definitions[open] .home-definition-toggle .ui-icon {
+  transform: rotate(-90deg);
+}
+.team-home-restored .home-definitions[open] > .home-definition-body {
+  padding-top: 24px;
+}
+.team-home-restored .home-definition-heading > span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.team-home-restored .home-definition-body {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.8;
+}
+.team-home-restored .home-definitions .home-definition-body > p {
+  margin: 0 0 20px;
+}
+.team-home-restored .home-definition-body dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 20px;
+}
+.team-home-restored .home-definition-body dl > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 5px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: var(--team-home-panel);
+}
+.team-home-restored .home-definition-body dt {
+  color: var(--text-primary);
+  font-size: 13px;
+}
+.team-home-restored .home-definition-body dd {
+  color: var(--text-muted);
+}
+.team-home-restored .home-definition-body dd > span {
+  display: block;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+.team-home-restored .home-definition-body dd > small {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+}
+.team-home-restored .home-definition-body ul {
+  padding-left: 18px;
+}
+.team-home-restored .home-definition-body li + li {
+  margin-top: 6px;
+}
+.team-home-restored .home-definition-warning {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top-color: var(--border);
+  color: var(--text-muted);
+}
+@media (max-width: 1100px) {
+  .main-content .team-home.team-home-restored .home-visual-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 720px) {
+  .team-home.team-home-restored {
+    gap: 18px;
+  }
+  .team-home.team-home-restored .home-visual-summary .home-team-progress {
+    grid-template-columns: minmax(0, 1fr) 92px;
+    min-height: 220px;
+    padding: 24px;
+    gap: 16px 8px;
+  }
+  .team-home-restored .home-progress-ring {
+    width: 92px;
+    height: 92px;
+  }
+  .team-home-restored .home-progress-ring strong {
+    font-size: 18px;
+  }
+  .team-home-restored .home-progress-ring small {
+    font-size: 9px;
+  }
+  .team-home-restored .home-progress-title h2 {
+    font-size: 20px;
+  }
+  .team-home-restored .home-progress-title .home-eyebrow {
+    font-size: 9px;
+    letter-spacing: 0;
+  }
+  .team-home.team-home-restored .home-visual-summary .home-actions {
+    padding: 22px;
+  }
+  .team-home-restored .home-quick-links {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+  .team-home-restored .home-quick-link {
+    min-height: 80px;
+    padding: 16px;
+  }
+}
+
+@media (max-width: 720px) {
+  .team-home.team-home-restored :is(.home-my-work, .home-definitions) {
+    padding: 22px;
+  }
+  .team-home-restored .home-work-metrics,
+  .team-home-restored .home-definition-body dl {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .team-home.team-home-restored .home-work-metric {
+    padding: 20px;
+  }
+  .team-home-restored .home-work-metric > strong {
+    margin-top: 0;
+  }
+  .team-home-restored .home-definition-heading {
+    flex-wrap: wrap;
+  }
+}

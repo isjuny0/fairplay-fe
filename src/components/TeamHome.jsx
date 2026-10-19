@@ -1,10 +1,6 @@
 import Icon from './Icon.jsx';
-import {
-  Check,
-  Hourglass,
-  ChartNoAxesCombined,
-  ClipboardCheck,
-} from 'lucide-react';
+import '../team-home-restored.css';
+import { Check, ChartNoAxesCombined, ClipboardCheck } from 'lucide-react';
 import { formatDate } from '../lib/domain.js';
 import useResource from '../hooks/useResource.js';
 import { getMyWorkSummary } from '../api/teams.js';
@@ -66,9 +62,10 @@ export default function TeamHome({ context, onNavigate }) {
   );
   const summary = resource.data;
   return (
-    <section className="stack team-home team-home-visual">
+    <section className="stack team-home team-home-visual team-home-restored">
       <div className="page-heading">
         <div>
+          <span className="home-eyebrow">OUR WORKSPACE</span>
           <h1>{context.team.name}</h1>
         </div>
         <div className="heading-actions">
@@ -85,7 +82,7 @@ export default function TeamHome({ context, onNavigate }) {
             className="primary-button"
             onClick={() => onNavigate('작업', { mine: '1' })}
           >
-            내 작업 확인
+            내 작업 확인 <Icon name="arrow" />
           </button>
         </div>
       </div>
@@ -93,6 +90,16 @@ export default function TeamHome({ context, onNavigate }) {
         {summary && (
           <>
             <div className="team-home-summary home-visual-summary">
+              <section className="home-team-progress" aria-label="팀 진행 현황">
+                <div className="home-progress-title">
+                  <span className="home-eyebrow">조금씩, 함께 앞으로</span>
+                  <h2>팀 전체 진행률</h2>
+                  <span>현재 등록된 작업 기준</span>
+                </div>
+                <TeamProgressRing value={summary.teamProgressRate} />
+                <ProgressBar value={summary.teamProgressRate} label="예상 작업량을 반영한 팀 진행 막대" />
+                <span className="home-progress-footnote">예상 작업량을 반영한 값 · 최종 기여도와 달라요</span>
+              </section>
               <section
                 className="next-action-panel home-actions"
                 aria-label="지금 확인할 작업"
@@ -104,6 +111,7 @@ export default function TeamHome({ context, onNavigate }) {
                       {formatDate(summary.asOf)} 기준
                     </time>
                   )}
+                  <Icon name="clock" />
                 </div>
                 <div className="action-summary">
                   <button
@@ -120,7 +128,7 @@ export default function TeamHome({ context, onNavigate }) {
                       className="home-action-icon home-overdue-icon"
                       aria-hidden="true"
                     >
-                      <Icon name="clock" />
+                      <Icon name="calendar" />
                     </span>
                     <span className="home-action-content">
                       <span className="home-action-title">
@@ -143,7 +151,7 @@ export default function TeamHome({ context, onNavigate }) {
                       className="home-action-icon home-pending-icon"
                       aria-hidden="true"
                     >
-                      <Hourglass size={20} />
+                      <Icon name="clock" />
                     </span>
                     <span className="home-action-content">
                       <span className="home-action-title">
@@ -161,52 +169,10 @@ export default function TeamHome({ context, onNavigate }) {
                       확인할 작업 없음
                     </span>
                   )}
+                {(summary.myOverdueTaskCount > 0 || summary.myPendingApprovalCount > 0) && (
+                  <span className="home-action-help">진행할 작업과 검토 중인 작업을 확인하세요.</span>
+                )}
               </section>
-              <div className="home-overview-grid">
-                <section
-                  className="progress-panel home-team-progress"
-                  aria-label="팀 진행 현황"
-                >
-                  <div className="home-progress-title">
-                    <h2>팀 전체 진행률</h2>
-                    <span>예상 작업량 기준</span>
-                  </div>
-                  <TeamProgressRing value={summary.teamProgressRate} />
-                </section>
-                <section
-                  className="own-work-panel home-my-work"
-                  aria-label="본인 작업 현황"
-                >
-                  <div className="section-heading home-metric-heading">
-                    <h2>내 작업 현황</h2>
-                  </div>
-                  <div className="home-work-metrics">
-                    <WorkMetric
-                      label="내 담당 비중"
-                      scope="팀 전체 기준"
-                      value={summary.myAssignedShare}
-                      tone="assigned"
-                    />
-                    <WorkMetric
-                      label="내 완료 비중"
-                      scope="팀 전체 기준"
-                      value={summary.myCompletedContributionRate}
-                      tone="completed"
-                    />
-                    <WorkMetric
-                      label="내 작업 완료율"
-                      scope="내 담당 기준"
-                      value={summary.myTaskCompletionRate}
-                      empty={
-                        summary.teamTotalWeight
-                          ? '담당 작업 없음'
-                          : '계산할 작업 없음'
-                      }
-                      tone="completion"
-                    />
-                  </div>
-                </section>
-              </div>
             </div>
             <nav className="home-quick-links" aria-label="평가·리포트">
               <button
@@ -217,7 +183,10 @@ export default function TeamHome({ context, onNavigate }) {
                 <span className="home-quick-icon" aria-hidden="true">
                   <ClipboardCheck size={20} />
                 </span>
-                <strong>동료 평가 작성</strong>
+                <span className="home-shortcut-copy">
+                  <strong>협업을 돌아볼 시간</strong>
+                  <small>동료 평가 작성</small>
+                </span>
                 <Icon name="arrow" />
               </button>
               <button
@@ -228,55 +197,110 @@ export default function TeamHome({ context, onNavigate }) {
                 <span className="home-quick-icon" aria-hidden="true">
                   <ChartNoAxesCombined size={20} />
                 </span>
-                <strong>공개 리포트 보기</strong>
+                <span className="home-shortcut-copy">
+                  <strong>함께 만든 결과</strong>
+                  <small>공개 리포트 보기</small>
+                </span>
                 <Icon name="arrow" />
               </button>
             </nav>
-            <details className="home-metric-help home-definitions">
-              <summary>
-                지표 계산 기준<span>현재 작업 현황 · 최종 기여도와 다름</span>
-              </summary>
-              <div className="home-definition-body">
-                <p>
-                  예상 작업량을 반영한 진행률입니다. 현재 등록된 작업의 예상
-                  작업량과 담당 비율을 사용하며 실제 소요 시간을 나타내지
-                  않습니다.
-                </p>
-                <dl>
+            <div className="home-insights">
+              <section
+                className="own-work-panel home-my-work"
+                aria-label="본인 작업 현황"
+              >
+                <div className="section-heading home-metric-heading">
                   <div>
-                    <dt>팀 전체 진행률</dt>
-                    <dd>팀 완료 분량 ÷ 팀 전체 분량 × 100</dd>
+                    <span className="home-eyebrow">나의 참여를 한눈에</span>
+                    <h2>내 작업 현황</h2>
                   </div>
-                  <div>
-                    <dt>내 담당 비중</dt>
-                    <dd>내 담당 분량 ÷ 팀 전체 분량 × 100</dd>
-                  </div>
-                  <div>
-                    <dt>내 완료 비중</dt>
-                    <dd>내 완료 분량 ÷ 팀 전체 분량 × 100</dd>
-                  </div>
-                  <div>
-                    <dt>내 작업 완료율</dt>
-                    <dd>내 완료 분량 ÷ 내 담당 분량 × 100</dd>
-                  </div>
-                </dl>
-                <ul>
-                  <li>
-                    계산할 분량이 없으면 ‘계산할 작업 없음’ 또는 ‘담당 작업
-                    없음’으로 표시합니다.
-                  </li>
-                  <li>
-                    마감 지연은 할 일·진행 중인 내 작업만 집계하며 승인 대기
-                    작업은 제외합니다.
-                  </li>
-                  <li>승인 대기는 내가 담당한 작업의 승인 대기 건수입니다.</li>
-                </ul>
-                <div className="home-definition-warning">
-                  본인의 작업 현황만 제공합니다. 현재 현황은 최종 리포트 점수나
-                  무임승차 판정이 아닙니다.
+                  <Icon name="chart" />
                 </div>
-              </div>
-            </details>
+                <div className="home-work-metrics">
+                  <WorkMetric
+                    label="내 담당 비중"
+                    scope="팀 전체 기준"
+                    value={summary.myAssignedShare}
+                    tone="assigned"
+                  />
+                  <WorkMetric
+                    label="내 완료 비중"
+                    scope="팀 전체 기준"
+                    value={summary.myCompletedContributionRate}
+                    tone="completed"
+                  />
+                  <WorkMetric
+                    label="내 작업 완료율"
+                    scope="내 담당 기준"
+                    value={summary.myTaskCompletionRate}
+                    empty={
+                      summary.teamTotalWeight
+                        ? '담당 작업 없음'
+                        : '계산할 작업 없음'
+                    }
+                    tone="completion"
+                  />
+                </div>
+              </section>
+              <details className="home-metric-help home-definitions">
+                <summary className="home-definition-heading">
+                  <div>
+                    <h2>지표 계산 기준</h2>
+                    <p>각 비율의 의미와 계산 방법</p>
+                  </div>
+                  <span className="home-definition-toggle">
+                    <span className="when-closed">펼쳐보기</span>
+                    <span className="when-open">접기</span>
+                    <Icon name="arrow" />
+                  </span>
+                </summary>
+                <div className="home-definition-body">
+                  <p>
+                    작업 개수가 아닌 <strong>예상 작업량</strong>을 기준으로 계산해요.
+                    아래의 ‘분량’은 예상 작업량을 뜻하며, 내 분량에는 공동 작업의 담당 비율도 반영합니다.
+                  </p>
+                  <dl>
+                    <div>
+                      <dt>팀 전체 진행률</dt>
+                      <dd>
+                        <span>팀 전체 일 중 얼마나 끝났는지</span>
+                        <small>팀 완료 분량 ÷ 팀 전체 분량 × 100</small>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>내 담당 비중</dt>
+                      <dd>
+                        <span>팀 전체 일 중 내가 맡은 몫</span>
+                        <small>내 담당 분량 ÷ 팀 전체 분량 × 100</small>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>내 완료 비중</dt>
+                      <dd>
+                        <span>팀 전체 일 중 내가 완료한 몫</span>
+                        <small>내 완료 분량 ÷ 팀 전체 분량 × 100</small>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>내 작업 완료율</dt>
+                      <dd>
+                        <span>내가 맡은 일 중 얼마나 끝냈는지</span>
+                        <small>내 완료 분량 ÷ 내 담당 분량 × 100</small>
+                      </dd>
+                    </div>
+                  </dl>
+                  <ul>
+                    <li><strong>완료 기준</strong> · ‘완료’ 상태의 작업만 완료 분량에 포함해요.</li>
+                    <li><strong>계산할 분량이 없을 때</strong> · 0% 대신 ‘계산할 작업 없음’ 또는 ‘담당 작업 없음’으로 표시해요.</li>
+                    <li><strong>마감 지연</strong> · 마감이 지난 내 할 일·진행 중 작업이에요. 승인 대기 작업은 제외해요.</li>
+                    <li><strong>승인 대기</strong> · 내가 담당한 작업 중 승인을 기다리는 건수예요.</li>
+                  </ul>
+                  <div className="home-definition-warning">
+                    현재 작업 현황을 보여주는 지표예요. 실제 소요 시간이나 최종 기여도 점수, 무임승차 여부를 뜻하지 않아요.
+                  </div>
+                </div>
+              </details>
+            </div>
           </>
         )}
       </ResourceState>
