@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   deleteTask,
   getTask,
@@ -105,16 +105,23 @@ export default function TaskDetail({
   onBack,
 }) {
   const resource = useResource(async () => {
-    const [detail, history] = await Promise.all([
-      getTask(taskId),
-      getApprovalHistory(taskId),
-    ]);
+    const detail = await getTask(taskId);
     if (detail.task.teamId !== team.id)
       throw new Error(
         '이 팀에 속한 작업이 아닙니다. 작업 목록에서 다시 선택해 주세요.',
       );
-    return { ...detail, history };
+    return detail;
   }, [taskId, team.id]);
+  const historyResource = useResource(
+    () => getApprovalHistory(taskId),
+    [taskId, team.id],
+  );
+  const reload = useCallback(() => {
+    resource.reload();
+    historyResource.reload();
+  }, [resource.reload, historyResource.reload]);
+  const historyReady = !historyResource.loading && !historyResource.error;
+
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   useEffect(() => {
@@ -134,7 +141,7 @@ export default function TaskDetail({
       await action();
       notify(successMessage);
       setEditing(false);
-      resource.reload();
+      reload();
     } catch (requestError) {
       setError(requestError);
     } finally {
@@ -142,7 +149,7 @@ export default function TaskDetail({
     }
   };
   const task = resource.data?.task;
-  const history = resource.data?.history || [];
+  const history = historyResource.data || [];
   const currentApproval = history.find(
     (approval) => approval.status === 'PENDING',
   );
@@ -162,6 +169,7 @@ export default function TaskDetail({
     (member) => member.userId === task?.completionReviewerId,
   );
   const completionReady =
+    historyReady &&
     task?.status === 'IN_PROGRESS' &&
     !missingContributions.length &&
     hasDeliverables &&
@@ -201,7 +209,7 @@ export default function TaskDetail({
           </nav>
         )}
       </div>
-      <ErrorNotice error={error} onRetry={resource.reload} />
+      <ErrorNotice error={error} onRetry={reload} />
       <ResourceState resource={resource} label="작업 상세">
         {task && (
           <>
@@ -245,20 +253,22 @@ export default function TaskDetail({
                 <dd>{memberName(members, task.completionReviewerId)}</dd>
               </div>
             </dl>
-            {isMutable(task) && latestDecision?.status === 'REJECTED' && (
-              <section
-                className="notice rejection-notice"
-                aria-label="최근 반려 사유"
-              >
-                <h2>보완 필요</h2>
-                <p className="preserve-lines">{latestDecision.reason}</p>
-                <p className="field-help">
-                  {memberName(members, latestDecision.reviewerId)} ·{' '}
-                  {formatDate(latestDecision.decidedAt)} · 내용을 보완한 뒤 다시
-                  완료를 요청해 주세요.
-                </p>
-              </section>
-            )}
+            {historyReady &&
+              isMutable(task) &&
+              latestDecision?.status === 'REJECTED' && (
+                <section
+                  className="notice rejection-notice"
+                  aria-label="최근 반려 사유"
+                >
+                  <h2>보완 필요</h2>
+                  <p className="preserve-lines">{latestDecision.reason}</p>
+                  <p className="field-help">
+                    {memberName(members, latestDecision.reviewerId)} ·{' '}
+                    {formatDate(latestDecision.decidedAt)} · 내용을 보완한 뒤
+                    다시 완료를 요청해 주세요.
+                  </p>
+                </section>
+              )}
             <div className="task-detail-layout">
               <div className="stack">
                 <section
@@ -329,15 +339,15 @@ export default function TaskDetail({
                     members={members}
                     tasks={[task]}
                     taskId={task.id}
-                    onChanged={resource.reload}
+                    onChanged={reload}
                   />
                 </div>
                 {(isAssignee(task, user.id) ||
                   user.id ===
                     (task.status === 'PENDING_APPROVAL'
-                      ? history.find(
-                          (approval) => approval.status === 'PENDING',
-                        )?.reviewerId
+                      ? historyReady
+                        ? currentApproval?.reviewerId
+                        : null
                       : task.completionReviewerId)) && (
                   <AiReview
                     context={{
@@ -355,6 +365,9 @@ export default function TaskDetail({
                 className="stack task-review-sidebar"
                 aria-label="작업 진행 및 검토"
               >
+                {!historyReady && (
+                  <ResourceState resource={historyResource} label="승인 상태" />
+                )}
                 {isAssignee(task, user.id) && isMutable(task) && (
                   <section className="panel stack task-next-action">
                     <h2>작업 진행</h2>
@@ -474,7 +487,7 @@ export default function TaskDetail({
                     )}
                   </section>
                 )}
-                {currentApproval && (
+                {historyReady && currentApproval && (
                   <ApprovalDecision
                     key={currentApproval.id}
                     approval={currentApproval}
@@ -483,7 +496,7 @@ export default function TaskDetail({
                     members={members}
                     onReviewSection={focusTaskSection}
                     blocked={teamWorkBlocked(team)}
-                    onChanged={resource.reload}
+                    onChanged={reload}
                   />
                 )}
                 <section
@@ -567,49 +580,57 @@ export default function TaskDetail({
                   tabIndex={-1}
                   className="panel task-section-anchor"
                 >
-                  <summary>완료 요청 이력 · {history.length}건</summary>
+                  <summary>
+                    완료 요청 이력{historyReady ? ` · ${history.length}건` : ''}
+                  </summary>
                   <p className="field-help">
                     과거 작업 내용·파일 사본은 보관하지 않습니다. 현재 산출물과
                     요청 처리 이력을 확인하세요.
                   </p>
-                  {history.length ? (
-                    <ul className="clean-list">
-                      {history.map((approval) => (
-                        <li className="approval-history" key={approval.id}>
-                          <strong>
-                            {
+                  <ResourceState
+                    resource={historyResource}
+                    label="완료 요청 이력"
+                  >
+                    {history.length ? (
+                      <ul className="clean-list">
+                        {history.map((approval) => (
+                          <li className="approval-history" key={approval.id}>
+                            <strong>
                               {
-                                PENDING: '승인 대기',
-                                APPROVED: '승인',
-                                REJECTED: '반려',
-                              }[approval.status]
-                            }
-                          </strong>
-                          <span>
-                            요청 {memberName(members, approval.requesterId)} ·
-                            승인자 {memberName(members, approval.reviewerId)}
-                          </span>
-                          <small>
-                            요청 {formatDate(approval.requestedAt)}
-                            {approval.decidedAt &&
-                              ` · 처리 ${formatDate(approval.decidedAt)}`}
-                          </small>
-                          {approval.reason && (
-                            <p className="preserve-lines">
-                              반려 사유: {approval.reason}
-                            </p>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p>완료 요청 이력이 없습니다.</p>
-                  )}
+                                {
+                                  PENDING: '승인 대기',
+                                  APPROVED: '승인',
+                                  REJECTED: '반려',
+                                }[approval.status]
+                              }
+                            </strong>
+                            <span>
+                              요청 {memberName(members, approval.requesterId)} ·
+                              승인자 {memberName(members, approval.reviewerId)}
+                            </span>
+                            <small>
+                              요청 {formatDate(approval.requestedAt)}
+                              {approval.decidedAt &&
+                                ` · 처리 ${formatDate(approval.decidedAt)}`}
+                            </small>
+                            {approval.reason && (
+                              <p className="preserve-lines">
+                                반려 사유: {approval.reason}
+                              </p>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p>완료 요청 이력이 없습니다.</p>
+                    )}
+                  </ResourceState>
                 </details>
               </aside>
             </div>
             {isMutable(task) &&
               isTeamEditor(team, user.id) &&
+              historyReady &&
               history.length === 0 && (
                 <button
                   className="secondary-button danger"
@@ -655,7 +676,7 @@ export default function TaskDetail({
           serverError={error}
           onClose={() => {
             setEditing(false);
-            if (error?.status === 409) resource.reload();
+            if (error?.status === 409) reload();
           }}
           onSave={(input, expectedVersion) =>
             mutate(() => updateTask(task.id, { ...input, expectedVersion }))

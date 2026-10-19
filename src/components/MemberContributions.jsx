@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { ErrorNotice } from './ui.jsx';
 import { getMemberContributions } from '../api/dashboard.js';
+import { getTeamMembers } from '../api/teams.js';
 import { listDeliverables, downloadDeliverable } from '../api/deliverables.js';
 import { ApiError } from '../api/client.js';
 import useResource from '../hooks/useResource.js';
@@ -19,9 +20,11 @@ export default function MemberContributions({ context, targetUserId, onBack }) {
   const statusFilter = Object.hasOwn(statusLabels, params.get('status'))
     ? params.get('status')
     : 'ALL';
-  const member = context.members.find(
-    (member) => member.userId === targetUserId,
+  const members = useResource(
+    () => getTeamMembers(context.team.id),
+    [context.team.id],
   );
+  const member = members.data?.find((member) => member.userId === targetUserId);
   const resource = useResource(
     () => getMemberContributions(context.team.id, targetUserId),
     [context.team.id, targetUserId],
@@ -43,12 +46,14 @@ export default function MemberContributions({ context, targetUserId, onBack }) {
           disabled={resource.loading}
           onClick={() => {
             resource.reload();
+            members.reload();
             setEvaluationRevision((revision) => revision + 1);
           }}
         >
           수행 상세 새로고침
         </button>
       </div>
+      <ResourceState resource={members} label="팀원 정보" />
       {!resource.error && resource.data && (
         <section className="member-work-summary">
           <h2>담당 작업 요약</h2>

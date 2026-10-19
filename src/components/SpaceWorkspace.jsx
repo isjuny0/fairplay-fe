@@ -1,7 +1,7 @@
 import { screenLoaders } from '../lib/routeScreens.js';
 import { deferScreen } from './DeferredScreen.jsx';
 import Icon from './Icon.jsx';
-import { useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
 import { HeaderContext } from './HeaderContext.js';
 import useAppNavigate from '../hooks/useAppNavigate.js';
@@ -9,7 +9,6 @@ import { getSpace } from '../api/spaces.js';
 import {
   createTeam,
   getTeam,
-  getTeamMembers,
   listTeams,
   requestTeamJoin,
 } from '../api/teams.js';
@@ -33,10 +32,22 @@ import {
 
 const SpaceSettings = deferScreen(screenLoaders.SpaceSettings, '스페이스 관리');
 const TeamWorkspace = deferScreen(screenLoaders.TeamWorkspace, '팀 화면');
-const ManagerDashboard = deferScreen(screenLoaders.ManagerDashboard, '관리자 대시보드');
-const RoundManagement = deferScreen(screenLoaders.RoundManagement, '평가 회차 관리');
-const ReportReview = deferScreen(screenLoaders.ReportReview, '리포트 검토·공개');
-const MemberContributions = deferScreen(screenLoaders.MemberContributions, '팀원 수행 상세');
+const ManagerDashboard = deferScreen(
+  screenLoaders.ManagerDashboard,
+  '관리자 대시보드',
+);
+const RoundManagement = deferScreen(
+  screenLoaders.RoundManagement,
+  '평가 회차 관리',
+);
+const ReportReview = deferScreen(
+  screenLoaders.ReportReview,
+  '리포트 검토·공개',
+);
+const MemberContributions = deferScreen(
+  screenLoaders.MemberContributions,
+  '팀원 수행 상세',
+);
 
 export default function SpaceWorkspace({
   spaceId,
@@ -57,21 +68,30 @@ export default function SpaceWorkspace({
       getSpace(spaceId),
       listTeams(spaceId),
     ]);
-    const details = await Promise.all(teams.map((team) => getTeam(team.id)));
-    return {
-      space,
-      teams: details,
-      teamContexts:
-        space.myRole === 'MANAGER'
-          ? await Promise.all(
-              details.map(async (team) => ({
-                team,
-                members: await getTeamMembers(team.id),
-              })),
-            )
-          : [],
-    };
+    return { space, teams };
   }, [spaceId]);
+  const directoryResource = useResource(
+    () =>
+      view === 'teams' && resource.data
+        ? Promise.all(resource.data.teams.map((team) => getTeam(team.id)))
+        : Promise.resolve([]),
+    [spaceId, view === 'teams', resource.data],
+  );
+  const selectedTeamResource = useResource(async () => {
+    if (teamId == null) return null;
+    const summaries = await listTeams(spaceId);
+    if (!summaries.some((team) => team.id === teamId)) return null;
+    const detail = await getTeam(teamId);
+    if (detail.spaceId !== spaceId)
+      throw new Error(
+        '이 스페이스에 속한 팀이 아닙니다. 팀 목록에서 다시 선택해 주세요.',
+      );
+    return detail;
+  }, [spaceId, teamId]);
+  const reloadWorkspace = useCallback(() => {
+    resource.reload();
+    selectedTeamResource.reload();
+  }, [resource.reload, selectedTeamResource.reload]);
   const menu = view === 'settings' ? '스페이스 관리' : '팀 목록';
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState('');
@@ -81,13 +101,36 @@ export default function SpaceWorkspace({
     setError(null);
   }, [resource.data]);
   const space = resource.data?.space;
-  const teams = resource.data?.teams || [];
+  const teams = (resource.data?.teams || []).map((summary) =>
+    selectedTeamResource.data?.id === summary.id
+      ? selectedTeamResource.data
+      : directoryResource.data?.find((detail) => detail.id === summary.id) ||
+        summary,
+  );
+  const directoryReady =
+    directoryResource.data != null &&
+    !directoryResource.loading &&
+    !directoryResource.error;
+  const pageResource =
+    teamId == null
+      ? resource
+      : {
+          ...resource,
+          data:
+            resource.data &&
+            (selectedTeamResource.data || !selectedTeamResource.loading)
+              ? resource.data
+              : null,
+          loading: resource.loading || selectedTeamResource.loading,
+          error: resource.error || selectedTeamResource.error,
+          reload: reloadWorkspace,
+        };
   const isManager = space?.myRole === 'MANAGER';
   const managerContext = {
     space,
     user,
     manager: true,
-    teamContexts: resource.data?.teamContexts || [],
+    teams,
   };
   const managerView = [
     'settings',
@@ -96,7 +139,7 @@ export default function SpaceWorkspace({
     'reports',
     'contributions',
   ].includes(view);
-  const team = teams.find((item) => item.id === teamId);
+  const team = selectedTeamResource.data;
   useEffect(() => {
     if (!setHeaderContext || !space) return;
     const titles = {
@@ -150,18 +193,20 @@ export default function SpaceWorkspace({
     space?.teamBuildingStatus === 'OPEN' &&
     new Date(space.teamBuildingOpensAt) <= new Date() &&
     new Date(space.teamBuildingClosesAt) > new Date();
-  const teamCreationRestriction = joinedTeam
-    ? `이미 ${joinedTeam.name} 팀에 소속되어 있습니다. 스페이스에서는 한 팀에만 소속될 수 있습니다.`
-    : buildingOpen
-      ? ''
-      : {
-          NOT_CONFIGURED:
-            '관리자가 팀 빌딩 기간을 지정하면 팀을 만들 수 있습니다.',
-          SCHEDULED: `팀 빌딩이 시작되는 ${formatDate(space?.teamBuildingOpensAt)}부터 팀을 만들 수 있습니다.`,
-          CLOSED: '팀 빌딩 기간이 종료되어 팀을 만들 수 없습니다.',
-          LOCKED: '평가가 시작되어 팀 구성이 고정되었습니다.',
-        }[space?.teamBuildingStatus] ||
-        '현재 팀을 만들 수 없습니다. 최신 팀 빌딩 상태를 확인해 주세요.';
+  const teamCreationRestriction = !directoryReady
+    ? '팀 가입 상태를 확인한 뒤 팀을 만들 수 있습니다.'
+    : joinedTeam
+      ? `이미 ${joinedTeam.name} 팀에 소속되어 있습니다. 스페이스에서는 한 팀에만 소속될 수 있습니다.`
+      : buildingOpen
+        ? ''
+        : {
+            NOT_CONFIGURED:
+              '관리자가 팀 빌딩 기간을 지정하면 팀을 만들 수 있습니다.',
+            SCHEDULED: `팀 빌딩이 시작되는 ${formatDate(space?.teamBuildingOpensAt)}부터 팀을 만들 수 있습니다.`,
+            CLOSED: '팀 빌딩 기간이 종료되어 팀을 만들 수 없습니다.',
+            LOCKED: '평가가 시작되어 팀 구성이 고정되었습니다.',
+          }[space?.teamBuildingStatus] ||
+          '현재 팀을 만들 수 없습니다. 최신 팀 빌딩 상태를 확인해 주세요.';
   const apply = async (target) => {
     setBusy(true);
     setError(null);
@@ -170,7 +215,7 @@ export default function SpaceWorkspace({
       notify(
         `${target.name} 팀에 가입을 신청했습니다. 리더의 승인을 기다려 주세요.`,
       );
-      resource.reload();
+      reloadWorkspace();
     } catch (requestError) {
       setError(requestError);
     } finally {
@@ -186,7 +231,7 @@ export default function SpaceWorkspace({
       setCreating(false);
       clearChanges();
       notify('팀을 생성했습니다. 팀원을 모집해 작업을 시작하세요.');
-      resource.reload();
+      reloadWorkspace();
       navigate(teamMenuPath(spaceId, created.id, '팀 홈'));
     } catch (requestError) {
       setError(requestError);
@@ -208,7 +253,7 @@ export default function SpaceWorkspace({
         onBack={onBack}
       />
       <main className="main-content">
-        <ResourceState resource={resource} label="스페이스 정보">
+        <ResourceState resource={pageResource} label="스페이스 정보">
           {space && (
             <>
               {isManager && (
@@ -294,7 +339,7 @@ export default function SpaceWorkspace({
               ) : view === 'rounds' ? (
                 <RoundManagement
                   context={managerContext}
-                  onChanged={resource.reload}
+                  onChanged={reloadWorkspace}
                 />
               ) : view === 'reports' ? (
                 <ReportReview context={managerContext} />
@@ -304,10 +349,6 @@ export default function SpaceWorkspace({
                   context={{
                     ...managerContext,
                     team,
-                    members:
-                      managerContext.teamContexts.find(
-                        (entry) => entry.team.id === team.id,
-                      )?.members || [],
                   }}
                   targetUserId={targetUserId}
                   onBack={() =>
@@ -330,7 +371,7 @@ export default function SpaceWorkspace({
                 <SpaceSettings
                   key={space.id}
                   space={space}
-                  onChanged={resource.reload}
+                  onChanged={reloadWorkspace}
                 />
               ) : view === 'team' ? (
                 <TeamWorkspace
@@ -340,10 +381,10 @@ export default function SpaceWorkspace({
                   user={user}
                   menu={teamMenu}
                   taskId={taskId}
-                  onChanged={resource.reload}
+                  onChanged={reloadWorkspace}
                   onRemoved={() => {
                     navigate(spacePath(spaceId), { replace: true });
-                    resource.reload();
+                    reloadWorkspace();
                   }}
                 />
               ) : (
@@ -384,19 +425,21 @@ export default function SpaceWorkspace({
                       )}
                     </div>
                   </div>
-                  <SpaceGuide
-                    space={space}
-                    teams={teams}
-                    joinedTeam={joinedTeam}
-                    buildingOpen={buildingOpen}
-                    navigate={navigate}
-                    onReload={resource.reload}
-                    onCreateTeam={() => {
-                      setError(null);
-                      setName('');
-                      setCreating(true);
-                    }}
-                  />
+                  {directoryReady && (
+                    <SpaceGuide
+                      space={space}
+                      teams={teams}
+                      joinedTeam={joinedTeam}
+                      buildingOpen={buildingOpen}
+                      navigate={navigate}
+                      onReload={reloadWorkspace}
+                      onCreateTeam={() => {
+                        setError(null);
+                        setName('');
+                        setCreating(true);
+                      }}
+                    />
+                  )}
                   <section
                     className="team-building-overview"
                     aria-label="팀 빌딩 일정"
@@ -450,14 +493,23 @@ export default function SpaceWorkspace({
                     </div>
                     <button
                       className="secondary-button"
-                      onClick={resource.reload}
-                      disabled={resource.loading || busy}
+                      onClick={reloadWorkspace}
+                      disabled={
+                        resource.loading || directoryResource.loading || busy
+                      }
                     >
                       <Icon name="refresh" />
                       새로고침
                     </button>
                   </div>
-                  <ErrorNotice error={error} onRetry={resource.reload} />
+                  <ErrorNotice error={error} onRetry={reloadWorkspace} />
+                  <ErrorNotice
+                    error={directoryResource.error}
+                    onRetry={reloadWorkspace}
+                  />
+                  {directoryResource.loading && (
+                    <p role="status">팀 가입 상태를 확인하고 있습니다.</p>
+                  )}
                   {teams.length ? (
                     <ul
                       className="team-list"
@@ -474,7 +526,9 @@ export default function SpaceWorkspace({
                             <h2>{item.name}</h2>
                             <p className="team-meta">
                               <span>
-                                승인 팀원 {item.approvedMemberCount}명
+                                {item.approvedMemberCount == null
+                                  ? '팀원 확인 중'
+                                  : `승인 팀원 ${item.approvedMemberCount}명`}
                               </span>
                               <span
                                 className={`team-membership membership-${item.myMembershipStatus?.toLowerCase() || 'none'}`}
@@ -484,10 +538,15 @@ export default function SpaceWorkspace({
                                   PENDING: '가입 승인 대기',
                                   REJECTED: '가입 신청 반려',
                                 }[item.myMembershipStatus] ||
-                                  (isManager ? '관리자 조회' : '미가입')}
+                                  (!directoryReady
+                                    ? '확인 중'
+                                    : isManager
+                                      ? '관리자 조회'
+                                      : '미가입')}
                               </span>
                             </p>
                             {!isManager &&
+                              directoryReady &&
                               !isApprovedMember(item) &&
                               !item.canApply &&
                               item.myMembershipStatus !== 'PENDING' && (
@@ -524,7 +583,10 @@ export default function SpaceWorkspace({
                               <button
                                 className="primary-button"
                                 disabled={
-                                  busy || !buildingOpen || !item.canApply
+                                  busy ||
+                                  !directoryReady ||
+                                  !buildingOpen ||
+                                  !item.canApply
                                 }
                                 onClick={() => apply(item)}
                               >

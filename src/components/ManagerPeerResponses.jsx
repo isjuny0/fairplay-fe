@@ -150,7 +150,7 @@ function PeerResponseContent({ context, teamId }) {
     [context.space.id],
   );
   const selectedTeamId =
-    teamId || params.get('peerTeamId') || context.teamContexts[0]?.team.id;
+    teamId || params.get('peerTeamId') || context.teams[0]?.id;
   const selectedRound =
     rounds.data?.find(
       (round) => String(round.id) === params.get('peerRoundId'),
@@ -162,9 +162,9 @@ function PeerResponseContent({ context, teamId }) {
     next.set(name, value);
     setParams(next);
   };
-  const selectedTeamName = context.teamContexts.find(
-    ({ team }) => String(team.id) === String(selectedTeamId),
-  )?.team.name;
+  const selectedTeamName = context.teams.find(
+    (team) => String(team.id) === String(selectedTeamId),
+  )?.name;
   return (
     <div className="stack peer-response-content">
       <div className="manager-peer-heading">
@@ -192,7 +192,7 @@ function PeerResponseContent({ context, teamId }) {
                 value={selectedTeamId || ''}
                 onChange={(event) => select('peerTeamId', event.target.value)}
               >
-                {context.teamContexts.map(({ team }) => (
+                {context.teams.map((team) => (
                   <option key={team.id} value={team.id}>
                     {team.name}
                   </option>

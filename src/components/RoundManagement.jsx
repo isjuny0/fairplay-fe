@@ -25,13 +25,15 @@ import {
 
 export default function RoundManagement({ context, onChanged }) {
   const { notify } = useInteractions();
+  const [revision, setRevision] = useState(0);
+  const reload = () => setRevision((value) => value + 1);
   const resource = useResource(
     () => listEvaluationRounds(context.space.id),
-    [context.space.id],
+    [context.space.id, revision],
   );
   const submissions = useResource(
     () => getManagerDashboard(context.space.id),
-    [context.space.id, resource.data],
+    [context.space.id, revision],
   );
   const [editing, setEditing] = useState(null),
     [busy, setBusy] = useState(false),
@@ -61,7 +63,7 @@ export default function RoundManagement({ context, onChanged }) {
     try {
       await openEvaluationRound(round.id);
       onChanged?.();
-      resource.reload();
+      reload();
       notify(`${roundLabels[round.type]}를 시작했습니다.`);
     } catch (error) {
       setError(error);
@@ -70,12 +72,13 @@ export default function RoundManagement({ context, onChanged }) {
     }
   };
   const blockReason = (round) => {
-    if (submissions.loading && !submissions.data)
-      return '참여 팀과 제출 조건을 확인하고 있습니다.';
     if (submissions.error) return '제출 현황을 다시 불러온 뒤 진행해 주세요.';
+    if (submissions.loading || !submissions.data)
+      return '참여 팀과 제출 조건을 확인하고 있습니다.';
     if (round.status === 'DRAFT') {
-      if (!context.teamContexts.length) return '평가에 참여할 팀이 필요합니다.';
-      if (context.teamContexts.some(({ team }) => team.approvedMemberCount < 2))
+      if (!submissions.data.teams.length)
+        return '평가에 참여할 팀이 필요합니다.';
+      if (submissions.data.teams.some((team) => team.approvedMemberCount < 2))
         return '모든 팀에 승인된 팀원 2명 이상이 필요합니다.';
       if (new Date(context.space.teamBuildingClosesAt) > new Date())
         return '팀 빌딩 기간이 종료된 뒤 시작할 수 있습니다.';
@@ -104,7 +107,7 @@ export default function RoundManagement({ context, onChanged }) {
           <button
             className="secondary-button"
             disabled={busy || resource.loading || submissions.loading}
-            onClick={resource.reload}
+            onClick={reload}
           >
             회차·제출 현황 새로고침
           </button>
@@ -145,7 +148,7 @@ export default function RoundManagement({ context, onChanged }) {
           진행 상태를 확인하세요.
         </p>
       )}
-      <ErrorNotice error={submissions.error} onRetry={submissions.reload} />
+      <ErrorNotice error={submissions.error} onRetry={reload} />
       <ErrorNotice error={error} />
       <ResourceState resource={resource}>
         {rounds.length ? (
@@ -213,9 +216,9 @@ export default function RoundManagement({ context, onChanged }) {
                       ) : (
                         teamSubmissions.map((team) => {
                           const teamName =
-                            context.teamContexts.find(
-                              (entry) => entry.team.id === team.teamId,
-                            )?.team.name || '팀';
+                            context.teams.find(
+                              (entry) => entry.id === team.teamId,
+                            )?.name || '팀';
                           return (
                             <div
                               key={team.teamId}
@@ -341,7 +344,7 @@ export default function RoundManagement({ context, onChanged }) {
                   });
                 setEditing(null);
                 notify('평가 일정을 저장했습니다.');
-                resource.reload();
+                reload();
               } catch (error) {
                 setError(error);
               } finally {

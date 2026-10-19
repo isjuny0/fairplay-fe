@@ -49,9 +49,9 @@ export default function ManagerDashboard({ context }) {
   const selectedTeam = dashboard?.teams.find(
     (team) => String(team.teamId) === teamId,
   );
-  const selectedTeamName = context.teamContexts.find(
-    ({ team }) => String(team.id) === teamId,
-  )?.team.name;
+  const selectedTeamName = context.teams.find(
+    (team) => String(team.id) === teamId,
+  )?.name;
   const teamQuery = params.get('teamQuery') || '';
   const teamFilter = Object.hasOwn(teamFilters, params.get('teamFilter'))
     ? params.get('teamFilter')
@@ -146,7 +146,7 @@ export default function ManagerDashboard({ context }) {
             onChange={(event) => selectTeam(event.target.value)}
           >
             <option value="">전체 팀</option>
-            {context.teamContexts.map(({ team }) => (
+            {context.teams.map((team) => (
               <option key={team.id} value={team.id}>
                 {team.name}
               </option>
