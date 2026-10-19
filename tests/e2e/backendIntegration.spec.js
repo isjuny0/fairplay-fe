@@ -661,6 +661,50 @@ test('AI 검토는 진행 중에만 조회하고 실패 결과 이후 반복 조
   ).toHaveLength(terminalRequestCount);
 });
 
+test('AI 상태 자동 재조회는 스페이스 목록을 유지하고 수동 목록 새로고침은 최신 오류를 전달한다', async ({
+  page,
+}) => {
+  await page.clock.install();
+  const { requests, setReview } = await backend(page);
+  setReview({ id: 1, taskId: 10, status: 'PENDING', isCurrent: true });
+  const initialSpaceRead = page.waitForResponse(
+    (response) => new URL(response.url()).pathname === '/api/spaces',
+  );
+  await page.goto('/spaces/1/teams/1/tasks/10');
+  await initialSpaceRead;
+  await expect(page.getByText('검토 대기', { exact: true })).toBeVisible();
+  const initialReviewReads = requests.filter((request) =>
+    request.path.endsWith('/ai-review'),
+  ).length;
+  await page.route('**/api/spaces', (route) =>
+    route.fulfill({
+      status: 503,
+      json: { code: 'SERVER_ERROR', message: '최신 스페이스 목록 조회 실패' },
+    }),
+  );
+  await page.clock.fastForward(5100);
+  await expect
+    .poll(
+      () =>
+        requests.filter((request) => request.path.endsWith('/ai-review'))
+          .length,
+    )
+    .toBeGreaterThan(initialReviewReads);
+  await page
+    .getByRole('complementary')
+    .getByRole('button', { name: '내 스페이스', exact: true })
+    .click();
+  const list = page.getByRole('region', { name: '스페이스 목록', exact: true });
+  await expect(list).toContainText('실제 API 스페이스');
+  await page
+    .getByRole('main')
+    .getByRole('button', { name: '새로고침', exact: true })
+    .click();
+  await expect(page.getByRole('main').getByRole('alert')).toContainText(
+    '최신 스페이스 목록 조회 실패',
+  );
+});
+
 test('AI 비활성화·요청 제한 오류는 화면에 유지하고 자동으로 새 검토를 요청하지 않는다', async ({
   page,
 }) => {

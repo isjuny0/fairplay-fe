@@ -4,8 +4,8 @@ import SpaceDirectorySidebar from './SpaceDirectorySidebar.jsx';
 import { currentDateTime } from '../lib/dateTime.js';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { createSpace, joinSpace, listSpaces } from '../api/spaces.js';
-import useResource from '../hooks/useResource.js';
+import { createSpace, joinSpace } from '../api/spaces.js';
+import useSpaceList from '../hooks/useSpaceList.js';
 import { useInteractions } from '../hooks/useInteractions.js';
 import { buildingLabels, formatDate, fromDateInput } from '../lib/domain.js';
 import {
@@ -23,7 +23,7 @@ import {
 
 export default function Spaces({ onSelect }) {
   const { notify, clearChanges } = useInteractions();
-  const resource = useResource(listSpaces, []);
+  const resource = useSpaceList();
   const [searchParams, setSearchParams] = useSearchParams();
   const search = searchParams.get('q') || '';
   const requestedRole = searchParams.get('role');

@@ -4,6 +4,10 @@ export function invalidateSharedReads() {
   reads.clear();
 }
 
+export function invalidateSharedRead(key) {
+  reads.delete(key);
+}
+
 // Cache display data briefly; permission-bearing reads only share an in-flight request.
 export function sharedRead(key, load, maxAge = 0) {
   const now = Date.now();

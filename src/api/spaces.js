@@ -1,5 +1,6 @@
 import { apiRequest } from './client.js';
-import { sharedRead } from './sharedReads.js';
+import { invalidateSharedRead, sharedRead } from './sharedReads.js';
+export const invalidateSpaceList = () => invalidateSharedRead('/api/spaces');
 export const listSpaces = () =>
   sharedRead('/api/spaces', () => apiRequest('/api/spaces'), 15_000);
 export const getSpace = (id) =>

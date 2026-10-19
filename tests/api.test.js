@@ -12,7 +12,8 @@ import {
   getTeam,
   getTeamMembers,
 } from '../src/api/teams.js';
-import { listSpaces } from '../src/api/spaces.js';
+import { invalidateSpaceList, listSpaces } from '../src/api/spaces.js';
+import { reviewerCandidates } from '../src/lib/domain.js';
 import { invalidateSharedReads } from '../src/api/sharedReads.js';
 import {
   listEvaluationRounds,
@@ -77,21 +78,76 @@ test('동시 팀 조회는 공유하지만 완료 후에는 최신 가입·권�
   assert.equal((await getTeam(7)).myMembershipStatus, null);
 });
 
-test('팀원 캐시는 팀별로 분리되고 짧은 유효 기간 뒤 최신 역할을 조회한다', async (context) => {
-  let now = 1_000;
-  context.mock.method(Date, 'now', () => now);
-  let role = 'MEMBER';
-  globalThis.fetch = async (url) => jsonResponse([{ userId: url, role }]);
-  const initial = await getTeamMembers(7);
-  role = 'DEPUTY';
-  assert.deepEqual(await getTeamMembers(7), initial);
-  assert.equal((await getTeamMembers(8))[0].role, 'DEPUTY');
-  assert.notEqual((await getTeamMembers(8))[0].userId, initial[0].userId);
-  now += 15_000;
-  assert.equal((await getTeamMembers(7))[0].role, 'DEPUTY');
+test('새 팀원이 합류하면 최신 팀원으로 전원 담당 예외와 승인자 후보를 판단한다', async () => {
+  const originalMembers = [
+    { userId: 'leader', role: 'LEADER' },
+    { userId: 'member', role: 'MEMBER' },
+  ];
+  let serverMembers = originalMembers;
+  const assignees = originalMembers.map(({ userId }) => ({
+    userId,
+    allocationPercent: 50,
+  }));
+  globalThis.fetch = async (url) =>
+    jsonResponse(
+      url.endsWith('/members')
+        ? serverMembers
+        : { id: 7, approvedMemberCount: serverMembers.length },
+    );
+  assert.deepEqual(
+    reviewerCandidates(await getTeamMembers(7), assignees).map(
+      (member) => member.userId,
+    ),
+    ['leader'],
+  );
+  serverMembers = [
+    ...originalMembers,
+    { userId: 'new-member', role: 'MEMBER' },
+  ];
+  const detail = await getTeam(7);
+  const currentMembers = await getTeamMembers(7);
+  assert.equal(currentMembers.length, detail.approvedMemberCount);
+  assert.deepEqual(
+    reviewerCandidates(currentMembers, assignees).map(
+      (member) => member.userId,
+    ),
+    ['new-member'],
+  );
 });
 
-test('역할 변경 후에는 캐시된 팀원 대신 변경된 역할을 조회한다', async () => {
+test('스페이스 목록은 짧게 재사용하고 유효 기간 후 최신 목록을 조회한다', async (context) => {
+  let now = 1_000;
+  context.mock.method(Date, 'now', () => now);
+  let spaces = [{ id: 1, name: '기존 스페이스' }];
+  globalThis.fetch = async () => jsonResponse(spaces);
+  const initial = await listSpaces();
+  spaces = [...spaces, { id: 2, name: '새 스페이스' }];
+  assert.deepEqual(await listSpaces(), initial);
+  now += 15_000;
+  assert.deepEqual(await listSpaces(), spaces);
+});
+
+test('스페이스 목록 새로고침은 해당 캐시만 비우고 진행 중인 팀 조회를 공유한다', async () => {
+  let releaseTeam;
+  let spaces = [{ id: 1 }];
+  globalThis.fetch = async (url) =>
+    url === '/api/spaces'
+      ? jsonResponse(spaces)
+      : new Promise((resolve) => {
+          releaseTeam = () => resolve(jsonResponse({ id: 7 }));
+        });
+  await listSpaces();
+  const pendingTeam = getTeam(7);
+  await Promise.resolve();
+  spaces = [{ id: 1 }, { id: 2 }];
+  invalidateSpaceList();
+  assert.deepEqual(await listSpaces(), spaces);
+  assert.equal(getTeam(7), pendingTeam);
+  releaseTeam();
+  await pendingTeam;
+});
+
+test('역할 변경 후에는 변경된 팀원 역할을 조회한다', async () => {
   let role = 'MEMBER';
   globalThis.fetch = async (url, options) => {
     if (url.endsWith('/csrf'))
@@ -104,7 +160,7 @@ test('역할 변경 후에는 캐시된 팀원 대신 변경된 역할을 조회
   assert.equal((await getTeamMembers(7))[0].role, 'DEPUTY');
 });
 
-test('이전 세션의 늦은 응답은 새 세션의 팀원 캐시를 덮어쓰지 않는다', async () => {
+test('이전 세션의 늦은 응답은 새 세션의 스페이스 캐시를 덮어쓰지 않는다', async () => {
   let releasePrevious;
   let account = 'previous';
   globalThis.fetch = async (url) => {
@@ -115,14 +171,14 @@ test('이전 세션의 늦은 응답은 새 세션의 팀원 캐시를 덮어쓰
       });
     return jsonResponse([{ userId: account }]);
   };
-  const previous = getTeamMembers(7);
+  const previous = listSpaces();
   await Promise.resolve();
   account = 'current';
   await apiRequest('/api/me');
-  assert.equal((await getTeamMembers(7))[0].userId, 'current');
+  assert.equal((await listSpaces())[0].userId, 'current');
   releasePrevious();
   await previous;
-  assert.equal((await getTeamMembers(7))[0].userId, 'current');
+  assert.equal((await listSpaces())[0].userId, 'current');
 });
 
 test('세션 만료 후에는 캐시된 스페이스 목록을 다시 사용하지 않는다', async () => {
@@ -137,20 +193,20 @@ test('세션 만료 후에는 캐시된 스페이스 목록을 다시 사용하�
   await assert.rejects(listSpaces(), { status: 401 });
 });
 
-test('삭제 요청이 없는 정상 404는 공통 팀원 조회를 무효화하지 않는다', async () => {
+test('삭제 요청이 없는 정상 404는 스페이스 목록을 무효화하지 않는다', async () => {
   globalThis.fetch = async (url, options) => {
     calls.push({ url, ...options });
     return url.endsWith('/deletion-request')
       ? jsonResponse({ code: 'TEAM_DELETION_REQUEST_NOT_FOUND' }, 404)
       : jsonResponse([{ userId: 'member' }]);
   };
-  await getTeamMembers(7);
+  await listSpaces();
   await assert.rejects(getTeamDeletionRequest(7), {
     status: 404,
     code: 'TEAM_DELETION_REQUEST_NOT_FOUND',
   });
-  assert.deepEqual(await getTeamMembers(7), [{ userId: 'member' }]);
-  assert.equal(calls.filter((call) => call.url.endsWith('/members')).length, 1);
+  assert.deepEqual(await listSpaces(), [{ userId: 'member' }]);
+  assert.equal(calls.filter((call) => call.url === '/api/spaces').length, 1);
 });
 
 test('실패한 조회는 저장하지 않고 재조회 오류를 그대로 전달한다', async () => {

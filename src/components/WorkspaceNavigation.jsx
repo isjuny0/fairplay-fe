@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
-import { listSpaces } from '../api/spaces.js';
 import useAppNavigate from '../hooks/useAppNavigate.js';
-import useResource from '../hooks/useResource.js';
+import useSpaceList from '../hooks/useSpaceList.js';
 import { isApprovedMember } from '../lib/domain.js';
 import { spacePath, teamMenuPath } from '../lib/routes.js';
 import {
@@ -28,7 +27,7 @@ export default function WorkspaceNavigation({
   const [open, setOpen] = useState(false);
   const location = useLocation();
   useEffect(() => setOpen(false), [location.pathname]);
-  const spaces = useResource(listSpaces, [user.id]);
+  const spaces = useSpaceList(user.id);
   const isManager = space?.myRole === 'MANAGER';
   const accessibleTeams = teams.filter(
     (item) => isManager || isApprovedMember(item),

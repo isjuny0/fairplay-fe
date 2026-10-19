@@ -14,10 +14,8 @@ export const createTeam = (spaceId, name) =>
 export const requestTeamJoin = (teamId) =>
   apiRequest(`/api/teams/${teamId}/applications`, { method: 'POST' });
 export const getTeamMembers = (teamId) =>
-  sharedRead(
-    `/api/teams/${teamId}/members`,
-    () => apiRequest(`/api/teams/${teamId}/members`),
-    15_000,
+  sharedRead(`/api/teams/${teamId}/members`, () =>
+    apiRequest(`/api/teams/${teamId}/members`),
   );
 export const getTeamApplications = (teamId) =>
   apiRequest(`/api/teams/${teamId}/applications?status=PENDING`);
