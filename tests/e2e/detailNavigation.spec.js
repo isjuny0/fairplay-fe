@@ -78,7 +78,7 @@ test('긴 산출물 상세는 다운로드·닫기와 목록 초점 복귀를 �
   const dialog = page.getByRole('dialog', { name: '산출물 상세', exact: true });
   const download = dialog.getByRole('button', { name: '파일 다운로드', exact: true });
   await expect(download).toBeInViewport();
-  await dialog.locator('.deliverable-record summary').scrollIntoViewIfNeeded();
+  await dialog.locator('.deliverable-content-footer').scrollIntoViewIfNeeded();
   await expect(download).toBeInViewport();
   const downloaded = page.waitForEvent('download');
   await download.click();

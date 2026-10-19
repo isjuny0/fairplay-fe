@@ -110,37 +110,6 @@
   color: var(--text-muted);
   font-size: var(--text-caption);
 }
-.deliverable-content .deliverable-record {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  font-size: inherit;
-}
-.deliverable-content .deliverable-record summary {
-  min-height: 0;
-  padding: 0;
-  color: var(--text-muted);
-  font-size: inherit;
-  line-height: inherit;
-}
-.deliverable-record dl {
-  display: grid;
-  gap: 6px;
-  margin: 10px 0 0;
-}
-.deliverable-record dl > div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-}
-.deliverable-record dt {
-  min-width: 64px;
-}
-.deliverable-record dd {
-  margin: 0;
-}
 .linked-deliverables .deliverable-card .heading-actions {
   margin-top: 12px;
   padding-top: 0;
@@ -166,8 +135,5 @@
   }
   .deliverable-file-row > button {
     margin-left: 30px;
-  }
-  .deliverable-content .deliverable-record summary {
-    padding-block: 6px;
   }
 }

@@ -114,24 +114,17 @@ export default function DeliverableContent({
       <footer className="deliverable-content-footer">
         <span>등록자 {memberName(members, deliverable.authorId)}</span>
         <span>
-          수정{" "}
+          등록일{" "}
+          <time dateTime={deliverable.createdAt}>
+            {formatDate(deliverable.createdAt)}
+          </time>
+        </span>
+        <span>
+          최종 수정일{" "}
           <time dateTime={deliverable.updatedAt}>
             {formatDate(deliverable.updatedAt)}
           </time>
         </span>
-        <details className="deliverable-record">
-          <summary>등록·수정 정보</summary>
-          <dl>
-            <div>
-              <dt>등록일</dt>
-              <dd>{formatDate(deliverable.createdAt)}</dd>
-            </div>
-            <div>
-              <dt>최종 수정일</dt>
-              <dd>{formatDate(deliverable.updatedAt)}</dd>
-            </div>
-          </dl>
-        </details>
       </footer>
     </div>
   );
