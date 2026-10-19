@@ -1,6 +1,6 @@
 import Icon from "./Icon.jsx";
 import DeliverableTable from "./DeliverableTable.jsx";
-import MarkdownBody from "./MarkdownBody.jsx";
+import DeliverableContent from "./DeliverableContent.jsx";
 import MarkdownEditor from "./MarkdownEditor.jsx";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
@@ -27,7 +27,6 @@ import {
   categoryLabels,
   canModifyTeamWork,
   deliverablePermissions,
-  formatDate,
   isApprovedMember,
   isAssignee,
   isMutable,
@@ -943,79 +942,38 @@ export default function Deliverables({
                     className="panel deliverable-card"
                     key={deliverable.id}
                   >
-                    <div className="section-heading">
-                      <div className="deliverable-title">
-                        <span className="file-symbol">
-                          <Icon name="file" />
-                        </span>
-                        <h3>{deliverable.title}</h3>
+                    <DeliverableContent
+                      deliverable={deliverable}
+                      task={taskMap.get(deliverable.taskId)}
+                      members={members}
+                      previewDocument
+                      onDownload={download}
+                    />
+                    {(permissions.metadata || permissions.remove) && (
+                      <div className="heading-actions">
+                        {permissions.metadata && (
+                          <button
+                            className="secondary-button"
+                            disabled={busy}
+                            onClick={() => {
+                              setError(null);
+                              setEditing(deliverable);
+                            }}
+                          >
+                            수정
+                          </button>
+                        )}
+                        {permissions.remove && (
+                          <button
+                            className="secondary-button danger"
+                            disabled={busy}
+                            onClick={() => remove(deliverable)}
+                          >
+                            삭제
+                          </button>
+                        )}
                       </div>
-                      <span className="role-badge">
-                        {{ TEXT: "문서", FILE: "파일" }[deliverable.type]} ·{" "}
-                        {categoryLabels[deliverable.category] ||
-                          deliverable.category}
-                      </span>
-                    </div>
-                    <p className="field-help">
-                      {deliverable.taskId == null
-                        ? "팀 공용"
-                        : `작업 연결${taskMap.get(deliverable.taskId) ? ` · ${taskMap.get(deliverable.taskId).title}` : ""}`}{" "}
-                    </p>
-                    <details className="deliverable-record">
-                      <summary>등록·수정 정보</summary>
-                      <p className="field-help">
-                        등록 {memberName(members, deliverable.authorId)} · 수정{" "}
-                        {formatDate(deliverable.updatedAt)}
-                      </p>
-                    </details>
-                    {deliverable.description && (
-                      <p className="preserve-lines">
-                        {deliverable.description}
-                      </p>
                     )}
-                    {deliverable.type === "TEXT" && (
-                      <details>
-                        <summary>본문 보기</summary>
-                        <MarkdownBody>{deliverable.text}</MarkdownBody>
-                      </details>
-                    )}
-                    {deliverable.type === "FILE" && (
-                      <p>
-                        {deliverable.file.originalFilename} ·{" "}
-                        {(deliverable.file.sizeBytes / 1024).toFixed(1)}KiB
-                      </p>
-                    )}
-                    <div className="heading-actions">
-                      {deliverable.type === "FILE" && (
-                        <button
-                          className="secondary-button"
-                          onClick={() => download(deliverable)}
-                        >
-                          파일 다운로드
-                        </button>
-                      )}
-                      {permissions.metadata && (
-                        <button
-                          className="secondary-button"
-                          disabled={busy}
-                          onClick={() => {
-                            setError(null);
-                            setEditing(deliverable);
-                          }}
-                        >
-                          수정
-                        </button>
-                      )}
-                      {permissions.remove && (
-                        <button
-                          className="secondary-button danger"
-                          disabled={busy}
-                          onClick={() => remove(deliverable)}
-                        >
-                          삭제
-                        </button>
-                      )}
-                    </div>
                   </article>
                 );
               })}
@@ -1098,69 +1056,14 @@ export default function Deliverables({
           wide
         >
           <div className="stack deliverable-detail">
-            <div>
-              <span className="eyebrow">
-                {selectedDeliverable.type === "FILE" ? "파일" : "문서"} ·{" "}
-                {categoryLabels[selectedDeliverable.category] ||
-                  selectedDeliverable.category}
-              </span>
-              <h3>{selectedDeliverable.title}</h3>
-            </div>
-            <dl className="deliverable-facts">
-              <div>
-                <dt>연결 작업</dt>
-                <dd>
-                  {selectedDeliverable.taskId == null
-                    ? "팀 공용"
-                    : taskMap.get(selectedDeliverable.taskId)?.title ||
-                      `작업 #${selectedDeliverable.taskId}`}
-                </dd>
-              </div>
-              <div>
-                <dt>등록자</dt>
-                <dd>{memberName(members, selectedDeliverable.authorId)}</dd>
-              </div>
-              <div>
-                <dt>최종 수정일</dt>
-                <dd>{formatDate(selectedDeliverable.updatedAt)}</dd>
-              </div>
-            </dl>
-            {selectedDeliverable.description && (
-              <section>
-                <h4>설명</h4>
-                <p className="preserve-lines">
-                  {selectedDeliverable.description}
-                </p>
-              </section>
-            )}
-            {selectedDeliverable.type === "TEXT" ? (
-              <section>
-                <h4>본문</h4>
-                <MarkdownBody>{selectedDeliverable.text}</MarkdownBody>
-              </section>
-            ) : (
-              <section>
-                <h4>현재 파일</h4>
-                <p className="preserve-lines">
-                  {selectedDeliverable.file.originalFilename} ·{" "}
-                  {(selectedDeliverable.file.sizeBytes / 1024).toFixed(1)}KiB
-                </p>
-                <p className="field-help">
-                  최신 파일만 보관합니다. 파일을 교체하면 이전 원본은
-                  삭제됩니다.
-                </p>
-              </section>
-            )}
+            <DeliverableContent
+              deliverable={selectedDeliverable}
+              task={taskMap.get(selectedDeliverable.taskId)}
+              members={members}
+              onDownload={download}
+            />
             <ErrorNotice error={error} />
             <div className="modal-actions">
-              {selectedDeliverable.type === "FILE" && (
-                <button
-                  className="primary-button"
-                  onClick={() => download(selectedDeliverable)}
-                >
-                  파일 다운로드
-                </button>
-              )}
               <button
                 className="secondary-button"
                 onClick={() => setSelectedDeliverableId(null)}

@@ -23,6 +23,7 @@ import './review-workflow.css';
 import './task-collection.css';
 import './collection-filters.css';
 import './markdown.css';
+import './deliverable-content.css';
 import './team-home.css';
 import './navigation-contrast.css';
 

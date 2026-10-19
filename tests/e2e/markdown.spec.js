@@ -54,7 +54,9 @@ test('마크다운 미리보기·저장·수정·연결 산출물에서 원문�
   await page.getByRole('button', { name: '작업', exact: true }).click();
   await page.getByRole('button', { name: '설문 결과 분석', exact: true }).click();
   const card = page.getByRole('article').filter({ has: page.getByRole('heading', { name: '마크다운 조사 기록', exact: true }) });
-  await card.getByText('본문 보기', { exact: true }).click();
+  await expect(card.getByRole('heading', { name: '조사 결과', exact: true })).toBeVisible();
+  const expand = card.getByRole('button', { name: '본문 더 보기', exact: true });
+  if (await expand.isVisible()) await expand.click();
   await expect(card.getByRole('heading', { name: '조사 결과', exact: true })).toBeVisible();
   await expect(card).toContainText('수정한 원문');
 });
