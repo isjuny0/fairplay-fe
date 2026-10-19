@@ -1,3 +1,5 @@
+import { invalidateSharedReads } from './sharedReads.js';
+
 const apiBaseUrl = (import.meta.env?.VITE_API_BASE_URL || '').replace(
   /\/$/,
   '',
@@ -41,6 +43,20 @@ export async function apiRequest(
   { method = 'GET', body, responseType = 'json' } = {},
   retryCsrf = true,
 ) {
+  const changesData = !['GET', 'HEAD'].includes(method);
+  if (changesData || path === '/api/me') invalidateSharedReads();
+  try {
+    return await executeRequest(
+      path,
+      { method, body, responseType },
+      retryCsrf,
+    );
+  } finally {
+    if (changesData) invalidateSharedReads();
+  }
+}
+
+async function executeRequest(path, { method, body, responseType }, retryCsrf) {
   if (
     globalThis.window &&
     (window.location?.pathname === '/preview' ||
@@ -69,6 +85,7 @@ export async function apiRequest(
           : JSON.stringify(body),
   });
   if (!response.ok) {
+    invalidateSharedReads();
     const result = await response.json().catch(() => null);
     if (
       response.status === 403 &&

@@ -1,6 +1,9 @@
 import { apiRequest } from './client.js';
-export const listSpaces = () => apiRequest('/api/spaces');
-export const getSpace = (id) => apiRequest(`/api/spaces/${id}`);
+import { sharedRead } from './sharedReads.js';
+export const listSpaces = () =>
+  sharedRead('/api/spaces', () => apiRequest('/api/spaces'), 15_000);
+export const getSpace = (id) =>
+  sharedRead(`/api/spaces/${id}`, () => apiRequest(`/api/spaces/${id}`));
 export const createSpace = (body) =>
   apiRequest('/api/spaces', { method: 'POST', body });
 export const joinSpace = (code) =>

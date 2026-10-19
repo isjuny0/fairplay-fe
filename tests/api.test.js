@@ -6,7 +6,14 @@ import {
 import { getMemberContributions } from '../src/api/dashboard.js';
 import { getManagerPeerResponses } from '../src/api/evaluations.js';
 import { getAiReview, requestAiReview } from '../src/api/aiReviews.js';
-import { getMyWorkSummary } from '../src/api/teams.js';
+import {
+  assignTeamDeputy,
+  getMyWorkSummary,
+  getTeam,
+  getTeamMembers,
+} from '../src/api/teams.js';
+import { listSpaces } from '../src/api/spaces.js';
+import { invalidateSharedReads } from '../src/api/sharedReads.js';
 import {
   listEvaluationRounds,
   openEvaluationRound,
@@ -41,6 +48,7 @@ const jsonResponse = (result, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   });
 beforeEach(() => {
+  invalidateSharedReads();
   clearCsrfToken();
   calls = [];
   globalThis.fetch = async (url, options) => {
@@ -51,9 +59,93 @@ beforeEach(() => {
   };
 });
 afterEach(() => {
+  invalidateSharedReads();
   globalThis.fetch = originalFetch;
   clearCsrfToken();
   delete globalThis.window;
+});
+
+test('동시 팀 조회는 공유하지만 완료 후에는 최신 가입·권한 상태를 확인한다', async () => {
+  let membership = 'APPROVED';
+  globalThis.fetch = async () =>
+    jsonResponse({ myMembershipStatus: membership });
+  const first = getTeam(7);
+  const duplicate = getTeam(7);
+  assert.equal(first, duplicate);
+  assert.equal((await first).myMembershipStatus, 'APPROVED');
+  membership = null;
+  assert.equal((await getTeam(7)).myMembershipStatus, null);
+});
+
+test('팀원 캐시는 팀별로 분리되고 짧은 유효 기간 뒤 최신 역할을 조회한다', async (context) => {
+  let now = 1_000;
+  context.mock.method(Date, 'now', () => now);
+  let role = 'MEMBER';
+  globalThis.fetch = async (url) => jsonResponse([{ userId: url, role }]);
+  const initial = await getTeamMembers(7);
+  role = 'DEPUTY';
+  assert.deepEqual(await getTeamMembers(7), initial);
+  assert.equal((await getTeamMembers(8))[0].role, 'DEPUTY');
+  assert.notEqual((await getTeamMembers(8))[0].userId, initial[0].userId);
+  now += 15_000;
+  assert.equal((await getTeamMembers(7))[0].role, 'DEPUTY');
+});
+
+test('역할 변경 후에는 캐시된 팀원 대신 변경된 역할을 조회한다', async () => {
+  let role = 'MEMBER';
+  globalThis.fetch = async (url, options) => {
+    if (url.endsWith('/csrf'))
+      return jsonResponse({ headerName: 'X-CSRF-TOKEN', token: 'token' });
+    if (options.method === 'PATCH') role = 'DEPUTY';
+    return jsonResponse([{ userId: 'member', role }]);
+  };
+  assert.equal((await getTeamMembers(7))[0].role, 'MEMBER');
+  await assignTeamDeputy(7, 'member');
+  assert.equal((await getTeamMembers(7))[0].role, 'DEPUTY');
+});
+
+test('이전 세션의 늦은 응답은 새 세션의 팀원 캐시를 덮어쓰지 않는다', async () => {
+  let releasePrevious;
+  let account = 'previous';
+  globalThis.fetch = async (url) => {
+    if (url === '/api/me') return jsonResponse({ id: account });
+    if (account === 'previous')
+      return new Promise((resolve) => {
+        releasePrevious = () => resolve(jsonResponse([{ userId: 'previous' }]));
+      });
+    return jsonResponse([{ userId: account }]);
+  };
+  const previous = getTeamMembers(7);
+  await Promise.resolve();
+  account = 'current';
+  await apiRequest('/api/me');
+  assert.equal((await getTeamMembers(7))[0].userId, 'current');
+  releasePrevious();
+  await previous;
+  assert.equal((await getTeamMembers(7))[0].userId, 'current');
+});
+
+test('세션 만료 후에는 캐시된 스페이스 목록을 다시 사용하지 않는다', async () => {
+  let expired = false;
+  globalThis.fetch = async () =>
+    expired
+      ? jsonResponse({ code: 'UNAUTHORIZED' }, 401)
+      : jsonResponse([{ id: 1 }]);
+  await listSpaces();
+  expired = true;
+  await assert.rejects(apiRequest('/api/teams/7'), { status: 401 });
+  await assert.rejects(listSpaces(), { status: 401 });
+});
+
+test('실패한 조회는 저장하지 않고 재조회 오류를 그대로 전달한다', async () => {
+  globalThis.fetch = async () =>
+    jsonResponse(
+      { code: 'FORBIDDEN', message: '팀원 조회 권한이 없습니다.' },
+      403,
+    );
+  await assert.rejects(getTeamMembers(7), { status: 403 });
+  globalThis.fetch = async () => jsonResponse([{ userId: 'member' }]);
+  assert.deepEqual(await getTeamMembers(7), [{ userId: 'member' }]);
 });
 test('GET은 쿠키를 포함하고 불필요한 CSRF 조회를 하지 않는다', async () => {
   await apiRequest('/api/spaces');

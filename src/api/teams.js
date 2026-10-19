@@ -1,7 +1,11 @@
 import { apiRequest } from './client.js';
+import { sharedRead } from './sharedReads.js';
 export const listTeams = (spaceId) =>
-  apiRequest(`/api/spaces/${spaceId}/teams`);
-export const getTeam = (teamId) => apiRequest(`/api/teams/${teamId}`);
+  sharedRead(`/api/spaces/${spaceId}/teams`, () =>
+    apiRequest(`/api/spaces/${spaceId}/teams`),
+  );
+export const getTeam = (teamId) =>
+  sharedRead(`/api/teams/${teamId}`, () => apiRequest(`/api/teams/${teamId}`));
 export const createTeam = (spaceId, name) =>
   apiRequest(`/api/spaces/${spaceId}/teams`, {
     method: 'POST',
@@ -10,7 +14,11 @@ export const createTeam = (spaceId, name) =>
 export const requestTeamJoin = (teamId) =>
   apiRequest(`/api/teams/${teamId}/applications`, { method: 'POST' });
 export const getTeamMembers = (teamId) =>
-  apiRequest(`/api/teams/${teamId}/members`);
+  sharedRead(
+    `/api/teams/${teamId}/members`,
+    () => apiRequest(`/api/teams/${teamId}/members`),
+    15_000,
+  );
 export const getTeamApplications = (teamId) =>
   apiRequest(`/api/teams/${teamId}/applications?status=PENDING`);
 export const reviewTeamApplication = (applicationId, status) =>

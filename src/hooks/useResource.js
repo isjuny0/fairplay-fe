@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { invalidateSharedReads } from '../api/sharedReads.js';
 export default function useResource(load, dependencies) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -12,7 +13,10 @@ export default function useResource(load, dependencies) {
     );
   const loader = useRef(load);
   loader.current = load;
-  const reload = useCallback(() => setRevision((value) => value + 1), []);
+  const reload = useCallback(() => {
+    invalidateSharedReads();
+    setRevision((value) => value + 1);
+  }, []);
   useEffect(() => {
     let active = true;
     setRequestDependencies(dependencies);
