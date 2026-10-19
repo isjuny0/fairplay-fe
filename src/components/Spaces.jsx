@@ -24,7 +24,7 @@ import {
 
 export default function Spaces({ onSelect, user }) {
   const { notify, clearChanges } = useInteractions();
-  const resource = useSpaceList();
+  const resource = useSpaceList(user.id);
   const [searchParams, setSearchParams] = useSearchParams();
   const search = searchParams.get('q') || '';
   const requestedRole = searchParams.get('role');
@@ -186,7 +186,7 @@ export default function Spaces({ onSelect, user }) {
                     >
                       <option value="ALL">모든 역할</option>
                       <option value="MANAGER">관리자</option>
-                      <option value="USER">참여자</option>
+                      <option value="USER">참여 중</option>
                     </select>
                   </label>
                   <span className="directory-count" role="status">

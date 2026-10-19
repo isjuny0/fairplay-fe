@@ -1,16 +1,29 @@
-import { listTeams } from '../api/teams.js';
+import { getTeam, listTeams } from '../api/teams.js';
 import useResource from '../hooks/useResource.js';
 import { isApprovedMember } from '../lib/domain.js';
 
 function ParticipantRole({ space, user }) {
   // A refreshed directory entry must also refresh its current team membership.
   const teams = useResource(
-    () => listTeams(space.id),
+    async () => {
+      const summaries = await listTeams(space.id);
+      // List responses can omit membership; resolve it from the team detail API.
+      return Promise.all(
+        summaries.map((team) =>
+          Object.hasOwn(team, 'myMembershipStatus') &&
+          (team.myMembershipStatus !== 'APPROVED' ||
+            Object.hasOwn(team, 'leaderId'))
+            ? team
+            : getTeam(team.id),
+        ),
+      );
+    },
     [space.id, user.id, space],
   );
   const leader = (teams.data || []).some(
     (team) => isApprovedMember(team) && team.leaderId === user.id,
   );
+  const member = (teams.data || []).some(isApprovedMember);
   const pending = teams.loading || Boolean(teams.error);
   return (
     <span
@@ -28,7 +41,9 @@ function ParticipantRole({ space, user }) {
           ? '역할 확인 필요'
           : leader
             ? '팀 리더'
-            : '참여자'}
+            : member
+              ? '팀원'
+              : '참여자'}
     </span>
   );
 }

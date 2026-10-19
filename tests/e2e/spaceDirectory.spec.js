@@ -265,7 +265,7 @@ test('스페이스 이름과 내 역할 조건을 함께 적용하고 초기화 
   await expect(list.getByRole('listitem')).toHaveCount(3);
   await page.getByLabel('스페이스 이름 검색').fill('서비스');
   await expect(list.getByRole('listitem')).toHaveCount(2);
-  await page.getByLabel('내 역할 필터').selectOption({ label: '참여자' });
+  await page.getByLabel('내 역할 필터').selectOption({ label: '참여 중' });
   await expect(list.getByRole('listitem')).toHaveCount(1);
   await expect(list).toContainText('서비스 디자인');
   await page.reload();
