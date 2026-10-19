@@ -615,7 +615,18 @@
   word-break: keep-all;
 }
 .login-actions .google-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   word-break: keep-all;
+}
+.google-login-logo {
+  display: block;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  object-fit: contain;
 }
 .login-actions .field-help {
   margin: 24px 0 0;

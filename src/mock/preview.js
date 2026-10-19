@@ -203,7 +203,7 @@ export async function previewRequest(
       if (method === 'GET')
         return Object.values(state.teams)
           .filter((entry) => entry.team.spaceId === id)
-          .map((entry) => entry.team);
+          .map((entry) => teamDetail(entry, context, state));
       const team = {
         ...previewTeams[0],
         id: Math.max(...Object.keys(state.teams).map(Number)) + 1,

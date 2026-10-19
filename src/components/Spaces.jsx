@@ -1,6 +1,7 @@
 import Icon from './Icon.jsx';
 import DateTimeInput from './DateTimeInput.jsx';
 import SpaceDirectorySidebar from './SpaceDirectorySidebar.jsx';
+import SpaceRoleBadge from './SpaceRoleBadge.jsx';
 import { currentDateTime } from '../lib/dateTime.js';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router';
@@ -21,7 +22,7 @@ import {
   ResourceState,
 } from './ui.jsx';
 
-export default function Spaces({ onSelect }) {
+export default function Spaces({ onSelect, user }) {
   const { notify, clearChanges } = useInteractions();
   const resource = useSpaceList();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -218,11 +219,7 @@ export default function Spaces({ onSelect }) {
                               {formatDate(space.endAt)}
                             </small>
                           </span>
-                          <span
-                            className={`role-badge ${space.myRole === 'MANAGER' ? 'role-manager' : ''}`}
-                          >
-                            {space.myRole === 'MANAGER' ? '관리자' : '참여자'}
-                          </span>
+                          <SpaceRoleBadge space={space} user={user} />
                           <span className="building-status">
                             <span
                               className={`status-dot building-${space.teamBuildingStatus.toLowerCase()}`}

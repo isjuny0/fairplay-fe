@@ -7,6 +7,7 @@ import { ErrorNotice } from './ui.jsx';
 import { useInteractions } from '../hooks/useInteractions.js';
 import { HeaderContext } from './HeaderContext.js';
 import { invalidateSharedReads } from '../api/sharedReads.js';
+import googleLogo from '../assets/google-g.svg';
 
 export default function Application({ previewRuntime }) {
   const { getMockState, getPreviewUser, previewRole, setPreviewRole, resetPreview, previewContext } = previewRuntime || {};
@@ -151,11 +152,21 @@ export default function Application({ previewRuntime }) {
               disabled={busy || preview}
               onClick={authenticate}
             >
-              {preview
-                ? 'Google 로그인 · 실제 서비스에서 연결'
-                : busy
-                  ? '로그인 연결 중…'
-                  : 'Google로 계속하기'}
+              <img
+                className="google-login-logo"
+                src={googleLogo}
+                alt=""
+                aria-hidden="true"
+                width="20"
+                height="20"
+              />
+              <span>
+                {preview
+                  ? 'Google 로그인 · 실제 서비스에서 연결'
+                  : busy
+                    ? '로그인 연결 중…'
+                    : 'Google로 계속하기'}
+              </span>
             </button>
             <button
               className="secondary-button preview-entry"

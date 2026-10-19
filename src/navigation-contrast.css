@@ -50,11 +50,6 @@
 .workspace-sidebar .workspace-navigation-links {
   padding-top: 14px;
 }
-.profile-avatar {
-  background: var(--brand);
-  color: #fff;
-  border-color: var(--brand);
-}
 .role-badge {
   background: #d5f0df;
   color: #07663f;

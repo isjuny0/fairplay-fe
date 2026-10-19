@@ -41,9 +41,9 @@ function WorkspaceRoute({ user, view = 'teams', teamMenu = '팀 홈' }) {
   );
 }
 
-function SpacesRoute() {
+function SpacesRoute({ user }) {
   const navigate = useAppNavigate();
-  return <Spaces onSelect={(id) => navigate(spacePath(id))} />;
+  return <Spaces user={user} onSelect={(id) => navigate(spacePath(id))} />;
 }
 
 export default function AppRoutes({ user, prefix = '' }) {
@@ -58,7 +58,7 @@ export default function AppRoutes({ user, prefix = '' }) {
         path={prefix || '/'}
         element={<Navigate to={`${prefix}/main`} replace />}
       />
-      <Route path={`${prefix}/main`} element={<SpacesRoute />} />
+      <Route path={`${prefix}/main`} element={<SpacesRoute user={user} />} />
       <Route
         path={`${prefix}/spaces/:spaceId`}
         element={<WorkspaceRoute user={user} />}
