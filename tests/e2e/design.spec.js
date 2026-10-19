@@ -139,6 +139,7 @@ for (const width of [1440, 768, 390, 320]) {
     await expect(page.getByLabel('내 역할 필터')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
     await page.goto('/preview/login');
+    await expect(page.getByRole('button', { name: '로그인 없이 화면 미리보기' })).toBeVisible();
     const intro = await page.locator('.login-introduction').boundingBox();
     const actions = await page.locator('.login-actions').boundingBox();
     if (width > 720) {
@@ -147,7 +148,6 @@ for (const width of [1440, 768, 390, 320]) {
     } else {
       expect(actions.y).toBeGreaterThanOrEqual(intro.y + intro.height - 1);
     }
-    await expect(page.getByRole('button', { name: '로그인 없이 화면 미리보기' })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   });
 }

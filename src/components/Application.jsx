@@ -6,6 +6,7 @@ import { loginReturnPath } from '../lib/routes.js';
 import { ErrorNotice } from './ui.jsx';
 import { useInteractions } from '../hooks/useInteractions.js';
 import { HeaderContext } from './HeaderContext.js';
+import { invalidateSharedReads } from '../api/sharedReads.js';
 
 export default function Application({ previewRuntime }) {
   const { getMockState, getPreviewUser, previewRole, setPreviewRole, resetPreview, previewContext } = previewRuntime || {};
@@ -43,6 +44,7 @@ export default function Application({ previewRuntime }) {
     setError(null);
     if (preview) setScenario(getMockState(previewContext()).scenario);
     const expired = () => {
+      invalidateSharedReads();
       setUser(null);
       setSessionNotice('로그인 세션이 만료되었습니다. 다시 로그인해 주세요.');
     };
@@ -83,6 +85,7 @@ export default function Application({ previewRuntime }) {
   const signOut = async () => {
     if (!(await confirmDiscard())) return;
     if (preview) {
+      invalidateSharedReads();
       setUser(null);
       navigate('/', { replace: true });
       return;
@@ -221,6 +224,7 @@ export default function Application({ previewRuntime }) {
                     onChange={async (event) => {
                       const nextRole = event.target.value;
                       if (!(await confirmDiscard())) return;
+                      invalidateSharedReads();
                       setPreviewRole(nextRole);
                       setUser(getPreviewUser());
                       setPreviewRevision((value) => value + 1);
@@ -244,6 +248,7 @@ export default function Application({ previewRuntime }) {
                     onChange={async (event) => {
                       const nextScenario = event.target.value;
                       if (!(await confirmDiscard())) return;
+                      invalidateSharedReads();
                       setScenario(nextScenario);
                       resetPreview(nextScenario);
                       setPreviewRevision((value) => value + 1);
@@ -260,6 +265,7 @@ export default function Application({ previewRuntime }) {
                   className="secondary-button"
                   onClick={async () => {
                     if (!(await confirmDiscard())) return;
+                    invalidateSharedReads();
                     resetPreview(scenario);
                     setPreviewRevision((value) => value + 1);
                   }}

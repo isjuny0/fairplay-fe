@@ -1340,6 +1340,10 @@ test('잘못된 주소·ID와 존재하지 않는 팀은 오류 화면으로 처
       page.getByRole('heading', { name: '화면을 찾을 수 없습니다.' }),
     ).toBeVisible();
   }
+  await page.route('**/api/teams/999', route => route.fulfill({
+    status: 404,
+    json: { code: 'TEAM_NOT_FOUND', message: '팀을 찾을 수 없습니다.' },
+  }));
   await page.goto('/spaces/1/teams/999');
   await expect(
     page.getByRole('heading', { name: '팀을 열 수 없습니다.' }),

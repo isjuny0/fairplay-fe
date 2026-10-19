@@ -1,13 +1,18 @@
 import { useSearchParams } from 'react-router';
 import { TeamReport } from './ContributionReport.jsx';
-import { EmptyState, Field } from './ui.jsx';
+import { getTeam } from '../api/teams.js';
+import useResource from '../hooks/useResource.js';
+import { EmptyState, Field, ResourceState } from './ui.jsx';
 
 export default function ReportReview({ context }) {
   const [params, setParams] = useSearchParams();
-  const entry =
-    context.teamContexts.find(
-      ({ team }) => String(team.id) === params.get('teamId'),
-    ) || context.teamContexts[0];
+  const team =
+    context.teams.find((team) => String(team.id) === params.get('teamId')) ||
+    context.teams[0];
+  const detail = useResource(
+    () => (team ? getTeam(team.id) : Promise.resolve(null)),
+    [team?.id],
+  );
   return (
     <section className="stack report-review-page">
       <div className="page-heading">
@@ -19,31 +24,35 @@ export default function ReportReview({ context }) {
           </p>
         </div>
       </div>
-      {entry ? (
+      {team ? (
         <>
           <div className="report-team-toolbar">
             <Field label="리포트 대상 팀">
               <select
-                value={entry.team.id}
+                value={team.id}
                 onChange={(event) => setParams({ teamId: event.target.value })}
               >
-                {context.teamContexts.map(({ team }) => (
+                {context.teams.map((team) => (
                   <option key={team.id} value={team.id}>
                     {team.name}
                   </option>
                 ))}
               </select>
             </Field>
-            <p>팀원 {entry.team.approvedMemberCount}명</p>
+            {detail.data && <p>팀원 {detail.data.approvedMemberCount}명</p>}
             <span className="field-help">
               선택한 팀의 평가 제출과 최종 결과를 확인합니다.
             </span>
           </div>
-          <TeamReport
-            key={entry.team.id}
-            manager
-            context={{ ...context, team: entry.team, members: entry.members }}
-          />
+          <ResourceState resource={detail} label="리포트 대상 팀">
+            {detail.data && (
+              <TeamReport
+                key={team.id}
+                manager
+                context={{ ...context, team: detail.data }}
+              />
+            )}
+          </ResourceState>
         </>
       ) : (
         <EmptyState>리포트를 만들 팀이 없습니다.</EmptyState>

@@ -21,7 +21,10 @@ const TeamSettings = deferScreen(screenLoaders.TeamSettings, '팀 설정');
 const TeamHome = deferScreen(screenLoaders.TeamHome, '팀 홈');
 const PeerEvaluation = deferScreen(screenLoaders.PeerEvaluation, '동료 평가');
 const MidFeedback = deferScreen(screenLoaders.MidFeedback, '중간 피드백');
-const ContributionReport = deferScreen(screenLoaders.ContributionReport, '기여도 리포트');
+const ContributionReport = deferScreen(
+  screenLoaders.ContributionReport,
+  '기여도 리포트',
+);
 
 function TeamDeliverables({ team, user, members }) {
   const resource = useResource(
@@ -29,17 +32,14 @@ function TeamDeliverables({ team, user, members }) {
     [team.id, team.myMembershipStatus],
   );
   return (
-    <ResourceState resource={resource}>
-      {resource.data && (
-        <Deliverables
-          team={team}
-          user={user}
-          members={members}
-          tasks={resource.data}
-          onChanged={resource.reload}
-        />
-      )}
-    </ResourceState>
+    <Deliverables
+      team={team}
+      user={user}
+      members={members}
+      tasks={resource.data || []}
+      tasksResource={resource}
+      onChanged={resource.reload}
+    />
   );
 }
 
@@ -147,9 +147,7 @@ export default function TeamWorkspace({
           </summary>
           <div className="mobile-team-more">
             {menus
-              .filter(
-                (label) => !['팀 홈', '작업', '산출물'].includes(label),
-              )
+              .filter((label) => !['팀 홈', '작업', '산출물'].includes(label))
               .map((label) => (
                 <button
                   key={label}
@@ -194,76 +192,79 @@ export default function TeamWorkspace({
           )}
         </>
       )}
-      <ResourceState resource={resource}>
-        {!menus.includes(menu) && (
-          <UnavailablePage
-            title="이 팀 화면에 접근할 수 없습니다."
-            description="승인된 팀원만 작업과 팀 설정을 사용할 수 있습니다. 조회 가능한 팀 메뉴를 선택해 주세요."
-          />
-        )}
-        {currentMenu === '팀 홈' && approved && (
-          <TeamHome context={context} onNavigate={navigateToMenu} />
-        )}
-        {currentMenu === '팀원 관리' && (
-          <TeamMembers
-            team={team}
-            user={user}
-            onChanged={() => {
-              resource.reload();
-              onChanged();
-            }}
-          />
-        )}
-        {currentMenu === '작업' && approved && (
-          <TaskBoard
-            team={workTeam}
-            user={user}
-            members={members}
-            space={space}
-            taskId={taskId}
-            onOpenTask={navigateToTask}
-            onTaskBack={navigateToTaskList}
-          />
-        )}
-        {currentMenu === '산출물' && (
-          <TeamDeliverables team={workTeam} user={user} members={members} />
-        )}
-        {currentMenu === '승인 검토' && approved && (
-          <Approvals
-            team={workTeam}
-            user={user}
-            members={members}
-            space={space}
-            taskId={taskId}
-            onOpenTask={navigateToTask}
-            onTaskBack={navigateToTaskList}
-          />
-        )}
-        {currentMenu === '팀 설정' && approved && (
-          <TeamSettings
-            team={team}
-            space={space}
-            user={user}
-            members={members}
-            deletionResource={deletionResource}
-            onNavigate={navigateToMenu}
-            onRemoved={onRemoved}
-            onChanged={() => {
-              deletionResource.reload();
-              onChanged();
-            }}
-          />
-        )}
-        {currentMenu === '동료 평가' && approved && (
-          <PeerEvaluation context={context} />
-        )}
-        {currentMenu === '중간 피드백' && approved && (
-          <MidFeedback context={context} />
-        )}
-        {currentMenu === '기여도 리포트' && approved && (
-          <ContributionReport context={context} />
-        )}
-      </ResourceState>
+      {currentMenu === '팀원 관리' && (
+        <TeamMembers
+          team={team}
+          user={user}
+          membersResource={resource}
+          onChanged={() => {
+            resource.reload();
+            onChanged();
+          }}
+        />
+      )}
+      {currentMenu !== '팀원 관리' && (
+        <ResourceState resource={resource}>
+          {!menus.includes(menu) && (
+            <UnavailablePage
+              title="이 팀 화면에 접근할 수 없습니다."
+              description="승인된 팀원만 작업과 팀 설정을 사용할 수 있습니다. 조회 가능한 팀 메뉴를 선택해 주세요."
+            />
+          )}
+          {currentMenu === '팀 홈' && approved && (
+            <TeamHome context={context} onNavigate={navigateToMenu} />
+          )}
+          {currentMenu === '작업' && approved && (
+            <TaskBoard
+              team={workTeam}
+              user={user}
+              members={members}
+              space={space}
+              taskId={taskId}
+              onOpenTask={navigateToTask}
+              onTaskBack={navigateToTaskList}
+            />
+          )}
+          {currentMenu === '산출물' && (
+            <TeamDeliverables team={workTeam} user={user} members={members} />
+          )}
+          {currentMenu === '승인 검토' && approved && (
+            <Approvals
+              team={workTeam}
+              user={user}
+              members={members}
+              space={space}
+              taskId={taskId}
+              onOpenTask={navigateToTask}
+              onTaskBack={navigateToTaskList}
+            />
+          )}
+          {currentMenu === '팀 설정' && approved && (
+            <TeamSettings
+              team={team}
+              space={space}
+              user={user}
+              members={members}
+              deletionResource={deletionResource}
+              onNavigate={navigateToMenu}
+              onRemoved={onRemoved}
+              onChanged={() => {
+                deletionResource.reload();
+                onChanged();
+              }}
+            />
+          )}
+          {currentMenu === '동료 평가' && approved && (
+            <PeerEvaluation context={context} />
+          )}
+          {currentMenu === '중간 피드백' && approved && (
+            <MidFeedback context={context} />
+          )}
+          {currentMenu === '기여도 리포트' && approved && (
+            <ContributionReport context={context} />
+          )}
+        </ResourceState>
+      )}
     </section>
   );
 }

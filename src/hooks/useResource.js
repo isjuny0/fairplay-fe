@@ -12,7 +12,9 @@ export default function useResource(load, dependencies) {
     );
   const loader = useRef(load);
   loader.current = load;
-  const reload = useCallback(() => setRevision((value) => value + 1), []);
+  const reload = useCallback(() => {
+    setRevision((value) => value + 1);
+  }, []);
   useEffect(() => {
     let active = true;
     setRequestDependencies(dependencies);

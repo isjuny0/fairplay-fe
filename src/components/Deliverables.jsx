@@ -373,7 +373,8 @@ function DeliverableForm({
                   },
                   {
                     label: "분류",
-                    latest: categoryLabels[recovery.latest.deliverable.category],
+                    latest:
+                      categoryLabels[recovery.latest.deliverable.category],
                     input: categoryLabels[form.category],
                   },
                   ...(!permissions.content
@@ -426,10 +427,16 @@ export default function Deliverables({
   user,
   members,
   tasks = [],
+  tasksResource,
   taskId,
   onChanged = () => {},
 }) {
   const { confirm, notify } = useInteractions();
+  const taskOptionsReady =
+    !tasksResource ||
+    (tasksResource.data != null &&
+      !tasksResource.loading &&
+      !tasksResource.error);
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedPage = Number(searchParams.get("page") || 0);
   const page =
@@ -514,7 +521,11 @@ export default function Deliverables({
       return next;
     });
   const appliedFilters = [
-    sort && { key: "sort", label: "정렬", value: sort === "TITLE_ASC" ? "이름 순" : "최근 수정 순" },
+    sort && {
+      key: "sort",
+      label: "정렬",
+      value: sort === "TITLE_ASC" ? "이름 순" : "최근 수정 순",
+    },
     query && { key: "q", label: "검색", value: query },
     scope !== "ALL" && {
       key: "scope",
@@ -581,11 +592,16 @@ export default function Deliverables({
       canModifyTeamWork(team) && isMutable(task) && isAssignee(task, user.id),
   );
   const canCreate =
+    taskOptionsReady &&
     isApprovedMember(team) &&
     !teamWorkBlocked(team) &&
     (taskId == null || eligibleTasks.some((task) => task.id === taskId));
   const save = async (input, file, type) => {
-    if (teamWorkBlocked(team) || (taskId != null && !canModifyTeamWork(team)))
+    if (
+      !taskOptionsReady ||
+      teamWorkBlocked(team) ||
+      (taskId != null && !canModifyTeamWork(team))
+    )
       return;
     setBusy(true);
     setError(null);
@@ -679,7 +695,10 @@ export default function Deliverables({
         </div>
       </div>
       {isCollection ? (
-        <div className="deliverable-search-toolbar collection-controls" ref={searchToolbar}>
+        <div
+          className="deliverable-search-toolbar collection-controls"
+          ref={searchToolbar}
+        >
           <div className="deliverable-search-primary">
             <form
               role="search"
@@ -730,6 +749,7 @@ export default function Deliverables({
               <span>작업 범위</span>
               <select
                 aria-label="작업별 조회"
+                disabled={!taskOptionsReady}
                 value={scope}
                 onChange={(event) => setScope(event.target.value)}
               >
@@ -812,7 +832,9 @@ export default function Deliverables({
               role="group"
               aria-label="적용된 조회 조건"
             >
-              <span className="deliverable-filter-caption collection-filter-caption">적용 중</span>
+              <span className="deliverable-filter-caption collection-filter-caption">
+                적용 중
+              </span>
               {appliedFilters.map((filter) => (
                 <button
                   key={filter.key}
@@ -873,7 +895,11 @@ export default function Deliverables({
             )}
           </div>
           {hasSearch ? (
-            <button className="text-button collection-reset-button" title="검색·유형·분류·등록자·작업 범위·정렬을 초기화하고 첫 페이지로 이동합니다." onClick={clearSearch}>
+            <button
+              className="text-button collection-reset-button"
+              title="검색·유형·분류·등록자·작업 범위·정렬을 초기화하고 첫 페이지로 이동합니다."
+              onClick={clearSearch}
+            >
               조회 조건 초기화
             </button>
           ) : (
@@ -882,6 +908,9 @@ export default function Deliverables({
         </div>
       )}
       <ErrorNotice error={error} onRetry={resource.reload} />
+      {tasksResource && (
+        <ResourceState resource={tasksResource} label="작업 필터 정보" />
+      )}
       <ResourceState resource={resource} label="산출물 목록">
         {resource.data?.length ? (
           taskId == null ? (
@@ -947,9 +976,7 @@ export default function Deliverables({
                     {deliverable.type === "TEXT" && (
                       <details>
                         <summary>본문 보기</summary>
-                        <MarkdownBody>
-                          {deliverable.text}
-                        </MarkdownBody>
+                        <MarkdownBody>{deliverable.text}</MarkdownBody>
                       </details>
                     )}
                     {deliverable.type === "FILE" && (
@@ -1162,6 +1189,7 @@ export default function Deliverables({
           }
           busy={busy}
           blocked={
+            !taskOptionsReady ||
             teamWorkBlocked(team) ||
             ((editing?.taskId ?? taskId) != null && !canModifyTeamWork(team))
           }

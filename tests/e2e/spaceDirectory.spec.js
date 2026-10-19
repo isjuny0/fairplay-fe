@@ -30,6 +30,27 @@ async function directory(page, { spaces = sidebarSpaces, status = 200 } = {}) {
   return page.getByRole('complementary', { name: '스페이스 사이드바' });
 }
 
+test('목록 새로고침은 재사용 기간 안에도 최신 스페이스를 표시한다', async ({
+  page,
+}) => {
+  const spaces = [...sidebarSpaces];
+  await directory(page, { spaces });
+  const list = page.getByRole('region', { name: '스페이스 목록', exact: true });
+  await expect(list.getByRole('listitem')).toHaveCount(2);
+  spaces.push({
+    id: 3,
+    name: '새로 참여한 프로젝트',
+    myRole: 'USER',
+    teamBuildingStatus: 'CLOSED',
+  });
+  await page
+    .getByRole('main')
+    .getByRole('button', { name: '새로고침', exact: true })
+    .click();
+  await expect(list.getByRole('listitem')).toHaveCount(3);
+  await expect(list).toContainText('새로 참여한 프로젝트');
+});
+
 test('사이드바의 역할별 보기는 기존 검색과 역할 필터를 함께 유지한다', async ({
   page,
 }) => {
