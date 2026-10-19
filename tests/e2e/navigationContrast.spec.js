@@ -192,7 +192,7 @@ test('선택 메뉴와 상태 배지는 연한 배경·진한 글씨로 구분�
     return names.map((name) => {
       const element = document.createElement('span');
       element.className = `status-badge task-state-${name}`;
-      document.querySelector('.task-board-page').append(element);
+      document.body.append(element);
       const style = getComputedStyle(element);
       const colors = { text: style.color, background: style.backgroundColor };
       element.remove();
@@ -280,6 +280,41 @@ test('타임라인·캘린더·목록은 밝은 상태 배경과 읽기 쉬운 �
       .first();
     await expect(period).toHaveCSS('background-color', background);
     await expect(period).toHaveCSS('color', text);
+  }
+});
+
+test('작업 상세와 관리자 화면도 작업 보드의 공통 상태색을 사용한다', async ({ page }) => {
+  const palette = [
+    ['todo', 104, 'rgb(191, 233, 250)', 'rgb(0, 92, 186)'],
+    ['in_progress', 102, 'rgb(231, 244, 237)', 'rgb(8, 124, 85)'],
+    ['pending_approval', 103, 'rgb(255, 244, 194)', 'rgb(128, 91, 0)'],
+    ['done', 101, 'rgb(237, 241, 245)', 'rgb(83, 97, 116)'],
+  ];
+  for (const [status, taskId, background, color] of palette) {
+    await page.goto(`/preview/spaces/1/teams/1/tasks/${taskId}`);
+    const badge = page.locator(`.task-detail-page .page-heading .status-badge.task-state-${status}`).first();
+    await expect(badge).toBeVisible();
+    await expect(badge).toHaveCSS('background-color', background);
+    await expect(badge).toHaveCSS('color', color);
+  }
+
+  await page.evaluate(() => localStorage.setItem('fairplay:preview-role', 'manager'));
+  await page.goto('/preview/spaces/1/dashboard');
+  await expect(page.locator('.signal-approval').first()).toHaveCSS('background-color', 'rgb(255, 244, 194)');
+  await expect(page.locator('.signal-approval').first()).toHaveCSS('color', 'rgb(128, 91, 0)');
+  for (const memberId of ['00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000002']) {
+    await page.goto(`/preview/spaces/1/manager/teams/1/members/${memberId}`);
+    await expect(page.locator('.member-task-record').first()).toBeVisible();
+    for (const [status, , background, color] of palette) {
+      for (const badge of await page.locator(`.member-task-record .status-badge.task-state-${status}`).all()) {
+        await expect(badge).toHaveCSS('background-color', background);
+        await expect(badge).toHaveCSS('color', color);
+      }
+    }
+    const availableStatuses = memberId.endsWith('1') ? ['done', 'in_progress', 'pending_approval'] : ['todo'];
+    for (const status of availableStatuses) {
+      await expect(page.locator(`.member-task-record .status-badge.task-state-${status}`).first()).toBeVisible();
+    }
   }
 });
 
