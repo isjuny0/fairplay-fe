@@ -11,6 +11,9 @@ const sidebarSpaces = [
 ];
 
 async function directory(page, { spaces = sidebarSpaces, status = 200 } = {}) {
+  await page.route('**/api/spaces/*/teams', (route) =>
+    route.fulfill({ json: [] }),
+  );
   await page.route('**/api/me', (route) =>
     route.fulfill({ json: { id: 'user-1', name: '박선우' } }),
   );
@@ -224,6 +227,9 @@ for (const width of [1440, 1024, 768, 390, 320]) {
 test('스페이스 이름과 내 역할 조건을 함께 적용하고 초기화 후 이동할 수 있다', async ({
   page,
 }) => {
+  await page.route('**/api/spaces/*/teams', (route) =>
+    route.fulfill({ json: [] }),
+  );
   await page.route('**/api/me', (route) =>
     route.fulfill({ json: { id: 'user-1', name: '테스트 사용자' } }),
   );

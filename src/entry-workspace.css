@@ -1,4 +1,8 @@
 /* Space directory navigation leaves the existing collection canvas intact. */
+.space-directory .role-badge.role-unconfirmed {
+  color: var(--text-muted);
+  background: var(--surface-secondary);
+}
 .app-shell:has(.space-directory-layout) {
   display: flex;
   flex-direction: column;
