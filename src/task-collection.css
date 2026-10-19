@@ -1,4 +1,16 @@
 .task-board-page {
+  --task-todo: #00b5e8;
+  --task-todo-background: #bfe9fa;
+  --task-todo-text: #005cba;
+  --task-progress: var(--brand);
+  --task-progress-background: var(--brand-light);
+  --task-progress-text: var(--brand);
+  --task-review: #eab308;
+  --task-review-background: #fff4c2;
+  --task-review-text: #805b00;
+  --task-done: #94a3b8;
+  --task-done-background: #edf1f5;
+  --task-done-text: #536174;
   gap: 12px;
 }
 .task-board-page .task-collection-heading {

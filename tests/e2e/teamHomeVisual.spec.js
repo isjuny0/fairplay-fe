@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 for (const width of [1440, 1024, 768, 390, 320]) {
-  test(`${width}px 팀 홈은 핵심 수치와 그래프 중심이며 설명은 접혀 있다`, async ({
+  test(`${width}px 팀 홈은 작업 현황은 바로 보이고 계산 기준만 접혀 있다`, async ({
     page,
   }) => {
     await page.setViewportSize({ width, height: 900 });
@@ -25,6 +25,13 @@ for (const width of [1440, 1024, 768, 390, 320]) {
       '57.14%',
     ]);
     await expect(home.locator('.home-definition-body')).toBeHidden();
+    await expect(home.locator('.home-my-work')).toBeVisible();
+    await expect(home.locator('.team-cover-strip, img')).toHaveCount(0);
+    await expect(home.locator('.home-definitions > summary')).toBeVisible();
+    for (const metric of await home.locator('.home-work-metric').all()) {
+      await expect(metric).toHaveCSS('background-color', 'rgb(247, 250, 248)');
+      await expect(metric.locator('.progress-track > span')).toHaveCSS('background-color', 'rgb(8, 124, 85)');
+    }
     for (const card of await home.locator('.home-action-link').all()) {
       const alignment = await card.evaluate((element) => {
         const parts = [
@@ -72,32 +79,35 @@ for (const width of [1440, 1024, 768, 390, 320]) {
     }
     if (width > 1100) {
       const progress = await home.locator('.home-team-progress').boundingBox();
-      const own = await home.locator('.home-my-work').boundingBox();
-      expect(progress.x + progress.width).toBeLessThan(own.x);
-      expect(progress.y).toBe(own.y);
+      const actions = await home.locator('.home-actions').boundingBox();
+      expect(progress.x + progress.width).toBeLessThan(actions.x);
+      expect(progress.y).toBe(actions.y);
     }
   });
 }
 
-test('지표 정의와 집계 기준·주의사항은 키보드로 펼쳐 확인할 수 있다', async ({
+test('계산 기준은 키보드로 펼쳐 쉬운 설명과 계산식을 확인할 수 있다', async ({
   page,
 }) => {
   await page.goto('/preview/spaces/1/teams/1');
-  const method = page.locator('.home-definitions > summary');
-  await expect(method).toBeVisible();
-  await method.focus();
-  await page.keyboard.press('Enter');
   const body = page.locator('.home-definition-body');
+  await expect(body).toBeHidden();
+  const toggle = page.locator('.home-definitions > summary');
+  await toggle.focus();
+  await page.keyboard.press('Enter');
   await expect(body).toBeVisible();
+  await expect(body).toContainText('팀 전체 일 중 내가 맡은 몫');
+  await expect(body).toContainText('내가 맡은 일 중 얼마나 끝냈는지');
   await expect(body.getByRole('term')).toHaveCount(4);
   await expect(body).toContainText('내 담당 분량 ÷ 팀 전체 분량');
   await expect(body).toContainText('내 완료 분량 ÷ 내 담당 분량');
   await expect(body).toContainText('승인 대기 작업은 제외');
   await expect(body).toContainText(
-    '최종 리포트 점수나 무임승차 판정이 아닙니다.',
+    '최종 기여도 점수, 무임승차 여부를 뜻하지 않아요.',
   );
   await page.keyboard.press('Enter');
   await expect(body).toBeHidden();
+  await expect(page.locator('.home-my-work')).toBeVisible();
 });
 
 test('평가와 리포트 바로가기는 기존 팀 메뉴로 연결된다', async ({ page }) => {

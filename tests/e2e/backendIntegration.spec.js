@@ -379,14 +379,13 @@ test('일반 팀 홈은 서버 본인 집계를 사용하고 null을 0%로 표�
   await expect(page.getByText('계산할 작업 없음').first()).toBeVisible();
   await expect(page.locator('.home-progress-ring')).not.toHaveAttribute('aria-valuenow');
   const actions = await page.getByRole('region', { name: '지금 확인할 작업' }).boundingBox();
-  const ownWork = await page.getByRole('region', { name: '본인 작업 현황' }).boundingBox();
   expect(actions.y + actions.height).toBeLessThan(800);
+  await expect(page.locator('.home-my-work')).toBeVisible();
+  const ownWork = await page.getByRole('region', { name: '본인 작업 현황' }).boundingBox();
   expect(ownWork.y).toBeGreaterThanOrEqual(actions.y + actions.height);
-  const method = page.locator('.home-definitions > summary');
-  await expect(page.locator('.home-metric-help p')).toBeHidden();
-  await method.focus();
-  await page.keyboard.press('Enter');
-  await expect(page.locator('.home-metric-help p')).toBeVisible();
+  await expect(page.locator('.home-definition-body')).toBeHidden();
+  await page.locator('.home-definitions > summary').click();
+  await expect(page.locator('.home-definition-body > p')).toBeVisible();
   await expect(page.getByText('목업', { exact: true })).toHaveCount(0);
   expect(
     requests.some((request) => request.path.endsWith('/my-work-summary')),

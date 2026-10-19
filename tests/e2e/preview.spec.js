@@ -65,7 +65,7 @@ test('팀 홈과 관리자 현황은 가중치 숫자 대신 비율과 계산 �
   await expect(page.locator('.home-definition-body')).toBeHidden();
   await page.locator('.home-definitions > summary').click();
   await expect(
-    page.getByText('예상 작업량을 반영한 진행률입니다.', { exact: false }),
+    page.getByText('작업 개수가 아닌 예상 작업량을 기준으로 계산해요.', { exact: false }),
   ).toBeVisible();
   await page.getByLabel('미리보기 역할').selectOption('manager');
   await page.goto('/preview/spaces/1/dashboard');

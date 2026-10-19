@@ -104,12 +104,12 @@
   vertical-align: middle;
   background: currentColor;
 }
-.task-board-page .board-task-card .is-overdue {
+.task-board-page :is(.board-task-card, .task-table) .is-overdue {
   background: var(--notice-coral-background);
-  color: var(--notice-coral-text);
+  color: var(--notice-coral);
 }
 .task-table td:has(> .is-overdue) > time {
-  color: var(--notice-coral-text);
+  color: var(--notice-coral);
 }
 .team-home-visual .home-action-icon {
   background: transparent;

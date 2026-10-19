@@ -192,7 +192,7 @@ test('선택 메뉴와 상태 배지는 연한 배경·진한 글씨로 구분�
     return names.map((name) => {
       const element = document.createElement('span');
       element.className = `status-badge task-state-${name}`;
-      document.body.append(element);
+      document.querySelector('.task-board-page').append(element);
       const style = getComputedStyle(element);
       const colors = { text: style.color, background: style.backgroundColor };
       element.remove();
@@ -208,13 +208,13 @@ test('선택 메뉴와 상태 배지는 연한 배경·진한 글씨로 구분�
     );
 });
 
-test('팀 홈의 마감·승인 대기 아이콘은 색상 배경 없이 표시한다', async ({
+test('팀 홈의 마감·승인 대기는 각각 빨간색과 노란색 아이콘으로 표시한다', async ({
   page,
 }) => {
   await page.goto('/preview/spaces/1/teams/1');
-  for (const name of ['.home-overdue-icon', '.home-pending-icon']) {
+  for (const [name, background] of [['.home-overdue-icon', 'rgb(255, 240, 241)'], ['.home-pending-icon', 'rgb(255, 244, 194)']]) {
     const icon = page.locator(name);
-    await expect(icon).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(icon).toHaveCSS('background-color', background);
     await expect(icon.locator('svg')).toBeVisible();
   }
   await expect(page.locator('.home-overdue-icon')).toHaveCSS(
@@ -223,23 +223,32 @@ test('팀 홈의 마감·승인 대기 아이콘은 색상 배경 없이 표시�
   );
   await expect(page.locator('.home-pending-icon')).toHaveCSS(
     'color',
-    'rgb(8, 124, 85)',
+    'rgb(234, 179, 8)',
   );
   await expect(
     page.locator('.has-overdue .home-action-title strong'),
-  ).toHaveCSS('color', 'rgb(216, 59, 69)');
+  ).toHaveCSS('color', 'rgb(8, 124, 85)');
 });
 
 test('타임라인·캘린더·목록은 밝은 상태 배경과 읽기 쉬운 글씨색을 공유한다', async ({
   page,
 }) => {
   const palette = [
-    ['todo', 'rgb(237, 241, 245)', 'rgb(83, 97, 116)'],
-    ['in_progress', 'rgb(208, 232, 191)', 'rgb(36, 115, 9)'],
-    ['pending_approval', 'rgb(191, 233, 250)', 'rgb(0, 92, 186)'],
-    ['done', 'rgb(199, 241, 227)', 'rgb(8, 116, 87)'],
+    ['todo', 'rgb(191, 233, 250)', 'rgb(0, 92, 186)'],
+    ['in_progress', 'rgb(231, 244, 237)', 'rgb(8, 124, 85)'],
+    ['pending_approval', 'rgb(255, 244, 194)', 'rgb(128, 91, 0)'],
+    ['done', 'rgb(237, 241, 245)', 'rgb(83, 97, 116)'],
   ];
-  await page.goto('/preview/spaces/1/teams/1/tasks?view=timeline');
+  await page.goto('/preview/spaces/1/teams/1/tasks?view=board');
+  for (const [status, color] of [
+    ['todo', 'rgb(0, 181, 232)'],
+    ['in_progress', 'rgb(8, 124, 85)'],
+    ['pending_approval', 'rgb(234, 179, 8)'],
+    ['done', 'rgb(148, 163, 184)'],
+  ]) {
+    await expect(page.locator(`.task-column.task-state-${status} .status-dot`)).toHaveCSS('background-color', color);
+  }
+  await page.getByRole('button', { name: '타임라인', exact: true }).click();
   for (const [status, background, text] of palette) {
     for (const selector of ['.timeline-period', '.timeline-task-state']) {
       const item = page.locator(`${selector}.schedule-task-${status}`).first();
@@ -260,6 +269,10 @@ test('타임라인·캘린더·목록은 밝은 상태 배경과 읽기 쉬운 �
     await expect(badge).toHaveCSS('background-color', background);
     await expect(badge).toHaveCSS('color', text);
   }
+  const overdue = page.locator('.task-table .is-overdue').first();
+  await expect(overdue).toHaveCSS('color', 'rgb(255, 85, 92)');
+  await expect(overdue).toHaveCSS('background-color', 'rgb(255, 240, 241)');
+  await expect(page.locator('.task-table td:has(> .is-overdue) > time').first()).toHaveCSS('color', 'rgb(255, 85, 92)');
   await page.getByRole('button', { name: '캘린더', exact: true }).click();
   for (const [status, background, text] of palette) {
     const period = page
