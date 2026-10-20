@@ -603,7 +603,7 @@ test('스페이스 종료 시각 오류를 수정한 뒤 스페이스 관리에�
 test('가입 대기 참여자는 내 팀 없이 승인 대기 상태와 새로고침을 제공한다', async ({ page }) => {
   await openPreview(page, '/spaces/1', 'participant', 'building');
   const teams = page.getByRole('list', { name: '팀 목록', exact: true });
-  const pending = teams.getByRole('listitem').filter({ hasText: '삼위일체' });
+  const pending = teams.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '삼위일체', exact: true }) });
   await expect(pending).toContainText('가입 승인 대기');
   await expect(pending.getByRole('button', { name: /가입 신청|다시 신청/ })).toHaveCount(0);
   await expect(page.getByRole('region', { name: '내 팀', exact: true }).getByRole('button', { name: '팀 만들기', exact: true })).toBeVisible();
