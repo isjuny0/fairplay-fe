@@ -1,6 +1,9 @@
 import { useEffect, useId, useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import Icon from './Icon.jsx';
+import useResource from '../hooks/useResource.js';
+import { listTeamsWithMembership } from '../api/teams.js';
+import { isApprovedMember } from '../lib/domain.js';
 
 const sidebarPreferenceKey = 'fairplay:workspace-sidebar-collapsed';
 
@@ -18,6 +21,33 @@ const views = [
   { role: 'USER', label: '참여 중', icon: 'users' },
 ];
 
+function SpaceShortcut({ space, userId, openingSpaceId, onSelect }) {
+  const teams = useResource(
+    () => space.myRole === 'MANAGER'
+      ? Promise.resolve([])
+      : listTeamsWithMembership(space.id),
+    [space.id, userId, space],
+  );
+  const team = teams.data?.find(isApprovedMember);
+  const label = team?.name || space.name;
+  return (
+    <button
+      className="directory-sidebar-link directory-space-shortcut"
+      aria-label={`${team ? '팀' : '스페이스'} 바로가기: ${label}`}
+      title={team ? `${team.name} · ${space.name}` : space.name}
+      aria-busy={teams.loading || openingSpaceId === space.id}
+      disabled={openingSpaceId != null}
+      onClick={() => onSelect(space.id)}
+    >
+      <span className="directory-shortcut-symbol" aria-hidden="true">
+        {label.slice(0, 1)}
+      </span>
+      <span className="directory-shortcut-name">{label}</span>
+      <ChevronRight size={13} aria-hidden="true" />
+    </button>
+  );
+}
+
 export default function SpaceDirectorySidebar({
   spaces,
   loading,
@@ -27,6 +57,8 @@ export default function SpaceDirectorySidebar({
   onCreate,
   onJoin,
   onSelect,
+  openingSpaceId,
+  userId,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(readSidebarPreference);
@@ -117,18 +149,13 @@ export default function SpaceDirectorySidebar({
             <span className="directory-sidebar-label">내 공간 바로가기</span>
             {hasData && spaces.length > 0 ? (
               spaces.slice(0, 6).map((space) => (
-                <button
+                <SpaceShortcut
                   key={space.id}
-                  className="directory-sidebar-link directory-space-shortcut"
-                  aria-label={`스페이스 바로가기: ${space.name}`}
-                  onClick={() => onSelect(space.id)}
-                >
-                  <span className="directory-shortcut-symbol" aria-hidden="true">
-                    {space.name.slice(0, 1)}
-                  </span>
-                  <span className="directory-shortcut-name">{space.name}</span>
-                  <ChevronRight size={13} aria-hidden="true" />
-                </button>
+                  space={space}
+                  userId={userId}
+                  openingSpaceId={openingSpaceId}
+                  onSelect={onSelect}
+                />
               ))
             ) : (
               <p className="directory-sidebar-empty">

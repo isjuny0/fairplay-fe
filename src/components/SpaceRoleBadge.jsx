@@ -1,23 +1,11 @@
-import { getTeam, listTeams } from '../api/teams.js';
+import { listTeamsWithMembership } from '../api/teams.js';
 import useResource from '../hooks/useResource.js';
 import { isApprovedMember } from '../lib/domain.js';
 
 function ParticipantRole({ space, user }) {
   // A refreshed directory entry must also refresh its current team membership.
   const teams = useResource(
-    async () => {
-      const summaries = await listTeams(space.id);
-      // List responses can omit membership; resolve it from the team detail API.
-      return Promise.all(
-        summaries.map((team) =>
-          Object.hasOwn(team, 'myMembershipStatus') &&
-          (team.myMembershipStatus !== 'APPROVED' ||
-            Object.hasOwn(team, 'leaderId'))
-            ? team
-            : getTeam(team.id),
-        ),
-      );
-    },
+    () => listTeamsWithMembership(space.id),
     [space.id, user.id, space],
   );
   const leader = (teams.data || []).some(

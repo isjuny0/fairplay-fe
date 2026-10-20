@@ -2,7 +2,7 @@ import { screenLoaders, preloadRoute } from '../lib/routeScreens.js';
 import { deferScreen } from './DeferredScreen.jsx';
 import { useEffect } from 'react';
 import { Navigate, Route, Routes, useParams, useLocation } from 'react-router';
-import { parseRouteId, spacePath, teamMenuPaths } from '../lib/routes.js';
+import { parseRouteId, spacePath, teamPath, teamMenuPaths } from '../lib/routes.js';
 
 import UnavailablePage from './UnavailablePage.jsx';
 import useAppNavigate from '../hooks/useAppNavigate.js';
@@ -43,7 +43,14 @@ function WorkspaceRoute({ user, view = 'teams', teamMenu = '팀 홈' }) {
 
 function SpacesRoute({ user }) {
   const navigate = useAppNavigate();
-  return <Spaces user={user} onSelect={(id) => navigate(spacePath(id))} />;
+  return (
+    <Spaces
+      user={user}
+      onSelect={(id, teamId) =>
+        navigate(teamId == null ? spacePath(id) : teamPath(id, teamId))
+      }
+    />
+  );
 }
 
 export default function AppRoutes({ user, prefix = '' }) {
