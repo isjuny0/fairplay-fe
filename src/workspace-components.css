@@ -8,9 +8,17 @@
 @media (min-width: 721px) {
   .workspace:has(> .workspace-sidebar) {
     padding-left: 240px;
+    transition: padding-left 180ms ease;
+  }
+  .workspace:has(> .workspace-sidebar.is-collapsed) {
+    padding-left: 40px;
   }
   .app-shell:has(.workspace-sidebar) > .preview-toolbar {
     margin-left: 240px;
+    transition: margin-left 180ms ease;
+  }
+  .app-shell:has(.workspace-sidebar.is-collapsed) > .preview-toolbar {
+    margin-left: 40px;
   }
   .workspace-sidebar {
     position: fixed;
@@ -20,9 +28,56 @@
     max-height: calc(100dvh - var(--header-height));
     width: 240px;
     flex-basis: 240px;
-    padding: 16px 12px 24px;
+    padding: 12px 12px 24px;
     scrollbar-width: thin;
     overscroll-behavior-y: contain;
+    transition: transform 180ms ease;
+    will-change: transform;
+  }
+  .workspace-sidebar.is-collapsed {
+    transform: translateX(-100%);
+  }
+  .workspace-sidebar-rail {
+    display: contents;
+  }
+  .workspace-sidebar-rail.is-collapsed {
+    position: fixed;
+    inset: var(--header-height) auto 0 0;
+    z-index: 11;
+    display: block;
+    width: 40px;
+    border-right: 1px solid var(--border);
+    background: var(--surface-secondary);
+  }
+  .workspace-sidebar-toggle {
+    position: fixed;
+    top: calc(var(--header-height) + 23px);
+    left: 202px;
+    z-index: 11;
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--text-muted);
+    transition: left 180ms ease, background-color 180ms ease, color 180ms ease;
+  }
+  .workspace-sidebar-rail.is-collapsed .workspace-sidebar-toggle {
+    position: absolute;
+    top: 12px;
+    left: 7px;
+    background: transparent;
+  }
+  .workspace-sidebar-toggle:hover {
+    background: var(--surface);
+    color: var(--text-primary);
+  }
+  .workspace-sidebar-toggle:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
   }
   .workspace-sidebar #workspace-navigation {
     gap: 0;
@@ -32,8 +87,9 @@
     border-bottom: 1px solid var(--border);
   }
   .workspace-sidebar .nav-item.workspace-back-link {
+    width: calc(100% - 38px);
     min-height: 32px;
-    margin-bottom: 12px;
+    margin: 0 38px 12px 0;
     padding: 6px 10px;
     font-size: var(--text-support);
     color: var(--text-muted);

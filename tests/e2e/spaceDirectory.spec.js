@@ -116,6 +116,33 @@ test('사이드바 빠른 실행은 기존 생성·코드 참여 모달을 연�
   ).toBeVisible();
 });
 
+test('데스크톱 스페이스 사이드바를 접었다가 다시 펼칠 수 있다', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.addInitScript(() =>
+    window.localStorage.removeItem('fairplay:workspace-sidebar-collapsed'),
+  );
+  await directory(page);
+  const sidebar = page.locator('.space-directory-sidebar');
+  const rail = page.locator('.space-directory-sidebar-rail');
+  const toggle = page.locator('.space-directory-sidebar-toggle');
+  const layout = page.locator('.space-directory-layout');
+
+  await expect(toggle).toBeVisible();
+  await toggle.click();
+  await expect(sidebar).toHaveClass(/is-collapsed/);
+  await expect(rail).toHaveClass(/is-collapsed/);
+  await expect(toggle.locator('.sidebar-toggle-glyph')).toHaveClass(
+    /is-collapsed/,
+  );
+  await expect(layout).toHaveCSS('padding-left', '40px');
+
+  await toggle.click();
+  await expect(sidebar).not.toHaveClass(/is-collapsed/);
+  await expect(layout).toHaveCSS('padding-left', '240px');
+});
+
 test('사이드바 바로가기는 조회한 스페이스의 실제 주소로 이동한다', async ({
   page,
 }) => {
