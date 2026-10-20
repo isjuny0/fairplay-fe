@@ -1,15 +1,14 @@
-import { Fragment, useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { formatDate, memberName, statusLabels } from '../lib/domain.js';
 import {
-  calendarWeekTasks,
   currentTaskMonth,
   isTaskMonth,
   moveTaskMonth,
   nearestTaskMonth,
   taskDate,
   taskMonthDays,
-  tasksByDate,
+  taskDateMarkers,
   timelineTaskPeriod,
   timelineWindow,
 } from '../lib/taskSchedule.js';
@@ -20,12 +19,6 @@ const monthLabel = (month) =>
   `${Number(month.slice(0, 4))}년 ${Number(month.slice(5))}월`;
 const shortDate = (date) =>
   `${Number(date.slice(5, 7))}/${Number(date.slice(-2))}`;
-const timelineStateSymbols = {
-  TODO: '□',
-  IN_PROGRESS: '↗',
-  REVISING: '↻',
-  DONE: '✓',
-};
 const scheduleLabel = (task) =>
   `${task.title} · 시작일 ${formatDate(task.startAt)} · 마감 ${formatDate(task.dueAt)}`;
 
@@ -123,7 +116,7 @@ export function TaskCalendar({
 }) {
   const [selectedDate, setSelectedDate] = useState(null);
   const days = taskMonthDays(month),
-    byDate = tasksByDate(tasks, days);
+    markersByDate = taskDateMarkers(tasks, days);
   const today = taskDate(new Date(now).toISOString());
   return (
     <section className="task-schedule" aria-label="작업 캘린더">
@@ -135,7 +128,7 @@ export function TaskCalendar({
       >
         <table
           className="task-calendar-table"
-          aria-label={`${monthLabel(month)} 작업 기간 일정`}
+          aria-label={`${monthLabel(month)} 작업 시작·마감 일정`}
         >
           <thead>
             <tr>
@@ -149,98 +142,50 @@ export function TaskCalendar({
           <tbody>
             {Array.from({ length: days.length / 7 }, (_, week) => {
               const dates = days.slice(week * 7, week * 7 + 7);
-              const segments = calendarWeekTasks(tasks, dates);
-              const visibleLaneCount = Math.min(3, segments.reduce(
-                (count, { lane }) => Math.max(count, lane + 1), 1,
-              ));
               return (
-                <Fragment key={week}>
-                  <tr className="calendar-dates">
-                    {dates.map((date, index) => (
+                <tr className="calendar-dates" key={week}>
+                  {dates.map((date, index) => {
+                    const markers = date ? markersByDate.get(date) || [] : [];
+                    return (
                       <td
                         key={date || `empty-${index}`}
                         className={date === today ? 'is-today' : ''}
                         aria-label={date ? `${date} 작업 일정` : undefined}
                       >
-                        {date && (
-                          <>
+                        {date && (markers.length ? (
+                          <button
+                            className="calendar-date-markers"
+                            aria-label={`${date} 시작·마감 작업 ${markers.length}개 보기`}
+                            onClick={() => setSelectedDate(date)}
+                          >
                             <time
                               dateTime={date}
                               aria-current={date === today ? 'date' : undefined}
                             >
                               {Number(date.slice(-2))}
                             </time>
-                            {!!byDate.get(date)?.length && (
-                              <button
-                                className="calendar-count"
-                                aria-label={`${date} 작업 ${byDate.get(date).length}개 모두 보기`}
-                                onClick={() => setSelectedDate(date)}
-                              >
-                                {byDate.get(date).length}개
-                                {segments.some(
-                                  (segment) =>
-                                    segment.lane >= 3 &&
-                                    segment.startColumn <= index + 1 &&
-                                    segment.endColumn >= index + 1,
-                                )
-                                  ? ' 모두'
-                                  : ''}
-                              </button>
-                            )}
-                          </>
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                  <tr className="calendar-period-row">
-                    <td colSpan={7}>
-                      <div className="calendar-week-periods" style={{ '--calendar-lanes': visibleLaneCount }}>
-                        {dates.map((date, index) => (
-                          <div
-                            key={index}
-                            className={`calendar-period-day ${date === today ? 'is-today' : ''}`}
-                            style={{ gridColumn: index + 1, gridRow: '1 / -1' }}
-                          />
+                            <span className="calendar-marker-list" aria-hidden="true">
+                              {markers.map(({ task, type }, markerIndex) => (
+                                <span
+                                  key={`${task.id}-${type}-${markerIndex}`}
+                                  className={`calendar-date-marker schedule-task-${task.status.toLowerCase()}`}
+                                  title={`${task.title} ${type === 'start' ? '시작' : '마감'}`}
+                                />
+                              ))}
+                            </span>
+                          </button>
+                        ) : (
+                          <time
+                            dateTime={date}
+                            aria-current={date === today ? 'date' : undefined}
+                          >
+                            {Number(date.slice(-2))}
+                          </time>
                         ))}
-                        {segments
-                          .filter(({ lane }) => lane < 3)
-                          .map(
-                            ({
-                              task,
-                              startColumn,
-                              endColumn,
-                              lane,
-                              continuesBefore,
-                              continuesAfter,
-                            }) => (
-                              <button
-                                key={task.id}
-                                className={`calendar-period schedule-task-${task.status.toLowerCase()}${continuesBefore ? ' continues-before' : ''}${continuesAfter ? ' continues-after' : ''}`}
-                                style={{
-                                  gridColumn: `${startColumn} / ${endColumn + 1}`,
-                                  gridRow: lane + 1,
-                                }}
-                                aria-label={task.title}
-                                aria-description={scheduleLabel(task)}
-                                title={scheduleLabel(task)}
-                                onClick={() => onOpenTask(task.id)}
-                              >
-                                {continuesBefore && (
-                                  <span aria-hidden="true">← </span>
-                                )}
-                                <span className="calendar-period-title">
-                                  {task.title}
-                                </span>
-                                {continuesAfter && (
-                                  <span aria-hidden="true"> →</span>
-                                )}
-                              </button>
-                            ),
-                          )}
-                      </div>
-                    </td>
-                  </tr>
-                </Fragment>
+                      </td>
+                    );
+                  })}
+                </tr>
               );
             })}
           </tbody>
@@ -248,7 +193,7 @@ export function TaskCalendar({
       </div>
       <details className="task-schedule-help">
         <summary>캘린더 읽는 법</summary>
-        <p>막대는 시작일부터 마감일까지 이어집니다. 날짜별 작업 수를 선택하면 해당 날짜의 모든 작업을 확인할 수 있습니다.</p>
+        <p>점은 작업의 시작일 또는 마감일을 뜻하며, 색으로 진행 상태를 구분합니다. 점이 있는 날짜를 선택하면 해당 작업을 확인할 수 있습니다.</p>
       </details>
       {selectedDate && (
         <Modal
@@ -256,7 +201,9 @@ export function TaskCalendar({
           onClose={() => setSelectedDate(null)}
         >
           <div className="stack">
-            {(byDate.get(selectedDate) || []).map((task) => (
+            {[...new Map(
+              (markersByDate.get(selectedDate) || []).map(({ task }) => [task.id, task]),
+            ).values()].map((task) => (
               <ScheduleTask
                 key={task.id}
                 task={task}
@@ -506,9 +453,7 @@ export function TaskTimeline({
                       className={`timeline-task-state schedule-task-${task.status.toLowerCase()}`}
                       title={statusLabels[task.status]}
                       aria-hidden="true"
-                    >
-                      {timelineStateSymbols[task.status]}
-                    </span>
+                    />
                     <span className="timeline-task-id">#{task.id}</span>
                     <button
                       className="task-title-button"
@@ -617,11 +562,9 @@ export function TaskTimeline({
                               )}
                             </span>
                             <span
-                              className="timeline-bar-state"
+                              className={`timeline-bar-state schedule-task-${task.status.toLowerCase()}`}
                               aria-hidden="true"
-                            >
-                              {timelineStateSymbols[task.status]}
-                            </span>
+                            />
                           </>
                         )}
                         {period.planned.continuesAfter && (

@@ -153,7 +153,7 @@ for (const width of [1440, 768, 390, 320]) {
 }
 
 for (const width of [1920, 1440, 1280, 1024, 768, 390, 320]) {
-  test(`작업 카드 ${width}px: 작업량 한 줄과 카드 정렬 유지`, async ({ page }) => {
+  test(`작업 카드 ${width}px: 핵심 정보만 접고 상세를 펼칠 수 있다`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('/preview/spaces/1/teams/1/tasks');
     await expect(page.locator('.board-task-card')).toHaveCount(6);
@@ -171,41 +171,17 @@ for (const width of [1920, 1440, 1280, 1024, 768, 390, 320]) {
       }
       const board = await page.locator('.task-columns').evaluate(el => ({ width: el.clientWidth, contentWidth: el.scrollWidth }));
       expect(board.contentWidth).toBeLessThanOrEqual(board.width + 1);
-      const backgrounds = await page.locator('.task-column').evaluateAll(elements => elements.map(el => {
-        const last = el.querySelector('.board-task-card:last-child');
-        return el.getBoundingClientRect().bottom - last.getBoundingClientRect().bottom;
-      }));
-      for (const extraHeight of backgrounds) expect(extraHeight).toBeLessThanOrEqual(12);
     }
-    const cards = await page.locator('.board-task-card').evaluateAll((elements) => elements.map((card) => {
-      const box = card.getBoundingClientRect();
-      const workload = card.querySelector('.task-workload-line');
-      const range = document.createRange();
-      range.selectNodeContents(workload);
-      const textBox = range.getBoundingClientRect();
-      const workloadBox = workload.getBoundingClientRect();
-      return {
-        width: box.width,
-        height: box.height,
-        workloadTop: workloadBox.top - box.top,
-        deadlineTop: card.querySelector('.task-deadline').getBoundingClientRect().top - box.top,
-        textHeight: textBox.height,
-        lineHeight: parseFloat(getComputedStyle(workload).lineHeight),
-        textFits: textBox.right <= workloadBox.right - parseFloat(getComputedStyle(workload).paddingRight) + 1,
-        labelsHorizontal: [...card.querySelectorAll('.task-card-meta dt')].every(label => {
-          const range = document.createRange();
-          range.selectNodeContents(label);
-          return range.getBoundingClientRect().height <= parseFloat(getComputedStyle(label).lineHeight) + 1;
-        }),
-      };
-    }));
-    for (const card of cards) {
-      expect(card.textHeight).toBeLessThanOrEqual(card.lineHeight + 1);
-      expect(card.textFits).toBe(true);
-      expect(card.labelsHorizontal).toBe(true);
-      for (const key of ['width', 'height', 'workloadTop', 'deadlineTop'])
-        expect(Math.abs(card[key] - cards[0][key]), `${key}: ${JSON.stringify(cards)}`).toBeLessThanOrEqual(1);
-    }
+    const firstCard = page.locator('.board-task-card').first();
+    const foldedHeight = await firstCard.evaluate((card) => card.getBoundingClientRect().height);
+    await expect(firstCard.locator('.task-workload-line')).toHaveCount(0);
+    await expect(firstCard.locator('.task-card-meta')).toHaveCount(0);
+    await firstCard.getByRole('button', { name: '상세 보기', exact: true }).click();
+    await expect(firstCard.locator('.task-workload-line')).toBeVisible();
+    await expect(firstCard.locator('.task-card-meta')).toBeVisible();
+    expect(await firstCard.evaluate((card) => card.getBoundingClientRect().height)).toBeGreaterThan(foldedHeight);
+    await firstCard.getByRole('button', { name: '상세 접기', exact: true }).click();
+    await expect(firstCard.locator('.task-workload-line')).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   });
 }

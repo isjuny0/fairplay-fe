@@ -45,6 +45,24 @@ export function tasksByDate(tasks, dates) {
   );
 }
 
+export function taskDateMarkers(tasks, dates) {
+  return new Map(
+    dates
+      .filter(Boolean)
+      .map((date) => [
+        date,
+        tasks.flatMap((task) => {
+          const markers = [];
+          if (taskDate(task.startAt) === date)
+            markers.push({ task, type: 'start' });
+          if (taskDate(task.dueAt) === date)
+            markers.push({ task, type: 'due' });
+          return markers;
+        }),
+      ]),
+  );
+}
+
 export function calendarWeekTasks(tasks, dates) {
   const validDates = dates.filter(Boolean);
   const first = validDates[0],

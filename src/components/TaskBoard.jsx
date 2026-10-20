@@ -56,6 +56,7 @@ export default function TaskBoard({
   const onlyExecutionOverdue = searchParams.get('overdue') === 'work';
   const onlyOverdue = onlyExecutionOverdue || searchParams.get('overdue') === '1';
   const [preferences, setPreferences] = useState(readTaskViewPreferences);
+  const [expandedBoardTaskIds, setExpandedBoardTaskIds] = useState(() => new Set());
   const view = searchParams.has('view')
     ? ['board', 'list', 'calendar', 'timeline'].includes(searchParams.get('view'))
       ? searchParams.get('view')
@@ -174,6 +175,13 @@ export default function TaskBoard({
         onBack={onTaskBack}
       />
     );
+  const toggleBoardTaskDetails = (taskId) =>
+    setExpandedBoardTaskIds((current) => {
+      const next = new Set(current);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
   const canCreate =
     team.canCreateTask && members.length >= 2 && canModifyTeamWork(team);
   const hasFilters = appliedFilterCount > 0;
@@ -206,8 +214,8 @@ export default function TaskBoard({
   const periodTaskCount = view === 'timeline'
     ? tasks.filter((task) => timelineTaskPeriod(task, scheduleWindow, now)).length
     : tasks.filter((task) =>
-        taskDate(task.startAt).slice(0, 7) <= month &&
-        taskDate(task.dueAt).slice(0, 7) >= month,
+        taskDate(task.startAt).slice(0, 7) === month ||
+        taskDate(task.dueAt).slice(0, 7) === month,
       ).length;
   const nearestMonth = nearestTaskMonth(tasks, `${month}-01`);
   const hasSearchFilters = filter !== 'ALL' || onlyMine || onlyOverdue || Boolean(query.trim());
@@ -507,55 +515,76 @@ export default function TaskBoard({
                       )}
                       {tasks
                         .filter((task) => task.status === status)
-                        .map((task) => (
-                          <article key={task.id} className="board-task-card">
-                            <div className="board-card-top">
-                              <span className="mobile-task-state">{label}</span>
-                              <span className="task-number">#{task.id}</span>
-                            </div>
-                            <button
-                              className="task-title-button"
-                              onClick={() => onOpenTask(task.id)}
+                        .map((task) => {
+                          const detailsExpanded = expandedBoardTaskIds.has(task.id);
+                          const detailsId = `board-task-details-${task.id}`;
+                          return (
+                            <article
+                              key={task.id}
+                              className={`board-task-card${detailsExpanded ? ' is-expanded' : ''}`}
                             >
-                              <h3>{task.title}</h3>
-                            </button>
-                            <p
-                              className="task-workload-line"
-                              title={formatExpectedWorkload(task.weight)}
-                              aria-label={formatExpectedWorkload(task.weight)}
-                            >
-                              {formatBoardWorkload(task.weight)}
-                            </p>
-                            <dl className="task-card-meta">
-                              <div>
-                                <dt>담당</dt>
-                                <dd>
-                                  {task.assignees.map((assignment) => (
-                                    <span
-                                      key={assignment.userId}
-                                      className={
-                                        assignment.userId === user.id
-                                          ? 'my-assignment'
-                                          : ''
-                                      }
-                                    >
-                                      {memberName(members, assignment.userId)}{' '}
-                                      <b>{assignment.allocationPercent}%</b>
-                                    </span>
-                                  ))}
-                                </dd>
+                              <button
+                                className="task-title-button"
+                                onClick={() => onOpenTask(task.id)}
+                              >
+                                <h3>{task.title}</h3>
+                              </button>
+                              <div className="board-card-footer">
+                                <div className="task-deadline">
+                                  <Icon name="calendar" />
+                                  <small>마감 {formatDate(task.dueAt)}</small>
+                                </div>
+                              <button
+                                className="board-card-details-toggle"
+                                aria-expanded={detailsExpanded}
+                                aria-controls={detailsId}
+                                onClick={() => toggleBoardTaskDetails(task.id)}
+                              >
+                                {detailsExpanded ? '상세 접기' : '상세 보기'}
+                              </button>
                               </div>
-                            </dl>
-                            <div className="task-deadline">
-                              <Icon name="calendar" />
-                              <small>마감 {formatDate(task.dueAt)}</small>
-                            </div>
-                            {task.status !== 'DONE' &&
-                              Date.parse(task.dueAt) < now && (
-                                <span className="is-overdue">마감 지남</span>
+                              {detailsExpanded && (
+                                <div id={detailsId} className="board-task-details">
+                                  <div className="board-card-top">
+                                    <span className="mobile-task-state">{label}</span>
+                                    <span className="task-number">#{task.id}</span>
+                                  </div>
+                                  <p
+                                    className="task-workload-line"
+                                    title={formatExpectedWorkload(task.weight)}
+                                    aria-label={formatExpectedWorkload(task.weight)}
+                                  >
+                                    {formatBoardWorkload(task.weight)}
+                                  </p>
+                                  <dl className="task-card-meta">
+                                    <div>
+                                      <dt>담당</dt>
+                                      <dd>
+                                        {task.assignees.map((assignment) => (
+                                          <span
+                                            key={assignment.userId}
+                                            className={
+                                              assignment.userId === user.id
+                                                ? 'my-assignment'
+                                                : ''
+                                            }
+                                          >
+                                            {memberName(members, assignment.userId)}{' '}
+                                            <b>{assignment.allocationPercent}%</b>
+                                          </span>
+                                        ))}
+                                      </dd>
+                                    </div>
+                                  </dl>
+                                  {task.status !== 'DONE' &&
+                                    Date.parse(task.dueAt) < now && (
+                                      <span className="is-overdue">마감 지남</span>
+                                    )}
+                                </div>
                               )}
-                          </article>
-                        ))}
+                            </article>
+                          );
+                        })}
                     </div>
                   </section>
                 ),

@@ -71,33 +71,24 @@ test('목록은 일곱 열의 표로 제공하고 상세 복귀·필터·보기 
   await expect(table).toBeVisible();
 });
 
-test('캘린더는 작업 기간을 이어 표시하고 날짜의 모든 작업에서 상세로 이동한다', async ({
+test('캘린더는 시작·마감일 점을 표시하고 날짜 작업의 상세로 이동한다', async ({
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await seed(page, 'calendar');
-  const first = page.getByRole('cell', {
-    name: '2026-11-01 작업 일정',
+  await expect(
+    page.locator('.calendar-period'),
+  ).toHaveCount(0);
+  const markers = page.getByRole('button', {
+    name: '2026-11-12 시작·마감 작업 6개 보기',
     exact: true,
   });
-  await expect(
-    first.getByRole('button', {
-      name: '2026-11-01 작업 2개 모두 보기',
-      exact: true,
-    }),
-  ).toBeVisible();
-  await expect(
-    page
-      .getByRole('table')
-      .getByRole('button', { name: '설문 결과 분석', exact: true }),
-  ).toHaveCount(0);
+  await expect(markers.locator('.calendar-date-marker')).toHaveCount(6);
   await page.screenshot({
     path: testInfo.outputPath('task-calendar.png'),
     fullPage: true,
   });
-  await page
-    .getByRole('button', { name: '2026-11-12 작업 4개 모두 보기', exact: true })
-    .click();
+  await markers.click();
   const dialog = page.getByRole('dialog', { name: '2026-11-12 작업 일정' });
   await expect(dialog.locator('.schedule-task')).toHaveCount(4);
   await dialog.getByRole('button', { name: /최종 발표 자료/ }).click();
@@ -116,9 +107,7 @@ test('캘린더 월 이동은 빈 달·연말·오늘과 URL 새로고침을 처
 }) => {
   await seed(page, 'calendar');
   await page.getByRole('button', { name: '이전 달', exact: true }).click();
-  await expect(
-    page.getByRole('button', { name: '설문 결과 분석', exact: true }).first(),
-  ).toBeVisible();
+  await expect(page.locator('.calendar-date-marker').first()).toBeVisible();
   await page.getByLabel('조회 월').fill('2026-12');
   await expect(
     page.getByText('이 달에 예정된 작업이 없습니다.', { exact: false }),
@@ -247,15 +236,13 @@ test('3개월을 가로지르는 일정은 양쪽 연속 표시와 실제 기간
   ).toBeVisible();
 });
 
-test('캘린더는 중간 날짜·주 경계·마감 다음 날을 구분하고 숨긴 작업도 열 수 있다', async ({
+test('캘린더는 기간 중간 날짜에는 점을 표시하지 않고 시작·마감일 작업을 연다', async ({
   page,
 }) => {
   await seed(page, 'calendar');
-  await expect(
-    page.getByRole('button', { name: '서비스 흐름 설계', exact: true }),
-  ).toHaveCount(2);
+  await expect(page.locator('.calendar-period')).toHaveCount(0);
   await page
-    .getByRole('button', { name: '2026-11-05 작업 1개 모두 보기', exact: true })
+    .getByRole('button', { name: '2026-11-12 시작·마감 작업 6개 보기', exact: true })
     .click();
   await expect(
     page.getByRole('dialog').getByRole('button', { name: /서비스 흐름 설계/ }),

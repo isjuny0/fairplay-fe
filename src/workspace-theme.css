@@ -1614,3 +1614,101 @@ h1[tabindex="-1"]:focus {
 .task-schedule-help > summary { width: fit-content; padding: 4px 0; cursor: pointer; color: #536575; }
 .task-schedule-help > summary:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .task-schedule-help p { max-width: 760px; margin: 6px 0 0; }
+
+/* Compact board cards keep task essentials visible and reveal the existing details on demand. */
+.task-board-page .board-task-card {
+  grid-template-rows: auto auto;
+  gap: 10px;
+  min-height: 0;
+  padding: 14px;
+}
+.task-board-page .board-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.task-board-page .board-card-footer .task-deadline {
+  min-width: 0;
+  flex: 1;
+  padding-top: 0;
+  border-top: 0;
+}
+.board-card-details-toggle {
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.board-card-details-toggle:hover { color: var(--brand); text-decoration: underline; text-underline-offset: 3px; }
+.board-card-details-toggle:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.board-task-details {
+  display: grid;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.board-task-details .board-card-top { order: 3; }
+.board-task-details .task-workload-line { order: 1; margin: 0; }
+.board-task-details .task-card-meta { order: 2; }
+.board-task-details .is-overdue { position: static; order: 4; }
+
+/* Calendar markers show only each task's start and due date. */
+.task-calendar-table .calendar-dates td {
+  height: 112px;
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.calendar-dates td.is-today { background: #f0f7f2; }
+.calendar-date-markers {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  width: 100%;
+  min-height: 88px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.calendar-date-markers:hover .calendar-marker-list { opacity: .72; }
+.calendar-date-markers:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 3px; }
+.calendar-marker-list { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 6px; min-height: 8px; }
+.calendar-date-marker {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--schedule-color);
+}
+
+/* Status is represented by a dot both beside the task and within its timeline bar. */
+.timeline-task-state {
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--schedule-color);
+}
+.timeline-bar-state {
+  flex: 0 0 12px;
+  width: 12px;
+  height: 12px;
+  margin-left: auto;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--schedule-color);
+  box-sizing: border-box;
+}
+.timeline-delay {
+  top: calc(50% - 12px);
+  height: 24px;
+  box-sizing: border-box;
+}
