@@ -5,7 +5,7 @@ async function openCreate(page) {
   await page.clock.setFixedTime(new Date('2026-10-12T09:15:00Z'));
   await page.goto('/preview/main');
   await page
-    .getByRole('button', { name: '스페이스 만들기', exact: true })
+    .getByRole('main').getByRole('button', { name: '새 스페이스', exact: true })
     .click();
   return page.getByRole('dialog');
 }

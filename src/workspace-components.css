@@ -5,6 +5,9 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.workspace-sidebar-rail {
+  display: none;
+}
 @media (min-width: 721px) {
   .workspace:has(> .workspace-sidebar) {
     padding-left: 240px;

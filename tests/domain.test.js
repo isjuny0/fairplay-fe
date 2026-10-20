@@ -2,12 +2,28 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   canEditTask,
+  teamBuildingCountdown,
   deliverablePermissions,
   fromDateInput,
   formatBoardWorkload,
   formatExpectedWorkload,
   toDateInput,
 } from '../src/lib/domain.js';
+test('팀 빌딩 D-day는 한국 날짜를 기준으로 세고 마감 시각부터 마감으로 표시한다', () => {
+  for (const [now, end, expected] of [
+    ['2026-09-01T12:00:00+09:00', '2026-09-15T23:59:00+09:00', 'D-14'],
+    ['2026-09-01T23:30:00+09:00', '2026-09-02T00:30:00+09:00', 'D-1'],
+    ['2026-09-15T10:00:00+09:00', '2026-09-15T23:59:00+09:00', 'D-day'],
+    ['2026-09-15T23:59:00+09:00', '2026-09-15T23:59:00+09:00', '마감'],
+    ['2026-09-16T00:00:00+09:00', '2026-09-15T23:59:00+09:00', '마감'],
+    ['2026-09-01T14:59:00Z', '2026-09-01T15:01:00Z', 'D-1'],
+  ]) assert.equal(teamBuildingCountdown(end, Date.parse(now)), expected);
+});
+test('미설정·잘못된 날짜에는 D-day를 표시하지 않는다', () => {
+  assert.equal(teamBuildingCountdown(null), null);
+  assert.equal(teamBuildingCountdown('invalid'), null);
+  assert.equal(teamBuildingCountdown('2026-09-15T23:59:00+09:00', NaN), null);
+});
 test('카드 작업량은 이상·미만 조건을 생략하지 않고 표시한다', () => {
   assert.equal(formatBoardWorkload(1), '1시간 미만');
   assert.equal(formatBoardWorkload(2), '1시간 이상 ~ 3시간 미만');

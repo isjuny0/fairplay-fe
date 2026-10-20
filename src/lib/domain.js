@@ -96,6 +96,20 @@ export const formatDate = (value) =>
         hour12: false,
       }).format(new Date(value))
     : '미설정';
+export function teamBuildingCountdown(end, now = Date.now()) {
+  if (!end) return null;
+  const endTime = Date.parse(end);
+  const currentTime = new Date(now).getTime();
+  if (!Number.isFinite(endTime) || !Number.isFinite(currentTime))
+    return null;
+  if (currentTime >= endTime) return '마감';
+  // D-day follows Korean calendar dates; the exact closing time ends it.
+  const day = 86400000;
+  const koreaOffset = 9 * 3600000;
+  const remaining = Math.floor((endTime + koreaOffset) / day)
+    - Math.floor((currentTime + koreaOffset) / day);
+  return remaining > 0 ? `D-${remaining}` : 'D-day';
+}
 export const toDateInput = (value) =>
   value
     ? new Date(new Date(value).getTime() + 9 * 3600000)

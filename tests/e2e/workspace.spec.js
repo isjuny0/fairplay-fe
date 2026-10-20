@@ -622,7 +622,7 @@ test('관리자는 스페이스 생성 후 팀 빌딩 기간을 지정하고 코
   });
   await page.getByRole('button', { name: 'Fairplay', exact: true }).click();
   await page
-    .getByRole('button', { name: '스페이스 만들기', exact: true })
+    .getByRole('main').getByRole('button', { name: '새 스페이스', exact: true })
     .click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('스페이스 이름').fill('프로젝트 스페이스');

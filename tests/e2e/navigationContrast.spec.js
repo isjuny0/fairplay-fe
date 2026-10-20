@@ -146,28 +146,17 @@ test('공간·팀 선택의 좌우 여백을 유지하고 뒤로가기는 접기
   }
 });
 
-test('팀 목록은 키보드로 이동하고 관리자의 자료 조회 권한을 유지한다', async ({
-  page,
-}) => {
-  await page.addInitScript(() =>
-    localStorage.setItem('fairplay:preview-role', 'manager'),
-  );
-  await page.goto('/preview/spaces/1/dashboard');
-  const trigger = page.getByRole('combobox', { name: '팀 선택', exact: true });
-  await expect(page.getByRole('heading',{name:'관리자 대시보드',level:1,exact:true})).toBeVisible();
-  await trigger.press('ArrowDown');
-  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
-  await page.keyboard.press('End');
-  await page.keyboard.press('Home');
-  await page.keyboard.press('ArrowDown');
+test('관리자는 본문 팀 카드에서 키보드로 자료 조회에 진입한다', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('fairplay:preview-role', 'manager'));
+  await page.goto('/preview/spaces/1');
+  const sidebar = page.getByRole('navigation', { name: '스페이스 메뉴', exact: true });
+  await expect(sidebar.getByRole('combobox', { name: '팀 선택', exact: true })).toHaveCount(0);
+  const team = page.getByRole('list', { name: '팀 목록', exact: true }).getByRole('listitem').filter({ hasText: '삼위일체' });
+  await team.getByRole('button', { name: '팀 자료 조회', exact: true }).focus();
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/teams\/1\/members$/);
-  await expect(trigger).toHaveAttribute('data-value', '1');
-  await trigger.click();
-  await page.keyboard.press('Tab');
-  await expect(
-    page.getByRole('listbox', { name: '팀 선택', exact: true }),
-  ).toBeHidden();
+  await expect(page.getByRole('heading', { name: '팀원 관리', exact: true })).toBeVisible();
+  await expect(sidebar.getByRole('button', { name: '작업', exact: true })).toHaveCount(0);
 });
 
 test('선택 메뉴와 상태 배지는 연한 배경·진한 글씨로 구분하고 실행 버튼은 초록색을 유지한다', async ({
@@ -332,7 +321,7 @@ for (const role of ['member', 'manager', 'participant']) {
     });
     await expect(
       sidebar.getByRole('button', { name: '팀 목록', exact: true }),
-    ).toBeVisible();
+    ).toHaveCount(0);
     await expect(
       sidebar.getByRole('button', { name: '관리자 대시보드', exact: true }),
     ).toHaveCount(role === 'manager' ? 1 : 0);
@@ -356,8 +345,8 @@ for (const width of [768, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/preview/spaces/1/teams/1');
     if (width <= 720) {
-      await page.getByRole('button', { name: /공간·팀 선택/ }).click();
-      await expect(page.getByLabel('팀 선택', { exact: true })).toBeVisible();
+      await page.getByRole('button', { name: /스페이스 메뉴/ }).click();
+      await expect(page.getByLabel('스페이스 선택', { exact: true })).toBeVisible();
       await page
         .getByRole('combobox', { name: '스페이스 선택', exact: true })
         .click();
@@ -372,7 +361,7 @@ for (const width of [768, 390, 320]) {
         list.getByRole('option', { selected: true }),
       ).toBeInViewport();
       await page.keyboard.press('Escape');
-      await page.getByRole('button', { name: /공간·팀 선택/ }).click();
+      await page.getByRole('button', { name: /스페이스 메뉴/ }).click();
       await page
         .getByRole('navigation', { name: '모바일 팀 메뉴', exact: true })
         .getByRole('button', { name: '작업', exact: true })

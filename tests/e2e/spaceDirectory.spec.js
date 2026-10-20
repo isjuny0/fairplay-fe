@@ -111,8 +111,7 @@ test('사이드바 빠른 실행은 기존 생성·코드 참여 모달을 연�
   ).toBeVisible();
   await expect(
     page
-      .getByRole('main')
-      .getByRole('button', { name: '스페이스 만들기', exact: true }),
+      .getByRole('main').getByRole('button', { name: '새 스페이스', exact: true }),
   ).toBeVisible();
 });
 
