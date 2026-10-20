@@ -414,6 +414,44 @@ async function workspace(
   };
 }
 
+test('데스크톱 사이드바를 접었다가 다시 펼칠 수 있다', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await workspace(page);
+
+  const sidebar = page.locator('.workspace-sidebar');
+  const rail = page.locator('.workspace-sidebar-rail');
+  const toggle = page.locator('.workspace-sidebar-toggle');
+  const backLink = page.getByRole('button', { name: '내 스페이스' });
+
+  const backLinkBox = await backLink.boundingBox();
+  const toggleBox = await toggle.boundingBox();
+  expect(backLinkBox.x + backLinkBox.width).toBeLessThanOrEqual(toggleBox.x);
+  expect(
+    Math.abs(
+      backLinkBox.y +
+        backLinkBox.height / 2 -
+        (toggleBox.y + toggleBox.height / 2),
+    ),
+  ).toBeLessThanOrEqual(1);
+
+  await toggle.click();
+  await expect(sidebar).toHaveClass(/is-collapsed/);
+  await expect(rail).toHaveClass(/is-collapsed/);
+  await expect(toggle.locator('.sidebar-toggle-glyph')).toHaveClass(
+    /is-collapsed/,
+  );
+  await expect
+    .poll(() => page.locator('.workspace').evaluate((node) => getComputedStyle(node).paddingLeft))
+    .toBe('40px');
+
+  await toggle.click();
+  await expect(sidebar).not.toHaveClass(/is-collapsed/);
+  await expect(rail).not.toHaveClass(/is-collapsed/);
+  await expect(toggle.locator('.sidebar-toggle-glyph')).toHaveClass(
+    /is-expanded/,
+  );
+});
+
 for (const [label, weight] of [
   ['1시간 미만의 작업', 1],
   ['1시간 이상 ~ 3시간 미만의 작업', 2],
