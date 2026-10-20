@@ -178,7 +178,7 @@ export default function Spaces({ onSelect, user }) {
         <section className="space-directory stack">
           <div className="page-heading page-heading--compact">
             <div>
-              <span className="eyebrow">함께 만드는 프로젝트</span>
+              <span className="eyebrow">프로젝트 공간을 만들거나 참여 코드로 함께 시작하세요.</span>
               <h1>내 스페이스</h1>
             </div>
             <div className="heading-actions">
@@ -187,7 +187,7 @@ export default function Spaces({ onSelect, user }) {
               </button>
               <button className="primary-button" onClick={() => open('create')}>
                 <Icon name="plus" />
-                스페이스 만들기
+                새 스페이스
               </button>
             </div>
           </div>

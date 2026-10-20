@@ -57,9 +57,6 @@ export default function WorkspaceNavigation({
   }, [collapsed]);
   const spaces = useSpaceList(user.id);
   const isManager = space?.myRole === 'MANAGER';
-  const accessibleTeams = teams.filter(
-    (item) => isManager || isApprovedMember(item),
-  );
   const selectedTeam = team || teams.find(isApprovedMember);
   const menus = team ? availableTeamMenus(team) : [];
   const navButton = (label, icon, destination, active) => (
@@ -90,6 +87,7 @@ export default function WorkspaceNavigation({
         className="mobile-space-toggle"
         aria-expanded={open}
         aria-controls="workspace-navigation"
+        aria-label={`스페이스 메뉴 ${open ? '접기' : '펼치기'}`}
         onClick={() => setOpen(!open)}
       >
         <span className="mobile-workspace-context">
@@ -100,7 +98,7 @@ export default function WorkspaceNavigation({
             </span>
           )}
         </span>
-        <span>공간·팀 선택 {open ? '⌃' : '⌄'}</span>
+        <span>메뉴 {open ? '⌃' : '⌄'}</span>
       </button>
       <nav id="workspace-navigation" aria-label="스페이스 메뉴">
         <div className="workspace-navigation-context">
@@ -135,44 +133,8 @@ export default function WorkspaceNavigation({
               }}
             />
             <ErrorNotice error={spaces.error} onRetry={spaces.reload} />
-            <WorkspaceContextSelect
-              label="팀"
-              accessibleLabel="팀 선택"
-              icon="users"
-              value={
-                team && ['team', 'contributions'].includes(view) ? team.id : ''
-              }
-              disabled={!accessibleTeams.length}
-              options={[
-                {
-                  value: '',
-                  label: accessibleTeams.length
-                    ? '팀 목록 보기'
-                    : '소속된 팀 없음',
-                },
-                ...accessibleTeams.map((item) => ({
-                  value: item.id,
-                  label: item.name,
-                })),
-              ]}
-              onChange={(nextValue) => {
-                setOpen(false);
-                const nextTeam = accessibleTeams.find(
-                  (item) => item.id === Number(nextValue),
-                );
-                navigate(
-                  nextTeam
-                    ? teamMenuPath(
-                        spaceId,
-                        nextTeam.id,
-                        isApprovedMember(nextTeam) ? '팀 홈' : '팀원 관리',
-                      )
-                    : spacePath(spaceId),
-                );
-              }}
-            />
+
           </div>
-          {navButton('팀 목록', 'users', spacePath(spaceId), view === 'teams')}
         </div>
         <div className="workspace-navigation-links">
           {isManager && (

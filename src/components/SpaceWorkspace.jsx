@@ -1,6 +1,5 @@
 import { screenLoaders } from '../lib/routeScreens.js';
 import { deferScreen } from './DeferredScreen.jsx';
-import Icon from './Icon.jsx';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
 import { HeaderContext } from './HeaderContext.js';
@@ -14,15 +13,14 @@ import {
 } from '../api/teams.js';
 import useResource from '../hooks/useResource.js';
 import { useInteractions } from '../hooks/useInteractions.js';
-import SpaceGuide from './SpaceGuide.jsx';
-import { buildingLabels, formatDate, isApprovedMember } from '../lib/domain.js';
+import SpaceHome from './SpaceHome.jsx';
+import { formatDate, isApprovedMember } from '../lib/domain.js';
 
 import UnavailablePage from './UnavailablePage.jsx';
 import { spacePath, teamMenuPath } from '../lib/routes.js';
 
 import WorkspaceNavigation from './WorkspaceNavigation.jsx';
 import {
-  EmptyState,
   ErrorNotice,
   Field,
   FormActions,
@@ -152,7 +150,7 @@ export default function SpaceWorkspace({
       rounds: '평가 회차 관리',
       reports: '리포트 검토·공개',
       contributions: '팀원 수행 상세',
-      teams: '팀 목록',
+      teams: '스페이스 홈',
     };
     setHeaderContext({
       pathname: location.pathname,
@@ -167,7 +165,7 @@ export default function SpaceWorkspace({
           ? taskId
             ? '작업 상세'
             : teamMenu
-          : titles[view] || '팀 목록',
+          : titles[view] || '스페이스 홈',
       detail: [space.name, team?.name].filter(Boolean).join(' / '),
       manager: managerView,
     });
@@ -290,7 +288,7 @@ export default function SpaceWorkspace({
                   ))}
                 </nav>
               )}
-              <nav className="workspace-breadcrumb" aria-label="현재 위치">
+              {view !== 'teams' && <nav className="workspace-breadcrumb" aria-label="현재 위치">
                 {team && (
                   <>
                     <button
@@ -315,7 +313,7 @@ export default function SpaceWorkspace({
                       ? '작업 상세'
                       : teamMenu
                     : {
-                        teams: '팀 목록',
+                        teams: '스페이스 홈',
                         dashboard: '관리자 대시보드',
                         rounds: '평가 회차 관리',
                         reports: '리포트 검토·공개',
@@ -326,7 +324,7 @@ export default function SpaceWorkspace({
                 {team && (
                   <span className="role-badge breadcrumb-role">{teamRole}</span>
                 )}
-              </nav>
+              </nav>}
               {managerView && !isManager ? (
                 <UnavailablePage
                   title="스페이스 관리 권한이 없습니다."
@@ -386,230 +384,35 @@ export default function SpaceWorkspace({
                   }}
                 />
               ) : (
-                <section className="stack team-directory">
-                  <div className="page-heading">
-                    <div>
-                      <span className="role-badge">
-                        {isManager ? '스페이스 관리자' : '스페이스 참여자'}
-                      </span>
-                      <h1>{space.name}</h1>
-                      <p>{space.description}</p>
-                    </div>
-                    <div className="team-create-action">
-                      <button
-                        className="primary-button"
-                        disabled={
-                          busy ||
-                          resource.loading ||
-                          Boolean(teamCreationRestriction)
-                        }
-                        aria-describedby={
-                          teamCreationRestriction
-                            ? 'team-create-restriction'
-                            : undefined
-                        }
-                        onClick={() => {
-                          setError(null);
-                          setName('');
-                          setCreating(true);
-                        }}
-                      >
-                        <Icon name="plus" />팀 만들기
-                      </button>
-                      {teamCreationRestriction && (
-                        <p id="team-create-restriction" className="field-help">
-                          {teamCreationRestriction}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  {directoryReady && (
-                    <SpaceGuide
-                      space={space}
-                      teams={teams}
-                      joinedTeam={joinedTeam}
-                      buildingOpen={buildingOpen}
-                      navigate={navigate}
-                      onReload={reloadWorkspace}
-                      onCreateTeam={() => {
-                        setError(null);
-                        setName('');
-                        setCreating(true);
-                      }}
-                    />
-                  )}
-                  <section
-                    className="team-building-overview"
-                    aria-label="팀 빌딩 일정"
-                  >
-                    <div className="team-building-status">
-                      <span className="eyebrow">팀 구성</span>
-                      <strong>
-                        <span
-                          className={`status-dot building-${space.teamBuildingStatus.toLowerCase()}`}
-                        />
-                        {buildingLabels[space.teamBuildingStatus]}
-                      </strong>
-                    </div>
-                    <dl>
-                      <div>
-                        <dt>프로젝트 기간</dt>
-                        <dd>
-                          {formatDate(space.startAt)} ~{' '}
-                          {formatDate(space.endAt)}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>팀 빌딩 기간</dt>
-                        <dd>
-                          {space.teamBuildingOpensAt &&
-                          space.teamBuildingClosesAt
-                            ? `${formatDate(space.teamBuildingOpensAt)} ~ ${formatDate(space.teamBuildingClosesAt)}`
-                            : '관리자가 아직 지정하지 않았습니다.'}
-                        </dd>
-                      </div>
-                    </dl>
-                    {!buildingOpen && (
-                      <p className="field-help">
-                        현재 팀 생성과 가입 신청이 제한됩니다. 가입 대기는 팀
-                        소속을 의미하지 않습니다.
-                      </p>
-                    )}
-                  </section>
-                  <div className="directory-section-heading">
-                    <div>
-                      <h2>
-                        팀 목록 <span>{teams.length}개</span>
-                      </h2>
-                      <p>
-                        {joinedTeam
-                          ? `내 소속 · ${joinedTeam.name}`
-                          : isManager
-                            ? '각 팀의 구성원과 자료를 확인하세요.'
-                            : '가입 신청 후 리더의 승인이 필요합니다.'}
-                      </p>
-                    </div>
-                    <button
-                      className="secondary-button"
-                      onClick={reloadWorkspace}
-                      disabled={
-                        resource.loading || directoryResource.loading || busy
-                      }
-                    >
-                      <Icon name="refresh" />
-                      새로고침
-                    </button>
-                  </div>
-                  <ErrorNotice error={error} onRetry={reloadWorkspace} />
-                  <ErrorNotice
-                    error={directoryResource.error}
-                    onRetry={reloadWorkspace}
-                  />
-                  {directoryResource.loading && (
-                    <p role="status">팀 가입 상태를 확인하고 있습니다.</p>
-                  )}
-                  {teams.length ? (
-                    <ul
-                      className="team-list"
-                      id="space-team-list"
-                      tabIndex={-1}
-                      aria-label="가입할 팀 목록"
-                    >
-                      {teams.map((item) => (
-                        <li
-                          className={`team-card ${isApprovedMember(item) ? 'is-joined' : ''}`}
-                          key={item.id}
-                        >
-                          <div className="team-card-main">
-                            <h2>{item.name}</h2>
-                            <p className="team-meta">
-                              <span>
-                                {item.approvedMemberCount == null
-                                  ? '팀원 확인 중'
-                                  : `승인 팀원 ${item.approvedMemberCount}명`}
-                              </span>
-                              <span
-                                className={`team-membership membership-${item.myMembershipStatus?.toLowerCase() || 'none'}`}
-                              >
-                                {{
-                                  APPROVED: '내 팀',
-                                  PENDING: '가입 승인 대기',
-                                  REJECTED: '가입 신청 반려',
-                                }[item.myMembershipStatus] ||
-                                  (!directoryReady
-                                    ? '확인 중'
-                                    : isManager
-                                      ? '관리자 조회'
-                                      : '미가입')}
-                              </span>
-                            </p>
-                            {!isManager &&
-                              directoryReady &&
-                              !isApprovedMember(item) &&
-                              !item.canApply &&
-                              item.myMembershipStatus !== 'PENDING' && (
-                                <p className="field-help">
-                                  {!buildingOpen
-                                    ? '팀 빌딩 기간에만 가입을 신청할 수 있습니다.'
-                                    : joinedTeam
-                                      ? '이미 다른 팀에 소속되어 있습니다.'
-                                      : '현재 팀 가입 신청 조건을 충족하지 않습니다.'}
-                                </p>
-                              )}
-                          </div>
-                          <div className="team-action">
-                            {isApprovedMember(item) || isManager ? (
-                              <button
-                                className="secondary-button"
-                                onClick={() =>
-                                  navigate(
-                                    teamMenuPath(
-                                      spaceId,
-                                      item.id,
-                                      isApprovedMember(item)
-                                        ? '팀 홈'
-                                        : '팀원 관리',
-                                    ),
-                                  )
-                                }
-                              >
-                                {isApprovedMember(item)
-                                  ? '팀 열기'
-                                  : '팀 자료 조회'}
-                              </button>
-                            ) : (
-                              <button
-                                className="primary-button"
-                                disabled={
-                                  busy ||
-                                  !directoryReady ||
-                                  !buildingOpen ||
-                                  !item.canApply
-                                }
-                                onClick={() => apply(item)}
-                              >
-                                {item.myMembershipStatus === 'PENDING'
-                                  ? '승인 대기'
-                                  : item.myMembershipStatus === 'REJECTED'
-                                    ? '다시 신청'
-                                    : '가입 신청'}
-                              </button>
-                            )}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <EmptyState>
-                      <p>아직 생성된 팀이 없습니다.</p>
-                      <span>
-                        {buildingOpen
-                          ? '새 팀을 만들어 팀원을 모집하세요.'
-                          : '팀 빌딩 기간이 열리면 팀을 만들 수 있습니다.'}
-                      </span>
-                    </EmptyState>
-                  )}
-                </section>
+                <SpaceHome
+                  space={space}
+                  teams={teams}
+                  joinedTeam={joinedTeam}
+                  user={user}
+                  directoryReady={directoryReady}
+                  buildingOpen={buildingOpen}
+                  loading={resource.loading || directoryResource.loading}
+                  busy={busy}
+                  error={error}
+                  directoryError={directoryResource.error}
+                  teamCreationRestriction={teamCreationRestriction}
+                  onReload={reloadWorkspace}
+                  onCreate={() => {
+                    setError(null);
+                    setName('');
+                    setCreating(true);
+                  }}
+                  onOpenTeam={(item) =>
+                    navigate(
+                      teamMenuPath(
+                        spaceId,
+                        item.id,
+                        isApprovedMember(item) ? '팀 홈' : '팀원 관리',
+                      ),
+                    )
+                  }
+                  onApply={apply}
+                />
               )}
             </>
           )}

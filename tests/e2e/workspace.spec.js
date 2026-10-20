@@ -332,7 +332,7 @@ async function workspace(
     .getByRole('button', { name: /프로젝트 스페이스/ }).click();
   await page
     .getByRole('button', {
-      name: manager ? '팀 자료 조회' : '팀 열기',
+      name: manager ? '팀 자료 조회' : '삼위일체 팀 팀 홈으로 이동',
       exact: true,
     })
     .click();
@@ -622,7 +622,7 @@ test('관리자는 스페이스 생성 후 팀 빌딩 기간을 지정하고 코
   });
   await page.getByRole('button', { name: 'Fairplay', exact: true }).click();
   await page
-    .getByRole('button', { name: '스페이스 만들기', exact: true })
+    .getByRole('main').getByRole('button', { name: '새 스페이스', exact: true })
     .click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('스페이스 이름').fill('프로젝트 스페이스');
@@ -880,7 +880,7 @@ test('전원 동의 후 리더가 확인한 버전으로 최종 삭제하면 팀
     page.getByRole('heading', { name: '프로젝트 스페이스', exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText('아직 생성된 팀이 없습니다.', { exact: true }),
+    page.getByText('아직 만들어진 팀이 없습니다.', { exact: true }),
   ).toBeVisible();
   const deletion = requests.find(
     ({ method, path }) => method === 'DELETE' && path === '/api/teams/1',
@@ -934,7 +934,7 @@ test('일반 팀원 탈퇴는 후임 없이 요청하고 스페이스에 머무�
     page.getByRole('heading', { name: '프로젝트 스페이스', exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole('button', { name: '팀 열기', exact: true }),
+    page.getByRole('button', { name: '삼위일체 팀 팀 홈으로 이동', exact: true }),
   ).toHaveCount(0);
   const leave = requests.find(({ path }) => path === '/api/teams/1/members/me');
   expect(leave.query).toBe('');

@@ -303,7 +303,7 @@ test('스페이스 선택은 현재 공간을 전환하고 뒤로가기로 이�
 }) => {
   await openPreview(page, '/main');
   await page
-    .getByRole('button', { name: '스페이스 만들기', exact: true })
+    .getByRole('main').getByRole('button', { name: '새 스페이스', exact: true })
     .click();
   const dialog = page.getByRole('dialog');
   await dialog
@@ -334,11 +334,11 @@ test('스페이스 선택은 현재 공간을 전환하고 뒤로가기로 이�
   ).toHaveAttribute('data-value', '3');
 });
 
-test('관리자는 팀 선택으로 자료 조회에 진입하고 팀 작업 메뉴는 제공하지 않는다', async ({
+test('관리자는 다른 팀 목록으로 자료 조회에 진입하고 팀 작업 메뉴는 제공하지 않는다', async ({
   page,
 }) => {
-  await openPreview(page, '/spaces/1/dashboard', 'manager');
-  await selectWorkspaceOption(page, '팀 선택', '2');
+  await openPreview(page, '/spaces/1', 'manager');
+  await page.getByRole('listitem').filter({ hasText: '파도' }).getByRole('button', { name: '팀 자료 조회', exact: true }).click();
   await expect(page).toHaveURL(/teams\/2\/members$/);
   await expect(
     page.getByRole('heading', { name: '팀원 관리', exact: true }),
@@ -368,15 +368,15 @@ test('관리자는 팀 선택으로 자료 조회에 진입하고 팀 작업 메
   ).toHaveCount(0);
 });
 
-test('모바일 공간·팀 선택은 하나의 접힌 영역에 있고 작업 목록은 본문 폭을 사용한다', async ({
+test('모바일 스페이스 메뉴는 하나의 접힌 영역에 있고 작업 목록은 본문 폭을 사용한다', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openPreview(page, '/spaces/1');
   await expect(page.getByLabel('팀 선택', { exact: true })).toBeHidden();
-  await page.getByRole('button', { name: /공간·팀 선택/ }).click();
+  await page.getByRole('button', { name: /스페이스 메뉴/ }).click();
   await expect(page.getByLabel('스페이스 선택', { exact: true })).toBeVisible();
-  await selectWorkspaceOption(page, '팀 선택', '1');
+  await page.getByRole('button', { name: '내 팀 · 삼위일체', exact: true }).click();
   await expect(page).toHaveURL(/teams\/1$/);
   await expect(page.getByLabel('팀 선택', { exact: true })).toBeHidden();
   await page
@@ -390,7 +390,7 @@ test('모바일 공간·팀 선택은 하나의 접힌 영역에 있고 작업 �
   const columns = await page.locator('.task-columns').boundingBox();
   const card = await page.locator('.board-task-card').first().boundingBox();
   expect(card.width).toBeGreaterThanOrEqual(columns.width - 2);
-  await page.getByRole('button', { name: /공간·팀 선택/ }).click();
+  await page.getByRole('button', { name: /스페이스 메뉴/ }).click();
   await expect(
     page.getByRole('navigation', { name: '팀 메뉴', exact: true }),
   ).toBeHidden();
@@ -563,12 +563,12 @@ test('모바일 작업 입력은 첫 오류로 초점을 옮기고 배분을 고
   ).toBeVisible();
 });
 
-test('스페이스 종료 시각 오류를 항목에서 수정하면 관리자 기간 설정 안내로 이어진다', async ({
+test('스페이스 종료 시각 오류를 수정한 뒤 스페이스 관리에서 기간을 설정한다', async ({
   page,
 }) => {
   await openPreview(page, '/main');
   await page
-    .getByRole('button', { name: '스페이스 만들기', exact: true })
+    .getByRole('main').getByRole('button', { name: '새 스페이스', exact: true })
     .click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('스페이스 이름', { exact: true }).fill('새 프로젝트');
@@ -583,10 +583,10 @@ test('스페이스 종료 시각 오류를 항목에서 수정하면 관리자 �
   await dialog.getByRole('button', { name: '만들기', exact: true }).click();
   await expect(page).toHaveURL(/spaces\/3$/);
   await expect(
-    page.getByText('아직 생성된 팀이 없습니다.', { exact: true }),
+    page.getByText('아직 만들어진 팀이 없습니다.', { exact: true }),
   ).toBeVisible();
   await page
-    .getByRole('button', { name: '팀 빌딩 기간 설정', exact: true })
+    .getByRole('button', { name: '스페이스 관리', exact: true })
     .click();
   await expect(
     page.getByRole('heading', { name: '스페이스 관리', exact: true }),
@@ -600,19 +600,15 @@ test('스페이스 종료 시각 오류를 항목에서 수정하면 관리자 �
   ).toBeVisible();
 });
 
-test('가입 대기 참여자는 작업 대신 승인 대기와 상태 확인을 안내받는다', async ({
-  page,
-}) => {
+test('가입 대기 참여자는 내 팀 없이 승인 대기 상태와 새로고침을 제공한다', async ({ page }) => {
   await openPreview(page, '/spaces/1', 'participant', 'building');
-  const guide = page.getByRole('region', { name: '다음 단계 안내' });
-  await expect(guide).toContainText('삼위일체의 가입 승인을 기다리고 있습니다');
-  await expect(
-    guide.getByRole('button', { name: '담당 작업 확인', exact: true }),
-  ).toHaveCount(0);
-  await guide
-    .getByRole('button', { name: '가입 상태 새로 확인', exact: true })
-    .click();
-  await expect(guide).toContainText('가입 신청만으로는 팀원이 되지 않습니다.');
+  const teams = page.getByRole('list', { name: '팀 목록', exact: true });
+  const pending = teams.getByRole('listitem').filter({ hasText: '삼위일체' });
+  await expect(pending).toContainText('가입 승인 대기');
+  await expect(pending.getByRole('button', { name: /가입 신청|다시 신청/ })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: '내 팀', exact: true })).toContainText('팀에 가입해 주세요.');
+  await page.getByRole('button', { name: '팀 목록 새로고침', exact: true }).click();
+  await expect(pending).toContainText('가입 승인 대기');
 });
 
 test('산출물 파일 형식 오류는 파일 항목에 표시하고 교체 선택 후 저장한다', async ({
@@ -732,23 +728,17 @@ test('작업 목록은 상태를 가로질러 정렬하고 상세 복귀·초기
   ).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('완료된 시작 안내는 접고 가입 대기·팀원 부족 안내는 계속 표시한다', async ({
-  page,
-}) => {
+test('스페이스 홈은 시작 안내 없이 소개·일정과 내 팀·다른 팀을 분리한다', async ({ page }) => {
   await openPreview(page, '/spaces/1');
-  const guide = page.getByRole('region', { name: '다음 단계 안내' });
-  await expect(
-    guide.getByRole('list', { name: '프로젝트 시작 순서' }),
-  ).toBeHidden();
-  await guide.getByText('시작 안내 펼쳐보기', { exact: true }).click();
-  await expect(
-    guide.getByRole('list', { name: '프로젝트 시작 순서' }),
-  ).toBeVisible();
-  await openPreview(page, '/spaces/1', 'participant', 'building');
-  await expect(
-    guide.getByRole('list', { name: '프로젝트 시작 순서' }),
-  ).toBeVisible();
-  await expect(guide.getByText(/가입 승인을 기다리고 있습니다/)).toBeVisible();
+  await expect(page.getByRole('region', { name: '다음 단계 안내' })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: '프로젝트 일정' })).toContainText('팀 빌딩 기간');
+  const own = page.getByRole('region', { name: '내 팀', exact: true });
+  const others = page.getByRole('list', { name: '팀 목록', exact: true });
+  await expect(own).toContainText('삼위일체');
+  await expect(others).toContainText('파도');
+  await expect(others.getByRole('heading', { name: '삼위일체', exact: true })).toHaveCount(0);
+  await own.getByRole('button', { name: '삼위일체 팀 홈으로 이동', exact: true }).click({ position: { x: 12, y: 12 } });
+  await expect(page).toHaveURL(/teams\/1$/);
 });
 
 test('200% 확대와 모바일 목록 전환에서도 입력 단계와 주요 행동이 가로로 넘치지 않는다', async ({
