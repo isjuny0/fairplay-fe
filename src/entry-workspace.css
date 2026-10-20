@@ -415,6 +415,12 @@
 }
 .directory-role-filter .workspace-context-options {
   min-width: 100%;
+  padding: 4px;
+}
+.directory-role-filter .workspace-context-option {
+  min-height: 28px;
+  padding: 5px 8px;
+  border-radius: 4px;
 }
 .directory-refresh {
   margin-left: auto;

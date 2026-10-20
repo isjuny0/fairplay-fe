@@ -87,6 +87,7 @@ function teamDetail(entry, context, state) {
       context.space.teamBuildingStatus === 'OPEN' &&
       (membership === null || membership === 'REJECTED') &&
       !Object.values(state.teams).some((team) =>
+        team.team.spaceId === entry.team.spaceId &&
         team.members.some((member) => member.userId === context.user.id),
       ) &&
       !state.applications?.some((item) =>
@@ -199,6 +200,15 @@ export async function previewRequest(
         return Object.values(state.teams)
           .filter((entry) => entry.team.spaceId === id)
           .map((entry) => teamDetail(entry, context, state));
+      if (state.applications?.some((item) =>
+        item.userId === context.user.id && item.status === 'PENDING' &&
+        state.teams[item.teamId]?.team.spaceId === id,
+      ))
+        throw new MockError('APPLICATION_CONFLICT', '대기 중인 가입 신청을 취소한 뒤 팀을 만들어 주세요.', 409);
+      if (Object.values(state.teams).some((entry) =>
+        entry.team.spaceId === id && entry.members.some((member) => member.userId === context.user.id),
+      ))
+        throw new MockError('ALREADY_TEAM_MEMBER', '이미 이 스페이스의 팀에 소속되어 있습니다.', 409);
       const team = {
         ...previewTeams[0],
         id: Math.max(...Object.keys(state.teams).map(Number)) + 1,
@@ -272,10 +282,12 @@ export async function previewRequest(
       state.applications ||= [];
       if (method === 'DELETE' && parts[4] === 'me') {
         const application = state.applications.find((item) =>
-          item.teamId === id && item.userId === context.user.id && item.status === 'PENDING',
+          item.teamId === id && item.userId === context.user.id,
         );
         if (!application)
-          throw new MockError('APPLICATION_NOT_PENDING', '대기 중인 가입 신청이 없습니다. 최신 상태를 확인해 주세요.', 409);
+          throw new MockError('APPLICATION_NOT_FOUND', '가입 신청을 찾을 수 없습니다. 최신 상태를 확인해 주세요.', 404);
+        if (application.status !== 'PENDING')
+          throw new MockError('APPLICATION_ALREADY_DECIDED', '이미 처리된 가입 신청입니다. 최신 상태를 확인해 주세요.', 409);
         state.applications = state.applications.filter((item) => item !== application);
         saveMockState(context, state);
         return null;
@@ -291,8 +303,10 @@ export async function previewRequest(
       const existing = state.applications.find((item) =>
         item.teamId === id && item.userId === context.user.id,
       );
+      state.nextApplicationId = Math.max(state.nextApplicationId || 800,
+        ...state.applications.map((item) => item.id + 1));
       const application = {
-        id: existing?.id ?? Math.max(799, ...state.applications.map((item) => item.id)) + 1,
+        id: existing?.id ?? state.nextApplicationId++,
         teamId: id,
         userId: context.user.id,
         name: context.user.name,
