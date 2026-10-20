@@ -1610,7 +1610,173 @@ h1[tabindex="-1"]:focus {
   .modal-fullscreen .modal-body { padding: 12px; }
 }
 
-.task-schedule-help { flex-shrink: 0; margin: 8px 0; color: #626e7d; font-size: 12px; line-height: 1.6; }
-.task-schedule-help > summary { width: fit-content; padding: 4px 0; cursor: pointer; color: #536575; }
-.task-schedule-help > summary:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-.task-schedule-help p { max-width: 760px; margin: 6px 0 0; }
+/* Compact board cards keep task essentials visible and reveal the existing details on demand. */
+.task-board-page .board-task-card {
+  grid-template-rows: auto auto auto;
+  gap: 10px;
+  min-height: 0;
+  padding: 14px;
+}
+.task-board-page .board-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.board-card-heading { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.task-board-page .board-card-footer .task-deadline {
+  min-width: 0;
+  flex: 1 1 120px;
+  padding-top: 0;
+  border-top: 0;
+}
+.board-card-details-toggle {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.board-card-details-toggle:hover { color: var(--brand); border-color: #cbdcd3; background: #f3f8f5; }
+.board-card-details-toggle:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.board-card-toggle-triangle {
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid currentColor;
+  transition: transform .16s ease;
+}
+.board-card-details-toggle[aria-expanded='true'] .board-card-toggle-triangle { transform: rotate(90deg); }
+.board-task-details {
+  display: grid;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.board-task-details .task-workload-line { order: 1; margin: 0; }
+.task-board-page .board-task-details .task-card-meta {
+  order: 2;
+  grid-template-rows: none;
+  min-height: 0;
+}
+.task-board-page .board-task-card .board-card-overdue {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  bottom: auto;
+  left: auto;
+  z-index: 1;
+  white-space: nowrap;
+}
+
+/* Calendar markers show only each task's start and due date. */
+.task-calendar-table .calendar-dates td {
+  height: 112px;
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.calendar-dates td.is-today { background: #f0f7f2; }
+.calendar-date-markers {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  width: 100%;
+  min-height: 88px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.calendar-date-markers:hover .calendar-marker-list { opacity: .72; }
+.calendar-date-markers:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 3px; }
+.calendar-marker-list { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 6px; min-height: 8px; }
+.calendar-date-marker {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--schedule-color);
+}
+.calendar-overview { display: flex; justify-content: flex-end; margin: 0 0 8px; }
+.calendar-overview .timeline-legend { margin: 0; }
+
+/* Contextual schedule guidance stays beside the month picker instead of adding vertical space below the view. */
+.task-month-picker { display: inline-flex; align-items: center; gap: 6px; }
+.schedule-help-trigger {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid #aeb8c4;
+  border-radius: 50%;
+  color: #536575;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+}
+.schedule-help-trigger:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.schedule-help-tooltip {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  left: 50%;
+  width: min(360px, calc(100vw - 32px));
+  padding: 9px 10px;
+  border: 1px solid #d7dee6;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 5px 16px #1d293920;
+  color: #536575;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.55;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -3px);
+  transition: opacity .16s ease, transform .16s ease;
+}
+.schedule-help-trigger:hover .schedule-help-tooltip,
+.schedule-help-trigger:focus .schedule-help-tooltip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* Status is represented by a dot both beside the task and within its timeline bar. */
+.timeline-task-state {
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--schedule-color);
+}
+.timeline-bar-state {
+  flex: 0 0 12px;
+  width: 12px;
+  height: 12px;
+  margin-left: auto;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--schedule-color);
+  box-sizing: border-box;
+}
+.timeline-delay {
+  top: calc(50% - 12px);
+  height: 24px;
+  box-sizing: border-box;
+}
