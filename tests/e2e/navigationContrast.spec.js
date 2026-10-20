@@ -241,13 +241,21 @@ test('타임라인·캘린더·목록은 밝은 상태 배경과 읽기 쉬운 �
   }
   await page.getByRole('button', { name: '타임라인', exact: true }).click();
   for (const [status, background, text] of palette) {
-    for (const selector of ['.timeline-period', '.timeline-task-state']) {
-      const item = page.locator(`${selector}.schedule-task-${status}`).first();
-      await expect(item).toBeVisible();
-      await expect(item).toHaveCSS('background-color', background);
-      await expect(item).toHaveCSS('color', text);
-    }
+    const period = page.locator(`.timeline-period.schedule-task-${status}`).first();
+    await expect(period).toBeVisible();
+    await expect(period).toHaveCSS('background-color', background);
+    await expect(period).toHaveCSS('color', text);
     expect(contrast(text, background)).toBeGreaterThanOrEqual(4.5);
+  }
+  for (const [status, color] of [
+    ['todo', 'rgb(0, 181, 232)'],
+    ['in_progress', 'rgb(8, 124, 85)'],
+    ['revising', 'rgb(234, 179, 8)'],
+    ['done', 'rgb(148, 163, 184)'],
+  ]) {
+    for (const selector of ['.timeline-task-state', '.timeline-bar-state']) {
+      await expect(page.locator(`${selector}.schedule-task-${status}`).first()).toHaveCSS('background-color', color);
+    }
   }
   await expect(
     page.locator('.timeline-row.is-late .timeline-period').first(),
@@ -265,13 +273,8 @@ test('타임라인·캘린더·목록은 밝은 상태 배경과 읽기 쉬운 �
   await expect(overdue).toHaveCSS('background-color', 'rgb(255, 240, 241)');
   await expect(page.locator('.task-table td:has(> .is-overdue) > time').first()).toHaveCSS('color', 'rgb(255, 85, 92)');
   await page.getByRole('button', { name: '캘린더', exact: true }).click();
-  for (const [status, background, text] of palette) {
-    const period = page
-      .locator(`.calendar-period.schedule-task-${status}`)
-      .first();
-    await expect(period).toHaveCSS('background-color', background);
-    await expect(period).toHaveCSS('color', text);
-  }
+  await expect(page.locator('.calendar-period')).toHaveCount(0);
+  await expect(page.locator('.calendar-date-marker')).not.toHaveCount(0);
 });
 
 test('작업 상세와 관리자 화면도 작업 보드의 공통 상태색을 사용한다', async ({ page }) => {

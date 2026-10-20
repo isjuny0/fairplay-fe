@@ -133,8 +133,7 @@
   --schedule-background: var(--task-done-background);
   --schedule-text: var(--task-done-text);
 }
-.timeline-period,
-.timeline-task-state {
+.timeline-period {
   background: var(--schedule-background);
   color: var(--schedule-text);
   border: 1px solid var(--schedule-color);
@@ -149,6 +148,10 @@
 }
 .timeline-period:hover {
   filter: brightness(0.98);
+}
+.timeline-task-state,
+.timeline-bar-state {
+  background: var(--schedule-color);
 }
 .timeline-assignee {
   border-color: var(--schedule-color);

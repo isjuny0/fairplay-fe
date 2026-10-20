@@ -56,6 +56,7 @@ export default function TaskBoard({
   const onlyExecutionOverdue = searchParams.get('overdue') === 'work';
   const onlyOverdue = onlyExecutionOverdue || searchParams.get('overdue') === '1';
   const [preferences, setPreferences] = useState(readTaskViewPreferences);
+  const [expandedBoardTaskIds, setExpandedBoardTaskIds] = useState(() => new Set());
   const view = searchParams.has('view')
     ? ['board', 'list', 'calendar', 'timeline'].includes(searchParams.get('view'))
       ? searchParams.get('view')
@@ -174,6 +175,13 @@ export default function TaskBoard({
         onBack={onTaskBack}
       />
     );
+  const toggleBoardTaskDetails = (taskId) =>
+    setExpandedBoardTaskIds((current) => {
+      const next = new Set(current);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
   const canCreate =
     team.canCreateTask && members.length >= 2 && canModifyTeamWork(team);
   const hasFilters = appliedFilterCount > 0;
@@ -206,8 +214,8 @@ export default function TaskBoard({
   const periodTaskCount = view === 'timeline'
     ? tasks.filter((task) => timelineTaskPeriod(task, scheduleWindow, now)).length
     : tasks.filter((task) =>
-        taskDate(task.startAt).slice(0, 7) <= month &&
-        taskDate(task.dueAt).slice(0, 7) >= month,
+        taskDate(task.startAt).slice(0, 7) === month ||
+        taskDate(task.dueAt).slice(0, 7) === month,
       ).length;
   const nearestMonth = nearestTaskMonth(tasks, `${month}-01`);
   const hasSearchFilters = filter !== 'ALL' || onlyMine || onlyOverdue || Boolean(query.trim());
@@ -389,6 +397,9 @@ export default function TaskBoard({
             span={view === 'timeline' ? 3 : 1}
             onMonthChange={(next) => setListOption('month', next)}
             tasks={tasks}
+            helpText={view === 'calendar'
+              ? '점은 작업의 시작일 또는 마감일이며, 색으로 진행 상태를 구분합니다. 점이 있는 날짜를 선택하면 해당 작업을 확인할 수 있습니다.'
+              : '막대의 위치와 겹침으로 일정의 순서와 병행 구간을 비교합니다. 막대는 계획 기간, 빨간 빗금은 마감 이후 오늘까지의 지연 구간입니다. 작업 제목이나 막대를 선택하면 상세를 확인할 수 있습니다.'}
           />
           <button
             ref={expandButton}
@@ -507,55 +518,80 @@ export default function TaskBoard({
                       )}
                       {tasks
                         .filter((task) => task.status === status)
-                        .map((task) => (
-                          <article key={task.id} className="board-task-card">
-                            <div className="board-card-top">
-                              <span className="mobile-task-state">{label}</span>
-                              <span className="task-number">#{task.id}</span>
-                            </div>
-                            <button
-                              className="task-title-button"
-                              onClick={() => onOpenTask(task.id)}
+                        .map((task) => {
+                          const detailsExpanded = expandedBoardTaskIds.has(task.id);
+                          const detailsId = `board-task-details-${task.id}`;
+                          return (
+                            <article
+                              key={task.id}
+                              className={`board-task-card${detailsExpanded ? ' is-expanded' : ''}`}
                             >
-                              <h3>{task.title}</h3>
-                            </button>
-                            <p
-                              className="task-workload-line"
-                              title={formatExpectedWorkload(task.weight)}
-                              aria-label={formatExpectedWorkload(task.weight)}
-                            >
-                              {formatBoardWorkload(task.weight)}
-                            </p>
-                            <dl className="task-card-meta">
-                              <div>
-                                <dt>담당</dt>
-                                <dd>
-                                  {task.assignees.map((assignment) => (
-                                    <span
-                                      key={assignment.userId}
-                                      className={
-                                        assignment.userId === user.id
-                                          ? 'my-assignment'
-                                          : ''
-                                      }
-                                    >
-                                      {memberName(members, assignment.userId)}{' '}
-                                      <b>{assignment.allocationPercent}%</b>
-                                    </span>
-                                  ))}
-                                </dd>
+                              <div className="board-card-top">
+                                <span className="board-card-heading">
+                                  <span className="mobile-task-state">{label}</span>
+                                  <span className="task-number">#{task.id}</span>
+                                </span>
+                                {task.status !== 'DONE' &&
+                                  Date.parse(task.dueAt) < now && (
+                                    <span className="is-overdue board-card-overdue">마감 지남</span>
+                                  )}
                               </div>
-                            </dl>
-                            <div className="task-deadline">
-                              <Icon name="calendar" />
-                              <small>마감 {formatDate(task.dueAt)}</small>
-                            </div>
-                            {task.status !== 'DONE' &&
-                              Date.parse(task.dueAt) < now && (
-                                <span className="is-overdue">마감 지남</span>
+                              <button
+                                className="task-title-button"
+                                onClick={() => onOpenTask(task.id)}
+                              >
+                                <h3>{task.title}</h3>
+                              </button>
+                              <div className="board-card-footer">
+                                <div className="task-deadline">
+                                  <Icon name="calendar" />
+                                  <small>마감 {formatDate(task.dueAt)}</small>
+                                </div>
+                              <button
+                                className="board-card-details-toggle"
+                                aria-expanded={detailsExpanded}
+                                aria-controls={detailsId}
+                                aria-label={`${task.title} 상세 ${detailsExpanded ? '접기' : '보기'}`}
+                                title={detailsExpanded ? '상세 접기' : '상세 보기'}
+                                onClick={() => toggleBoardTaskDetails(task.id)}
+                              >
+                                <span className="board-card-toggle-triangle" aria-hidden="true" />
+                              </button>
+                              </div>
+                              {detailsExpanded && (
+                                <div id={detailsId} className="board-task-details">
+                                  <p
+                                    className="task-workload-line"
+                                    title={formatExpectedWorkload(task.weight)}
+                                    aria-label={formatExpectedWorkload(task.weight)}
+                                  >
+                                    {formatBoardWorkload(task.weight)}
+                                  </p>
+                                  <dl className="task-card-meta">
+                                    <div>
+                                      <dt>담당</dt>
+                                      <dd>
+                                        {task.assignees.map((assignment) => (
+                                          <span
+                                            key={assignment.userId}
+                                            className={
+                                              assignment.userId === user.id
+                                                ? 'my-assignment'
+                                                : ''
+                                            }
+                                          >
+                                            {memberName(members, assignment.userId)}{' '}
+                                            <b>{assignment.allocationPercent}%</b>
+                                          </span>
+                                        ))}
+                                      </dd>
+                                    </div>
+                                  </dl>
+                                </div>
                               )}
-                          </article>
-                        ))}
+                            </article>
+                          );
+                        })}
                     </div>
                   </section>
                 ),

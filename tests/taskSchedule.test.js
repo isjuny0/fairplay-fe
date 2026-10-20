@@ -5,6 +5,7 @@ import {
   moveTaskMonth,
   nearestTaskMonth,
   taskDate,
+  taskDateMarkers,
   taskMonthDays,
   tasksByDate,
   calendarWeekTasks,
@@ -83,6 +84,26 @@ test('캘린더는 시작·종료일을 포함한 모든 날짜에 작업을 배
     tasksByDate([same], taskMonthDays('2026-11')).get('2026-11-03').length,
     1,
   );
+});
+test('캘린더 점은 작업의 시작일과 마감일에만 상태별로 배치한다', () => {
+  const task = {
+    id: 1,
+    status: 'IN_PROGRESS',
+    startAt: '2026-11-03T00:00:00Z',
+    dueAt: '2026-11-05T00:00:00Z',
+  };
+  const sameDay = {
+    id: 2,
+    status: 'TODO',
+    startAt: '2026-11-05T00:00:00Z',
+    dueAt: '2026-11-05T12:00:00Z',
+  };
+  const markers = taskDateMarkers([task, sameDay], taskMonthDays('2026-11'));
+  assert.deepEqual(
+    markers.get('2026-11-05').map(({ task: markerTask, type }) => [markerTask.id, type]),
+    [[1, 'due'], [2, 'start'], [2, 'due']],
+  );
+  assert.deepEqual(markers.get('2026-11-04'), []);
 });
 test('캘린더 기간 막대는 주 경계에서 이어지고 겹치는 작업을 별도 행에 놓는다', () => {
   const tasks = [
