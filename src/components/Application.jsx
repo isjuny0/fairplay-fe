@@ -140,7 +140,7 @@ export default function Application({ previewRuntime }) {
             </p>
             <ol className="login-benefits">
               <li>작업을 나누고 수행 내용을 기록</li>
-              <li>산출물을 확인하고 완료 승인</li>
+              <li>산출물을 등록하고 직접 완료</li>
               <li>협업을 돌아보고 기여도 확인</li>
             </ol>
           </div>
@@ -247,7 +247,7 @@ export default function Application({ previewRuntime }) {
                       스페이스 참여자·팀 미가입
                     </option>
                     <option value="member">일반 담당자</option>
-                    <option value="reviewer">부리더·승인자</option>
+                    <option value="teammate">다른 팀원</option>
                     <option value="manager">스페이스 관리자</option>
                   </select>
                 </label>

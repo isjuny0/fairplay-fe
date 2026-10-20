@@ -40,33 +40,11 @@
 .review-action-buttons button {
   white-space: nowrap;
 }
-.task-detail-page:has(.approval-decision),
 .peer-evaluation-page:has(.peer-evaluation-actions) {
   padding-bottom: 128px;
 }
 html:has(.review-action-dock) {
   scroll-padding-bottom: 140px;
-}
-.approval-rejection[hidden] {
-  display: none;
-}
-.approval-rejection {
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
-}
-.approval-rejection .section-heading {
-  gap: 8px;
-  margin-bottom: 12px;
-}
-.approval-rejection h3 {
-  margin: 0;
-  font-size: var(--text-support);
-}
-.approval-rejection .text-button {
-  font-size: var(--text-caption);
-}
-.approval-decision .approval-decision-actions {
-  background: var(--surface);
 }
 .peer-evaluation-actions {
   align-items: stretch;
@@ -194,22 +172,6 @@ html:has(.review-action-dock) {
   .review-action-dock {
     left: 0;
     padding-inline: 16px;
-  }
-  .approval-decision-actions {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .approval-decision-actions .review-action-context {
-    flex-basis: 100%;
-  }
-  .approval-decision-actions .review-action-buttons {
-    width: 100%;
-  }
-  .approval-decision-actions .review-action-buttons button {
-    flex: 1;
-  }
-  .task-detail-page:has(.approval-decision) {
-    padding-bottom: 180px;
   }
   .peer-current-action {
     flex-wrap: wrap;

@@ -41,7 +41,7 @@ export default function SpaceGuide({
     } else {
       title = '팀들의 진행 현황을 확인하세요';
       description =
-        '대시보드에서 작업 지연과 승인 대기를 확인하고 필요한 지원을 준비하세요.';
+        '대시보드에서 작업 지연과 정체를 확인하고 필요한 지원을 준비하세요.';
       action = '팀 현황 확인';
       onAction = () => navigate(`${spacePath(space.id)}/dashboard`);
     }
@@ -51,7 +51,7 @@ export default function SpaceGuide({
       ? '담당 작업을 정하고 프로젝트를 시작하세요'
       : '팀원이 한 명 더 필요합니다';
     description = ready
-      ? '작업에 담당자와 완료 승인자를 지정하고, 수행한 내용을 산출물로 남기세요.'
+      ? '작업에 담당자와 배분을 정하고, 수행한 내용을 산출물로 남기세요.'
       : '승인된 팀원이 2명 이상이어야 작업을 진행할 수 있습니다. 팀원 관리에서 가입 신청을 확인하세요.';
     action = ready ? '담당 작업 확인' : '팀원 확인';
     onAction = () =>

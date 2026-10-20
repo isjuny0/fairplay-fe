@@ -15,7 +15,7 @@ const now = () => new Date().toISOString();
 const clone = (value) => structuredClone(value);
 const memoryStates = new Map();
 export const mockKey = (context) =>
-  `fairplay:mock:v5:${context.preview ? 'preview' : context.user.id}:${context.space.id}`;
+  `fairplay:mock:v6:${context.preview ? 'preview' : context.user.id}:${context.space.id}`;
 export function getMockState(context) {
   const key = mockKey(context);
   let state = memoryStates.get(key);
@@ -357,14 +357,14 @@ function dashboard(state, context, teamFilter) {
     totalTaskCount: tasks.length,
     todoTaskCount: count(tasks, 'TODO'),
     inProgressTaskCount: count(tasks, 'IN_PROGRESS'),
-    pendingApprovalCount: count(tasks, 'PENDING_APPROVAL'),
+    revisingTaskCount: count(tasks, 'REVISING'),
     doneTaskCount: count(tasks, 'DONE'),
     completionRate: workSummary(team.id, members[0]?.userId, tasks)
       .teamProgressRate,
     overdueTaskCount: overdue(tasks),
     staleTaskCount: tasks.filter(
       (task) =>
-        task.status === 'IN_PROGRESS' &&
+        ['IN_PROGRESS', 'REVISING'].includes(task.status) &&
         Date.now() - new Date(task.lastActivityAt).getTime() >= 48 * 3600000,
     ).length,
     deliverableCount: deliverables.length,
@@ -386,15 +386,14 @@ function dashboard(state, context, teamFilter) {
               assignedTaskCount: ownTasks.length,
               todoTaskCount: count(ownTasks, 'TODO'),
               inProgressTaskCount: count(ownTasks, 'IN_PROGRESS'),
-              pendingApprovalCount: count(ownTasks, 'PENDING_APPROVAL'),
+              revisingTaskCount: count(ownTasks, 'REVISING'),
               doneTaskCount: count(ownTasks, 'DONE'),
               overdueTaskCount: overdue(ownTasks),
-              approvedWorkWeight: workSummary(team.id, member.userId, tasks)
+              completedWorkWeight: workSummary(team.id, member.userId, tasks)
                 .myDoneWeight,
               missingContributionDescriptionCount: ownTasks.filter(
                 (task) =>
-                  task.assignees.length > 1 &&
-                  !task.contributions?.[member.userId],
+                  task.status !== 'DONE' && !task.contributions?.[member.userId],
               ).length,
             };
           }),
@@ -413,7 +412,6 @@ function dashboard(state, context, teamFilter) {
     pendingApplications: 0,
     overdueTaskCount: aggregate('overdueTaskCount'),
     staleTaskCount: aggregate('staleTaskCount'),
-    pendingApprovalCount: aggregate('pendingApprovalCount'),
     teams,
     missingPeerSubmissions: state.rounds.map((round) => {
       const teamSubmissions = entries.map((entry) => {

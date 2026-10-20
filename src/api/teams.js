@@ -24,11 +24,6 @@ export const reviewTeamApplication = (applicationId, status) =>
     method: 'PATCH',
     body: { status },
   });
-export const assignTeamDeputy = (teamId, userId) =>
-  apiRequest(`/api/teams/${teamId}/deputy`, {
-    method: 'PATCH',
-    body: { userId },
-  });
 export const createTeamDeletionRequest = (teamId) =>
   apiRequest(`/api/teams/${teamId}/deletion-requests`, { method: 'POST' });
 export const getTeamDeletionRequest = (teamId) =>

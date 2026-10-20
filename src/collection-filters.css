@@ -3,7 +3,6 @@
   font-size: var(--text-support);
 }
 .collection-controls select,
-.approval-search-field input,
 .task-board-page .collection-controls input[type='search'] {
   min-height: var(--control-height);
 }
@@ -91,31 +90,6 @@ button.collection-reset-button:hover {
   outline: 2px solid var(--brand);
   outline-offset: 3px;
 }
-.approval-list-toolbar {
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--border);
-}
-.approval-list-toolbar > label {
-  flex-direction: row;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--text-caption);
-  font-weight: 400;
-  white-space: nowrap;
-}
-.approval-list-toolbar .approval-search-field {
-  flex: 1 1 200px;
-  max-width: 300px;
-  flex-wrap: nowrap;
-}
-.approval-search-field input {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.approval-list-toolbar > button {
-  align-self: center;
-}
-.approvals-page .approval-list-summary,
 .task-board-page .list-summary {
   min-height: 32px;
   margin: 0;
@@ -125,13 +99,4 @@ button.collection-reset-button:hover {
 .deliverable-query-input {
   min-height: 36px;
   padding-block: 1px;
-}
-@media (max-width: 720px) {
-  .approval-list-toolbar > label {
-    flex-wrap: nowrap;
-  }
-  .approval-list-toolbar .approval-search-field {
-    flex-basis: 100%;
-    max-width: none;
-  }
 }

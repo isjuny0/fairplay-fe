@@ -397,8 +397,7 @@
 }
 
 /* State badges, status dots, error and deadline notices retain their semantic colors. */
-.status-badge.task-state-done,
-.approval-approved {
+.status-badge.task-state-done {
   color: #356b4d;
   background: #edf3ee;
 }
@@ -1140,19 +1139,19 @@ h1[tabindex="-1"]:focus {
     grid-template-columns: minmax(0, 1fr) 300px;
     gap: 32px;
   }
-  .main-content .task-review-sidebar > .panel:not(.danger-zone) {
+  .main-content .task-progress-sidebar > .panel:not(.danger-zone) {
     padding: 20px;
     border: 1px solid var(--border);
     border-radius: 6px;
     background: #fafbf9;
   }
-  .task-review-sidebar .completion-readiness {
+  .task-progress-sidebar .completion-readiness {
     gap: 10px;
   }
-  .task-review-sidebar .heading-actions {
+  .task-progress-sidebar .heading-actions {
     gap: 8px;
   }
-  .task-review-sidebar h2 {
+  .task-progress-sidebar h2 {
     font-size: 18px;
     margin-top: 0;
   }
@@ -1376,7 +1375,7 @@ h1[tabindex="-1"]:focus {
 .calendar-period:hover { filter: brightness(.96); }
 .schedule-task-todo { --schedule-color: #747774; --schedule-background: #f3f3f1; }
 .schedule-task-in_progress { --schedule-color: #3972a4; --schedule-background: #edf4fb; }
-.schedule-task-pending_approval { --schedule-color: #926a1a; --schedule-background: #faf4e8; }
+.schedule-task-revising { --schedule-color: #926a1a; --schedule-background: #faf4e8; }
 .schedule-task-done { --schedule-color: #356b4d; --schedule-background: #edf4ee; }
 .schedule-task {
   display: grid;
@@ -1473,15 +1472,15 @@ h1[tabindex="-1"]:focus {
 /* One status palette across task views, with darker text on soft badge fills. */
 .schedule-task-todo { --schedule-color: var(--task-todo); --schedule-background: #f0f2f5; }
 .schedule-task-in_progress { --schedule-color: var(--task-progress); --schedule-background: #edf4ff; }
-.schedule-task-pending_approval { --schedule-color: var(--task-review); --schedule-background: #faf3e3; }
+.schedule-task-revising { --schedule-color: var(--task-revising); --schedule-background: #faf3e3; }
 .schedule-task-done { --schedule-color: var(--task-done); --schedule-background: #eaf5ef; }
 .task-board-page .task-state-todo .status-dot { background: var(--task-todo); }
 .task-board-page .task-state-in_progress .status-dot { background: var(--task-progress); }
-.task-board-page .task-state-pending_approval .status-dot { background: var(--task-review); }
+.task-board-page .task-state-revising .status-dot { background: var(--task-revising); }
 .task-board-page .task-state-done .status-dot { background: var(--task-done); }
 .status-badge.task-state-todo { color: #536071; background: #f0f2f5; }
 .status-badge.task-state-in_progress { color: #205eae; background: #edf4ff; }
-.status-badge.task-state-pending_approval { color: #805b15; background: #faf3e3; }
+.status-badge.task-state-revising { color: #805b15; background: #faf3e3; }
 .status-badge.task-state-done { color: #1c6c4d; background: #eaf5ef; }
 .task-board-page .task-title-button,
 .task-board-page .task-title-button h3,

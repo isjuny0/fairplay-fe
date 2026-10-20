@@ -14,7 +14,7 @@ const teamFilters = {
   all: '모든 팀',
   overdue: '마감 지연 있음',
   stale: '장기 정체 있음',
-  approval: '승인 대기 있음',
+  revising: '수정 중 있음',
   applications: '가입 대기 있음',
   understaffed: '팀원 2명 미만',
 };
@@ -71,7 +71,7 @@ export default function ManagerDashboard({ context }) {
         teamFilter === 'all' ||
         (teamFilter === 'overdue' && team.overdueTaskCount > 0) ||
         (teamFilter === 'stale' && team.staleTaskCount > 0) ||
-        (teamFilter === 'approval' && team.pendingApprovalCount > 0) ||
+        (teamFilter === 'revising' && team.revisingTaskCount > 0) ||
         (teamFilter === 'applications' && team.pendingApplications > 0) ||
         (teamFilter === 'understaffed' && team.hasMinimumMembers === false);
       return matchesQuery && matchesFilter;
@@ -96,8 +96,7 @@ export default function ManagerDashboard({ context }) {
     .filter(
       (team) =>
         team.overdueTaskCount ||
-        team.staleTaskCount ||
-        team.pendingApprovalCount,
+        team.staleTaskCount,
     )
     .sort(
       (first, second) =>
@@ -189,17 +188,12 @@ export default function ManagerDashboard({ context }) {
                 <MetricCard
                   label="마감 지연"
                   value={`${dashboard.overdueTaskCount}건`}
-                  description="승인 대기를 포함한 미완료 작업"
-                />
-                <MetricCard
-                  label="승인 대기"
-                  value={`${dashboard.pendingApprovalCount}건`}
-                  description="지정 승인자의 검토 대기"
+                  description="할 일·진행 중·수정 중 작업"
                 />
                 <MetricCard
                   label="장기 정체"
                   value={`${dashboard.staleTaskCount}건`}
-                  description="진행 중 마지막 활동 후 48시간 경과"
+                  description="진행·수정 중 마지막 활동 후 48시간 경과"
                 />
                 <MetricCard
                   label="가입 대기"
@@ -274,7 +268,7 @@ export default function ManagerDashboard({ context }) {
                 <section className="dashboard-attention">
                   <h2>먼저 확인할 팀</h2>
                   <p className="field-help">
-                    마감 지연·작업 정체·승인 대기를 확인하고 필요한 지원을
+                    마감 지연·작업 정체·수정 중를 확인하고 필요한 지원을
                     준비하세요. 지연 작업이 많은 순서입니다.
                   </p>
                   <div className="dashboard-attention-list">
@@ -296,18 +290,13 @@ export default function ManagerDashboard({ context }) {
                               정체 {team.staleTaskCount}
                             </span>
                           )}
-                          {team.pendingApprovalCount > 0 && (
-                            <span className="dashboard-signal signal-approval">
-                              승인 대기 {team.pendingApprovalCount}
-                            </span>
-                          )}
                         </span>
                         <Icon name="arrow" />
                       </button>
                     ))}
                     {!attentionTeams.length && (
                       <p className="dashboard-quiet-state">
-                        현재 지연·정체·승인 대기 작업이 없습니다.
+                        현재 지연·정체 작업이 없습니다.
                       </p>
                     )}
                   </div>
@@ -478,7 +467,7 @@ export default function ManagerDashboard({ context }) {
                           <th>인원</th>
                           <th>할 일</th>
                           <th>진행</th>
-                          <th>승인 대기</th>
+                          <th>수정 중</th>
                           <th>팀 전체 진행률</th>
                           <th>지연 / 정체</th>
                           <th>산출물</th>
@@ -506,12 +495,12 @@ export default function ManagerDashboard({ context }) {
                             <td>{team.inProgressTaskCount}</td>
                             <td
                               className={
-                                team.pendingApprovalCount > 0
+                                team.revisingTaskCount > 0
                                   ? 'dashboard-count-attention'
                                   : ''
                               }
                             >
-                              {team.pendingApprovalCount}
+                              {team.revisingTaskCount}
                             </td>
                             <td>
                               <TeamProgress team={team} />
@@ -605,8 +594,8 @@ export default function ManagerDashboard({ context }) {
                           </dd>
                         </div>
                         <div>
-                          <dt>승인 대기</dt>
-                          <dd>{team.pendingApprovalCount}건</dd>
+                          <dt>수정 중</dt>
+                          <dd>{team.revisingTaskCount}건</dd>
                         </div>
                         <div>
                           <dt>마감 지연 / 장기 정체</dt>
@@ -678,9 +667,10 @@ export default function ManagerDashboard({ context }) {
                           <th>팀원</th>
                           <th>담당</th>
                           <th>진행</th>
+                          <th>수정 중</th>
                           <th>완료</th>
                           <th>현재 팀원 완료 비중</th>
-                          <th>공동 수행 설명 미작성</th>
+                          <th>수행 설명 미작성</th>
                           <th>자료 확인</th>
                         </tr>
                       </thead>
@@ -690,6 +680,7 @@ export default function ManagerDashboard({ context }) {
                             <th scope="row">{member.name}</th>
                             <td>{member.assignedTaskCount}</td>
                             <td>{member.inProgressTaskCount}</td>
+                            <td>{member.revisingTaskCount}</td>
                             <td>{member.doneTaskCount}</td>
                             <td>
                               {formatPercent(
@@ -723,15 +714,16 @@ export default function ManagerDashboard({ context }) {
                         <h3>{member.name}</h3>
                         <dl className="card-facts">
                           <div>
-                            <dt>담당 / 진행 / 완료</dt>
+                            <dt>담당 / 진행 / 수정 중 / 완료</dt>
                             <dd>
                               {member.assignedTaskCount} /{' '}
                               {member.inProgressTaskCount} /{' '}
+                              {member.revisingTaskCount} /{' '}
                               {member.doneTaskCount}건
                             </dd>
                           </div>
                           <div>
-                            <dt>공동 수행 설명 미작성</dt>
+                            <dt>수행 설명 미작성</dt>
                             <dd>
                               {member.missingContributionDescriptionCount}건
                             </dd>
@@ -778,9 +770,9 @@ export default function ManagerDashboard({ context }) {
                 최종 기여도 점수가 아닙니다.
               </p>
               <p className="field-help">
-                장기 정체는 마지막 활동 후 48시간 이상 지난 진행 작업입니다.
+                장기 정체는 마지막 활동 후 48시간 이상 지난 진행·수정 중 작업입니다.
                 기록과 수치는 검토를 돕는 정보이며 무임승차 판정이 아닙니다.
-                관리자는 작업을 대신 수정·승인하지 않습니다.
+                관리자는 작업을 대신 수정·완료하지 않습니다.
               </p>
             </details>
           </>

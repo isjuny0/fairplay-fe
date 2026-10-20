@@ -45,9 +45,9 @@
   --task-progress: var(--brand);
   --task-progress-background: var(--brand-light);
   --task-progress-text: var(--brand);
-  --task-review: #eab308;
-  --task-review-background: #fff4c2;
-  --task-review-text: #805b00;
+  --task-revising: #eab308;
+  --task-revising-background: #fff4c2;
+  --task-revising-text: #805b00;
   --task-done: #94a3b8;
   --task-done-background: #edf1f5;
   --task-done-text: #536174;

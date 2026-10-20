@@ -10,22 +10,7 @@ export function previewAiReview(state, context, entry, task, method) {
   const member = entry.members.some(
     (member) => member.userId === context.user.id,
   );
-  const reviewerId =
-    task.status === 'PENDING_APPROVAL'
-      ? state.approvals?.[task.id]?.find(
-          (approval) => approval.status === 'PENDING',
-        )?.reviewerId || task.completionReviewerId
-      : task.completionReviewerId;
-  if (
-    !member ||
-    context.manager ||
-    (method === 'GET' ? !assigned && reviewerId !== context.user.id : !assigned)
-  )
-    throw new MockError(
-      'FORBIDDEN',
-      '현재 담당자와 지정 승인자만 검토를 조회할 수 있습니다.',
-      403,
-    );
+  if (!member || !assigned) throw new MockError('FORBIDDEN', '현재 담당자만 검토를 조회·실행할 수 있습니다.', 403);
   state.reviews ||= {};
   let review = state.reviews[task.id];
   if (
@@ -66,7 +51,7 @@ export function previewAiReview(state, context, entry, task, method) {
     }
   }
   if (method === 'POST') {
-    if (!['TODO', 'IN_PROGRESS'].includes(task.status))
+    if (!['TODO', 'IN_PROGRESS', 'REVISING'].includes(task.status))
       throw new MockError(
         'TASK_LOCKED',
         '현재 작업 상태에서는 검토를 요청할 수 없습니다.',

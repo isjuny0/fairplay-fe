@@ -1,7 +1,7 @@
 export const statusLabels = {
   TODO: '할 일',
   IN_PROGRESS: '진행 중',
-  PENDING_APPROVAL: '승인 대기',
+  REVISING: '수정 중',
   DONE: '완료',
 };
 export const expectedWorkloadOptions = [
@@ -34,25 +34,22 @@ export const categoryLabels = {
 };
 export const completionBlockLabels = {
   WORK_PERIOD_CLOSED:
-    '최종 평가 마감 이후에는 작업을 변경하거나 완료 요청할 수 없습니다.',
-  DELIVERABLE_REQUIRED: '완료 요청 전에 작업에 연결된 산출물이 필요합니다.',
-  NOT_ASSIGNEE: '현재 담당자만 완료를 요청할 수 있습니다.',
-  INVALID_TASK_STATE: '진행 중인 작업만 완료를 요청할 수 있습니다.',
-  REVIEWER_UNAVAILABLE: '적격한 승인자를 다시 지정해 주세요.',
-  REVIEWER_IS_REQUESTER:
-    '승인자로 지정된 본인은 완료 요청을 할 수 없습니다. 다른 담당자가 요청하거나 승인자를 변경해 주세요.',
+    '최종 평가 마감 이후에는 작업을 변경하거나 완료 처리할 수 없습니다.',
+  DELIVERABLE_REQUIRED: '완료 처리 전에 작업에 연결된 산출물이 필요합니다.',
+  NOT_ASSIGNEE: '현재 담당자만 완료할 수 있습니다.',
+  INVALID_TASK_STATE: '진행 중·수정 중인 작업만 완료할 수 있습니다.',
   INSUFFICIENT_TEAM_MEMBERS: '승인된 팀원이 2명 이상 필요합니다.',
   CONTRIBUTION_DESCRIPTION_REQUIRED:
-    '공동 담당자 모두의 수행 설명이 필요합니다.',
+    '담당자 모두의 수행 설명이 필요합니다.',
 };
 export const isApprovedMember = (team) =>
   team?.myMembershipStatus === 'APPROVED';
 export const isTeamEditor = (team, userId) =>
-  isApprovedMember(team) && [team.leaderId, team.deputyId].includes(userId);
+  isApprovedMember(team) && team.leaderId === userId;
 export const isAssignee = (task, userId) =>
   task.assignees.some((assignment) => assignment.userId === userId);
 export const isMutable = (task) =>
-  ['TODO', 'IN_PROGRESS'].includes(task.status);
+  ['TODO', 'IN_PROGRESS', 'REVISING'].includes(task.status);
 export const teamWorkBlocked = (team) =>
   Boolean(team.workFrozen || team.workStateUnknown);
 export const canModifyTeamWork = (team) =>
@@ -64,26 +61,9 @@ export const canEditTask = (task, team, userId) =>
   canModifyTeamWork(team) &&
   (isAssignee(task, userId) || isTeamEditor(team, userId));
 export const memberRole = (member) =>
-  ({ LEADER: '리더', DEPUTY: '부리더', MEMBER: '팀원' })[member.role];
+  ({ LEADER: '리더', MEMBER: '팀원' })[member.role];
 export const memberName = (members, userId) =>
   members.find((member) => member.userId === userId)?.name || '팀원';
-export function reviewerCandidates(members, assignees) {
-  const assignedIds = new Set(assignees.map((assignment) => assignment.userId));
-  const allAssigned =
-    members.length > 0 &&
-    members.every((member) => assignedIds.has(member.userId));
-  return members
-    .filter((member) =>
-      allAssigned
-        ? ['LEADER', 'DEPUTY'].includes(member.role)
-        : !assignedIds.has(member.userId),
-    )
-    .sort(
-      (left, right) =>
-        ['LEADER', 'DEPUTY', 'MEMBER'].indexOf(left.role) -
-        ['LEADER', 'DEPUTY', 'MEMBER'].indexOf(right.role),
-    );
-}
 export function deliverablePermissions(deliverable, task, team, userId) {
   if (!isApprovedMember(team) || teamWorkBlocked(team))
     return { metadata: false, content: false, remove: false };
@@ -127,7 +107,7 @@ export function errorMessage(error) {
   if (error.code === 'REPORT_INPUT_INCOMPLETE')
     return '해당 팀의 중간·최종 평가 마감과 필수 제출을 확인해 주세요. 목록에 마감으로 표시되어도 서버의 마감 정리가 끝날 때까지 기다린 뒤 다시 시도해야 합니다.';
   if (error.code === 'REPORT_UNCALCULABLE')
-    return '계산할 승인 작업 또는 평가 입력이 부족합니다. 최종 평가 마감 전 승인된 작업과 팀원의 담당 배분을 확인해 주세요.';
+    return '계산할 완료 작업 또는 평가 입력이 부족합니다. 최종 평가 마감 전 완료된 작업과 팀원의 담당 배분을 확인해 주세요.';
   if (error.code === 'REPORT_PUBLICATION_BLOCKED')
     return '해당 팀의 두 회차 마감과 필수 평가 제출을 확인한 뒤 공개해 주세요.';
   if (error.code === 'TEAM_DELETION_REQUEST_INVALIDATED')
@@ -137,7 +117,7 @@ export function errorMessage(error) {
   if (error.code === 'TEAM_DELETION_IN_PROGRESS')
     return '팀 삭제 동의 중에는 작업을 변경할 수 없습니다. 팀 설정에서 동의 현황을 확인해 주세요.';
   if (error.code === 'TEAM_LEAVE_HAS_DEPENDENCIES')
-    return '담당 작업·승인 요청·공용 산출물이 남아 있어 탈퇴할 수 없습니다. 역할을 인계하고 자료를 정리해 주세요.';
+    return '담당 작업·공용 산출물이 남아 있어 탈퇴할 수 없습니다. 역할을 인계하고 자료를 정리해 주세요.';
   if (error.code === 'VERSION_CONFLICT')
     return `${error.message} 최신 정보를 다시 불러온 후 변경 내용을 확인해 주세요.`;
   return error.message || '요청을 처리하지 못했습니다.';

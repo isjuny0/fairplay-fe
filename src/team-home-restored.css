@@ -135,10 +135,6 @@
   background: var(--notice-coral-background);
   color: var(--notice-coral);
 }
-.team-home.team-home-restored .home-pending-icon {
-  background: #fff4c2;
-  color: #eab308;
-}
 .team-home.team-home-restored .home-action-title strong {
   color: var(--brand);
   font-size: 18px;

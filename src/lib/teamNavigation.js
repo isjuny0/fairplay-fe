@@ -7,7 +7,6 @@ export const teamNavigationGroups = [
       ['팀 홈', 'home'],
       ['작업', 'board'],
       ['산출물', 'file'],
-      ['승인 검토', 'review'],
     ],
   },
   {

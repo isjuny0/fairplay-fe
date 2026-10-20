@@ -188,7 +188,7 @@ export default function TeamSettings({
                   <span>
                     산출물 <strong>{request.deliverableCount}개</strong>
                   </span>
-                  <span>연결 파일·승인 이력 포함</span>
+                  <span>연결 파일 포함</span>
                 </div>
                 <ul
                   className="clean-list consent-list"
@@ -309,14 +309,12 @@ export default function TeamSettings({
         </div>
         <div className="settings-section-content">
           <ol className="handoff-checklist">
-            <li>담당 작업·승인 역할·팀 공용 산출물을 인계합니다.</li>
+            <li>담당 작업·팀 공용 산출물을 인계합니다.</li>
             <li>리더라면 다음 리더를 직접 선택합니다.</li>
             <li>탈퇴 조건을 확인한 뒤 팀에서 탈퇴합니다.</li>
           </ol>
           <p className="field-help">
-            담당 작업(완료 작업 포함), 승인 대기 요청·검토, 진행할 작업의 승인자
-            지정, 본인이 작성한 팀 공용 산출물이 남아 있으면 탈퇴할 수 없습니다.
-            먼저 역할을 인계하고 자료를 정리해 주세요.
+            담당 작업(완료 작업 포함)이나 본인이 등록한 팀 공용 산출물이 남아 있으면 탈퇴할 수 없습니다. 담당자를 변경하고 공용 자료를 정리해 주세요.
           </p>
           <div className="heading-actions">
             <button
@@ -380,7 +378,7 @@ export default function TeamSettings({
                 <p>
                   <strong>{team.name}</strong>과 작업{' '}
                   {confirmedRequest.taskCount}개, 산출물{' '}
-                  {confirmedRequest.deliverableCount}개 및 연결 파일·승인 이력을
+                  {confirmedRequest.deliverableCount}개 및 연결 파일을
                   완전히 삭제합니다. 복구할 수 없습니다.
                 </p>
                 <label className="confirmation-check">
@@ -403,7 +401,7 @@ export default function TeamSettings({
             {confirmationType === 'leave' && (
               <>
                 <p>
-                  탈퇴하면 이 팀의 작업·산출물·승인 화면에 접근할 수 없습니다.
+                  탈퇴하면 이 팀의 작업·산출물 화면에 접근할 수 없습니다.
                   스페이스 소속은 유지됩니다.
                 </p>
                 {isLeader && (
@@ -431,7 +429,7 @@ export default function TeamSettings({
             <ErrorNotice error={error} />
             {error?.code === 'TEAM_LEAVE_HAS_DEPENDENCIES' && (
               <p className="field-help">
-                창을 닫고 담당 작업·승인 요청·공용 산출물을 확인해 주세요. 완료
+                창을 닫고 담당 작업·공용 산출물을 확인해 주세요. 완료
                 작업에 담당자로 남아 있는 경우에도 탈퇴가 제한됩니다.
               </p>
             )}

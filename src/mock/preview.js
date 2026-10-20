@@ -1,4 +1,4 @@
-import { reviewerCandidates } from '../lib/domain.js';
+import { isMutable } from '../lib/domain.js';
 import { searchPreviewDeliverables } from './deliverableSearch.js';
 import { previewAiReview, invalidateReview } from './aiReviews.js';
 import {
@@ -18,7 +18,8 @@ import {
 
 export { isPreviewPath } from '../lib/previewPath.js';
 export function previewRole() {
-  return globalThis.localStorage?.getItem('fairplay:preview-role') || 'leader';
+  const storedRole = globalThis.localStorage?.getItem('fairplay:preview-role');
+  return Object.hasOwn(previewUsers, storedRole) ? storedRole : 'leader';
 }
 export function getPreviewUser() {
   return previewUsers[previewRole()] || previewUsers.leader;
@@ -78,7 +79,6 @@ function teamDetail(entry, context, state) {
     spaceId: entry.team.spaceId,
     name: entry.team.name,
     leaderId: entry.team.leaderId,
-    deputyId: entry.team.deputyId,
     createdAt: entry.team.createdAt,
     myMembershipStatus: membership,
     approvedMemberCount: entry.members.length,
@@ -106,20 +106,11 @@ function previewTaskResponse(state, context, entry, task) {
     new Date(finalRound.closesAt) <= new Date()
   )
     completionBlockReason = 'WORK_PERIOD_CLOSED';
-  else if (task.status !== 'IN_PROGRESS')
+  else if (!['IN_PROGRESS', 'REVISING'].includes(task.status))
     completionBlockReason = 'INVALID_TASK_STATE';
-  else if (
-    !reviewerCandidates(entry.members, task.assignees).some(
-      (member) => member.userId === task.completionReviewerId,
-    )
-  )
-    completionBlockReason = 'REVIEWER_UNAVAILABLE';
-  else if (context.user.id === task.completionReviewerId)
-    completionBlockReason = 'REVIEWER_IS_REQUESTER';
   else if (entry.members.length < 2)
     completionBlockReason = 'INSUFFICIENT_TEAM_MEMBERS';
   else if (
-    task.assignees.length > 1 &&
     task.assignees.some(
       (assignment) => !task.contributions?.[assignment.userId]?.trim(),
     )
@@ -142,7 +133,7 @@ export async function previewRequest(
   const id = Number(parts[2]);
   if (
     method !== 'GET' &&
-    (['tasks', 'deliverables', 'approvals'].includes(parts[1]) ||
+    (['tasks', 'deliverables'].includes(parts[1]) ||
       (parts[1] === 'teams' && ['tasks', 'deliverables'].includes(parts[3])))
   ) {
     requireWorkBeforeFinalDeadline(state);
@@ -211,7 +202,6 @@ export async function previewRequest(
         name: body.name,
         createdAt: new Date().toISOString(),
         leaderId: context.user.id,
-        deputyId: null,
         approvedMemberCount: 1,
       };
       state.teams[team.id] = {
@@ -265,14 +255,8 @@ export async function previewRequest(
       const nextLeaderId = url.searchParams.get('nextLeaderId');
       if (entry.team.leaderId === context.user.id && nextLeaderId) {
         entry.team.leaderId = nextLeaderId;
-        if (entry.team.deputyId === nextLeaderId) entry.team.deputyId = null;
         entry.members.forEach((member) => {
-          member.role =
-            member.userId === nextLeaderId
-              ? 'LEADER'
-              : member.userId === entry.team.deputyId
-                ? 'DEPUTY'
-                : 'MEMBER';
+          member.role = member.userId === nextLeaderId ? 'LEADER' : 'MEMBER';
         });
       }
       entry.members = entry.members.filter(
@@ -280,17 +264,6 @@ export async function previewRequest(
       );
       entry.team.approvedMemberCount = entry.members.length;
       result = null;
-    } else if (parts[3] === 'deputy') {
-      entry.team.deputyId = body.userId;
-      entry.members.forEach((member) => {
-        member.role =
-          member.userId === entry.team.leaderId
-            ? 'LEADER'
-            : member.userId === body.userId
-              ? 'DEPUTY'
-              : 'MEMBER';
-      });
-      result = teamDetail(entry, context, state);
     } else if (parts[3] === 'applications') {
       state.applications ||= [];
       if (method === 'GET')
@@ -333,7 +306,7 @@ export async function previewRequest(
         updatedAt: new Date().toISOString(),
         lastActivityAt: new Date().toISOString(),
         status: 'TODO',
-
+        completedAt: null,
         completionBlockReason: 'INVALID_TASK_STATE',
       };
       entry.tasks.push(task);
@@ -370,15 +343,6 @@ export async function previewRequest(
       entry.deliverables.push(item);
       invalidateReview(state, item.taskId);
       result = item;
-    } else if (parts[3] === 'approvals') {
-      const status = url.searchParams.get('status') || 'PENDING';
-      return entry.tasks
-        .flatMap((task) => approvalHistory(state, task))
-        .filter(
-          (approval) =>
-            approval.reviewerId === context.user.id &&
-            approval.status === status,
-        );
     } else if (parts[3] === 'deletion-request') {
       const deletion =
         state.deletion ||
@@ -439,6 +403,8 @@ export async function previewRequest(
     const task =
       entry?.tasks.find((task) => task.id === id) ||
       missing('TASK_NOT_FOUND', '작업이 없습니다.');
+    if (parts.length > 3 && !['ai-review', 'contribution'].includes(parts[3]))
+      throw new MockError('NOT_FOUND', '지원하지 않는 API입니다.', 404);
     if (parts[3] === 'ai-review') {
       const review = previewAiReview(state, context, entry, task, method);
       saveMockState(context, state);
@@ -463,69 +429,122 @@ export async function previewRequest(
             task.contributions?.[assignment.userId] ?? null,
           contributionUpdatedAt: task.updatedAt,
         })),
-        approvalStatus: approvalHistory(state, task)[0]?.status || null,
       };
-    if (parts[3] === 'approvals') return approvalHistory(state, task);
-    if (parts[3] === 'completion-requests') {
-      if (body.expectedVersion !== task.version)
-        throw new MockError(
-          'VERSION_CONFLICT',
-          '작업이 변경되었습니다. 최신 정보를 확인해 주세요.',
-        );
-      const blockReason = previewTaskResponse(
-        state,
-        context,
-        entry,
-        task,
-      ).completionBlockReason;
-      if (blockReason)
-        throw new MockError(
-          blockReason,
-          {
-            NOT_ASSIGNEE: '현재 담당자만 완료를 요청할 수 있습니다.',
-            INVALID_TASK_STATE: '진행 중인 작업만 완료 요청할 수 있습니다.',
-            REVIEWER_UNAVAILABLE: '적격한 승인자를 선택해 주세요.',
-            REVIEWER_IS_REQUESTER: '승인자와 완료 요청자는 달라야 합니다.',
-            INSUFFICIENT_TEAM_MEMBERS: '승인된 팀원이 2명 이상이어야 합니다.',
-            CONTRIBUTION_DESCRIPTION_REQUIRED:
-              '공동 담당자 전원의 수행 설명이 필요합니다.',
-            DELIVERABLE_REQUIRED: '작업에 연결된 산출물이 필요합니다.',
-          }[blockReason],
-          blockReason === 'NOT_ASSIGNEE' ? 403 : 409,
-        );
-      task.status = 'PENDING_APPROVAL';
-      state.approvals ||= {};
-      const previous = approvalHistory(state, task).filter(
-        (approval) => approval.status !== 'PENDING',
+    const assigned = task.assignees.some(
+      (assignment) => assignment.userId === context.user.id,
+    );
+    const isMember = entry.members.some(
+      (member) => member.userId === context.user.id,
+    );
+    const leader = entry.team.leaderId === context.user.id;
+    if (!isMember)
+      throw new MockError(
+        'FORBIDDEN',
+        '팀원만 작업을 변경할 수 있습니다.',
+        403,
       );
-      state.approvals[id] = [
-        {
-          id: id * 1000 + previous.length + 1,
-          taskId: id,
-          status: 'PENDING',
-          reviewerId: task.completionReviewerId,
-          requesterId: context.user.id,
-          requestedAt: new Date().toISOString(),
-          decidedAt: null,
-          reason: null,
-        },
-        ...previous,
-      ];
-      result = state.approvals[id][0];
-    } else if (parts[3] === 'contribution') {
-      task.contributions ||= {};
-      task.contributions[context.user.id] = body.contributionDescription;
-      result = task;
-    } else if (method === 'DELETE') {
-      entry.tasks = entry.tasks.filter((item) => item.id !== id);
-      result = null;
-    } else {
-      if (body.expectedVersion !== task.version)
+    if (parts[3] === 'contribution' || body.status != null) {
+      if (!assigned)
         throw new MockError(
-          'VERSION_CONFLICT',
-          '다른 사용자가 먼저 작업을 수정했습니다.',
-          409,
+          'FORBIDDEN',
+          '현재 담당자만 처리할 수 있습니다.',
+          403,
         );
+    } else if (!assigned && !leader)
+      throw new MockError(
+        'FORBIDDEN',
+        '담당자 또는 리더만 수정할 수 있습니다.',
+        403,
+      );
+    if (
+      body.expectedVersion !== undefined &&
+      body.expectedVersion !== task.version
+    )
+      throw new MockError(
+        'VERSION_CONFLICT',
+        '최신 작업을 다시 확인해 주세요.',
+      );
+    if (state.deletion?.workFrozen)
+      throw new MockError(
+        'TEAM_DELETION_IN_PROGRESS',
+        '팀 삭제 동의 중입니다.',
+      );
+    if (method !== 'DELETE' && entry.members.length < 2)
+      throw new MockError(
+        'INSUFFICIENT_TEAM_MEMBERS',
+        '팀원이 2명 이상이어야 합니다.',
+      );
+    if (parts[3] === 'contribution') {
+      if (!isMutable(task))
+        throw new MockError(
+          'TASK_LOCKED',
+          '수정 중으로 전환한 뒤 변경해 주세요.',
+        );
+      const description = body.contributionDescription?.trim() || null;
+      if (description && (description.length < 10 || description.length > 1000))
+        throw new MockError(
+          'INVALID_REQUEST',
+          '수행 설명은 10~1000자로 작성해 주세요.',
+          400,
+        );
+      task.contributions ||= {};
+      task.contributions[context.user.id] = description;
+    } else if (method === 'DELETE') {
+      if (!leader)
+        throw new MockError('FORBIDDEN', '리더만 삭제할 수 있습니다.', 403);
+      if (!isMutable(task))
+        throw new MockError(
+          'TASK_LOCKED',
+          '완료된 작업은 수정 중으로 전환해 주세요.',
+        );
+      entry.tasks = entry.tasks.filter((item) => item.id !== id);
+      entry.deliverables = entry.deliverables.filter(
+        (item) => item.taskId !== id,
+      );
+      saveMockState(context, state);
+      return null;
+    } else {
+      const { expectedVersion, ...changes } = body;
+      const changesDetails = Object.keys(changes).some(
+        (key) => key !== 'status',
+      );
+      const transitions = {
+        TODO: ['TODO', 'IN_PROGRESS'],
+        IN_PROGRESS: ['IN_PROGRESS', 'TODO', 'DONE'],
+        REVISING: ['REVISING', 'DONE'],
+        DONE: ['REVISING'],
+      };
+      if (
+        body.status != null &&
+        (!transitions[task.status].includes(body.status) ||
+          ((body.status === 'DONE' || task.status === 'DONE') &&
+            changesDetails))
+      )
+        throw new MockError(
+          'INVALID_REQUEST',
+          '허용되지 않은 작업 상태 변경입니다.',
+          400,
+        );
+      if (body.status == null && !isMutable(task))
+        throw new MockError(
+          'TASK_LOCKED',
+          '수정 중으로 전환한 뒤 변경해 주세요.',
+        );
+      if (body.status === 'DONE') {
+        const reason = previewTaskResponse(
+          state,
+          context,
+          entry,
+          task,
+        ).completionBlockReason;
+        if (reason)
+          throw new MockError(
+            reason,
+            reason === 'CONTRIBUTION_DESCRIPTION_REQUIRED'
+              ? '담당자 전원의 수행 설명이 필요합니다.'
+              : '작업에 연결된 산출물이 필요합니다.',
+          );
+      }
       const startAt = body.startAt ?? task.startAt;
       const dueAt = body.dueAt ?? task.dueAt;
       if (
@@ -543,31 +562,13 @@ export async function previewRequest(
         (body.description != null && body.description !== task.description)
       )
         invalidateReview(state, task.id);
-      Object.assign(task, body);
-
-      task.completionBlockReason =
-        task.status === 'IN_PROGRESS' ? null : 'INVALID_TASK_STATE';
-      result = task;
+      Object.assign(task, changes);
+      task.completedAt =
+        task.status === 'DONE' ? new Date().toISOString() : null;
     }
     task.version++;
     task.updatedAt = new Date().toISOString();
-  } else if (parts[1] === 'approvals') {
-    const task = Object.values(state.teams)
-      .flatMap((entry) => entry.tasks)
-      .find((task) =>
-        approvalHistory(state, task).some((approval) => approval.id === id),
-      );
-    if (!task) missing('APPROVAL_NOT_FOUND', '승인 요청이 없습니다.');
-    const history = approvalHistory(state, task);
-    const approval = history.find((approval) => approval.id === id);
-    approval.status = parts[3] === 'approve' ? 'APPROVED' : 'REJECTED';
-    approval.reason = body.reason || null;
-    approval.decidedAt = new Date().toISOString();
-    task.status = approval.status === 'APPROVED' ? 'DONE' : 'IN_PROGRESS';
-    task.version++;
-    state.approvals ||= {};
-    state.approvals[task.id] = history;
-    result = approval;
+    result = previewTaskResponse(state, context, entry, task);
   } else if (parts[1] === 'deliverables') {
     const entry = Object.values(state.teams).find((entry) =>
       entry.deliverables.some((item) => item.id === id),
@@ -644,21 +645,4 @@ export async function previewRequest(
   } else return plannedRequest(context, path, { method, body });
   saveMockState(context, state);
   return structuredClone(result);
-}
-function approvalHistory(state, task) {
-  if (state.approvals?.[task.id]) return state.approvals[task.id];
-  return ['PENDING_APPROVAL', 'DONE'].includes(task.status)
-    ? [
-        {
-          id: task.id,
-          taskId: task.id,
-          status: task.status === 'DONE' ? 'APPROVED' : 'PENDING',
-          reviewerId: task.completionReviewerId,
-          requesterId: task.assignees[0].userId,
-          requestedAt: task.updatedAt,
-          decidedAt: task.status === 'DONE' ? task.updatedAt : null,
-          reason: null,
-        },
-      ]
-    : [];
 }

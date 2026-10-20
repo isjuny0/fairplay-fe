@@ -104,14 +104,6 @@
   flex-basis: 100%;
   text-align: left;
 }
-.task-editor-form .task-reviewer-exception {
-  margin: -8px 0 0;
-  padding: 12px 0 0;
-  border-top: 1px solid var(--border);
-  font-size: var(--text-support);
-  color: var(--text-muted);
-  line-height: 1.7;
-}
 .task-editor-form .form-help {
   margin-bottom: 0;
 }

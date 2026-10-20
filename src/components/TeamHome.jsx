@@ -97,8 +97,13 @@ export default function TeamHome({ context, onNavigate }) {
                   <span>현재 등록된 작업 기준</span>
                 </div>
                 <TeamProgressRing value={summary.teamProgressRate} />
-                <ProgressBar value={summary.teamProgressRate} label="예상 작업량을 반영한 팀 진행 막대" />
-                <span className="home-progress-footnote">예상 작업량을 반영한 값 · 최종 기여도와 달라요</span>
+                <ProgressBar
+                  value={summary.teamProgressRate}
+                  label="예상 작업량을 반영한 팀 진행 막대"
+                />
+                <span className="home-progress-footnote">
+                  예상 작업량을 반영한 값 · 최종 기여도와 달라요
+                </span>
               </section>
               <section
                 className="next-action-panel home-actions"
@@ -138,39 +143,17 @@ export default function TeamHome({ context, onNavigate }) {
                     </span>
                     <Icon name="arrow" />
                   </button>
-                  <button
-                    className="home-action-link"
-                    onClick={() =>
-                      onNavigate('작업', {
-                        mine: '1',
-                        status: 'PENDING_APPROVAL',
-                      })
-                    }
-                  >
-                    <span
-                      className="home-action-icon home-pending-icon"
-                      aria-hidden="true"
-                    >
-                      <Icon name="clock" />
-                    </span>
-                    <span className="home-action-content">
-                      <span className="home-action-title">
-                        <span>내 승인 대기</span>
-                        <strong>{summary.myPendingApprovalCount}건</strong>
-                      </span>
-                    </span>
-                    <Icon name="arrow" />
-                  </button>
                 </div>
-                {summary.myOverdueTaskCount === 0 &&
-                  summary.myPendingApprovalCount === 0 && (
-                    <span className="home-all-clear">
-                      <Check size={14} aria-hidden="true" />
-                      확인할 작업 없음
-                    </span>
-                  )}
-                {(summary.myOverdueTaskCount > 0 || summary.myPendingApprovalCount > 0) && (
-                  <span className="home-action-help">진행할 작업과 검토 중인 작업을 확인하세요.</span>
+                {summary.myOverdueTaskCount === 0 && (
+                  <span className="home-all-clear">
+                    <Check size={14} aria-hidden="true" />
+                    확인할 작업 없음
+                  </span>
+                )}
+                {summary.myOverdueTaskCount > 0 && (
+                  <span className="home-action-help">
+                    지연된 담당 작업을 확인하세요.
+                  </span>
                 )}
               </section>
             </div>
@@ -256,8 +239,9 @@ export default function TeamHome({ context, onNavigate }) {
                 </summary>
                 <div className="home-definition-body">
                   <p>
-                    작업 개수가 아닌 <strong>예상 작업량</strong>을 기준으로 계산해요.
-                    아래의 ‘분량’은 예상 작업량을 뜻하며, 내 분량에는 공동 작업의 담당 비율도 반영합니다.
+                    작업 개수가 아닌 <strong>예상 작업량</strong>을 기준으로
+                    계산해요. 아래의 ‘분량’은 예상 작업량을 뜻하며, 내 분량에는
+                    공동 작업의 담당 비율도 반영합니다.
                   </p>
                   <dl>
                     <div>
@@ -290,13 +274,22 @@ export default function TeamHome({ context, onNavigate }) {
                     </div>
                   </dl>
                   <ul>
-                    <li><strong>완료 기준</strong> · ‘완료’ 상태의 작업만 완료 분량에 포함해요.</li>
-                    <li><strong>계산할 분량이 없을 때</strong> · 0% 대신 ‘계산할 작업 없음’ 또는 ‘담당 작업 없음’으로 표시해요.</li>
-                    <li><strong>마감 지연</strong> · 마감이 지난 내 할 일·진행 중 작업이에요. 승인 대기 작업은 제외해요.</li>
-                    <li><strong>승인 대기</strong> · 내가 담당한 작업 중 승인을 기다리는 건수예요.</li>
+                    <li>
+                      <strong>완료 기준</strong> · ‘완료’ 상태의 작업만
+                      포함하며, 완료 후 ‘수정 중’인 작업은 제외해요.
+                    </li>
+                    <li>
+                      <strong>계산할 분량이 없을 때</strong> · 0% 대신 ‘계산할
+                      작업 없음’ 또는 ‘담당 작업 없음’으로 표시해요.
+                    </li>
+                    <li>
+                      <strong>마감 지연</strong> · 마감이 지난 내 할 일·진행
+                      중·수정 중 작업이에요.
+                    </li>
                   </ul>
                   <div className="home-definition-warning">
-                    현재 작업 현황을 보여주는 지표예요. 실제 소요 시간이나 최종 기여도 점수, 무임승차 여부를 뜻하지 않아요.
+                    현재 작업 현황을 보여주는 지표예요. 실제 소요 시간이나 최종
+                    기여도 점수, 무임승차 여부를 뜻하지 않아요.
                   </div>
                 </div>
               </details>

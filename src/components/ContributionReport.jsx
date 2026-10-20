@@ -34,7 +34,7 @@ function CalculationDetails({ name, details }) {
           </thead>
           <tbody>
             {[
-              ['승인 작업', 'task', 70],
+              ['완료 작업', 'task', 70],
               ['중간 동료 평가', 'mid', 10],
               ['최종 동료 평가', 'final', 20],
             ].map(([label, key, weight]) => (
@@ -151,16 +151,17 @@ function ReportDetail({ context, report }) {
         <h2>어떻게 계산되나요?</h2>
         <div
           className="report-composition"
-          aria-label="승인 작업 70%, 중간 동료 평가 10%, 최종 동료 평가 20%"
+          aria-label="완료 작업 70%, 중간 동료 평가 10%, 최종 동료 평가 20%"
         >
           <span style={{ width: '70%' }}>70%</span>
           <span style={{ width: '10%' }}>10%</span>
           <span style={{ width: '20%' }}>20%</span>
         </div>
         <ul className="clean-list composition-legend">
-          <li>승인 작업 70% · 승인된 예상 작업량과 담당 배분</li>
+          <li>완료 작업 70% · 최종 평가 마감까지 완료된 예상 작업량과 담당 배분</li>
           <li>중간 동료 평가 10% · 팀 내 협업 평가 비율</li>
           <li>최종 동료 평가 20% · 팀 내 협업 평가 비율</li>
+          <li>수정 중인 작업은 완료 분량에서 제외합니다.</li>
         </ul>
         <p className="field-help">
           작업 집계 기준 {formatDate(report.cutoffAt)}. 평가자·개별 동료
@@ -281,7 +282,7 @@ export function TeamReport({ context, manager = false }) {
         <div>
           <h2>{context.team.name} 리포트</h2>
           <p>
-            승인 작업과 우리 팀 중간·최종 평가 제출을 충족하면 현재 산식으로
+            완료 작업과 우리 팀 중간·최종 평가 제출을 충족하면 현재 산식으로
             계산합니다.
           </p>
         </div>
@@ -383,7 +384,7 @@ export function TeamReport({ context, manager = false }) {
             </h2>
             <p>
               {manager
-                ? '두 평가의 마감·필수 제출과 승인 작업을 확인한 뒤 팀별 리포트를 생성해 주세요.'
+                ? '두 평가의 마감·필수 제출과 완료 작업을 확인한 뒤 팀별 리포트를 생성해 주세요.'
                 : '관리자가 최종 결과를 검토하고 공개하면 이곳에서 확인할 수 있습니다.'}
             </p>
           </EmptyState>
