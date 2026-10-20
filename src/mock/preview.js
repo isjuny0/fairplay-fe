@@ -88,6 +88,10 @@ function teamDetail(entry, context, state) {
       (membership === null || membership === 'REJECTED') &&
       !Object.values(state.teams).some((team) =>
         team.members.some((member) => member.userId === context.user.id),
+      ) &&
+      !state.applications?.some((item) =>
+        item.userId === context.user.id && item.status === 'PENDING' &&
+        state.teams[item.teamId]?.team.spaceId === entry.team.spaceId,
       ),
     canCreateTask: membership === 'APPROVED' && entry.members.length >= 2,
   };
@@ -266,12 +270,29 @@ export async function previewRequest(
       result = null;
     } else if (parts[3] === 'applications') {
       state.applications ||= [];
+      if (method === 'DELETE' && parts[4] === 'me') {
+        const application = state.applications.find((item) =>
+          item.teamId === id && item.userId === context.user.id && item.status === 'PENDING',
+        );
+        if (!application)
+          throw new MockError('APPLICATION_NOT_PENDING', '대기 중인 가입 신청이 없습니다. 최신 상태를 확인해 주세요.', 409);
+        state.applications = state.applications.filter((item) => item !== application);
+        saveMockState(context, state);
+        return null;
+      }
       if (method === 'GET')
         return state.applications.filter(
           (item) => item.teamId === id && item.status === 'PENDING',
         );
+      if (method !== 'POST')
+        throw new MockError('NOT_FOUND', '지원하지 않는 API입니다.', 404);
+      if (!teamDetail(entry, context, state).canApply)
+        throw new MockError('APPLICATION_CONFLICT', '현재 가입을 신청할 수 없습니다. 신청·소속 상태를 확인해 주세요.', 409);
+      const existing = state.applications.find((item) =>
+        item.teamId === id && item.userId === context.user.id,
+      );
       const application = {
-        id: 800 + state.applications.length,
+        id: existing?.id ?? Math.max(799, ...state.applications.map((item) => item.id)) + 1,
         teamId: id,
         userId: context.user.id,
         name: context.user.name,
@@ -280,7 +301,8 @@ export async function previewRequest(
         decidedAt: null,
         requestedAt: new Date().toISOString(),
       };
-      state.applications.push(application);
+      if (existing) Object.assign(existing, application);
+      else state.applications.push(application);
       result = application;
     } else if (parts[3] === 'tasks') {
       if (method === 'GET')

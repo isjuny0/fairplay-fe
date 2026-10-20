@@ -2170,22 +2170,31 @@ details > summary {
   position: fixed;
   z-index: 220;
   bottom: max(24px, env(safe-area-inset-bottom));
-  left: 50%;
+  left: calc(50% + var(--toast-sidebar-offset, 0px) / 2);
   transform: translateX(-50%);
   width: max-content;
-  max-width: calc(100vw - 32px);
+  max-width: calc(100vw - var(--toast-sidebar-offset, 0px) - 32px);
   display: flex;
   align-items: center;
   gap: 16px;
-  background: #173f2d;
-  color: white;
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 8px 12px 8px 20px;
   box-shadow: 0 8px 24px #18312420;
 }
 .success-toast .icon-button {
-  color: white;
+  color: inherit;
   background: transparent;
+}
+@media (min-width: 721px) {
+  body:has(:is(.workspace-sidebar, .space-directory-sidebar)) .success-toast {
+    --toast-sidebar-offset: 240px;
+  }
+  body:has(:is(.workspace-sidebar, .space-directory-sidebar).is-collapsed) .success-toast {
+    --toast-sidebar-offset: 40px;
+  }
 }
 .primary-button.danger {
   background: #a32f38;

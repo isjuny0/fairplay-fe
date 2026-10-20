@@ -37,7 +37,7 @@ export default function TeamMemberCount({ team }) {
       <button
         type="button"
         className="space-home-member-count"
-        aria-label={`${team.name} 팀원${count == null ? '' : ` ${count}명`} 보기`}
+        aria-label={`${team.name} 인원${count == null ? '' : ` ${count}명`} 보기`}
         aria-expanded={open}
         aria-describedby={open ? tooltipId : undefined}
         onFocus={() => setOpen(true)}
@@ -51,7 +51,7 @@ export default function TeamMemberCount({ team }) {
         }}
       >
         <Icon name="users" />
-        {count == null ? '팀원 확인 중' : `팀원 ${count}명`}
+        {count == null ? '인원 확인 중' : `인원 ${count}명`}
       </button>
       {open && (
         <span className="space-home-member-tooltip" id={tooltipId} role="tooltip">

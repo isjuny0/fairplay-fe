@@ -1,5 +1,6 @@
 import { apiRequest } from './client.js';
 import { sharedRead } from './sharedReads.js';
+import { isPreviewPath } from '../lib/previewPath.js';
 export const listTeams = (spaceId) =>
   sharedRead(`/api/spaces/${spaceId}/teams`, () =>
     apiRequest(`/api/spaces/${spaceId}/teams`),
@@ -26,6 +27,14 @@ export const createTeam = (spaceId, name) =>
   });
 export const requestTeamJoin = (teamId) =>
   apiRequest(`/api/teams/${teamId}/applications`, { method: 'POST' });
+const defaultCancellationPath = '/api/teams/{teamId}/applications/me';
+export const cancelTeamJoin = (teamId) => {
+  // Backend handoff contract: DELETE, no body, 204 on success. Keep preview independent.
+  const template = isPreviewPath(globalThis.window?.location?.pathname || '')
+    ? defaultCancellationPath
+    : import.meta.env?.VITE_TEAM_APPLICATION_CANCEL_PATH || defaultCancellationPath;
+  return apiRequest(template.replace('{teamId}', encodeURIComponent(teamId)), { method: 'DELETE' });
+};
 export const getTeamMembers = (teamId) =>
   sharedRead(`/api/teams/${teamId}/members`, () =>
     apiRequest(`/api/teams/${teamId}/members`),

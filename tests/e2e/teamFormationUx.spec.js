@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-async function teamFormation(page, { period = 'OPEN', joined = true } = {}) {
+async function teamFormation(page, { period = 'OPEN', joined = true, pending = true } = {}) {
   const members = [
     { userId: 'leader', name: '김하늘', role: 'LEADER' },
     { userId: 'member', name: '이지원', role: 'MEMBER' },
@@ -12,7 +12,7 @@ async function teamFormation(page, { period = 'OPEN', joined = true } = {}) {
     name: '삼위일체',
     leaderId: 'leader',
     approvedMemberCount: 3,
-    myMembershipStatus: joined ? 'APPROVED' : 'PENDING',
+    myMembershipStatus: joined ? 'APPROVED' : pending ? 'PENDING' : null,
     canApply: false,
     teamBuildingStatus: period,
   };
@@ -155,20 +155,18 @@ for (const [period, joined, reason] of [
   test(`팀 생성 제한 ${period}·소속 ${joined} 이유와 소속 상태를 표시한다`, async ({
     page,
   }) => {
-    await teamFormation(page, { period, joined });
+    await teamFormation(page, { period, joined, pending: false });
     await page.goto('/spaces/1');
     const create = page.getByRole('button', { name: '팀 만들기', exact: true });
-    await expect(page.locator('.space-home-action-hint')).toHaveCount(0);
-    await expect(create).toBeEnabled();
-    await create.click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     if (joined) {
       await expect(page.getByRole('region', { name: '내 팀', exact: true })).toContainText('삼위일체');
-      await expect(create).toHaveAccessibleDescription('이미 삼위일체 팀에 소속되어 있습니다.');
+      await expect(create).toHaveCount(0);
     } else {
+      await expect(create).toBeDisabled();
       await expect(create).toHaveAccessibleDescription(new RegExp(reason));
-      await expect(page.getByText('가입 승인 대기', { exact: true })).toBeVisible();
-      await expect(page.getByRole('region', { name: '내 팀', exact: true })).toContainText('팀에 가입해 주세요.');
+      await expect(page.getByText('가입 승인 대기', { exact: true })).toHaveCount(0);
+      await expect(page.getByRole('region', { name: '내 팀', exact: true })).toContainText('팀 만들기');
     }
   });
 }

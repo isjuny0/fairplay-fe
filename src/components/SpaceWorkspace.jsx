@@ -7,6 +7,7 @@ import useAppNavigate from '../hooks/useAppNavigate.js';
 import { getSpace } from '../api/spaces.js';
 import {
   createTeam,
+  cancelTeamJoin,
   getTeam,
   listTeams,
   requestTeamJoin,
@@ -180,6 +181,8 @@ export default function SpaceWorkspace({
     managerView,
   ]);
   const joinedTeam = teams.find(isApprovedMember);
+  const pendingTeam = teams.find((item) => item.myMembershipStatus === 'PENDING');
+  const pendingCreationMessage = '팀 가입승인 대기 상태 이므로 팀을 만들 수 없습니다. 팀을 만드려면 신청 취소 해주세요';
   const teamRole = !team
     ? ''
     : team.leaderId === user.id
@@ -206,6 +209,7 @@ export default function SpaceWorkspace({
           }[space?.teamBuildingStatus] ||
           '현재 팀을 만들 수 없습니다. 최신 팀 빌딩 상태를 확인해 주세요.';
   const apply = async (target) => {
+    if (busy || !directoryReady || teams.some((item) => item.myMembershipStatus === 'PENDING')) return;
     setBusy(true);
     setError(null);
     try {
@@ -220,8 +224,33 @@ export default function SpaceWorkspace({
       setBusy(false);
     }
   };
+  const cancelApplication = async (target) => {
+    if (busy || !directoryReady || target.myMembershipStatus !== 'PENDING') return;
+    setBusy(true);
+    setError(null);
+    try {
+      await cancelTeamJoin(target.id);
+      notify(`${target.name} 팀 가입 신청을 취소했습니다.`);
+      reloadWorkspace();
+    } catch (requestError) {
+      setError(requestError);
+    } finally {
+      setBusy(false);
+    }
+  };
   const submit = async (event) => {
     event.preventDefault();
+    if (busy || !directoryReady) return;
+    if (pendingTeam) {
+      setCreating(false);
+      notify(pendingCreationMessage);
+      return;
+    }
+    if (teamCreationRestriction) {
+      setCreating(false);
+      notify(teamCreationRestriction);
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -398,6 +427,12 @@ export default function SpaceWorkspace({
                   teamCreationRestriction={teamCreationRestriction}
                   onReload={reloadWorkspace}
                   onCreate={() => {
+                    if (busy || !directoryReady) return;
+                    if (pendingTeam) {
+                      notify(pendingCreationMessage);
+                      return;
+                    }
+                    if (teamCreationRestriction) return;
                     setError(null);
                     setName('');
                     setCreating(true);
@@ -412,6 +447,7 @@ export default function SpaceWorkspace({
                     )
                   }
                   onApply={apply}
+                  onCancelApplication={cancelApplication}
                 />
               )}
             </>

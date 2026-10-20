@@ -349,6 +349,11 @@ test('팀 빌딩 상황에서는 가입 승인 및 미가입 참여자의 팀 �
   await page.getByLabel('미리보기 역할').selectOption('participant');
   await page.goto('/preview/spaces/1');
   await page.getByRole('button', { name: '팀 만들기', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('status')).toContainText('팀 가입승인 대기 상태 이므로 팀을 만들 수 없습니다.');
+  await page.getByRole('button', { name: '삼위일체 신청 취소', exact: true }).click();
+  await expect(page.getByRole('button', { name: '삼위일체 가입 신청', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: '팀 만들기', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
 });
 for (const width of [320, 768, 1440])
