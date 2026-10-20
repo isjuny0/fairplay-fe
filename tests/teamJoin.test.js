@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cancelTeamJoin, getTeam, requestTeamJoin } from '../src/api/teams.js';
+import { cancelTeamJoin, createTeam, getTeam, requestTeamJoin } from '../src/api/teams.js';
 import { clearCsrfToken } from '../src/api/client.js';
 import { invalidateSharedReads } from '../src/api/sharedReads.js';
 import { previewContext, resetPreview, setPreviewRole } from '../src/mock/preview.js';
@@ -48,9 +48,17 @@ test('신청 대기 중에는 다른 팀에 신청할 수 없고 취소 후 다�
   assert.equal((await getTeam(2)).canApply, true);
 });
 
+test('신청 대기 중 팀 생성은 충돌이며 취소 뒤에만 생성할 수 있다', async () => {
+  await assert.rejects(createTeam(1, '새 팀'), { status: 409, code: 'APPLICATION_CONFLICT' });
+  await cancelTeamJoin(1);
+  const created = await createTeam(1, '새 팀');
+  assert.equal(created.myMembershipStatus, 'APPROVED');
+  await assert.rejects(createTeam(1, '추가 팀'), { status: 409, code: 'ALREADY_TEAM_MEMBER' });
+});
+
 test('다른 사용자의 신청과 승인된 팀 소속은 취소하지 않는다', async () => {
   setPreviewRole('leader');
-  await assert.rejects(cancelTeamJoin(1), { code: 'APPLICATION_NOT_PENDING' });
+  await assert.rejects(cancelTeamJoin(1), { code: 'APPLICATION_NOT_FOUND', status: 404 });
   assert.equal((await getTeam(1)).myMembershipStatus, 'APPROVED');
   setPreviewRole('participant');
   assert.equal((await getTeam(1)).myMembershipStatus, 'PENDING');
@@ -79,6 +87,48 @@ test('기간 종료 후 취소는 가능하지만 새 가입 신청은 계속 �
   assert.equal((await getTeam(1)).myMembershipStatus, null);
   assert.equal((await getTeam(2)).canApply, false);
 });
+
+for (const status of ['APPROVED', 'REJECTED']) {
+  test(`${status} 신청 취소는 409이며 기존 신청을 보존한다`, async () => {
+    const context = previewContext();
+    const state = getMockState(context);
+    state.applications[0].status = status;
+    saveMockState(context, state);
+    await assert.rejects(cancelTeamJoin(1), { status: 409, code: 'APPLICATION_ALREADY_DECIDED' });
+    assert.equal((await getTeam(1)).myMembershipStatus, status);
+    assert.equal(getMockState(context).applications[0].status, status);
+  });
+}
+
+test('취소는 204에 해당하는 빈 결과이며 반복 취소는 404, 재신청은 새 식별자를 사용한다', async () => {
+  assert.equal(await cancelTeamJoin(1), null);
+  await assert.rejects(cancelTeamJoin(1), { status: 404, code: 'APPLICATION_NOT_FOUND' });
+  const first = await requestTeamJoin(1);
+  await cancelTeamJoin(1);
+  const second = await requestTeamJoin(1);
+  assert.notEqual(first.id, second.id);
+  assert.equal(second.status, 'PENDING');
+  assert.equal(second.decidedAt, null);
+});
+
+for (const membership of ['APPROVED', 'PENDING']) {
+  test(`다른 스페이스의 ${membership}는 현재 스페이스 신청을 막지 않는다`, async () => {
+    const context = previewContext();
+    const state = getMockState(context);
+    state.applications = [];
+    state.teams[3] = structuredClone(state.teams[2]);
+    state.teams[3].team.id = 3;
+    state.teams[3].team.spaceId = 2;
+    state.teams[3].members = membership === 'APPROVED'
+      ? [{ userId: context.user.id, name: context.user.name, role: 'MEMBER' }]
+      : [];
+    if (membership === 'PENDING')
+      state.applications.push({ id: 900, teamId: 3, userId: context.user.id, status: 'PENDING' });
+    saveMockState(context, state);
+    assert.equal((await getTeam(1)).canApply, true);
+    assert.equal((await requestTeamJoin(1)).status, 'PENDING');
+  });
+}
 
 test('실제 취소 요청은 세션과 CSRF를 포함하고 본문 없이 DELETE하며 204를 처리한다', async () => {
   globalThis.window.location.pathname = '/spaces/1';

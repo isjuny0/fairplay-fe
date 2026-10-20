@@ -247,6 +247,75 @@ test('취소 API가 아직 없으면 성공으로 표시하거나 다른 신청 
   ]);
 });
 
+for (const action of ['apply', 'cancel']) {
+  test(`${action} 요청 중 서버 소속이 바뀌면 중복 요청 없이 최신 팀을 표시한다`, async ({ page }) => {
+    const fixture = await spaceHome(page, { joined: false });
+    await page.goto('/spaces/1');
+    if (action === 'cancel') {
+      await page.getByRole('button', { name: '파도 가입 신청', exact: true }).click();
+      await expect(page.getByRole('button', { name: '파도 신청 취소', exact: true })).toBeEnabled();
+    }
+    let attempts = 0;
+    const message = '이미 팀에 가입되어 있습니다. 최신 가입 상태를 확인해 주세요.';
+    await page.route(`**/api/teams/2/applications${action === 'cancel' ? '/me' : ''}`, (route) => {
+      attempts++;
+      fixture.teams[1].myMembershipStatus = 'APPROVED';
+      fixture.teams.forEach((team) => { team.canApply = false; });
+      return route.fulfill({ status: 409, json: { code: action === 'cancel' ? 'APPLICATION_ALREADY_DECIDED' : 'ALREADY_TEAM_MEMBER', message } });
+    });
+    await page.getByRole('button', { name: `파도 ${action === 'cancel' ? '신청 취소' : '가입 신청'}`, exact: true }).click();
+    const own = page.getByRole('region', { name: '내 팀', exact: true });
+    await expect(own).toContainText('파도');
+    await expect(page.locator('.success-toast')).toHaveText(new RegExp(message));
+    await expect(page.getByRole('button', { name: '삼위일체 가입 신청', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: '파도 신청 취소', exact: true })).toHaveCount(0);
+    expect(attempts).toBe(1);
+  });
+}
+
+test('팀 생성 중 다른 신청이 생겨 충돌하면 생성 창을 닫고 가입 대기 상태를 표시한다', async ({ page }) => {
+  const fixture = await spaceHome(page, { joined: false });
+  await page.goto('/spaces/1');
+  await page.getByRole('button', { name: '팀 만들기', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '팀 만들기' });
+  await dialog.getByLabel('팀 이름').fill('새 팀');
+  let attempts = 0;
+  await page.route('**/api/spaces/1/teams', (route) => {
+    if (route.request().method() !== 'POST') return route.fallback();
+    attempts++;
+    fixture.teams[1].myMembershipStatus = 'PENDING';
+    fixture.teams.forEach((team) => { team.canApply = false; });
+    return route.fulfill({ status: 409, json: { code: 'APPLICATION_CONFLICT', message: '대기 중인 가입 신청이 있습니다.' } });
+  });
+  await dialog.getByRole('button', { name: '팀 만들기', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole('region', { name: '내 팀', exact: true }).getByRole('status')).toContainText('팀 가입승인 대기 상태 이므로');
+  await expect(page.getByRole('button', { name: '파도 신청 취소', exact: true })).toBeEnabled();
+  await expect(page.locator('.success-toast')).toContainText('대기 중인 가입 신청이 있습니다.');
+  expect(attempts).toBe(1);
+});
+
+test('다른 창에서 이미 취소되어 404 APPLICATION_NOT_FOUND이면 최신 상태를 조회한다', async ({ page }) => {
+  const fixture = await spaceHome(page, { joined: false });
+  await page.goto('/spaces/1');
+  await page.getByRole('button', { name: '파도 가입 신청', exact: true }).click();
+  const cancel = page.getByRole('button', { name: '파도 신청 취소', exact: true });
+  await expect(cancel).toBeEnabled();
+  let attempts = 0;
+  await page.route('**/api/teams/2/applications/me', (route) => {
+    attempts++;
+    fixture.teams[1].myMembershipStatus = null;
+    fixture.teams[1].canApply = true;
+    return route.fulfill({ status: 404, json: { code: 'APPLICATION_NOT_FOUND', message: '가입 신청을 찾을 수 없습니다.' } });
+  });
+  await cancel.click();
+  await expect(page.getByRole('button', { name: '파도 가입 신청', exact: true })).toBeEnabled();
+  await expect(page.getByRole('region', { name: '내 팀', exact: true }).getByRole('button', { name: '팀 만들기', exact: true })).toBeEnabled();
+  await expect(page.locator('.success-toast')).toContainText('가입 신청을 찾을 수 없습니다.');
+  await expect(page.locator('.success-toast')).not.toContainText('가입 신청을 취소했습니다.');
+  expect(attempts).toBe(1);
+});
+
 for (const width of [320, 1440]) {
   test(`${width}px 미리보기에서 신청 취소 후 다른 팀에 신청하고 새로고침해도 상태를 유지한다`, async ({ page }) => {
     const apiRequests = [];

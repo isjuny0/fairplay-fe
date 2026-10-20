@@ -209,7 +209,7 @@ export default function SpaceWorkspace({
           }[space?.teamBuildingStatus] ||
           '현재 팀을 만들 수 없습니다. 최신 팀 빌딩 상태를 확인해 주세요.';
   const apply = async (target) => {
-    if (busy || !directoryReady || teams.some((item) => item.myMembershipStatus === 'PENDING')) return;
+    if (busy || !directoryReady || joinedTeam || pendingTeam || !buildingOpen || !target.canApply) return;
     setBusy(true);
     setError(null);
     try {
@@ -219,7 +219,12 @@ export default function SpaceWorkspace({
       );
       reloadWorkspace();
     } catch (requestError) {
-      setError(requestError);
+      if (requestError.status === 409) {
+        notify(requestError.message);
+        reloadWorkspace();
+      } else {
+        setError(requestError);
+      }
     } finally {
       setBusy(false);
     }
@@ -233,7 +238,13 @@ export default function SpaceWorkspace({
       notify(`${target.name} 팀 가입 신청을 취소했습니다.`);
       reloadWorkspace();
     } catch (requestError) {
-      setError(requestError);
+      if (requestError.status === 409 ||
+          (requestError.status === 404 && requestError.code === 'APPLICATION_NOT_FOUND')) {
+        notify(requestError.message);
+        reloadWorkspace();
+      } else {
+        setError(requestError);
+      }
     } finally {
       setBusy(false);
     }
@@ -260,7 +271,13 @@ export default function SpaceWorkspace({
       notify('팀을 생성했습니다. 팀원을 모집해 작업을 시작하세요.');
       reloadWorkspace();
     } catch (requestError) {
-      setError(requestError);
+      if (requestError.status === 409) {
+        setCreating(false);
+        notify(requestError.message);
+        reloadWorkspace();
+      } else {
+        setError(requestError);
+      }
     } finally {
       setBusy(false);
     }
