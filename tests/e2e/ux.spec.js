@@ -563,7 +563,7 @@ test('모바일 작업 입력은 첫 오류로 초점을 옮기고 배분을 고
   ).toBeVisible();
 });
 
-test('스페이스 종료 시각 오류를 항목에서 수정하면 관리자 기간 설정 안내로 이어진다', async ({
+test('스페이스 종료 시각 오류를 수정한 뒤 스페이스 관리에서 기간을 설정한다', async ({
   page,
 }) => {
   await openPreview(page, '/main');
@@ -583,10 +583,10 @@ test('스페이스 종료 시각 오류를 항목에서 수정하면 관리자 �
   await dialog.getByRole('button', { name: '만들기', exact: true }).click();
   await expect(page).toHaveURL(/spaces\/3$/);
   await expect(
-    page.getByText('아직 생성된 팀이 없습니다.', { exact: true }),
+    page.getByText('아직 만들어진 팀이 없습니다.', { exact: true }),
   ).toBeVisible();
   await page
-    .getByRole('button', { name: '팀 빌딩 기간 설정', exact: true })
+    .getByRole('button', { name: '스페이스 관리', exact: true })
     .click();
   await expect(
     page.getByRole('heading', { name: '스페이스 관리', exact: true }),

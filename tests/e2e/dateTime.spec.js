@@ -309,7 +309,7 @@ test('시간 선택 방향키와 Escape, 날짜·시간 선택기 상호 닫기,
   ).toBeVisible();
 });
 
-test('공통 입력창의 글씨·높이·모서리와 페이지 제목 크기는 같은 기준을 사용한다', async ({
+test('공통 입력창 기준과 스페이스 제목 크기를 유지한다', async ({
   page,
 }) => {
   const dialog = await openCreate(page);
@@ -320,8 +320,10 @@ test('공통 입력창의 글씨·높이·모서리와 페이지 제목 크기�
     await expect(input).toHaveCSS('border-radius', '6px');
   }
   await dialog.getByRole('button', { name: '취소', exact: true }).click();
+  const spaceTitleSize = await page.locator('.main-content h1').evaluate((element) => getComputedStyle(element).fontSize);
+  await page.goto('/preview/spaces/1');
+  await expect(page.locator('.main-content h1')).toHaveCSS('font-size', spaceTitleSize);
   for (const path of [
-    '/preview/main',
     '/preview/spaces/1/teams/1',
     '/preview/spaces/1/teams/1/tasks',
     '/preview/spaces/1/teams/1/settings',
