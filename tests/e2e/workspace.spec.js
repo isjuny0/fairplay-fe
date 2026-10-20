@@ -371,13 +371,13 @@ test('데스크톱 사이드바를 접었다가 다시 펼칠 수 있다', async
   const backLink = page.getByRole('button', { name: '내 스페이스' });
 
   const backLinkBox = await backLink.boundingBox();
-  const toggleBox = await toggle.boundingBox();
-  expect(backLinkBox.x + backLinkBox.width).toBeLessThanOrEqual(toggleBox.x);
+  const expandedToggleBox = await toggle.boundingBox();
+  expect(backLinkBox.x + backLinkBox.width).toBeLessThanOrEqual(expandedToggleBox.x);
   expect(
     Math.abs(
       backLinkBox.y +
         backLinkBox.height / 2 -
-        (toggleBox.y + toggleBox.height / 2),
+        (expandedToggleBox.y + expandedToggleBox.height / 2),
     ),
   ).toBeLessThanOrEqual(1);
 
@@ -390,6 +390,8 @@ test('데스크톱 사이드바를 접었다가 다시 펼칠 수 있다', async
   await expect
     .poll(() => page.locator('.workspace').evaluate((node) => getComputedStyle(node).paddingLeft))
     .toBe('40px');
+  const collapsedToggleBox = await toggle.boundingBox();
+  expect(collapsedToggleBox.y).toBe(expandedToggleBox.y);
 
   await toggle.click();
   await expect(sidebar).not.toHaveClass(/is-collapsed/);

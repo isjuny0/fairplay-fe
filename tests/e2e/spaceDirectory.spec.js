@@ -130,6 +130,7 @@ test('데스크톱 스페이스 사이드바를 접었다가 다시 펼칠 수 �
   const layout = page.locator('.space-directory-layout');
 
   await expect(toggle).toBeVisible();
+  const expandedToggleBox = await toggle.boundingBox();
   await toggle.click();
   await expect(sidebar).toHaveClass(/is-collapsed/);
   await expect(rail).toHaveClass(/is-collapsed/);
@@ -137,6 +138,8 @@ test('데스크톱 스페이스 사이드바를 접었다가 다시 펼칠 수 �
     /is-collapsed/,
   );
   await expect(layout).toHaveCSS('padding-left', '40px');
+  const collapsedToggleBox = await toggle.boundingBox();
+  expect(collapsedToggleBox.y).toBe(expandedToggleBox.y);
 
   await toggle.click();
   await expect(sidebar).not.toHaveClass(/is-collapsed/);
