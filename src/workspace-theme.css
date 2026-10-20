@@ -57,9 +57,33 @@
   border-radius: 6px;
 }
 
+.sidebar-toggle-glyph {
+  position: relative;
+  display: block;
+  width: 18px;
+  height: 14px;
+  border: 1.5px solid currentColor;
+  border-radius: 4px;
+}
+.sidebar-toggle-glyph::after {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 4px;
+  width: 1.5px;
+  border-radius: 2px;
+  background: currentColor;
+  content: '';
+  transition: left 180ms ease;
+}
+.sidebar-toggle-glyph.is-expanded::after {
+  left: 11px;
+}
+
 .context-dot {
   background: #86ae9b;
 }
+
 
 .sidebar {
   background: var(--surface-secondary);

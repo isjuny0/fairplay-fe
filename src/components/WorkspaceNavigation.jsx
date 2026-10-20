@@ -12,6 +12,16 @@ import Icon from './Icon.jsx';
 import { ErrorNotice } from './ui.jsx';
 import WorkspaceContextSelect from './WorkspaceContextSelect.jsx';
 
+const sidebarPreferenceKey = 'fairplay:workspace-sidebar-collapsed';
+
+function readSidebarPreference() {
+  try {
+    return window.localStorage.getItem(sidebarPreferenceKey) === 'true';
+  } catch {
+    return false;
+  }
+}
+
 export default function WorkspaceNavigation({
   space,
   spaceId,
@@ -25,8 +35,26 @@ export default function WorkspaceNavigation({
 }) {
   const navigate = useAppNavigate();
   const [open, setOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(readSidebarPreference);
+  const [desktopLayout, setDesktopLayout] = useState(
+    () => window.matchMedia('(min-width: 721px)').matches,
+  );
   const location = useLocation();
   useEffect(() => setOpen(false), [location.pathname]);
+  useEffect(() => {
+    const query = window.matchMedia('(min-width: 721px)');
+    const updateLayout = () => setDesktopLayout(query.matches);
+    updateLayout();
+    query.addEventListener('change', updateLayout);
+    return () => query.removeEventListener('change', updateLayout);
+  }, []);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(sidebarPreferenceKey, String(collapsed));
+    } catch {
+      // Keep the control usable when browser storage is unavailable.
+    }
+  }, [collapsed]);
   const spaces = useSpaceList(user.id);
   const isManager = space?.myRole === 'MANAGER';
   const accessibleTeams = teams.filter(
@@ -50,10 +78,14 @@ export default function WorkspaceNavigation({
       </span>
     </button>
   );
+  const sidebarCollapsed = desktopLayout && collapsed;
   return (
-    <aside
-      className={`sidebar workspace-sidebar ${open ? 'is-mobile-open' : ''}`}
-    >
+    <>
+      <aside
+        className={`sidebar workspace-sidebar ${open ? 'is-mobile-open' : ''} ${sidebarCollapsed ? 'is-collapsed' : ''}`}
+        aria-hidden={sidebarCollapsed || undefined}
+        inert={sidebarCollapsed ? '' : undefined}
+      >
       <button
         className="mobile-space-toggle"
         aria-expanded={open}
@@ -217,6 +249,25 @@ export default function WorkspaceNavigation({
           )}
         </div>
       </nav>
-    </aside>
+      </aside>
+      <div
+        className={`workspace-sidebar-rail ${sidebarCollapsed ? 'is-collapsed' : ''}`}
+      >
+        <button
+          className="workspace-sidebar-toggle"
+          type="button"
+          aria-controls="workspace-navigation"
+          aria-expanded={!sidebarCollapsed}
+          aria-label={sidebarCollapsed ? '사이드바 펼치기' : '사이드바 접기'}
+          title={sidebarCollapsed ? '사이드바 펼치기' : '사이드바 접기'}
+          onClick={() => setCollapsed((value) => !value)}
+        >
+          <span
+            className={`sidebar-toggle-glyph ${sidebarCollapsed ? 'is-collapsed' : 'is-expanded'}`}
+            aria-hidden="true"
+          />
+        </button>
+      </div>
+    </>
   );
 }

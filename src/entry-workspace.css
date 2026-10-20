@@ -19,12 +19,75 @@
   inset: var(--header-height) auto 0 0;
   z-index: 10;
   width: 240px;
-  padding: 28px 14px 20px;
+  padding: 50px 14px 20px;
   overflow-y: auto;
   border-right: 1px solid var(--border);
   background: #f8f9fa;
   scrollbar-width: thin;
   overscroll-behavior-y: contain;
+}
+@media (min-width: 721px) {
+  .space-directory-layout {
+    transition: padding-left 180ms ease;
+  }
+  .space-directory-layout:has(> .space-directory-sidebar.is-collapsed) {
+    padding-left: 40px;
+  }
+  .app-shell:has(.space-directory-sidebar) > .preview-toolbar {
+    transition: margin-left 180ms ease;
+  }
+  .app-shell:has(.space-directory-sidebar.is-collapsed) > .preview-toolbar {
+    margin-left: 40px;
+  }
+  .space-directory-sidebar {
+    transition: transform 180ms ease;
+    will-change: transform;
+  }
+  .space-directory-sidebar.is-collapsed {
+    transform: translateX(-100%);
+  }
+  .space-directory-sidebar-rail {
+    display: contents;
+  }
+  .space-directory-sidebar-rail.is-collapsed {
+    position: fixed;
+    inset: var(--header-height) auto 0 0;
+    z-index: 11;
+    display: block;
+    width: 40px;
+    border-right: 1px solid var(--border);
+    background: var(--surface-secondary);
+  }
+  .space-directory-sidebar-toggle {
+    position: fixed;
+    top: calc(var(--header-height) + 12px);
+    left: 202px;
+    z-index: 11;
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--text-muted);
+    transition: left 180ms ease, background-color 180ms ease, color 180ms ease;
+  }
+  .space-directory-sidebar-rail.is-collapsed .space-directory-sidebar-toggle {
+    position: absolute;
+    top: 12px;
+    left: 7px;
+    background: transparent;
+  }
+  .space-directory-sidebar-toggle:hover {
+    background: var(--surface);
+    color: var(--text-primary);
+  }
+  .space-directory-sidebar-toggle:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
 }
 .directory-sidebar-heading {
   display: flex;

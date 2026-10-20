@@ -18,6 +18,7 @@ import {
   ClipboardCheck,
   MessageSquareText,
   ChartNoAxesCombined,
+  PanelLeft,
 } from "lucide-react";
 
 const icons = {
@@ -30,6 +31,9 @@ const icons = {
   review: ClipboardCheck,
   feedback: MessageSquareText,
   chart: ChartNoAxesCombined,
+  sidebar: PanelLeft,
+  'sidebar-close': ArrowLeft,
+  'sidebar-open': ArrowRight,
   settings: SlidersHorizontal,
   arrow: ArrowRight,
   back: ArrowLeft,
