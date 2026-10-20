@@ -3,12 +3,18 @@ import DateTimeInput from './DateTimeInput.jsx';
 import SpaceDirectorySidebar from './SpaceDirectorySidebar.jsx';
 import SpaceRoleBadge from './SpaceRoleBadge.jsx';
 import { currentDateTime } from '../lib/dateTime.js';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { createSpace, joinSpace } from '../api/spaces.js';
+import { listTeamsWithMembership } from '../api/teams.js';
 import useSpaceList from '../hooks/useSpaceList.js';
 import { useInteractions } from '../hooks/useInteractions.js';
-import { buildingLabels, formatDate, fromDateInput } from '../lib/domain.js';
+import {
+  buildingLabels,
+  formatDate,
+  fromDateInput,
+  isApprovedMember,
+} from '../lib/domain.js';
 import {
   collectFieldErrors,
   focusFirstFieldError,
@@ -25,6 +31,29 @@ import {
 export default function Spaces({ onSelect, user }) {
   const { notify, clearChanges } = useInteractions();
   const resource = useSpaceList(user.id);
+  const [openingSpaceId, setOpeningSpaceId] = useState(null);
+  const [shortcutError, setShortcutError] = useState(null);
+  const shortcutRequest = useRef(0);
+  useEffect(() => () => {
+    shortcutRequest.current += 1;
+  }, []);
+  const openShortcut = async (spaceId) => {
+    if (openingSpaceId != null) return;
+    const request = ++shortcutRequest.current;
+    setOpeningSpaceId(spaceId);
+    setShortcutError(null);
+    try {
+      const teams = await listTeamsWithMembership(spaceId);
+      if (request !== shortcutRequest.current) return;
+      const joinedTeam = teams.find(isApprovedMember);
+      onSelect(spaceId, joinedTeam?.id);
+    } catch (error) {
+      if (request === shortcutRequest.current)
+        setShortcutError({ error, spaceId });
+    } finally {
+      if (request === shortcutRequest.current) setOpeningSpaceId(null);
+    }
+  };
   const [searchParams, setSearchParams] = useSearchParams();
   const search = searchParams.get('q') || '';
   const requestedRole = searchParams.get('role');
@@ -134,6 +163,7 @@ export default function Spaces({ onSelect, user }) {
   return (
     <div className="space-directory-layout">
       <SpaceDirectorySidebar
+        userId={user.id}
         spaces={resource.data || []}
         loading={resource.loading}
         unavailable={Boolean(resource.error)}
@@ -141,7 +171,8 @@ export default function Spaces({ onSelect, user }) {
         onRoleChange={(nextRole) => updateFilters({ role: nextRole })}
         onCreate={() => open('create')}
         onJoin={() => open('join')}
-        onSelect={onSelect}
+        onSelect={openShortcut}
+        openingSpaceId={openingSpaceId}
       />
       <main className="main-content spaces-main">
         <section className="space-directory stack">
@@ -161,6 +192,10 @@ export default function Spaces({ onSelect, user }) {
               </button>
             </div>
           </div>
+          <ErrorNotice
+            error={shortcutError?.error}
+            onRetry={() => openShortcut(shortcutError.spaceId)}
+          />
           <ResourceState resource={resource} label="스페이스 목록">
             {resource.data?.length ? (
               <section className="directory-section" aria-label="스페이스 목록">

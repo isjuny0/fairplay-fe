@@ -104,7 +104,7 @@ test('목록 선택은 디자인과 선택 표시를 유지하고 취소하면 �
   await expect(list).toBeHidden();
 });
 
-test('공간·팀 선택과 이전 사이드바 메뉴의 좌우 여백을 맞춘다', async ({
+test('공간·팀 선택의 좌우 여백을 유지하고 뒤로가기는 접기 버튼과 겹치지 않는다', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -131,7 +131,9 @@ test('공간·팀 선택과 이전 사이드바 메뉴의 좌우 여백을 맞�
     });
   expect(workspacePadding).toEqual(directoryPadding);
   expect(workspace.x).toBe(directory.x);
-  expect(workspace.width).toBe(directory.width);
+  const toggle = await page.locator('.workspace-sidebar-toggle').boundingBox();
+  expect(workspace.width).toBeLessThan(directory.width);
+  expect(workspace.x + workspace.width).toBeLessThanOrEqual(toggle.x);
   expect(
     await page
       .locator('.workspace-back-link')
@@ -140,7 +142,7 @@ test('공간·팀 선택과 이전 사이드바 메뉴의 좌우 여백을 맞�
   for (const picker of await page.locator('.workspace-context-trigger').all()) {
     const box = await picker.boundingBox();
     expect(box.x).toBe(workspace.x);
-    expect(box.width).toBe(workspace.width);
+    expect(box.width).toBe(directory.width);
   }
 });
 

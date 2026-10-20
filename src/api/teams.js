@@ -6,6 +6,19 @@ export const listTeams = (spaceId) =>
   );
 export const getTeam = (teamId) =>
   sharedRead(`/api/teams/${teamId}`, () => apiRequest(`/api/teams/${teamId}`));
+export async function listTeamsWithMembership(spaceId) {
+  const teams = await listTeams(spaceId);
+  // List responses can omit membership; resolve it from the team detail API.
+  return Promise.all(
+    teams.map((team) =>
+      Object.hasOwn(team, 'myMembershipStatus') &&
+      (team.myMembershipStatus !== 'APPROVED' ||
+        Object.hasOwn(team, 'leaderId'))
+        ? team
+        : getTeam(team.id),
+    ),
+  );
+}
 export const createTeam = (spaceId, name) =>
   apiRequest(`/api/spaces/${spaceId}/teams`, {
     method: 'POST',

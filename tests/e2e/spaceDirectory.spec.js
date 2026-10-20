@@ -10,9 +10,9 @@ const sidebarSpaces = [
   },
 ];
 
-async function directory(page, { spaces = sidebarSpaces, status = 200 } = {}) {
+async function directory(page, { spaces = sidebarSpaces, status = 200, teams = [] } = {}) {
   await page.route('**/api/spaces/*/teams', (route) =>
-    route.fulfill({ json: [] }),
+    route.fulfill({ json: teams }),
   );
   await page.route('**/api/me', (route) =>
     route.fulfill({ json: { id: 'user-1', name: '박선우' } }),
@@ -165,7 +165,53 @@ test('사이드바 바로가기는 조회한 스페이스의 실제 주소로 �
   ).toBeVisible();
 });
 
-test('미리보기 사이드바는 서버 요청 없이 미리보기 스페이스로 이동한다', async ({
+for (const membership of ['APPROVED', 'PENDING', 'REJECTED', null]) {
+  test(`로그인 바로가기는 상세에서 가입 상태 ${membership}를 확인해 이동한다`, async ({ page }) => {
+    const team = {
+      id: 10, spaceId: 1, name: '내 프로젝트 팀', leaderId: 'user-1',
+      myMembershipStatus: membership, approvedMemberCount: 3,
+    };
+    await page.route('**/api/spaces/1', route => route.fulfill({ json: sidebarSpaces[0] }));
+    await page.route('**/api/teams/10', route => route.fulfill({ json: team }));
+    await page.route('**/api/teams/20', route => route.fulfill({ json: {
+      id: 20, spaceId: 1, name: '다른 팀', leaderId: 'other', myMembershipStatus: null,
+    } }));
+    await page.route('**/api/teams/10/members', route => route.fulfill({ json: [{ userId: 'user-1', name: '박선우', role: 'LEADER' }] }));
+    await page.route('**/api/teams/10/deletion-request', route => route.fulfill({ status: 404, json: { code: 'TEAM_DELETION_REQUEST_NOT_FOUND' } }));
+    await page.route('**/api/teams/10/my-work-summary', route => route.fulfill({ json: {
+      teamProgressRate: 0, myAssignedShare: 0, myCompletedContributionRate: 0,
+      myTaskCompletionRate: null, myOverdueTaskCount: 0,
+    } }));
+    const sidebar = await directory(page, { teams: [
+      { id: 20, name: '다른 팀', leaderId: 'other', myMembershipStatus: null },
+      { id: 10, name: '팀 목록 요약' },
+    ] });
+    const shortcut = sidebar.getByRole('button', {
+      name: membership === 'APPROVED' ? '팀 바로가기: 내 프로젝트 팀' : '스페이스 바로가기: 서비스 디자인',
+      exact: true,
+    });
+    await expect(shortcut.locator('.directory-shortcut-name')).toHaveText(membership === 'APPROVED' ? team.name : sidebarSpaces[0].name);
+    await expect(shortcut.locator('.directory-shortcut-symbol')).toHaveText(membership === 'APPROVED' ? '내' : '서');
+    await shortcut.click();
+    await expect(page).toHaveURL(membership === 'APPROVED' ? /\/spaces\/1\/teams\/10$/ : /\/spaces\/1$/);
+    await expect(page.getByRole('heading', { name: membership === 'APPROVED' ? team.name : sidebarSpaces[0].name, exact: true })).toBeVisible();
+  });
+}
+
+test('바로가기 조회 실패 시 목록에 머물고 다시 시도할 수 있다', async ({ page }) => {
+  const sidebar = await directory(page);
+  await expect(page.locator('.space-list .role-badge').first()).toHaveText('참여자');
+  await page.route('**/api/spaces/1/teams', route => route.fulfill({ status: 503, json: { code: 'UNAVAILABLE', message: '이동할 팀을 확인하지 못했습니다.' } }));
+  await sidebar.getByRole('button', { name: '스페이스 바로가기: 서비스 디자인', exact: true }).click();
+  await expect(page).toHaveURL(/\/main$/);
+  await expect(page.getByRole('alert')).toContainText('이동할 팀을 확인하지 못했습니다.');
+  await page.route('**/api/spaces/1/teams', route => route.fulfill({ json: [] }));
+  await page.route('**/api/spaces/1', route => route.fulfill({ json: sidebarSpaces[0] }));
+  await page.getByRole('alert').getByRole('button', { name: '다시 불러오기' }).click();
+  await expect(page).toHaveURL(/\/spaces\/1$/);
+});
+
+test('미리보기 사이드바는 서버 요청 없이 내 팀 홈으로 바로 이동한다', async ({
   page,
 }) => {
   const calls = [];
@@ -177,15 +223,37 @@ test('미리보기 사이드바는 서버 요청 없이 미리보기 스페이�
   const sidebar = page.getByRole('complementary', {
     name: '스페이스 사이드바',
   });
+  await expect(sidebar.locator('.directory-shortcut-name')).toHaveText('삼위일체');
+  await expect(sidebar.locator('.directory-shortcut-symbol')).toHaveText('삼');
   await sidebar
     .getByRole('button', {
-      name: '스페이스 바로가기: 2026 서비스 디자인 프로젝트',
+      name: '팀 바로가기: 삼위일체',
       exact: true,
     })
     .click();
-  await expect(page).toHaveURL(/\/preview\/spaces\/1$/);
+  await expect(page).toHaveURL(/\/preview\/spaces\/1\/teams\/1$/);
   expect(calls).toEqual([]);
 });
+
+for (const [role, destination] of [
+  ['member', /\/preview\/spaces\/1\/teams\/1$/],
+  ['teammate', /\/preview\/spaces\/1\/teams\/1$/],
+  ['participant', /\/preview\/spaces\/1$/],
+  ['manager', /\/preview\/spaces\/1$/],
+]) {
+  test(`${role} 미리보기 바로가기는 본인 가입 상태에 맞는 홈으로 이동한다`, async ({ page }) => {
+    await page.addInitScript(role => localStorage.setItem('fairplay:preview-role', role), role);
+    await page.goto('/preview/main');
+    await page.getByRole('complementary', { name: '스페이스 사이드바' })
+      .getByRole('button', {
+        name: ['member', 'teammate'].includes(role)
+          ? '팀 바로가기: 삼위일체'
+          : '스페이스 바로가기: 2026 서비스 디자인 프로젝트',
+        exact: true,
+      }).click();
+    await expect(page).toHaveURL(destination);
+  });
+}
 
 test('빈 목록이나 조회 오류에서는 사이드바에 가짜 스페이스를 표시하지 않는다', async ({
   page,
@@ -195,12 +263,12 @@ test('빈 목록이나 조회 오류에서는 사이드바에 가짜 스페이�
     sidebar.getByText('참여한 스페이스가 여기에 표시됩니다.'),
   ).toBeVisible();
   await expect(
-    sidebar.getByRole('button', { name: /^스페이스 바로가기:/ }),
+    sidebar.getByRole('button', { name: /^(팀|스페이스) 바로가기:/ }),
   ).toHaveCount(0);
   await directory(page, { status: 500 });
   await expect(sidebar.getByText('목록을 불러오지 못했습니다.')).toBeVisible();
   await expect(
-    sidebar.getByRole('button', { name: /^스페이스 바로가기:/ }),
+    sidebar.getByRole('button', { name: /^(팀|스페이스) 바로가기:/ }),
   ).toHaveCount(0);
 });
 
