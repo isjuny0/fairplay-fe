@@ -72,8 +72,8 @@
 .task-table th:first-child { width: 23%; }
 .task-table th:nth-child(2) { width: 9%; }
 .task-table th:nth-child(3) { width: 12%; }
-.task-table th:nth-child(4) { width: 8%; }
-.task-table th:nth-child(5) { width: 18%; }
+.task-table th:nth-child(4) { width: 18%; }
+.task-table th:nth-child(5) { width: 15%; }
 .task-table thead th:nth-last-child(-n + 2) { width: 15%; min-width: 0; }
 .task-table th:first-child .task-number {
   margin-bottom: 2px;

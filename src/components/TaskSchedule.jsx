@@ -23,7 +23,7 @@ const shortDate = (date) =>
 const timelineStateSymbols = {
   TODO: '□',
   IN_PROGRESS: '↗',
-  PENDING_APPROVAL: '…',
+  REVISING: '↻',
   DONE: '✓',
 };
 const scheduleLabel = (task) =>

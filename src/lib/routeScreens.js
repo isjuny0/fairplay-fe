@@ -12,7 +12,6 @@ const imports = {
   TaskDetail: () => import('../components/TaskDetail.jsx'),
   TaskForm: () => import('../components/TaskForm.jsx'),
   Deliverables: () => import('../components/Deliverables.jsx'),
-  Approvals: () => import('../components/Approvals.jsx'),
   TeamMembers: () => import('../components/TeamMembers.jsx'),
   TeamSettings: () => import('../components/TeamSettings.jsx'),
   PeerEvaluation: () => import('../components/PeerEvaluation.jsx'),
@@ -43,12 +42,12 @@ export function preloadRoute(pathname) {
     const menu = path.split('/')[5] || '';
     const screen = {
       '': 'TeamHome', tasks: 'TaskBoard', deliverables: 'Deliverables',
-      approvals: 'Approvals', members: 'TeamMembers', settings: 'TeamSettings',
+      members: 'TeamMembers', settings: 'TeamSettings',
       'peer-evaluations': 'PeerEvaluation', 'mid-feedback': 'MidFeedback',
       reports: 'ContributionReport',
     }[menu];
     if (screen) loaders.push(screenLoaders[screen]);
-    if (/\/(?:tasks\/\d+|approvals\/tasks\/\d+)$/.test(path)) loaders.push(screenLoaders.TaskDetail);
+    if (/\/tasks\/\d+$/.test(path)) loaders.push(screenLoaders.TaskDetail);
   } else {
     const screen = path.includes('/manager/') ? 'MemberContributions' : {
       dashboard: 'ManagerDashboard', rounds: 'RoundManagement',

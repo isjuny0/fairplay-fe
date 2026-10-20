@@ -73,28 +73,15 @@
   background: var(--task-progress-background);
   color: var(--task-progress-text);
 }
-.status-badge.task-state-pending_approval {
-  background: var(--task-review-background);
-  color: var(--task-review-text);
+.status-badge.task-state-revising {
+  background: var(--task-revising-background);
+  color: var(--task-revising-text);
 }
 .status-badge.task-state-done {
   background: var(--task-done-background);
   color: var(--task-done-text);
 }
-.status-badge.approval-pending {
-  background: var(--task-review-background);
-  color: var(--task-review-text);
-}
-.status-badge.approval-approved {
-  background: var(--task-done-background);
-  color: var(--task-done-text);
-}
-.status-badge.approval-rejected {
-  background: var(--notice-coral-background);
-  color: var(--notice-coral-text);
-}
-.status-badge[class*='task-state-']::before,
-.status-badge[class*='approval-']::before {
+.status-badge[class*='task-state-']::before {
   content: '';
   display: inline-block;
   width: 6px;
@@ -123,10 +110,6 @@
   background: transparent;
   color: var(--notice-coral);
 }
-.team-home-visual .home-pending-icon {
-  background: transparent;
-  color: var(--brand);
-}
 .team-home-visual .has-overdue .home-action-title strong {
   color: var(--notice-coral-text);
 }
@@ -140,10 +123,10 @@
   --schedule-background: var(--task-progress-background);
   --schedule-text: var(--task-progress-text);
 }
-.schedule-task-pending_approval {
-  --schedule-color: var(--task-review);
-  --schedule-background: var(--task-review-background);
-  --schedule-text: var(--task-review-text);
+.schedule-task-revising {
+  --schedule-color: var(--task-revising);
+  --schedule-background: var(--task-revising-background);
+  --schedule-text: var(--task-revising-text);
 }
 .schedule-task-done {
   --schedule-color: var(--task-done);
@@ -212,16 +195,11 @@
 .status-badge.task-state-in_progress::before {
   background: var(--task-progress);
 }
-.status-badge.task-state-pending_approval::before,
-.status-badge.approval-pending::before {
-  background: var(--task-review);
+.status-badge.task-state-revising::before {
+  background: var(--task-revising);
 }
-.status-badge.task-state-done::before,
-.status-badge.approval-approved::before {
+.status-badge.task-state-done::before {
   background: var(--task-done);
-}
-.status-badge.approval-rejected::before {
-  background: var(--notice-coral);
 }
 .home-ring-value {
   stroke: var(--brand);
@@ -261,7 +239,7 @@
   background: #f6f8fc;
 }
 .showcase-column.review {
-  --showcase-state-color: var(--task-review);
+  --showcase-state-color: var(--task-revising);
   background: #faf8f3;
 }
 .showcase-column.done {

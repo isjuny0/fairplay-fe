@@ -1,7 +1,6 @@
 import Icon from './Icon.jsx';
 import { useEffect, useState } from 'react';
 import {
-  assignTeamDeputy,
   getTeamApplications,
   reviewTeamApplication,
 } from '../api/teams.js';
@@ -16,7 +15,7 @@ export default function TeamMembers({
   membersResource,
   onChanged,
 }) {
-  const { notify, confirm } = useInteractions();
+  const { notify } = useInteractions();
   const isLeader = isApprovedMember(team) && team.leaderId === user.id;
   const resource = useResource(
     () => (isLeader ? getTeamApplications(team.id) : Promise.resolve([])),
@@ -49,7 +48,6 @@ export default function TeamMembers({
     resource.reload();
     onChanged();
   };
-  const currentDeputy = members.find((member) => member.role === 'DEPUTY');
   const run = async ({ action, pendingMessage, successMessage }) => {
     setPendingAction(pendingMessage);
     setError(null);
@@ -62,26 +60,6 @@ export default function TeamMembers({
     } finally {
       setPendingAction(null);
     }
-  };
-  const changeDeputy = async (member) => {
-    const removing = member.role === 'DEPUTY';
-    if (!removing && currentDeputy) {
-      const accepted = await confirm({
-        title: '부리더 변경',
-        message: `${currentDeputy.name}님의 부리더 역할을 해제하고 ${member.name}님을 새 부리더로 지정합니다. 변경할까요?`,
-        label: '부리더 변경',
-      });
-      if (!accepted) return;
-    }
-    await run({
-      action: () => assignTeamDeputy(team.id, removing ? null : member.userId),
-      pendingMessage: removing
-        ? `${member.name}님의 부리더 역할을 해제하는 중…`
-        : `${member.name}님을 부리더로 지정하는 중…`,
-      successMessage: removing
-        ? `${member.name}님의 부리더 역할을 해제했습니다.`
-        : `${member.name}님을 부리더로 지정했습니다.`,
-    });
   };
   const reviewApplication = (application, status) =>
     run({
@@ -96,7 +74,7 @@ export default function TeamMembers({
           <h1>팀원 관리</h1>
           <p>
             {isLeader
-              ? '팀원 역할을 관리하고 가입 신청을 검토하세요.'
+              ? '팀 구성을 확인하고 가입 신청을 검토하세요.'
               : '팀의 구성원과 역할을 확인하세요.'}
           </p>
         </div>
@@ -122,9 +100,7 @@ export default function TeamMembers({
               <div>
                 <h2>승인된 팀원 · {members.length}명</h2>
                 <p>
-                  {isLeader
-                    ? '부리더는 한 명만 지정할 수 있습니다.'
-                    : '역할 변경과 가입 신청 검토는 리더가 관리합니다.'}
+                  가입 신청 검토는 리더가 관리합니다.
                 </p>
               </div>
             </div>
@@ -143,21 +119,6 @@ export default function TeamMembers({
                       )}
                     </span>
                   </span>
-                  {isLeader && member.role !== 'LEADER' && (
-                    <button
-                      className="secondary-button"
-                      disabled={
-                        busy || resource.loading || membersResource.loading
-                      }
-                      onClick={() => changeDeputy(member)}
-                    >
-                      {member.role === 'DEPUTY'
-                        ? '부리더 해제'
-                        : currentDeputy
-                          ? '부리더 변경'
-                          : '부리더 지정'}
-                    </button>
-                  )}
                 </li>
               ))}
             </ul>

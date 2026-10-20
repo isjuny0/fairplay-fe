@@ -65,7 +65,7 @@ for (const width of [1440, 1024, 390, 320]) {
         fits: button.scrollWidth <= button.clientWidth && title.scrollWidth <= title.clientWidth,
       };
     }));
-    expect(buttons).toHaveLength(2);
+    expect(buttons).toHaveLength(1);
     for (const button of buttons) {
       expect(button.oneLine).toBe(true);
       expect(button.aligned).toBe(true);
@@ -113,9 +113,9 @@ for (const width of [1440, 390]) {
     await expect(page.locator('.board-task-card').first()).toHaveCSS('border-radius', '6px');
     await expect(page.locator('.board-task-card').first()).toHaveCSS('box-shadow', 'none');
     await expect(page.locator('.task-board-page .primary-button').first()).toHaveCSS('background-color', 'rgb(8, 124, 85)');
-    await expect(page.locator('.task-state-in_progress .status-dot')).toHaveCSS('background-color', 'rgb(85, 185, 0)');
-    await expect(page.locator('.task-state-pending_approval .status-dot')).toHaveCSS('background-color', 'rgb(0, 181, 232)');
-    await expect(page.locator('.task-state-done .status-dot')).toHaveCSS('background-color', 'rgb(18, 184, 134)');
+    await expect(page.locator('.task-state-in_progress .status-dot')).toHaveCSS('background-color', 'rgb(8, 124, 85)');
+    await expect(page.locator('.task-state-revising .status-dot')).toHaveCSS('background-color', 'rgb(234, 179, 8)');
+    await expect(page.locator('.task-state-done .status-dot')).toHaveCSS('background-color', 'rgb(148, 163, 184)');
     if (width === 1440) await page.screenshot({ path: testInfo.outputPath('desktop-task-board.png') });
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
     await page.locator('.preview-toolbar').waitFor({ state: 'visible' });

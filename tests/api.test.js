@@ -7,13 +7,11 @@ import { getMemberContributions } from '../src/api/dashboard.js';
 import { getManagerPeerResponses } from '../src/api/evaluations.js';
 import { getAiReview, requestAiReview } from '../src/api/aiReviews.js';
 import {
-  assignTeamDeputy,
   getMyWorkSummary,
   getTeam,
   getTeamMembers,
 } from '../src/api/teams.js';
 import { invalidateSpaceList, listSpaces } from '../src/api/spaces.js';
-import { reviewerCandidates } from '../src/lib/domain.js';
 import { invalidateSharedReads } from '../src/api/sharedReads.js';
 import {
   listEvaluationRounds,
@@ -28,7 +26,6 @@ import { afterEach, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { apiRequest, clearCsrfToken } from '../src/api/client.js';
 import { updateTask } from '../src/api/tasks.js';
-import { requestCompletion } from '../src/api/approvals.js';
 import {
   createTeamDeletionRequest,
   deleteTeam,
@@ -78,43 +75,6 @@ test('동시 팀 조회는 공유하지만 완료 후에는 최신 가입·권�
   assert.equal((await getTeam(7)).myMembershipStatus, null);
 });
 
-test('새 팀원이 합류하면 최신 팀원으로 전원 담당 예외와 승인자 후보를 판단한다', async () => {
-  const originalMembers = [
-    { userId: 'leader', role: 'LEADER' },
-    { userId: 'member', role: 'MEMBER' },
-  ];
-  let serverMembers = originalMembers;
-  const assignees = originalMembers.map(({ userId }) => ({
-    userId,
-    allocationPercent: 50,
-  }));
-  globalThis.fetch = async (url) =>
-    jsonResponse(
-      url.endsWith('/members')
-        ? serverMembers
-        : { id: 7, approvedMemberCount: serverMembers.length },
-    );
-  assert.deepEqual(
-    reviewerCandidates(await getTeamMembers(7), assignees).map(
-      (member) => member.userId,
-    ),
-    ['leader'],
-  );
-  serverMembers = [
-    ...originalMembers,
-    { userId: 'new-member', role: 'MEMBER' },
-  ];
-  const detail = await getTeam(7);
-  const currentMembers = await getTeamMembers(7);
-  assert.equal(currentMembers.length, detail.approvedMemberCount);
-  assert.deepEqual(
-    reviewerCandidates(currentMembers, assignees).map(
-      (member) => member.userId,
-    ),
-    ['new-member'],
-  );
-});
-
 test('스페이스 목록은 짧게 재사용하고 유효 기간 후 최신 목록을 조회한다', async (context) => {
   let now = 1_000;
   context.mock.method(Date, 'now', () => now);
@@ -145,19 +105,6 @@ test('스페이스 목록 새로고침은 해당 캐시만 비우고 진행 중�
   assert.equal(getTeam(7), pendingTeam);
   releaseTeam();
   await pendingTeam;
-});
-
-test('역할 변경 후에는 변경된 팀원 역할을 조회한다', async () => {
-  let role = 'MEMBER';
-  globalThis.fetch = async (url, options) => {
-    if (url.endsWith('/csrf'))
-      return jsonResponse({ headerName: 'X-CSRF-TOKEN', token: 'token' });
-    if (options.method === 'PATCH') role = 'DEPUTY';
-    return jsonResponse([{ userId: 'member', role }]);
-  };
-  assert.equal((await getTeamMembers(7))[0].role, 'MEMBER');
-  await assignTeamDeputy(7, 'member');
-  assert.equal((await getTeamMembers(7))[0].role, 'DEPUTY');
 });
 
 test('이전 세션의 늦은 응답은 새 세션의 스페이스 캐시를 덮어쓰지 않는다', async () => {
@@ -224,17 +171,20 @@ test('GET은 쿠키를 포함하고 불필요한 CSRF 조회를 하지 않는다
   assert.equal(calls.length, 1);
   assert.equal(calls[0].credentials, 'include');
 });
-test('작업 상태 수정과 완료 요청은 실제 경로 및 버전을 사용한다', async () => {
+test('직접 완료와 재수정은 PATCH 상태와 버전만 전송한다', async () => {
   await updateTask(7, { status: 'IN_PROGRESS', expectedVersion: 3 });
-  await requestCompletion(7, 4);
+  await updateTask(7, { status: 'DONE', expectedVersion: 4 });
+  await updateTask(7, { status: 'REVISING', expectedVersion: 5 });
   assert.equal(calls[1].url, '/api/tasks/7');
   assert.equal(calls[1].headers['X-CSRF-TOKEN'], 'token');
   assert.deepEqual(JSON.parse(calls[1].body), {
     status: 'IN_PROGRESS',
     expectedVersion: 3,
   });
-  assert.equal(calls[2].url, '/api/tasks/7/completion-requests');
-  assert.deepEqual(JSON.parse(calls[2].body), { expectedVersion: 4 });
+  assert.equal(calls[2].url, '/api/tasks/7');
+  assert.equal(calls[2].method, 'PATCH');
+  assert.deepEqual(JSON.parse(calls[2].body), {status:'DONE', expectedVersion: 4 });
+  assert.deepEqual(JSON.parse(calls[3].body), {status:'REVISING', expectedVersion: 5 });
 });
 test('가입 처리는 팀 경로가 아닌 application 경로를 사용한다', async () => {
   await reviewTeamApplication(5, 'APPROVED');

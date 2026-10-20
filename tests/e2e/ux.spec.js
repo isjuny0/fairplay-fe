@@ -186,7 +186,7 @@ for (const height of [844, 500])
       .click();
     const dialog = page.getByRole('dialog');
     const next = dialog.getByRole('button', {
-      name: '다음: 담당·승인',
+      name: '다음: 담당·배분',
       exact: true,
     });
     const initialBox = await next.boundingBox();
@@ -199,12 +199,10 @@ for (const height of [844, 500])
       .fill('키보드가 열린 높이에서도 다음 행동을 확인합니다.');
     await fillDateTime(dialog, '마감', '2030-12-01T18:00');
     await next.click();
-    await dialog.getByLabel('완료 승인자', { exact: true }).focus();
-    await dialog
-      .getByLabel('완료 승인자', { exact: true })
-      .scrollIntoViewIfNeeded();
+
+
     const inputBox = await dialog
-      .getByLabel('완료 승인자', { exact: true })
+      .getByRole('button', {name:'균등 배분',exact:true})
       .boundingBox();
     const nextBox = await dialog
       .getByRole('button', { name: '다음: 저장 전 확인', exact: true })
@@ -213,7 +211,7 @@ for (const height of [844, 500])
     expect(nextBox.y + nextBox.height).toBeLessThanOrEqual(height);
   });
 
-test('세 담당자 균등 배분과 필수 승인자 선택으로 작업을 생성한다', async ({
+test('세 담당자 균등 배분으로 작업을 생성한다', async ({
   page,
 }) => {
   await openPreview(page, '/spaces/1/teams/1/tasks');
@@ -226,23 +224,16 @@ test('세 담당자 균등 배분과 필수 승인자 선택으로 작업을 생
     .getByLabel('작업 설명', { exact: true })
     .fill('모든 담당자의 역할과 결과를 함께 확인합니다.');
   await fillDateTime(dialog, '마감', '2030-12-01T18:00');
-  for (const member of ['김하늘 · 리더', '이지원 · 팀원', '박서연 · 부리더'])
+  for (const member of ['김하늘 · 리더', '이지원 · 팀원', '박서연 · 팀원'])
     await dialog.getByLabel(member, { exact: true }).check();
   await dialog.getByRole('button', { name: '균등 배분', exact: true }).click();
   await expect(dialog.getByText('담당 3명', { exact: true })).toBeVisible();
   await expect(dialog.getByText('합계 100%', { exact: true })).toBeVisible();
-  await expect(
-    dialog.getByText(/전원 담당 작업은 리더·부리더를 승인자로 선택/),
-  ).toBeVisible();
   await expect(dialog.getByLabel('김하늘 배분율')).toHaveValue('34');
   await expect(dialog.getByLabel('이지원 배분율')).toHaveValue('33');
   await expect(dialog.getByLabel('박서연 배분율')).toHaveValue('33');
-  await expect(dialog.getByLabel('완료 승인자', { exact: true })).toHaveValue(
-    '',
-  );
-  await dialog
-    .getByLabel('완료 승인자', { exact: true })
-    .selectOption({ index: 2 });
+
+
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: '균등 배분 작업', exact: true }),
@@ -266,7 +257,7 @@ test('모바일 관리자 카드는 표 가로 스크롤 없이 수행 상세를
   await expect(
     page.getByRole('button', { name: '작업 수정', exact: true }),
   ).toHaveCount(0);
-  await page.getByLabel('조회할 작업 상태').selectOption('PENDING_APPROVAL');
+  await page.getByLabel('조회할 작업 상태').selectOption('REVISING');
   await expect(
     page.getByRole('heading', { name: '서비스 흐름 설계', exact: true }),
   ).toBeVisible();
@@ -287,7 +278,7 @@ test('데스크톱 팀 메뉴는 왼쪽에 묶이고 메뉴 이동과 새로고�
     name: '팀 메뉴',
     exact: true,
   });
-  await expect(teamMenus.getByRole('button')).toHaveCount(9);
+  await expect(teamMenus.getByRole('button')).toHaveCount(8);
   await expect(
     teamMenus.getByRole('paragraph').filter({ hasText: /^팀 작업$/ }),
   ).toBeVisible();
@@ -416,14 +407,11 @@ test('데스크톱 홈은 확인할 작업을 먼저 배치하고 입력·읽기
   const own = await page
     .getByRole('region', { name: '본인 작업 현황' })
     .boundingBox();
-  const progress = await page.locator('.progress-panel').boundingBox();
+  const progress = await page.locator('.home-team-progress').boundingBox();
   expect(own.y).toBeGreaterThanOrEqual(action.y + action.height);
-  expect(progress.y).toBeGreaterThanOrEqual(action.y + action.height);
-  expect(Math.abs(progress.y - own.y)).toBeLessThan(2);
-  expect(progress.x + progress.width).toBeLessThan(own.x);
-  expect(Math.abs(own.x + own.width - (action.x + action.width))).toBeLessThan(
-    2,
-  );
+  expect(own.y).toBeGreaterThanOrEqual(progress.y + progress.height);
+  expect(Math.abs(progress.y - action.y)).toBeLessThan(2);
+  expect(progress.x + progress.width).toBeLessThanOrEqual(action.x);
   const wide = await page.getByRole('main').boundingBox();
   await page.getByRole('button', { name: '중간 피드백', exact: true }).click();
   const reading = await page.getByRole('main').boundingBox();
@@ -434,7 +422,7 @@ test('데스크톱 홈은 확인할 작업을 먼저 배치하고 입력·읽기
     .getByRole('button', { name: '새 작업 만들기', exact: true })
     .click();
   const content = page.getByRole('region', { name: '작업 내용 입력' });
-  const assignment = page.getByRole('region', { name: '담당·승인 설정 입력' });
+  const assignment = page.getByRole('region', { name: '담당·배분 설정 입력' });
   const contentBox = await content.boundingBox();
   const assignmentBox = await assignment.boundingBox();
   expect(assignmentBox.x).toBeGreaterThan(contentBox.x + contentBox.width);
@@ -451,16 +439,16 @@ test('데스크톱 홈은 확인할 작업을 먼저 배치하고 입력·읽기
   ).toBe(true);
 });
 
-test('데스크톱 작업 상세를 스크롤해도 작업 진행 버튼은 검토 영역에 남는다', async ({
+test('데스크톱 작업 상세를 스크롤해도 작업 진행 버튼은 진행 영역에 남는다', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openPreview(page, '/spaces/1/teams/1/tasks/102');
   const sidebar = page.getByRole('complementary', {
-    name: '작업 진행 및 검토',
+    name: '작업 진행 및 담당',
   });
   await expect(
-    sidebar.getByRole('button', { name: '완료 요청', exact: true }),
+    sidebar.getByRole('button', { name: '완료 처리', exact: true }),
   ).toBeVisible();
   // Wait for route focus/scroll restoration before measuring a manual scroll.
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
@@ -475,7 +463,7 @@ test('데스크톱 작업 상세를 스크롤해도 작업 진행 버튼은 검�
     navigation.y + navigation.height,
   );
   await expect(
-    sidebar.getByRole('button', { name: '완료 요청', exact: true }),
+    sidebar.getByRole('button', { name: '완료 처리', exact: true }),
   ).toBeInViewport();
 });
 
@@ -512,7 +500,7 @@ test('작업 제목 검색·정렬은 새로고침과 상세 복귀에도 유지
   ]);
 });
 
-test('모바일 작업 입력은 첫 오류로 초점을 옮기고 배분·승인자를 고친 뒤 저장한다', async ({
+test('모바일 작업 입력은 첫 오류로 초점을 옮기고 배분을 고친 뒤 저장한다', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -522,7 +510,7 @@ test('모바일 작업 입력은 첫 오류로 초점을 옮기고 배분·승�
     .click();
   const dialog = page.getByRole('dialog', { name: '새 작업 만들기' });
   await dialog
-    .getByRole('button', { name: '다음: 담당·승인', exact: true })
+    .getByRole('button', { name: '다음: 담당·배분', exact: true })
     .click();
   await expect(dialog.getByLabel('작업 제목', { exact: true })).toBeFocused();
   await expect(dialog.getByLabel('작업 제목', { exact: true })).toHaveAttribute(
@@ -537,7 +525,7 @@ test('모바일 작업 입력은 첫 오류로 초점을 옮기고 배분·승�
     .fill('대상과 일정을 확정하고 조사 계획을 공유합니다.');
   await fillDateTime(dialog, '마감', '2030-12-01T18:00');
   await dialog
-    .getByRole('button', { name: '다음: 담당·승인', exact: true })
+    .getByRole('button', { name: '다음: 담당·배분', exact: true })
     .click();
   await dialog.getByLabel('김하늘 · 리더', { exact: true }).check();
   await dialog.getByLabel('김하늘 배분율', { exact: true }).fill('90');
@@ -549,13 +537,6 @@ test('모바일 작업 입력은 첫 오류로 초점을 옮기고 배분·승�
     dialog.getByLabel('김하늘 · 리더', { exact: true }),
   ).toBeFocused();
   await dialog.getByRole('button', { name: '균등 배분', exact: true }).click();
-  await dialog
-    .getByRole('button', { name: '다음: 저장 전 확인', exact: true })
-    .click();
-  await expect(dialog.getByLabel('완료 승인자', { exact: true })).toBeFocused();
-  await dialog
-    .getByLabel('완료 승인자', { exact: true })
-    .selectOption('00000000-0000-4000-8000-000000000003');
   await dialog
     .getByRole('button', { name: '다음: 저장 전 확인', exact: true })
     .click();
@@ -571,7 +552,7 @@ test('모바일 작업 입력은 첫 오류로 초점을 옮기고 배분·승�
     '현장 조사 일정 확정',
   );
   await dialog
-    .getByRole('button', { name: '다음: 담당·승인', exact: true })
+    .getByRole('button', { name: '다음: 담당·배분', exact: true })
     .click();
   await dialog
     .getByRole('button', { name: '다음: 저장 전 확인', exact: true })
@@ -696,22 +677,13 @@ test('산출물 빈 작업과 마지막 페이지는 범위·페이지를 복구
   ).toBeVisible();
 });
 
-test('팀 홈의 본인·승인 대기·마감 지연은 각 조건의 작업 목록으로 연결된다', async ({
+test('팀 홈의 본인·마감 지연은 각 조건의 작업 목록으로 연결된다', async ({
   page,
 }) => {
   await openPreview(page, '/spaces/1/teams/1');
   await page.getByRole('button', { name: '내 작업 확인', exact: true }).click();
   await expect(page.getByLabel('내 담당 작업만')).toBeChecked();
   await expect(page.locator('.board-task-card')).toHaveCount(4);
-  await page.goBack();
-  await page.getByRole('button', { name: /내 승인 대기/ }).click();
-  await expect(page.getByLabel('작업 상태', { exact: true })).toHaveValue(
-    'PENDING_APPROVAL',
-  );
-  await expect(page.getByLabel('내 담당 작업만')).toBeChecked();
-  await expect(
-    page.getByRole('button', { name: '서비스 흐름 설계', exact: true }),
-  ).toBeVisible();
   await page.goBack();
   await page.getByRole('button', { name: /내 마감 지연/ }).click();
   await expect(page.getByLabel('마감 지난 작업만')).toBeChecked();
@@ -805,7 +777,7 @@ test('200% 확대와 모바일 목록 전환에서도 입력 단계와 주요 �
     .getByRole('button', { name: '새 작업 만들기', exact: true })
     .click();
   const dialog = page.getByRole('dialog');
-  await expect(dialog.getByLabel('완료 승인자', { exact: true })).toBeHidden();
+
   expect(
     await dialog.evaluate(
       (element) => element.scrollWidth <= element.clientWidth,
@@ -913,7 +885,7 @@ for (const width of [1440, 320]) {
       exact: true,
     });
     await expect(
-      dialog.getByRole('heading', { name: '본문', exact: true }),
+      dialog.getByRole('region', { name: '산출물 본문', exact: true }),
     ).toBeVisible();
     await expect(
       dialog.getByText('사용자 인터뷰 계획', { exact: true }),
@@ -940,7 +912,7 @@ for (const width of [1440, 320]) {
       .getByRole('button', { name: '인터뷰 결과 기록 파일', exact: true })
       .click();
     await expect(
-      dialog.getByRole('heading', { name: '현재 파일', exact: true }),
+      dialog.getByText('인터뷰-기록.txt', { exact: true }),
     ).toBeVisible();
     const downloaded = page.waitForEvent('download');
     await dialog
@@ -950,13 +922,13 @@ for (const width of [1440, 320]) {
   });
 }
 
-test('팀 홈 수행 지연에서 승인 대기는 제외하고 일반 마감 필터에서는 함께 확인한다', async ({
+test('팀 홈 수행 지연에서 완료 후 수정 중인 작업도 포함한다', async ({
   page,
 }) => {
   await openPreview(page, '/spaces/1/teams/1');
   await expect(page.getByRole('button', { name: /내 마감 지연.*1건/ })).toBeVisible();
   await page.evaluate(() => {
-    const key = 'fairplay:mock:v5:preview:1';
+    const key = 'fairplay:mock:v6:preview:1';
     const state = JSON.parse(localStorage.getItem(key));
     state.teams[1].tasks.find((task) => task.id === 103).dueAt = new Date(
       Date.now() - 60000,
@@ -965,21 +937,18 @@ test('팀 홈 수행 지연에서 승인 대기는 제외하고 일반 마감 �
   });
   await page.reload();
   await expect(
-    page.getByRole('button', { name: /내 마감 지연.*1건/ }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole('button', { name: /내 승인 대기.*1건/ }),
+    page.getByRole('button', { name: /내 마감 지연.*2건/ }),
   ).toBeVisible();
   await page.getByRole('button', { name: /내 마감 지연/ }).click();
   await expect(
     page.getByRole('button', { name: '서비스 흐름 설계', exact: true }),
-  ).toHaveCount(0);
+  ).toBeVisible();
   await expect(
     page.getByRole('button', { name: '설문 결과 분석', exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole('button', {
-      name: '수행 지연: 할 일·진행 중 해제',
+      name: '수행 지연: 할 일·진행 중·수정 중 해제',
       exact: true,
     }),
   ).toBeVisible();
@@ -987,7 +956,7 @@ test('팀 홈 수행 지연에서 승인 대기는 제외하고 일반 마감 �
   expect(new URL(page.url()).searchParams.get('overdue')).toBe('work');
   await expect(
     page.getByRole('button', { name: '서비스 흐름 설계', exact: true }),
-  ).toHaveCount(0);
+  ).toBeVisible();
   await page.getByLabel('마감 지난 작업만').uncheck();
   await page.getByLabel('마감 지난 작업만').check();
   await expect(
@@ -1002,7 +971,7 @@ test('평가 마감 시각이 지나면 열린 작성 화면도 조회 전용으
   await openPreview(page, peerPath);
   await expect(page.getByLabel('이지원 작업 수행 5점', { exact: true })).toBeEnabled();
   await page.evaluate(() => {
-    const key = 'fairplay:mock:v5:preview:1';
+    const key = 'fairplay:mock:v6:preview:1';
     const state = JSON.parse(localStorage.getItem(key));
     state.rounds.find((round) => round.status === 'OPEN').closesAt = new Date(
       Date.now() + 30000,

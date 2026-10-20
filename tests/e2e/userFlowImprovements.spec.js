@@ -65,46 +65,17 @@ test('새 화면은 상단과 제목에서 시작하고 목록 복귀는 필터�
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 });
 
-test('반려 입력 오류는 사유 필드에서 수정하고 반려 후 사유를 바로 확인한다', async ({
-  page,
-}) => {
-  await preview(page, '/spaces/1/teams/1/approvals/tasks/103', 'reviewer');
-  await page.getByRole('button', { name: '반려', exact: true }).click();
-  await page.getByRole('button', { name: '반려 확정', exact: true }).click();
-  await expect(page.getByLabel('반려 사유', { exact: true })).toBeFocused();
-  await expect(page.getByLabel('반려 사유', { exact: true })).toHaveAttribute(
-    'aria-invalid',
-    'true',
-  );
-  await expect(
-    page.getByRole('button', { name: '다시 불러오기', exact: true }),
-  ).toHaveCount(0);
-  await page
-    .getByLabel('반려 사유', { exact: true })
-    .fill('예외 흐름과 자료의 원문 위치를 추가해 주세요.');
-  await page.getByRole('button', { name: '반려 확정', exact: true }).click();
-  const rejection = page.getByRole('region', { name: '최근 반려 사유' });
-  await expect(
-    rejection.getByRole('heading', { name: '보완 필요' }),
-  ).toBeVisible();
-  await expect(rejection).toContainText(
-    '예외 흐름과 자료의 원문 위치를 추가해 주세요.',
-  );
-  await page.reload();
-  await expect(rejection).toContainText(
-    '예외 흐름과 자료의 원문 위치를 추가해 주세요.',
-  );
-});
 
-test('완료 요청 준비 상태는 미작성 담당자를 표시하고 전원 작성 뒤 요청할 수 있다', async ({
+
+test('완료 준비 상태는 미작성 담당자를 표시하고 전원 작성 뒤 완료할 수 있다', async ({
   page,
 }) => {
   await preview(page, '/spaces/1/teams/1/tasks/102');
-  const readiness = page.getByRole('list', { name: '완료 요청 준비 상태' });
+  const readiness = page.getByRole('list', { name: '완료 준비 상태' });
   await expect(readiness).toContainText('이지원 수행 설명 미작성');
   await expect(readiness).toContainText('연결 산출물 등록 완료');
   await expect(
-    page.getByRole('button', { name: '완료 요청', exact: true }),
+    page.getByRole('button', { name: '완료 처리', exact: true }),
   ).toBeDisabled();
   await preview(page, '/spaces/1/teams/1/tasks/102', 'member');
   await page
@@ -113,14 +84,16 @@ test('완료 요청 준비 상태는 미작성 담당자를 표시하고 전원 
   await page
     .getByRole('button', { name: '수행 설명 저장', exact: true })
     .click();
+  await expect(readiness).toContainText('이지원 수행 설명 작성 완료');
   await preview(page, '/spaces/1/teams/1/tasks/102', 'leader');
   await expect(readiness).toContainText('이지원 수행 설명 작성 완료');
   await expect(
-    page.getByRole('button', { name: '완료 요청', exact: true }),
+    page.getByRole('button', { name: '완료 처리', exact: true }),
   ).toBeEnabled();
-  await page.getByRole('button', { name: '완료 요청', exact: true }).click();
+  await page.getByRole('button', { name: '완료 처리', exact: true }).click();
+  await page.getByRole('dialog', {name:'작업 완료',exact:true}).getByRole('button',{name:'완료 처리',exact:true}).click();
   await expect(
-    page.getByText('박서연님에게 완료 검토를 요청했습니다.', { exact: true }),
+    page.getByText('작업을 완료했습니다.', { exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole('button', { name: '작업 수정', exact: true }),
@@ -236,7 +209,7 @@ for (const width of [1440, 390])
   });
 
 
-test('완료 요청 준비 목록에서 내 수행 설명으로 이동하고 변경된 내용만 저장한다', async ({ page }) => {
+test('완료 준비 목록에서 내 수행 설명으로 이동하고 변경된 내용만 저장한다', async ({ page }) => {
   await preview(page, '/spaces/1/teams/1/tasks/102', 'member');
   const save = page.getByRole('button', { name: '수행 설명 저장', exact: true });
   const description = page.getByLabel('내 수행 설명', { exact: true });
@@ -258,74 +231,4 @@ test('연결 산출물이 없으면 준비 목록에서 등록 영역으로 바�
   await page.getByRole('button', { name: '산출물 확인', exact: true }).click();
   await expect(page.locator('#task-deliverables-section')).toBeFocused();
   await expect(page.getByRole('button', { name: '산출물 등록', exact: true })).toBeInViewport();
-});
-
-test('승인자는 요청 맥락과 검토 대상별 위치를 바로 확인한다', async ({ page }) => {
-  await preview(page, '/spaces/1/teams/1/approvals/tasks/103', 'reviewer');
-  const decision = page.getByRole('region', { name: '완료 검토', exact: true });
-  await expect(decision.locator('dl')).toContainText('요청자');
-  await expect(decision.locator('dl')).toContainText('김하늘');
-  await expect(decision.locator('dl')).toContainText('요청 시각');
-  for (const [label, target] of [
-    ['작업 설명 확인', 'task-description-section'],
-    ['담당 배분 확인', 'task-assignment-section'],
-    ['수행 설명 확인', 'task-contributions-section'],
-    ['산출물 확인', 'task-deliverables-section'],
-  ]) {
-    await decision.getByRole('button', { name: label, exact: true }).click();
-    await expect(page.locator(`#${target}`)).toBeFocused();
-  }
-});
-
-test('전달하지 않은 반려 사유는 화면 이동을 확인하고 계속 작성할 수 있다', async ({ page }) => {
-  await preview(page, '/spaces/1/teams/1/approvals/tasks/103', 'reviewer');
-  await page.getByRole('button', { name: '반려', exact: true }).click();
-  const reason = page.getByLabel('반려 사유', { exact: true });
-  const value = '자료의 예외 처리 결과와 검증 근거를 보완해 주세요.';
-  await reason.fill(value);
-  await page.getByRole('button', { name: '← 목록으로', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: '저장하지 않은 변경 사항', exact: true });
-  await expect(dialog).toBeVisible();
-  await dialog.getByRole('button', { name: '계속 작성', exact: true }).click();
-  await expect(reason).toHaveValue(value);
-  await page.getByRole('button', { name: '← 목록으로', exact: true }).click();
-  await dialog.getByRole('button', { name: '변경 사항 버리고 이동', exact: true }).click();
-  await expect(page).toHaveURL(/\/approvals$/);
-});
-
-test('반려 사유를 작성한 상태의 승인에는 미전송을 안내하고 승인 후 입력 경고를 정리한다', async ({ page }) => {
-  await preview(page, '/spaces/1/teams/1/approvals/tasks/103', 'reviewer');
-  await page.getByRole('button', { name: '반려', exact: true }).click();
-  const reason = page.getByLabel('반려 사유', { exact: true });
-  const value = '기존 자료로 완료 조건을 충족하는지 확인했습니다.';
-  await reason.fill(value);
-  await page.getByRole('button', { name: '완료 승인', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: '작업 완료 승인', exact: true });
-  await expect(dialog).toContainText('작성한 반려 사유는 승인에 포함되지 않습니다.');
-  await dialog.getByRole('button', { name: '취소', exact: true }).click();
-  await expect(reason).toHaveValue(value);
-  await page.getByRole('button', { name: '완료 승인', exact: true }).click();
-  await dialog.getByRole('button', { name: '승인 확정', exact: true }).click();
-  await expect(page.getByText('작업 완료를 승인했습니다.', { exact: true })).toBeVisible();
-  await expect(page.getByRole('region', { name: '완료 검토', exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: '← 목록으로', exact: true }).click();
-  await expect(page).toHaveURL(/\/approvals$/);
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-});
-
-test('담당자 변경으로 승인자가 후보에서 빠지면 입력을 유지하며 재선택을 안내한다', async ({ page }) => {
-  await preview(page, '/spaces/1/teams/1/tasks');
-  await page.getByRole('button', { name: '새 작업 만들기', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: '새 작업 만들기' });
-  await dialog.getByLabel('작업 제목', { exact: true }).fill('승인자 확인 작업');
-  await dialog.getByLabel('이지원 · 팀원', { exact: true }).check();
-  const reviewer = dialog.getByLabel('완료 승인자', { exact: true });
-  await reviewer.selectOption({ label: '1. 김하늘 · 리더' });
-  await dialog.getByLabel('김하늘 · 리더', { exact: true }).check();
-  await expect(reviewer).toHaveValue('');
-  await expect(dialog.getByText(/이전 승인자를 선택할 수 없습니다/)).toBeVisible();
-  await expect(dialog.getByLabel('작업 제목', { exact: true })).toHaveValue('승인자 확인 작업');
-  await expect(dialog.getByLabel('이지원 배분율')).toHaveValue('100');
-  await reviewer.selectOption({ label: '1. 박서연 · 부리더' });
-  await expect(dialog.getByText(/이전 승인자를 선택할 수 없습니다/)).toHaveCount(0);
 });

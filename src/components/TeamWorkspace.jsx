@@ -13,7 +13,6 @@ import UnavailablePage from './UnavailablePage.jsx';
 import { teamMenuPath } from '../lib/routes.js';
 import { ErrorNotice, ResourceState } from './ui.jsx';
 
-const Approvals = deferScreen(screenLoaders.Approvals, '승인 검토');
 const Deliverables = deferScreen(screenLoaders.Deliverables, '산출물');
 const TaskBoard = deferScreen(screenLoaders.TaskBoard, '작업');
 const TeamMembers = deferScreen(screenLoaders.TeamMembers, '팀원 관리');
@@ -62,7 +61,7 @@ export default function TeamWorkspace({
   const navigateToTask = (id) =>
     navigate(
       {
-        pathname: `${teamMenuPath(space.id, team.id, menu)}/${menu === '승인 검토' ? 'tasks/' : ''}${id}`,
+        pathname: `${teamMenuPath(space.id, team.id, menu)}/${id}`,
         search: location.search,
       },
       {
@@ -87,7 +86,7 @@ export default function TeamWorkspace({
     );
   const resource = useResource(
     () => getTeamMembers(team.id),
-    [team.id, team.deputyId, team.approvedMemberCount],
+    [team.id, team.approvedMemberCount],
   );
   const approved = isApprovedMember(team);
   const deletionResource = useResource(async () => {
@@ -186,7 +185,7 @@ export default function TeamWorkspace({
           )}
           {team.approvedMemberCount < 2 && (
             <p className="notice">
-              승인된 팀원이 2명 이상이어야 작업 생성·수정·수행 설명·완료 요청을
+              승인된 팀원이 2명 이상이어야 작업 생성·수정·수행 설명·완료 처리를
               진행할 수 있습니다. 자료 조회와 정리는 가능합니다.
             </p>
           )}
@@ -227,17 +226,6 @@ export default function TeamWorkspace({
           )}
           {currentMenu === '산출물' && (
             <TeamDeliverables team={workTeam} user={user} members={members} />
-          )}
-          {currentMenu === '승인 검토' && approved && (
-            <Approvals
-              team={workTeam}
-              user={user}
-              members={members}
-              space={space}
-              taskId={taskId}
-              onOpenTask={navigateToTask}
-              onTaskBack={navigateToTaskList}
-            />
           )}
           {currentMenu === '팀 설정' && approved && (
             <TeamSettings

@@ -8,11 +8,11 @@ export const formatPercent = (value, empty = '계산할 작업 없음') =>
   value == null ? empty : `${Number(value).toFixed(2)}%`;
 export function completedWorkShare(member, members) {
   const totalCompletedWeight = members.reduce(
-    (total, entry) => total + entry.approvedWorkWeight,
+    (total, entry) => total + entry.completedWorkWeight,
     0,
   );
   return totalCompletedWeight > 0
-    ? (member.approvedWorkWeight / totalCompletedWeight) * 100
+    ? (member.completedWorkWeight / totalCompletedWeight) * 100
     : null;
 }
 export const isLowScore = (scores) =>
@@ -41,7 +41,7 @@ export function validatePeerResponse(scores, reason) {
 }
 
 export function isTaskExecutionOverdue(task, now = new Date()) {
-  return ['TODO', 'IN_PROGRESS'].includes(task.status) && Date.parse(task.dueAt) < Number(now);
+  return ['TODO', 'IN_PROGRESS', 'REVISING'].includes(task.status) && Date.parse(task.dueAt) < Number(now);
 }
 
 export function workSummary(teamId, userId, tasks, now = new Date()) {
@@ -77,9 +77,6 @@ export function workSummary(teamId, userId, tasks, now = new Date()) {
     myAssignedShare: rate(myAssignedWeight, teamTotalWeight),
     myCompletedContributionRate: rate(myDoneWeight, teamTotalWeight),
     myTaskCompletionRate: rate(myDoneWeight, myAssignedWeight),
-    myPendingApprovalCount: ownTasks.filter(
-      (task) => task.status === 'PENDING_APPROVAL',
-    ).length,
     myOverdueTaskCount: ownTasks.filter(
       (task) => isTaskExecutionOverdue(task, now),
     ).length,

@@ -10,7 +10,7 @@ const members = [
   },
   {
     userId: '00000000-0000-4000-8000-000000000002',
-    name: '승인자',
+    name: '리더',
     role: 'LEADER',
   },
 ];
@@ -40,7 +40,6 @@ async function backend(
     spaceId: 1,
     name: '실제 API 팀',
     leaderId: members[1].userId,
-    deputyId: null,
     approvedMemberCount: 2,
     myMembershipStatus: manager ? null : 'APPROVED',
     canCreateTask: !manager,
@@ -72,7 +71,6 @@ async function backend(
     weight: 3,
     startAt: '2030-11-01T09:00:00+09:00',
     dueAt: '2030-12-01T18:00:00+09:00',
-    completionReviewerId: members[1].userId,
     assignees: [{ userId: members[0].userId, allocationPercent: 100 }],
     completionBlockReason: null,
   };
@@ -136,10 +134,8 @@ async function backend(
             contributionDescription: '수행 설명입니다.',
           },
         ],
-        approvalStatus: null,
         deliverableSummary: [],
       });
-    if (path === '/api/tasks/10/approvals') return respond([]);
     if (path === '/api/teams/1/deliverables') return respond([]);
     if (path === '/api/teams/1/my-work-summary')
       return respond({
@@ -153,7 +149,6 @@ async function backend(
         myAssignedShare: null,
         myCompletedContributionRate: null,
         myTaskCompletionRate: null,
-        myPendingApprovalCount: 7,
         myOverdueTaskCount: 9,
       });
     if (path === '/api/spaces/1/evaluation-rounds') {
@@ -251,12 +246,12 @@ async function backend(
         pendingApplications: 1,
         overdueTaskCount: 2,
         staleTaskCount: 3,
-        pendingApprovalCount: 1,
+        revisingTaskCount: 1,
         teams: [
           {
             teamId: 1,
             teamName: team.name,
-            leaderName: '승인자',
+            leaderName: '리더',
             leaderId: members[1].userId,
             approvedMemberCount: 2,
             hasMinimumMembers: true,
@@ -264,7 +259,7 @@ async function backend(
             totalTaskCount: 3,
             todoTaskCount: 1,
             inProgressTaskCount: 1,
-            pendingApprovalCount: 0,
+            revisingTaskCount: 0,
             doneTaskCount: 1,
             completionRate: 25,
             overdueTaskCount: 2,
@@ -280,10 +275,10 @@ async function backend(
                     assignedTaskCount: 1,
                     todoTaskCount: 0,
                     inProgressTaskCount: 1,
-                    pendingApprovalCount: 0,
+                    revisingTaskCount: 0,
                     doneTaskCount: 0,
                     overdueTaskCount: 0,
-                    approvedWorkWeight: 0,
+                    completedWorkWeight: 0,
                     missingContributionDescriptionCount: 1,
                   })),
                 }
@@ -371,9 +366,6 @@ test('일반 팀 홈은 서버 본인 집계를 사용하고 null을 0%로 표�
   const { requests } = await backend(page);
   await page.goto('/spaces/1/teams/1');
   await expect(
-    page.getByRole('button', { name: /내 승인 대기.*7건/ }),
-  ).toBeVisible();
-  await expect(
     page.getByRole('button', { name: /내 마감 지연.*9건/ }),
   ).toBeVisible();
   await expect(page.getByText('계산할 작업 없음').first()).toBeVisible();
@@ -398,21 +390,20 @@ test('팀 홈은 확인할 작업이 없음을 안내하고 계산할 작업 없
       teamId: 1, asOf: '2026-10-18T10:00:00Z',
       teamTotalWeight: 3, teamDoneWeight: 0, myAssignedWeight: 0, myDoneWeight: 0,
       teamProgressRate: 0, myAssignedShare: 0, myCompletedContributionRate: 0,
-      myTaskCompletionRate: null, myPendingApprovalCount: 0, myOverdueTaskCount: 0,
+      myTaskCompletionRate: null, myOverdueTaskCount: 0,
     },
   }));
   await page.goto('/spaces/1/teams/1');
   await expect(page.getByText('확인할 작업 없음', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: /내 마감 지연.*0건/ })).toBeEnabled();
-  await expect(page.getByRole('button', { name: /내 승인 대기.*0건/ })).toBeEnabled();
   const ownWork = page.getByRole('region', { name: '본인 작업 현황' });
   await expect(ownWork.getByText('0.00%', { exact: true })).toHaveCount(2);
   await expect(ownWork.getByText('담당 작업 없음', { exact: true })).toBeVisible();
   await expect(page.getByRole('progressbar', { name: '예상 작업량을 반영한 팀 진행률' })).toHaveAttribute('aria-valuenow', '0');
   await expect(page.locator('.home-ring-value')).toHaveAttribute('stroke-opacity', '0');
-  await page.getByRole('button', { name: /내 승인 대기/ }).click();
+  await page.getByRole('button', { name: '내 작업 확인', exact:true }).click();
   await expect(page).toHaveURL(/mine=1/);
-  await expect(page.getByLabel('작업 상태', { exact: true })).toHaveValue('PENDING_APPROVAL');
+  await expect(page.getByLabel('작업 상태', { exact: true })).toHaveValue('ALL');
 });
 test('서버 조회 오류를 예시 현황으로 대체하지 않는다', async ({ page }) => {
   await backend(page);
@@ -434,13 +425,13 @@ test('동료 평가는 실제 PUT과 POST로 저장·제출하고 새로고침 �
   const { requests } = await backend(page);
   await page.goto('/spaces/1/teams/1/peer-evaluations');
   for (const label of ['작업 수행', '책임감', '협업', '의사소통'])
-    await page.getByLabel(`승인자 ${label} 4점`, { exact: true }).check();
-  await page.getByRole('button', { name: '승인자 평가 저장' }).click();
+    await page.getByLabel(`리더 ${label} 4점`, { exact: true }).check();
+  await page.getByRole('button', { name: '리더 평가 저장' }).click();
   await page.getByRole('button', { name: '최종 제출', exact: true }).click();
   await page.getByRole('button', { name: '제출 확정' }).click();
   await expect(page.getByText('최종 제출 완료', { exact: true })).toBeVisible();
   await page.reload();
-  await expect(page.getByLabel('승인자 작업 수행 4점')).toBeDisabled();
+  await expect(page.getByLabel('리더 작업 수행 4점')).toBeDisabled();
   const save = requests.find((request) => request.method === 'PUT');
   expect(JSON.parse(save.body)).toEqual({
     scores: {
@@ -462,7 +453,7 @@ test('마감된 회차는 대상 조회 없이 본인 저장 응답만 읽고 �
   const { requests } = await backend(page, { roundStatus: 'CLOSED' });
   await page.goto('/spaces/1/teams/1/peer-evaluations');
   await expect(page.getByText('마감된 내 응답', { exact: true })).toBeVisible();
-  await expect(page.getByLabel('승인자 작업 수행 4점')).toBeDisabled();
+  await expect(page.getByLabel('리더 작업 수행 4점')).toBeDisabled();
   expect(
     requests.some((request) => request.path.endsWith('/targets')),
   ).toBeFalsy();
@@ -927,9 +918,9 @@ test('리포트를 실제 생성·검토·공개하고 다른 팀 미제출은 �
   await expect(
     page.getByRole('heading', { name: '담당자님의 계산 근거' }),
   ).toBeVisible();
-  await page.getByText('승인자님의 계산 근거 보기', { exact: true }).click();
+  await page.getByText('리더님의 계산 근거 보기', { exact: true }).click();
   await expect(
-    page.getByRole('heading', { name: '승인자님의 계산 근거' }),
+    page.getByRole('heading', { name: '리더님의 계산 근거' }),
   ).toBeVisible();
   await expect(page.getByText('목업', { exact: true })).toHaveCount(0);
   await expect(page.getByText('AI 작업 평가', { exact: true })).toHaveCount(0);
@@ -970,8 +961,8 @@ test('팀원은 공개 결과와 본인 근거만 보고 관리 API를 호출하
   await expect(
     page.getByRole('heading', { name: '나의 계산 근거' }),
   ).toBeVisible();
-  await expect(page.getByText('승인 작업', { exact: true })).toBeVisible();
-  await expect(page.getByText('승인자님의 계산 근거 보기')).toHaveCount(0);
+  await expect(page.getByText('완료 작업', { exact: true })).toBeVisible();
+  await expect(page.getByText('리더님의 계산 근거 보기')).toHaveCount(0);
   await expect(
     page.getByRole('heading', { name: '동료 평가 원문', exact: true }),
   ).toHaveCount(0);
@@ -1010,7 +1001,7 @@ test('미공개 리포트 null과 실제 404를 구분하고 오류를 목업으
   );
 });
 
-test('표시상 마감 후에도 서버 마감 정리와 승인 작업 부족 오류를 안내한다', async ({
+test('표시상 마감 후에도 서버 마감 정리와 완료 작업 부족 오류를 안내한다', async ({
   page,
 }) => {
   const fixture = await reportBackend(page, {
@@ -1038,7 +1029,7 @@ test('표시상 마감 후에도 서버 마감 정리와 승인 작업 부족 �
   );
   await page.getByRole('button', { name: '리포트 생성', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText(
-    '승인 작업 또는 평가 입력이 부족',
+    '완료 작업 또는 평가 입력이 부족',
   );
 });
 
@@ -1333,14 +1324,14 @@ test('관리자 목록 정렬은 지연 건수와 실제 진행률을 사용하�
 }) => {
   const { requests } = await backend(page, { manager: true });
   const teamOverview = {
-    leaderName: '승인자',
+    leaderName: '리더',
     approvedMemberCount: 2,
     hasMinimumMembers: true,
     pendingApplications: 0,
     totalTaskCount: 4,
     todoTaskCount: 1,
     inProgressTaskCount: 2,
-    pendingApprovalCount: 0,
+    revisingTaskCount: 0,
     doneTaskCount: 1,
     completionRate: 25,
     overdueTaskCount: 0,
@@ -1361,7 +1352,7 @@ test('관리자 목록 정렬은 지연 건수와 실제 진행률을 사용하�
         pendingApplications: 0,
         overdueTaskCount: 4,
         staleTaskCount: 0,
-        pendingApprovalCount: 0,
+        revisingTaskCount: 0,
         teams: [
           {
             ...teamOverview,

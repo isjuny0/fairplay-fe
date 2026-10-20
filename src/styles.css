@@ -1119,7 +1119,7 @@ p {
 .task-state-in_progress .status-dot {
   background: #4f87bc;
 }
-.task-state-pending_approval .status-dot {
+.task-state-revising .status-dot {
   background: #c99d3a;
 }
 .task-state-done .status-dot {
@@ -1251,10 +1251,10 @@ p {
   gap: 22px;
   align-items: start;
 }
-.task-review-sidebar .panel {
+.task-progress-sidebar .panel {
   padding: 20px;
 }
-.task-review-sidebar .heading-actions {
+.task-progress-sidebar .heading-actions {
   display: grid;
   grid-template-columns: 1fr;
 }
@@ -1266,19 +1266,13 @@ p {
   background: #eaf0fa;
   color: #37659c;
 }
-.status-badge.task-state-pending_approval,
-.approval-pending {
+.status-badge.task-state-revising {
   background: #fbf2dc;
   color: #8c6a25;
 }
-.status-badge.task-state-done,
-.approval-approved {
+.status-badge.task-state-done {
   background: var(--brand-light);
   color: var(--brand-dark);
-}
-.approval-rejected {
-  background: #f8ebe8;
-  color: #a25b48;
 }
 .page-heading .status-badge {
   margin-bottom: 10px;
@@ -1315,17 +1309,6 @@ p {
   font-size: var(--text-support);
   line-height: 1.6;
 }
-.approval-card {
-  margin-bottom: 12px;
-  padding: 22px;
-  border-bottom: 1px solid var(--border);
-}
-.approval-card .status-badge {
-  margin-right: 10px;
-}
-.approval-card > button {
-  flex: 0 0 auto;
-}
 .settings-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1358,27 +1341,6 @@ p {
 }
 .contribution-entry:last-child {
   padding-bottom: 0;
-}
-.approval-history {
-  display: grid;
-  gap: 10px;
-  padding: 18px 0;
-  border-bottom: 1px solid var(--border);
-  font-size: var(--text-support);
-  line-height: 1.6;
-}
-.approval-history:last-child {
-  border-bottom: 0;
-}
-.approval-history small {
-  color: var(--text-muted);
-}
-.approval-history p {
-  padding: 10px;
-  border-radius: 6px;
-  background: #fff5ef;
-  color: #98634a;
-  font-size: var(--text-support);
 }
 .deliverables-section > .section-heading h2 {
   font-size: var(--text-section);
@@ -1741,7 +1703,7 @@ fieldset {
   .settings-grid {
     grid-template-columns: 1fr;
   }
-  .task-review-sidebar .heading-actions {
+  .task-progress-sidebar .heading-actions {
     display: flex;
   }
   .quick-links {
@@ -1918,9 +1880,6 @@ fieldset {
   .deliverable-card .section-heading {
     flex-wrap: wrap;
     gap: 12px;
-  }
-  .approval-card > button {
-    margin-left: auto;
   }
   .two-columns {
     grid-template-columns: 1fr;
@@ -2691,7 +2650,7 @@ details > summary {
     display: flex;
     flex-direction: column;
   }
-  .task-review-sidebar {
+  .task-progress-sidebar {
     display: contents;
   }
   .task-next-action {
@@ -2998,7 +2957,7 @@ details > summary {
   border-left: 1px solid var(--border);
 }
 @media (min-width: 901px) {
-  .task-review-sidebar {
+  .task-progress-sidebar {
     position: sticky;
     top: 88px;
     max-height: calc(100dvh - 104px);

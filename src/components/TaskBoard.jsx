@@ -214,7 +214,7 @@ export default function TaskBoard({
   const activeFilters = [
     ...(filter !== 'ALL' ? [{ key: 'status', label: `상태: ${statusLabels[filter]}` }] : []),
     ...(onlyMine ? [{ key: 'mine', label: '내 담당' }] : []),
-    ...(onlyOverdue ? [{ key: 'overdue', label: onlyExecutionOverdue ? '수행 지연: 할 일·진행 중' : '마감 지남' }] : []),
+    ...(onlyOverdue ? [{ key: 'overdue', label: onlyExecutionOverdue ? '수행 지연: 할 일·진행 중·수정 중' : '마감 지남' }] : []),
     ...(query.trim() ? [{ key: 'q', label: `검색: ${query.trim()}` }] : []),
     ...(sort !== defaultSort ? [{ key: 'sort', label: `정렬: ${sortLabel}` }] : []),
   ];
@@ -545,15 +545,6 @@ export default function TaskBoard({
                                   ))}
                                 </dd>
                               </div>
-                              <div>
-                                <dt>승인</dt>
-                                <dd>
-                                  {memberName(
-                                    members,
-                                    task.completionReviewerId,
-                                  )}
-                                </dd>
-                              </div>
                             </dl>
                             <div className="task-deadline">
                               <Icon name="calendar" />
@@ -581,7 +572,7 @@ export default function TaskBoard({
               {hasFilters
                 ? '검색어와 상태, 담당·마감 조건을 초기화해 전체 작업을 확인하세요.'
                 : canCreate
-                  ? '작업 내용을 정하고 담당자와 완료 승인자를 선택해 시작하세요.'
+                  ? '작업 내용을 정하고 담당자와 배분을 정해 시작하세요.'
                   : members.length < 2
                     ? '승인된 팀원이 2명 이상 모이면 작업을 만들 수 있습니다.'
                     : '현재 팀 상태에서는 새 작업을 만들 수 없습니다. 팀 설정에서 상태를 확인하세요.'}

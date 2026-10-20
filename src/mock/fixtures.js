@@ -2,16 +2,16 @@ export const previewUsers = {
   participant: { id: '00000000-0000-4000-8000-000000000007', name: '한지민' },
   leader: { id: '00000000-0000-4000-8000-000000000001', name: '김하늘' },
   member: { id: '00000000-0000-4000-8000-000000000002', name: '이지원' },
-  reviewer: { id: '00000000-0000-4000-8000-000000000003', name: '박서연' },
+  teammate: { id: '00000000-0000-4000-8000-000000000003', name: '박서연' },
   manager: { id: '00000000-0000-4000-8000-000000000004', name: '정민수' },
 };
 
 export const previewMembers = Object.entries(previewUsers)
-  .filter(([role]) => ['leader', 'member', 'reviewer'].includes(role))
+  .filter(([role]) => ['leader', 'member', 'teammate'].includes(role))
   .map(([role, user]) => ({
     userId: user.id,
     name: user.name,
-    role: role === 'leader' ? 'LEADER' : role === 'reviewer' ? 'DEPUTY' : 'MEMBER',
+    role: role === 'leader' ? 'LEADER' : 'MEMBER',
   }));
 
 export const previewSpace = {
@@ -35,7 +35,6 @@ export const previewTeams = [
     name: '삼위일체',
     createdAt: '2026-10-01T00:00:00Z',
     leaderId: previewUsers.leader.id,
-    deputyId: previewUsers.reviewer.id,
     approvedMemberCount: 3,
     canCreateTask: true,
   },
@@ -45,7 +44,6 @@ export const previewTeams = [
     name: '파도',
     createdAt: '2026-10-01T00:00:00Z',
     leaderId: '00000000-0000-4000-8000-000000000005',
-    deputyId: null,
     approvedMemberCount: 2,
     canCreateTask: false,
   },
@@ -57,7 +55,6 @@ export function exampleTasks(team, members) {
   if (!members.length) return [];
   const lead = members[0].userId;
   const second = members[1]?.userId || lead;
-  const reviewer = members[2]?.userId || second;
   const now = Date.now();
   const titles = [
     '사용자 인터뷰 계획',
@@ -70,7 +67,7 @@ export function exampleTasks(team, members) {
   const states = [
     'DONE',
     'IN_PROGRESS',
-    'PENDING_APPROVAL',
+    'REVISING',
     'TODO',
     'DONE',
     'DONE',
@@ -90,8 +87,8 @@ export function exampleTasks(team, members) {
     ).toISOString(),
     createdAt: new Date(now - 10 * 86400000).toISOString(),
     updatedAt: new Date(now - 3 * 86400000).toISOString(),
+    completedAt: states[index] === 'DONE' ? new Date(now - 3 * 86400000).toISOString() : null,
     lastActivityAt: new Date(now - 3 * 86400000).toISOString(),
-    completionReviewerId: reviewer,
     assignees:
       index === 1
         ? [

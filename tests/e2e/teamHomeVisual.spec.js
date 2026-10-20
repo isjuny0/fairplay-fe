@@ -101,7 +101,7 @@ test('계산 기준은 키보드로 펼쳐 쉬운 설명과 계산식을 확인�
   await expect(body.getByRole('term')).toHaveCount(4);
   await expect(body).toContainText('내 담당 분량 ÷ 팀 전체 분량');
   await expect(body).toContainText('내 완료 분량 ÷ 내 담당 분량');
-  await expect(body).toContainText('승인 대기 작업은 제외');
+  await expect(body).toContainText('완료 후 ‘수정 중’인 작업은 제외');
   await expect(body).toContainText(
     '최종 기여도 점수, 무임승차 여부를 뜻하지 않아요.',
   );

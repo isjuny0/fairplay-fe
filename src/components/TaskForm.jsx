@@ -11,7 +11,6 @@ import {
   fromDateInput,
   expectedWorkloadOptions,
   memberRole,
-  reviewerCandidates,
   toDateInput,
   formatDate,
   formatExpectedWorkload,
@@ -47,7 +46,6 @@ export default function TaskForm({
     startAt: task ? toDateInput(task.startAt) : defaultDateTime,
     dueAt: toDateInput(task?.dueAt) || defaultDateTime,
     assignees: task?.assignees.map((assignment) => ({ ...assignment })) || [],
-    completionReviewerId: task?.completionReviewerId || '',
   });
   const [form, setForm] = useState(initialForm);
   const mobile = useMobileLayout();
@@ -74,25 +72,13 @@ export default function TaskForm({
         ),
       ),
       [name]: undefined,
-      ...(name === 'assignees' ? { completionReviewerId: undefined } : {}),
     }));
     setForm((current) => ({ ...current, [name]: value }));
   };
-  const candidates = reviewerCandidates(editingMembers, form.assignees);
-  const selectedReviewer = candidates.some(
-    (member) => member.userId === form.completionReviewerId,
-  )
-    ? form.completionReviewerId
-    : '';
   const total = form.assignees.reduce(
     (sum, assignment) => sum + Number(assignment.allocationPercent),
     0,
   );
-  const allMembersAssigned =
-    editingMembers.length > 0 &&
-    editingMembers.every((member) =>
-      form.assignees.some((assignment) => assignment.userId === member.userId),
-    );
   const toggle = (member, checked) =>
     update(
       'assignees',
@@ -134,9 +120,6 @@ export default function TaskForm({
               assignees: `현재 합계는 ${total}%입니다. 균등 배분을 누르거나 합계를 100%로 맞춰 주세요.`,
             }
           : {}),
-      ...(!selectedReviewer
-        ? { completionReviewerId: '목록에서 완료 승인자를 선택해 주세요.' }
-        : {}),
     });
     const errors =
       mobile && step < 2
@@ -172,7 +155,7 @@ export default function TaskForm({
       !(await confirm({
         title: '최신 작업에 내 입력 반영',
         message:
-          '확인한 최신 작업에 현재 제목·설명·작업량·시작일·마감·담당 배분·승인자를 반영합니다. 다른 팀원의 수정 내용을 덮어쓸 수 있습니다. 비교한 내용을 확인하고 저장할까요?',
+          '확인한 최신 작업에 현재 제목·설명·작업량·시작일·마감·담당 배분를 반영합니다. 다른 팀원의 수정 내용을 덮어쓸 수 있습니다. 비교한 내용을 확인하고 저장할까요?',
         label: '내 입력으로 저장',
       }))
     )
@@ -193,7 +176,6 @@ export default function TaskForm({
           userId: assignment.userId,
           allocationPercent: Number(assignment.allocationPercent),
         })),
-        completionReviewerId: selectedReviewer,
       },
       version,
     );
@@ -215,7 +197,7 @@ export default function TaskForm({
       >
         {mobile && (
           <ol className="task-form-steps" aria-label="작업 입력 단계">
-            {['작업 내용', '담당·승인', '저장 전 확인'].map((label, index) => (
+            {['작업 내용', '담당·배분', '저장 전 확인'].map((label, index) => (
               <li
                 key={label}
                 aria-current={step === index ? 'step' : undefined}
@@ -332,7 +314,7 @@ export default function TaskForm({
             <section
               hidden={mobile && step !== 1}
               className="task-form-section assignment-form-section"
-              aria-label="담당·승인 설정 입력"
+              aria-label="담당·배분 설정 입력"
             >
               <div>
                 <h3
@@ -340,7 +322,7 @@ export default function TaskForm({
                   data-step-title="1"
                   className="form-section-title"
                 >
-                  담당·승인 설정
+                  담당·배분 설정
                 </h3>
                 <div className="section-heading">
                   <h4>담당자와 배분</h4>
@@ -475,39 +457,6 @@ export default function TaskForm({
                   </button>
                 </p>
               )}
-              <Field
-                label="완료 승인자"
-                error={fieldErrors.completionReviewerId}
-                help="비담당 리더 → 비담당 부리더 → 비담당 팀원 순서로 제공합니다. 목록에서 승인자를 직접 선택해 주세요."
-              >
-                <select
-                  name="completionReviewerId"
-                  required
-                  value={selectedReviewer}
-                  onChange={(event) =>
-                    update('completionReviewerId', event.target.value)
-                  }
-                >
-                  <option value="">승인자를 선택하세요</option>
-                  {candidates.map((member, index) => (
-                    <option key={member.userId} value={member.userId}>
-                      {index + 1}. {member.name} · {memberRole(member)}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              {form.completionReviewerId && !selectedReviewer && (
-                <p className="notice" role="status">
-                  담당자 구성이 바뀌어 이전 승인자를 선택할 수 없습니다.
-                  목록에서 다시 선택해 주세요.
-                </p>
-              )}
-              {allMembersAssigned && (
-                <p className="task-reviewer-exception">
-                  전원 담당 작업은 리더·부리더를 승인자로 선택할 수 있습니다.
-                  완료 요청은 선택한 승인자와 다른 담당자가 진행해야 합니다.
-                </p>
-              )}
               {task &&
                 task.assignees.some(
                   (assignment) => assignment.userId === user.id,
@@ -573,10 +522,6 @@ export default function TaskForm({
                       ))}
                     </dd>
                   </div>
-                  <div>
-                    <dt>완료 승인자</dt>
-                    <dd>{memberName(editingMembers, selectedReviewer)}</dd>
-                  </div>
                 </dl>
                 <div className="heading-actions">
                   <button
@@ -591,7 +536,7 @@ export default function TaskForm({
                     className="secondary-button"
                     onClick={() => goToStep(1)}
                   >
-                    담당·승인 수정
+                    담당·배분 수정
                   </button>
                 </div>
                 <p className="field-help">
@@ -669,16 +614,6 @@ export default function TaskForm({
                       )
                       .join(' · '),
                   },
-                  {
-                    label: '완료 승인자',
-                    latest: memberName(
-                      editingMembers,
-                      recovery.latest.task.completionReviewerId,
-                    ),
-                    input: selectedReviewer
-                      ? memberName(editingMembers, selectedReviewer)
-                      : '미선택',
-                  },
                 ]
               : []
           }
@@ -698,7 +633,7 @@ export default function TaskForm({
           label={
             mobile && step < 2
               ? step === 0
-                ? '다음: 담당·승인'
+                ? '다음: 담당·배분'
                 : '다음: 저장 전 확인'
               : recovery.latest
                 ? '내 입력으로 다시 저장'

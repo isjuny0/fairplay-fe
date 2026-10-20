@@ -27,7 +27,7 @@ async function seed(page, view = 'list', extra = '', customize = () => {}) {
   customize(state);
   await page.addInitScript((state) => {
     localStorage.setItem('fairplay:preview-role', 'leader');
-    localStorage.setItem('fairplay:mock:v5:preview:1', JSON.stringify(state));
+    localStorage.setItem('fairplay:mock:v6:preview:1', JSON.stringify(state));
   }, state);
   await page.goto(
     `/preview/spaces/1/teams/1/tasks?view=${view}&month=2026-11${extra}`,
@@ -47,7 +47,6 @@ test('목록은 일곱 열의 표로 제공하고 상세 복귀·필터·보기 
     '작업',
     '상태',
     '담당자·배분',
-    '승인자',
     '예상 작업량',
     '시작일',
     '마감일',
@@ -529,9 +528,9 @@ test('검색으로 빈 일정은 필터만 초기화하고 등록된 작업이 �
   await expect(page.getByLabel('조회 시작 월')).toHaveValue('2032-01');
   await expect(page.getByRole('button', { name: '작업 있는 기간으로 이동', exact: true })).toBeVisible();
   await page.evaluate(() => {
-    const state = JSON.parse(localStorage.getItem('fairplay:mock:v5:preview:1'));
+    const state = JSON.parse(localStorage.getItem('fairplay:mock:v6:preview:1'));
     state.teams[1].tasks = [];
-    localStorage.setItem('fairplay:mock:v5:preview:1', JSON.stringify(state));
+    localStorage.setItem('fairplay:mock:v6:preview:1', JSON.stringify(state));
   });
   await page.getByRole('button', { name: '새로고침', exact: true }).click();
   await expect(page.getByText('아직 등록된 작업이 없습니다. 새 작업을 만들어 시작하세요.', { exact: true })).toBeVisible();
@@ -550,11 +549,11 @@ test('마지막 보기·너비는 재방문에 복원하고 주소의 보기·�
   await page.getByRole('button', { name: '작업', exact: true }).click();
   await expect(page.getByRole('button', { name: '타임라인', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(resizer).toHaveAttribute('aria-valuenow', '316');
-  await page.goto('/preview/spaces/1/teams/1/tasks?view=calendar&month=2026-11&q=서비스&status=PENDING_APPROVAL');
+  await page.goto('/preview/spaces/1/teams/1/tasks?view=calendar&month=2026-11&q=서비스&status=REVISING');
   await expect(page.getByRole('button', { name: '캘린더', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByLabel('조회 월')).toHaveValue('2026-11');
   await expect(page.getByLabel('작업 제목 검색')).toHaveValue('서비스');
-  await expect(page.getByLabel('작업 상태', { exact: true })).toHaveValue('PENDING_APPROVAL');
+  await expect(page.getByLabel('작업 상태', { exact: true })).toHaveValue('REVISING');
   await page.goto('/preview/spaces/1/teams/1/tasks?month=2026-11');
   await expect(page.getByRole('button', { name: '캘린더', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByLabel('작업 제목 검색')).toHaveValue('');

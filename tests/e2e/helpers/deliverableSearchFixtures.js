@@ -24,7 +24,6 @@ export const tasks = [
     teamId: 1,
     title: "사용자 조사 결과 정리",
     status: "IN_PROGRESS",
-    completionReviewerId: members[0].userId,
     weight: 3,
     description: "조사 결과를 정리합니다.",
     assignees: [{ userId: user.id, allocationPercent: 100 }],

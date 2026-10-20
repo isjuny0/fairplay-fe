@@ -88,19 +88,19 @@
 #task-reviewer-select {
   scroll-margin-top: 132px;
 }
-.task-detail-page .task-review-sidebar {
+.task-detail-page .task-progress-sidebar {
   gap: 16px;
 }
-.main-content .task-detail-page .task-review-sidebar > .panel {
+.main-content .task-detail-page .task-progress-sidebar > .panel {
   padding: 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
   background: var(--surface);
 }
-.task-detail-page .task-review-sidebar > .task-next-action {
+.task-detail-page .task-progress-sidebar > .task-next-action {
   background: var(--surface-secondary);
 }
-.task-detail-page .task-review-sidebar .completion-readiness {
+.task-detail-page .task-progress-sidebar .completion-readiness {
   font-size: var(--text-support);
   gap: 10px;
 }
@@ -145,19 +145,19 @@
   .task-detail-page .task-detail-layout {
     gap: 20px;
   }
-  .task-detail-page .task-review-sidebar > .task-next-action {
+  .task-detail-page .task-progress-sidebar > .task-next-action {
     order: -1;
   }
 }
 
-.task-detail-page .task-review-sidebar h2 {
+.task-detail-page .task-progress-sidebar h2 {
   margin: 0 0 12px;
 }
-.main-content .task-detail-page .task-review-sidebar > .panel.task-next-action {
+.main-content .task-detail-page .task-progress-sidebar > .panel.task-next-action {
   background: var(--surface-secondary);
   gap: 16px;
 }
-.task-detail-page .task-review-sidebar .task-next-action > h2 {
+.task-detail-page .task-progress-sidebar .task-next-action > h2 {
   margin: 0;
 }
 .task-detail-page > .page-heading > button {
@@ -212,7 +212,7 @@
   outline-offset: -2px;
 }
 @media (min-width: 901px) {
-  .task-detail-page .task-review-sidebar {
+  .task-detail-page .task-progress-sidebar {
     top: 128px;
     max-height: calc(100dvh - 144px);
   }

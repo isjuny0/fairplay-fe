@@ -228,10 +228,6 @@
   color: #805b15;
   background: #faf3e3;
 }
-.dashboard-team-link .signal-approval {
-  color: var(--task-review-text);
-  background: var(--task-review-background);
-}
 .dashboard-team-link:focus-visible {
   outline-offset: 3px;
 }

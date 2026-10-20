@@ -50,7 +50,7 @@ function TaskExample() {
       progress: '사용자 여정 작성 중',
     },
     {
-      label: '승인 대기',
+      label: '수정 중',
       tone: 'review',
       title: '프로토타입 검토',
       tag: '디자인',
@@ -65,7 +65,7 @@ function TaskExample() {
       tag: '리서치',
       name: '염승혜',
       date: '10. 20',
-      progress: '완료 승인됨',
+      progress: '작업 완료',
     },
   ];
   return (
@@ -365,7 +365,7 @@ export default function LandingPage() {
                   {
                     [
                       '담당자와 작업 상태를 한눈에 확인하고, 팀의 다음 할 일을 정하세요.',
-                      '작업에 산출물을 연결하고, 검토와 승인까지 이어가세요.',
+                      '작업에 산출물과 수행 설명을 남기고 직접 완료하세요.',
                       '수행 기록과 동료 평가를 바탕으로, 함께한 과정을 확인하세요.',
                     ][index]
                   }

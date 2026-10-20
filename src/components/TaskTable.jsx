@@ -31,7 +31,6 @@ export default function TaskTable({ tasks, members, onOpenTask, now }) {
             <th scope="col">작업</th>
             <th scope="col">상태</th>
             <th scope="col">담당자·배분</th>
-            <th scope="col">승인자</th>
             <th scope="col">예상 작업량</th>
             <th scope="col">시작일</th>
             <th scope="col">마감일</th>
@@ -65,7 +64,6 @@ export default function TaskTable({ tasks, members, onOpenTask, now }) {
                   </span>
                 ))}
               </td>
-              <td>{memberName(members, task.completionReviewerId)}</td>
               <td title={formatExpectedWorkload(task.weight)}>{formatBoardWorkload(task.weight)}</td>
               <td>
                 <TaskDateTime value={task.startAt} />

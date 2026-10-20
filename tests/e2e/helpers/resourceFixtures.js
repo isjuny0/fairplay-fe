@@ -16,7 +16,6 @@ export const team = {
   spaceId: 1,
   name: '긴 자료와 많은 작업을 함께 관리하는 팀',
   leaderId: 'leader',
-  deputyId: null,
   approvedMemberCount: 2,
   myMembershipStatus: 'APPROVED',
   canCreateTask: true,
@@ -35,9 +34,8 @@ export const tasks = Array.from({ length: 100 }, (_, index) => ({
   weight: 3,
   startAt: '2030-11-01T09:00:00+09:00',
   dueAt: '2030-11-20T18:00:00+09:00',
-  status: ['TODO', 'IN_PROGRESS', 'PENDING_APPROVAL', 'DONE'][index % 4],
+  status: ['TODO', 'IN_PROGRESS', 'REVISING', 'DONE'][index % 4],
   version: 1,
-  completionReviewerId: 'leader',
   assignees: [{ userId: 'member', allocationPercent: 100 }],
 }));
 export function deliverablePage(page = 0) {

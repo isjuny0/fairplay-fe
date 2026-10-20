@@ -106,10 +106,13 @@ test('파일 선택을 해제하면 필수 파일 검증을 유지하고 수정�
   await expect(saved).not.toContainText('replacement.md');
 });
 
-test('공용 자료의 비작성 부리더는 제목·분류만 수정하고 본문을 유지한다', async ({
+test('공용 자료의 비작성 리더는 제목·분류만 수정하고 본문을 유지한다', async ({
   page,
 }) => {
-  await openDeliverables(page, 'reviewer');
+  await openDeliverables(page, 'member');
+  await page.getByRole('row').filter({has:page.getByRole('button',{name:'프로젝트 기획서',exact:true})}).getByRole('button',{name:'수정',exact:true}).count().then(count=>expect(count).toBe(0));
+  await page.evaluate(async () => {const {getMockState, saveMockState} = await import('/src/mock/planned.js'); const {previewContext} = await import('/src/mock/preview.js'); const context=previewContext(); const state=getMockState(context); state.teams[1].deliverables.find(item=>item.taskId==null).authorId=context.user.id; saveMockState(context,state);});
+  await openDeliverables(page, 'leader');
   const row = page
     .getByRole('row')
     .filter({

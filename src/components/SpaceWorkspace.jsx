@@ -165,9 +165,7 @@ export default function SpaceWorkspace({
       title:
         view === 'team'
           ? taskId
-            ? teamMenu === '승인 검토'
-              ? '승인 검토 상세'
-              : '작업 상세'
+            ? '작업 상세'
             : teamMenu
           : titles[view] || '팀 목록',
       detail: [space.name, team?.name].filter(Boolean).join(' / '),
@@ -188,9 +186,7 @@ export default function SpaceWorkspace({
     ? ''
     : team.leaderId === user.id
       ? '리더'
-      : team.deputyId === user.id
-        ? '부리더'
-        : isApprovedMember(team)
+      : isApprovedMember(team)
           ? '팀원'
           : '관리자 조회';
   const buildingOpen =
@@ -316,9 +312,7 @@ export default function SpaceWorkspace({
                 <span aria-current="page">
                   {view === 'team'
                     ? taskId
-                      ? teamMenu === '승인 검토'
-                        ? '승인 검토 상세'
-                        : '작업 상세'
+                      ? '작업 상세'
                       : teamMenu
                     : {
                         teams: '팀 목록',
