@@ -174,13 +174,14 @@ for (const width of [1920, 1440, 1280, 1024, 768, 390, 320]) {
     }
     const firstCard = page.locator('.board-task-card').first();
     const foldedHeight = await firstCard.evaluate((card) => card.getBoundingClientRect().height);
+    await expect(firstCard.locator('.task-number')).toBeVisible();
     await expect(firstCard.locator('.task-workload-line')).toHaveCount(0);
     await expect(firstCard.locator('.task-card-meta')).toHaveCount(0);
-    await firstCard.getByRole('button', { name: '상세 보기', exact: true }).click();
+    await firstCard.getByRole('button', { name: /상세 보기$/ }).click();
     await expect(firstCard.locator('.task-workload-line')).toBeVisible();
     await expect(firstCard.locator('.task-card-meta')).toBeVisible();
     expect(await firstCard.evaluate((card) => card.getBoundingClientRect().height)).toBeGreaterThan(foldedHeight);
-    await firstCard.getByRole('button', { name: '상세 접기', exact: true }).click();
+    await firstCard.getByRole('button', { name: /상세 접기$/ }).click();
     await expect(firstCard.locator('.task-workload-line')).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   });

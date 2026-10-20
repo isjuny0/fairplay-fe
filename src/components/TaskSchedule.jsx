@@ -22,7 +22,44 @@ const shortDate = (date) =>
 const scheduleLabel = (task) =>
   `${task.title} · 시작일 ${formatDate(task.startAt)} · 마감 ${formatDate(task.dueAt)}`;
 
-export function MonthNavigation({ month, onMonthChange, tasks, span = 1 }) {
+function ScheduleHelp({ text }) {
+  return (
+    <span
+      className="schedule-help-trigger"
+      tabIndex={0}
+      aria-label={`일정 읽는 법 도움말: ${text}`}
+    >
+      <span aria-hidden="true">?</span>
+      <span className="schedule-help-tooltip" role="tooltip">
+        {text}
+      </span>
+    </span>
+  );
+}
+
+function ScheduleStatusLegend({ label }) {
+  return (
+    <div className="timeline-legend" aria-label={label}>
+      {Object.entries(statusLabels).map(([status, statusLabel]) => (
+        <span
+          key={status}
+          className={`schedule-task-${status.toLowerCase()}`}
+        >
+          <span className="status-dot" aria-hidden="true" />
+          {statusLabel}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+export function MonthNavigation({
+  month,
+  onMonthChange,
+  tasks,
+  span = 1,
+  helpText,
+}) {
   const previous = moveTaskMonth(month, -span),
     next = moveTaskMonth(month, span);
   const nearest = nearestTaskMonth(tasks);
@@ -59,22 +96,25 @@ export function MonthNavigation({ month, onMonthChange, tasks, span = 1 }) {
           오늘
         </button>
       </div>
-      <label>
-        <span className="sr-only">
-          {span === 3 ? '조회 시작 월' : '조회 월'}
-        </span>
-        <input
-          aria-label={span === 3 ? '조회 시작 월' : '조회 월'}
-          type="month"
-          min="0001-01"
-          max="9999-12"
-          value={month}
-          onChange={(event) => {
-            if (isTaskMonth(event.target.value))
-              onMonthChange(event.target.value);
-          }}
-        />
-      </label>
+      <div className="task-month-picker">
+        <label>
+          <span className="sr-only">
+            {span === 3 ? '조회 시작 월' : '조회 월'}
+          </span>
+          <input
+            aria-label={span === 3 ? '조회 시작 월' : '조회 월'}
+            type="month"
+            min="0001-01"
+            max="9999-12"
+            value={month}
+            onChange={(event) => {
+              if (isTaskMonth(event.target.value))
+                onMonthChange(event.target.value);
+            }}
+          />
+        </label>
+        {helpText && <ScheduleHelp text={helpText} />}
+      </div>
       {nearest && nearest !== month && (
         <button className="text-button" onClick={() => onMonthChange(nearest)}>
           가까운 마감으로
@@ -120,6 +160,9 @@ export function TaskCalendar({
   const today = taskDate(new Date(now).toISOString());
   return (
     <section className="task-schedule" aria-label="작업 캘린더">
+      <div className="calendar-overview">
+        <ScheduleStatusLegend label="캘린더 상태 범례" />
+      </div>
       <div
         className="task-calendar-scroll"
         role="region"
@@ -191,10 +234,6 @@ export function TaskCalendar({
           </tbody>
         </table>
       </div>
-      <details className="task-schedule-help">
-        <summary>캘린더 읽는 법</summary>
-        <p>점은 작업의 시작일 또는 마감일을 뜻하며, 색으로 진행 상태를 구분합니다. 점이 있는 날짜를 선택하면 해당 작업을 확인할 수 있습니다.</p>
-      </details>
       {selectedDate && (
         <Modal
           title={`${selectedDate} 작업 일정`}
@@ -347,17 +386,7 @@ export function TaskTimeline({
             시작 예정일 지남 <strong>{startPassedCount}</strong>
           </span>
         </div>
-        <div className="timeline-legend" aria-label="타임라인 상태 범례">
-          {Object.entries(statusLabels).map(([status, label]) => (
-            <span
-              key={status}
-              className={`schedule-task-${status.toLowerCase()}`}
-            >
-              <span className="status-dot" aria-hidden="true" />
-              {label}
-            </span>
-          ))}
-        </div>
+        <ScheduleStatusLegend label="타임라인 상태 범례" />
       </div>
       <div
         className="task-timeline-scroll"
@@ -628,10 +657,6 @@ export function TaskTimeline({
           )}
         </div>, document.body,
       )}
-      <details className="task-schedule-help">
-        <summary>타임라인 읽는 법</summary>
-        <p>막대의 위치와 겹침으로 일정의 순서와 병행 구간을 비교합니다. 막대는 계획 기간, 빨간 점선은 마감 이후 오늘까지의 지연 구간입니다. 완료 작업은 지연 집계에서 제외합니다. 작업 제목이나 막대를 선택하면 상세를 확인할 수 있습니다.</p>
-      </details>
     </section>
   );
 }

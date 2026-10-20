@@ -84,6 +84,10 @@ test('캘린더는 시작·마감일 점을 표시하고 날짜 작업의 상세
     exact: true,
   });
   await expect(markers.locator('.calendar-date-marker')).toHaveCount(6);
+  await expect(page.getByLabel('캘린더 상태 범례')).toContainText('할 일');
+  const calendarHelp = page.getByLabel(/일정 읽는 법 도움말/);
+  await calendarHelp.hover();
+  await expect(page.getByRole('tooltip')).toContainText('시작일 또는 마감일');
   await page.screenshot({
     path: testInfo.outputPath('task-calendar.png'),
     fullPage: true,
@@ -267,6 +271,10 @@ test('3개월 타임라인은 시작일 순서·오늘·지연 구간을 표시�
     state.teams[1].tasks[3].dueAt = '2026-12-01T00:00:00Z';
   });
   const timeline = page.getByRole('region', { name: '작업 계획 타임라인' });
+  await expect(page.getByLabel('타임라인 상태 범례')).toContainText('진행 중');
+  const timelineHelp = page.getByLabel(/일정 읽는 법 도움말/);
+  await timelineHelp.hover();
+  await expect(page.getByRole('tooltip')).toContainText('빨간 빗금');
   await expect(
     page.getByRole('heading', { name: '2026년 11월 – 2027년 1월' }),
   ).toBeVisible();

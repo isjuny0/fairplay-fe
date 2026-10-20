@@ -397,6 +397,9 @@ export default function TaskBoard({
             span={view === 'timeline' ? 3 : 1}
             onMonthChange={(next) => setListOption('month', next)}
             tasks={tasks}
+            helpText={view === 'calendar'
+              ? '점은 작업의 시작일 또는 마감일이며, 색으로 진행 상태를 구분합니다. 점이 있는 날짜를 선택하면 해당 작업을 확인할 수 있습니다.'
+              : '막대의 위치와 겹침으로 일정의 순서와 병행 구간을 비교합니다. 막대는 계획 기간, 빨간 빗금은 마감 이후 오늘까지의 지연 구간입니다. 작업 제목이나 막대를 선택하면 상세를 확인할 수 있습니다.'}
           />
           <button
             ref={expandButton}
@@ -523,6 +526,10 @@ export default function TaskBoard({
                               key={task.id}
                               className={`board-task-card${detailsExpanded ? ' is-expanded' : ''}`}
                             >
+                              <div className="board-card-top">
+                                <span className="mobile-task-state">{label}</span>
+                                <span className="task-number">#{task.id}</span>
+                              </div>
                               <button
                                 className="task-title-button"
                                 onClick={() => onOpenTask(task.id)}
@@ -534,21 +541,23 @@ export default function TaskBoard({
                                   <Icon name="calendar" />
                                   <small>마감 {formatDate(task.dueAt)}</small>
                                 </div>
+                                {task.status !== 'DONE' &&
+                                  Date.parse(task.dueAt) < now && (
+                                    <span className="is-overdue board-card-overdue">마감 지남</span>
+                                  )}
                               <button
                                 className="board-card-details-toggle"
                                 aria-expanded={detailsExpanded}
                                 aria-controls={detailsId}
+                                aria-label={`${task.title} 상세 ${detailsExpanded ? '접기' : '보기'}`}
+                                title={detailsExpanded ? '상세 접기' : '상세 보기'}
                                 onClick={() => toggleBoardTaskDetails(task.id)}
                               >
-                                {detailsExpanded ? '상세 접기' : '상세 보기'}
+                                <span className="board-card-toggle-triangle" aria-hidden="true" />
                               </button>
                               </div>
                               {detailsExpanded && (
                                 <div id={detailsId} className="board-task-details">
-                                  <div className="board-card-top">
-                                    <span className="mobile-task-state">{label}</span>
-                                    <span className="task-number">#{task.id}</span>
-                                  </div>
                                   <p
                                     className="task-workload-line"
                                     title={formatExpectedWorkload(task.weight)}
@@ -576,10 +585,6 @@ export default function TaskBoard({
                                       </dd>
                                     </div>
                                   </dl>
-                                  {task.status !== 'DONE' &&
-                                    Date.parse(task.dueAt) < now && (
-                                      <span className="is-overdue">마감 지남</span>
-                                    )}
                                 </div>
                               )}
                             </article>
