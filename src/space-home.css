@@ -74,7 +74,7 @@
 .space-home-dates {
   display: flex;
   flex-wrap: nowrap;
-  align-items: center;
+  align-items: baseline;
   gap: 6px 10px;
   margin: 0;
   min-width: 0;
@@ -93,7 +93,8 @@
   white-space: nowrap;
 }
 .space-home-countdown {
-  font-size: 13px;
+  font-size: inherit;
+  line-height: inherit;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -372,6 +373,17 @@
 }
 .space-home-empty p {
   margin: 0;
+}
+.space-home-pending-card {
+  min-height: 128px;
+  align-content: center;
+  text-align: center;
+}
+.space-home-pending-card p {
+  max-width: 60ch;
+  font-size: 14px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
 }
 .space-home .space-home-create-card {
   width: 100%;

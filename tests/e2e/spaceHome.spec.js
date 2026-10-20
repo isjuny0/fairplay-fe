@@ -204,20 +204,23 @@ for (const rejected of [false, true]) {
     await expect(card.getByRole('button', { name: '파도 신청 취소', exact: true })).toBeEnabled();
     await expect(page.getByRole('button', { name: '삼위일체 가입 신청', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: '삼위일체 가입 신청', exact: true })).toBeDisabled();
-    await expect(page.getByRole('region', { name: '내 팀', exact: true }).getByRole('button', { name: '팀 만들기', exact: true })).toBeVisible();
-    await page.getByRole('button', { name: '팀 만들기', exact: true }).click();
-    await expect(page.getByRole('status')).toHaveText(/팀 가입승인 대기 상태 이므로 팀을 만들 수 없습니다. 팀을 만드려면 신청 취소 해주세요/);
+    const own = page.getByRole('region', { name: '내 팀', exact: true });
+    await expect(own.getByRole('button', { name: '팀 만들기', exact: true })).toHaveCount(0);
+    await expect(own.getByRole('status')).toHaveText('팀 가입승인 대기 상태 이므로 팀을 만들 수 없습니다. 팀을 만드려면 신청 취소 해주세요');
+    await own.getByRole('status').click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(page.getByRole('button', { name: /^내 팀 ·/ })).toHaveCount(0);
     expect(fixture.writes).toEqual([{ path: '/api/teams/2/applications', body: null }]);
     await page.reload();
     const cancel = page.getByRole('button', { name: '파도 신청 취소', exact: true });
     await expect(cancel).toBeEnabled();
+    await expect(own.getByRole('status')).toBeVisible();
     await expect(page.getByRole('button', { name: '삼위일체 가입 신청', exact: true })).toBeDisabled();
     await cancel.click();
     await expect(page.getByRole('button', { name: '파도 가입 신청', exact: true })).toBeEnabled();
     await expect(page.getByRole('button', { name: '삼위일체 가입 신청', exact: true })).toBeEnabled();
     await expect(page.getByText('파도 팀 가입 신청을 취소했습니다.', { exact: true })).toBeVisible();
+    await expect(own.getByRole('status')).toHaveCount(0);
     expect(fixture.writes).toEqual([
       { path: '/api/teams/2/applications', body: null },
       { path: '/api/teams/2/applications/me', body: null },
@@ -289,7 +292,7 @@ for (const width of [320, 1440]) {
   });
 }
 
-test('팀이 없는 화면에서 팀 만들기를 열어 실제 생성 요청과 팀 홈 이동을 유지한다', async ({ page }) => {
+test('팀 생성 후 스페이스 홈의 내 팀을 표시하고 카드를 누를 때 팀 홈으로 이동한다', async ({ page }) => {
   const fixture = await spaceHome(page, { joined: false, empty: true });
   await page.goto('/spaces/1');
   await expect(page.getByText('아직 만들어진 팀이 없습니다.', { exact: true })).toBeVisible();
@@ -299,8 +302,18 @@ test('팀이 없는 화면에서 팀 만들기를 열어 실제 생성 요청과
   const dialog = page.getByRole('dialog', { name: '팀 만들기' });
   await dialog.getByLabel('팀 이름').fill('새로운 팀');
   await dialog.getByRole('button', { name: '팀 만들기', exact: true }).click();
-  await expect(page).toHaveURL(/\/spaces\/1\/teams\/3$/);
+  await expect(dialog).toHaveCount(0);
+  const own = page.getByRole('region', { name: '내 팀', exact: true });
+  await expect(own).toContainText('새로운 팀');
+  await expect(own).toContainText('팀 리더');
+  await expect(page).toHaveURL(/\/spaces\/1$/);
+  await expect(own.getByRole('button', { name: '팀 만들기', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('list', { name: '팀 목록', exact: true }).getByText('새로운 팀', { exact: true })).toHaveCount(0);
   expect(fixture.writes).toEqual([{ path: '/api/spaces/1/teams', body: { name: '새로운 팀' } }]);
+  await page.reload();
+  await expect(own).toContainText('새로운 팀');
+  await own.getByRole('button', { name: '새로운 팀 팀 홈으로 이동', exact: true }).click();
+  await expect(page).toHaveURL(/\/spaces\/1\/teams\/3$/);
 });
 
 test('가입 상태 조회 실패 시 생성을 막고 다시 불러오면 최신 소속을 표시한다', async ({ page }) => {

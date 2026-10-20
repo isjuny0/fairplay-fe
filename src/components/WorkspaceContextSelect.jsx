@@ -128,9 +128,9 @@ export default function WorkspaceContextSelect({
           setOpen((current) => !current);
         }}
       >
-        <Icon name={icon} />
+        {icon && <Icon name={icon} />}
         <span className="workspace-context-copy">
-          <small>{label}</small>
+          {label && <small>{label}</small>}
           <strong>{selected?.label || '불러오는 중…'}</strong>
         </span>
         <ChevronDown
