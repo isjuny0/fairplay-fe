@@ -95,11 +95,10 @@ export default function SpaceSettings({ space, onChanged }) {
   };
   return (
     <section className="stack space-settings">
-      <div className="page-heading">
+      <div className="page-heading page-heading--compact">
         <div>
           <span className="eyebrow">스페이스 운영</span>
           <h1>스페이스 관리</h1>
-          <p>팀을 구성할 기간을 지정하고 참여 코드를 관리하세요.</p>
         </div>
         <span className="status-badge">
           {buildingLabels[space.teamBuildingStatus]}
