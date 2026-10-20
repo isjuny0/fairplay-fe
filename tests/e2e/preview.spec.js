@@ -30,7 +30,6 @@ for (const [path, heading, role] of [
   ['/spaces/1/teams/1/tasks', '작업', 'leader'],
   ['/spaces/1/teams/1/tasks/101', '사용자 인터뷰 계획', 'leader'],
   ['/spaces/1/teams/1/deliverables', '산출물 관리', 'leader'],
-  ['/spaces/1/teams/1/approvals', '승인 검토', 'reviewer'],
   ['/spaces/1/teams/1/members', '팀원 관리', 'leader'],
   ['/spaces/1/teams/1/settings', '팀 설정', 'leader'],
   ['/spaces/1/teams/1/peer-evaluations', '동료 평가', 'leader'],
@@ -85,7 +84,7 @@ test('팀 홈과 관리자 현황은 가중치 숫자 대신 비율과 계산 �
     }),
   ).toContainText('80.00%');
   await page.evaluate(() => {
-    const key = 'fairplay:mock:v5:preview:1';
+    const key = 'fairplay:mock:v6:preview:1';
     const state = JSON.parse(localStorage.getItem(key));
     for (const team of Object.values(state.teams))
       for (const task of team.tasks) task.status = 'TODO';
@@ -183,17 +182,17 @@ test('관리자가 리포트를 공개하면 팀원은 본인 계산 근거를 �
   await expect(page.getByRole('rowheader').filter({ hasText: '이지원' })).toContainText('나');
   expect(calls).toEqual([]);
 });
-test('AI 검토는 담당자가 선택적으로 요청하고 지정 승인자는 조회만 한다', async ({
+test('AI 검토는 담당자만 조회하고 비담당 팀원에게 표시하지 않는다', async ({
   page,
 }) => {
   await preview(page, { role: 'leader', path: '/spaces/1/teams/1/tasks/102' });
   await page.getByRole('button', { name: 'AI 검토 요청', exact: true }).click();
   await expect(page.getByText('검토 대기', { exact: true })).toBeVisible();
-  await page.getByLabel('미리보기 역할').selectOption('reviewer');
+  await page.getByLabel('미리보기 역할').selectOption('teammate');
   await page.goto('/preview/spaces/1/teams/1/tasks/102');
   await expect(
     page.getByRole('heading', { name: 'AI 검토', exact: true }),
-  ).toBeVisible();
+  ).toHaveCount(0);
   await expect(
     page.getByRole('button', { name: 'AI 검토 요청', exact: true }),
   ).toHaveCount(0);
@@ -309,7 +308,7 @@ test('실제 로그인 화면에서 인증 없이 미리보기를 시작할 수 
   expect(apiCalls.length).toBe(initialCalls);
 });
 
-test('미리보기 AI 검토는 피드백과 근거를 제공하고 완료 승인 후 추가 요청을 제공하지 않는다', async ({
+test('미리보기 AI 검토는 피드백과 근거를 제공하고 작업 완료 후 추가 요청을 제공하지 않는다', async ({
   page,
 }) => {
   const calls = await preview(page, {

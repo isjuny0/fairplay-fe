@@ -43,7 +43,6 @@ async function fixture(page) {
     }
     if (path === "/api/tasks/10")
       return send({ task: tasks[0], contributions: [] });
-    if (path === "/api/tasks/10/approvals") return send([]);
     if (path.endsWith("/ai-review"))
       return send({ code: "AI_REVIEW_NOT_FOUND" }, 404);
     return send({ message: path }, 501);

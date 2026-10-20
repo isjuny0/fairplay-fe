@@ -29,12 +29,11 @@ test('사이드바는 세 그룹의 모든 메뉴를 한 번에 표시하고 현
     '평가·리포트',
     '팀 관리',
   ]);
-  await expect(menus.getByRole('button')).toHaveCount(9);
+  await expect(menus.getByRole('button')).toHaveCount(8);
   for (const label of [
     '팀 홈',
     '작업',
     '산출물',
-    '승인 검토',
     '동료 평가',
     '중간 피드백',
     '기여도 리포트',
@@ -153,8 +152,8 @@ test('팀 목록은 키보드로 이동하고 관리자의 자료 조회 권한�
   );
   await page.goto('/preview/spaces/1/dashboard');
   const trigger = page.getByRole('combobox', { name: '팀 선택', exact: true });
-  await trigger.focus();
-  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('heading',{name:'관리자 대시보드',level:1,exact:true})).toBeVisible();
+  await trigger.press('ArrowDown');
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   await page.keyboard.press('End');
   await page.keyboard.press('Home');
@@ -188,7 +187,7 @@ test('선택 메뉴와 상태 배지는 연한 배경·진한 글씨로 구분�
     );
   }
   const palette = await page.evaluate(() => {
-    const names = ['todo', 'in_progress', 'pending_approval', 'done'];
+    const names = ['todo', 'in_progress', 'revising', 'done'];
     return names.map((name) => {
       const element = document.createElement('span');
       element.className = `status-badge task-state-${name}`;
@@ -208,11 +207,11 @@ test('선택 메뉴와 상태 배지는 연한 배경·진한 글씨로 구분�
     );
 });
 
-test('팀 홈의 마감·승인 대기는 각각 빨간색과 노란색 아이콘으로 표시한다', async ({
+test('팀 홈의 마감 지연은 빨간색 아이콘으로 표시한다', async ({
   page,
 }) => {
   await page.goto('/preview/spaces/1/teams/1');
-  for (const [name, background] of [['.home-overdue-icon', 'rgb(255, 240, 241)'], ['.home-pending-icon', 'rgb(255, 244, 194)']]) {
+  for (const [name, background] of [['.home-overdue-icon', 'rgb(255, 240, 241)']]) {
     const icon = page.locator(name);
     await expect(icon).toHaveCSS('background-color', background);
     await expect(icon.locator('svg')).toBeVisible();
@@ -220,10 +219,6 @@ test('팀 홈의 마감·승인 대기는 각각 빨간색과 노란색 아이�
   await expect(page.locator('.home-overdue-icon')).toHaveCSS(
     'color',
     'rgb(255, 85, 92)',
-  );
-  await expect(page.locator('.home-pending-icon')).toHaveCSS(
-    'color',
-    'rgb(234, 179, 8)',
   );
   await expect(
     page.locator('.has-overdue .home-action-title strong'),
@@ -236,14 +231,14 @@ test('타임라인·캘린더·목록은 밝은 상태 배경과 읽기 쉬운 �
   const palette = [
     ['todo', 'rgb(191, 233, 250)', 'rgb(0, 92, 186)'],
     ['in_progress', 'rgb(231, 244, 237)', 'rgb(8, 124, 85)'],
-    ['pending_approval', 'rgb(255, 244, 194)', 'rgb(128, 91, 0)'],
+    ['revising', 'rgb(255, 244, 194)', 'rgb(128, 91, 0)'],
     ['done', 'rgb(237, 241, 245)', 'rgb(83, 97, 116)'],
   ];
   await page.goto('/preview/spaces/1/teams/1/tasks?view=board');
   for (const [status, color] of [
     ['todo', 'rgb(0, 181, 232)'],
     ['in_progress', 'rgb(8, 124, 85)'],
-    ['pending_approval', 'rgb(234, 179, 8)'],
+    ['revising', 'rgb(234, 179, 8)'],
     ['done', 'rgb(148, 163, 184)'],
   ]) {
     await expect(page.locator(`.task-column.task-state-${status} .status-dot`)).toHaveCSS('background-color', color);
@@ -287,7 +282,7 @@ test('작업 상세와 관리자 화면도 작업 보드의 공통 상태색을 
   const palette = [
     ['todo', 104, 'rgb(191, 233, 250)', 'rgb(0, 92, 186)'],
     ['in_progress', 102, 'rgb(231, 244, 237)', 'rgb(8, 124, 85)'],
-    ['pending_approval', 103, 'rgb(255, 244, 194)', 'rgb(128, 91, 0)'],
+    ['revising', 103, 'rgb(255, 244, 194)', 'rgb(128, 91, 0)'],
     ['done', 101, 'rgb(237, 241, 245)', 'rgb(83, 97, 116)'],
   ];
   for (const [status, taskId, background, color] of palette) {
@@ -300,8 +295,6 @@ test('작업 상세와 관리자 화면도 작업 보드의 공통 상태색을 
 
   await page.evaluate(() => localStorage.setItem('fairplay:preview-role', 'manager'));
   await page.goto('/preview/spaces/1/dashboard');
-  await expect(page.locator('.signal-approval').first()).toHaveCSS('background-color', 'rgb(255, 244, 194)');
-  await expect(page.locator('.signal-approval').first()).toHaveCSS('color', 'rgb(128, 91, 0)');
   for (const memberId of ['00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000002']) {
     await page.goto(`/preview/spaces/1/manager/teams/1/members/${memberId}`);
     await expect(page.locator('.member-task-record').first()).toBeVisible();
@@ -311,7 +304,7 @@ test('작업 상세와 관리자 화면도 작업 보드의 공통 상태색을 
         await expect(badge).toHaveCSS('color', color);
       }
     }
-    const availableStatuses = memberId.endsWith('1') ? ['done', 'in_progress', 'pending_approval'] : ['todo'];
+    const availableStatuses = memberId.endsWith('1') ? ['done', 'in_progress', 'revising'] : ['todo'];
     for (const status of availableStatuses) {
       await expect(page.locator(`.member-task-record .status-badge.task-state-${status}`).first()).toBeVisible();
     }
@@ -350,7 +343,7 @@ for (const role of ['member', 'manager', 'participant']) {
         sidebar
           .getByRole('navigation', { name: '팀 메뉴', exact: true })
           .getByRole('button'),
-      ).toHaveCount(9);
+      ).toHaveCount(8);
   });
 }
 

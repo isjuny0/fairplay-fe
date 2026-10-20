@@ -4,14 +4,13 @@ async function teamFormation(page, { period = 'OPEN', joined = true } = {}) {
   const members = [
     { userId: 'leader', name: '김하늘', role: 'LEADER' },
     { userId: 'member', name: '이지원', role: 'MEMBER' },
-    { userId: 'deputy', name: '박서연', role: 'DEPUTY' },
+    { userId: 'other-member', name: '박서연', role: 'MEMBER' },
   ];
   const team = {
     id: 1,
     spaceId: 1,
     name: '삼위일체',
     leaderId: 'leader',
-    deputyId: 'deputy',
     approvedMemberCount: 3,
     myMembershipStatus: joined ? 'APPROVED' : 'PENDING',
     canApply: false,
@@ -88,14 +87,6 @@ async function teamFormation(page, { period = 'OPEN', joined = true } = {}) {
           },
           409,
         );
-      if (path === '/api/teams/1/deputy') {
-        team.deputyId = body.userId;
-        members.forEach((member) => {
-          if (member.role !== 'LEADER')
-            member.role = member.userId === body.userId ? 'DEPUTY' : 'MEMBER';
-        });
-        return reply(team);
-      }
       if (path === '/api/team-applications/7') {
         applications = [];
         if (body.status === 'APPROVED') {
@@ -127,73 +118,9 @@ async function teamFormation(page, { period = 'OPEN', joined = true } = {}) {
   };
 }
 
-test('기존 부리더와 변경 대상을 확인하고 취소 또는 변경할 수 있다', async ({
-  page,
-}) => {
-  const fixture = await teamFormation(page);
-  await page.goto('/spaces/1/teams/1/members');
-  await page.getByRole('button', { name: '부리더 변경', exact: true }).click();
-  const dialog = page.getByRole('dialog');
-  await expect(dialog).toContainText(
-    '박서연님의 부리더 역할을 해제하고 이지원님을 새 부리더로 지정',
-  );
-  await dialog.getByRole('button', { name: '취소' }).click();
-  expect(fixture.mutations).toEqual([]);
-  await page.getByRole('button', { name: '부리더 변경', exact: true }).click();
-  fixture.pauseMutation();
-  await dialog
-    .getByRole('button', { name: '부리더 변경', exact: true })
-    .click();
-  await expect(
-    page
-      .getByRole('status')
-      .filter({ hasText: '이지원님을 부리더로 지정하는 중' }),
-  ).toBeVisible();
-  fixture.releaseMutation();
-  await expect(
-    page
-      .getByRole('status')
-      .filter({ hasText: '이지원님을 부리더로 지정했습니다.' }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole('listitem').filter({ hasText: '이지원' }),
-  ).toContainText('부리더 해제');
-  expect(fixture.mutations).toEqual([
-    { path: '/api/teams/1/deputy', body: { userId: 'member' } },
-  ]);
-});
 
-test('변경 실패는 조회 성공 후 정리하고 다시 불러오기는 변경을 재요청하지 않는다', async ({
-  page,
-}) => {
-  const fixture = await teamFormation(page);
-  await page.goto('/spaces/1/teams/1/members');
-  fixture.failMutation(true);
-  await page.getByRole('button', { name: '반려', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText(
-    '팀원 상태를 변경하지 못했습니다.',
-  );
-  fixture.failReads(true);
-  await page
-    .getByRole('button', { name: '다시 불러오기', exact: true })
-    .click();
-  await expect(
-    page.getByText('팀원 목록을 확인할 수 없습니다.', { exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByText('팀원 상태를 변경하지 못했습니다.', { exact: true }),
-  ).toBeVisible();
-  fixture.failReads(false);
-  await page
-    .getByRole('button', { name: '다시 불러오기', exact: true })
-    .first()
-    .click();
-  await expect(
-    page.getByRole('heading', { name: '가입 신청 · 1건' }),
-  ).toBeVisible();
-  await expect(page.getByRole('alert')).toHaveCount(0);
-  expect(fixture.mutations).toHaveLength(1);
-});
+
+
 
 for (const status of ['APPROVED', 'REJECTED']) {
   test(`가입 신청 ${status} 결과에 대상과 동작을 표시한다`, async ({

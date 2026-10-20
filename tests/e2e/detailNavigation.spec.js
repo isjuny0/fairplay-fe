@@ -10,7 +10,7 @@ async function seed(page, role = 'leader') {
     Array.from({ length: 60 }, (_, index) => `${index + 1}. 첨부 자료의 조사 과정과 결과를 설명합니다.`).join('\n');
   await page.addInitScript(({ state, role }) => {
     localStorage.setItem('fairplay:preview-role', role);
-    localStorage.setItem('fairplay:mock:v5:preview:1', JSON.stringify(state));
+    localStorage.setItem('fairplay:mock:v6:preview:1', JSON.stringify(state));
   }, { state, role });
 }
 
@@ -29,7 +29,6 @@ for (const width of [1440, 320]) {
     for (const [label, id] of [
       ['산출물', 'task-deliverables-section'],
       ['담당·배분', 'task-assignment-section'],
-      ['완료 요청 이력', 'task-approval-history'],
       ['작업 설명', 'task-description-section'],
     ]) {
       await navigation.getByRole('button', { name: `${label} 영역으로 이동`, exact: true }).click();
@@ -40,8 +39,6 @@ for (const width of [1440, 320]) {
       expect(section.y).toBeGreaterThanOrEqual(bar.y + bar.height - 1);
       await expect(page.getByRole('button', { name: '← 목록으로', exact: true })).toBeInViewport();
     }
-    await expect(page.locator('#task-approval-history')).toHaveAttribute('open', '');
-    await expect(page.getByText('완료 요청 이력이 없습니다.', { exact: true })).toBeVisible();
     expect(page.url()).toBe(originalUrl);
     await expect(description).toHaveValue('아직 저장하지 않은 분석 수행 내용과 검증 결과입니다.');
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
@@ -57,17 +54,7 @@ for (const width of [1440, 320]) {
   });
 }
 
-test('비담당 승인자도 항목 이동 후 기존 승인 도구를 사용할 수 있다', async ({ page }) => {
-  await seed(page, 'reviewer');
-  await page.goto('/preview/spaces/1/teams/1/tasks/103');
-  await expect(page.getByLabel('내 수행 설명', { exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: '완료 요청 이력 영역으로 이동', exact: true }).click();
-  await expect(page.locator('#task-approval-history')).toBeFocused();
-  await expect(page.locator('#task-approval-history')).toContainText('승인 대기');
-  await page.getByRole('button', { name: '산출물 영역으로 이동', exact: true }).click();
-  await expect(page.locator('#task-deliverables-section')).toBeFocused();
-  await expect(page.getByRole('button', { name: '완료 승인', exact: true })).toBeInViewport();
-});
+
 
 test('긴 산출물 상세는 다운로드·닫기와 목록 초점 복귀를 유지한다', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });

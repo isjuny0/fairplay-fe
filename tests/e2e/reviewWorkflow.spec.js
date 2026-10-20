@@ -26,43 +26,7 @@ async function withinViewport(locator) {
   });
 }
 for (const width of [1440, 1280, 390]) {
-  test(`완료 검토 ${width}px: 근거를 스크롤해도 처리 버튼을 유지하고 반려 선택 때 사유를 펼친다`, async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width, height: width === 1280 ? 800 : 900 });
-    await preview(page, '/spaces/1/teams/1/approvals/tasks/103', 'reviewer');
-    const approve = page.getByRole('button', {
-      name: '완료 승인',
-      exact: true,
-    });
-    await expect(approve).toBeEnabled();
-    expect(await withinViewport(approve)).toBe(true);
-    await expect(page.getByLabel('반려 사유', { exact: true })).toBeHidden();
-    await page
-      .getByRole('button', { name: '산출물 확인', exact: true })
-      .click();
-    expect(await withinViewport(approve)).toBe(true);
-    await page.getByRole('button', { name: '반려', exact: true }).click();
-    const reason = page.getByLabel('반려 사유', { exact: true });
-    await expect(reason).toBeFocused();
-    await expect(
-      page.getByRole('button', { name: '반려 확정', exact: true }),
-    ).toBeEnabled();
-    await reason.fill('검증 결과의 원문 위치를 보완해 주세요.');
-    await page.getByRole('button', { name: '사유 접기', exact: true }).click();
-    await expect(reason).toBeHidden();
-    await expect(
-      page.getByRole('button', { name: '반려', exact: true }),
-    ).toBeFocused();
-    await page.getByRole('button', { name: '반려', exact: true }).click();
-    await expect(reason).toHaveValue('검증 결과의 원문 위치를 보완해 주세요.');
-    expect(await withinViewport(approve)).toBe(true);
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth,
-      ),
-    ).toBe(true);
-  });
+
 }
 for (const width of [1440, 1280]) {
   test(`관리자 리포트 ${width}px: 생성된 결과를 먼저 읽고 준비 조건을 펼쳐 확인한다`, async ({

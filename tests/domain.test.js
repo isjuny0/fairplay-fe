@@ -6,14 +6,8 @@ import {
   fromDateInput,
   formatBoardWorkload,
   formatExpectedWorkload,
-  reviewerCandidates,
   toDateInput,
 } from '../src/lib/domain.js';
-const members = [
-  { userId: 'leader', role: 'LEADER' },
-  { userId: 'deputy', role: 'DEPUTY' },
-  { userId: 'member', role: 'MEMBER' },
-];
 test('카드 작업량은 이상·미만 조건을 생략하지 않고 표시한다', () => {
   assert.equal(formatBoardWorkload(1), '1시간 미만');
   assert.equal(formatBoardWorkload(2), '1시간 이상 ~ 3시간 미만');
@@ -25,38 +19,12 @@ test('카드 작업량은 이상·미만 조건을 생략하지 않고 표시한
 const team = {
   myMembershipStatus: 'APPROVED',
   leaderId: 'leader',
-  deputyId: 'deputy',
   approvedMemberCount: 3,
 };
 const task = {
   status: 'IN_PROGRESS',
   assignees: [{ userId: 'member', allocationPercent: 100 }],
 };
-test('비담당 리더와 부리더 순으로 승인자 후보를 제공한다', () => {
-  assert.deepEqual(
-    reviewerCandidates([...members].reverse(), task.assignees).map(
-      (member) => member.userId,
-    ),
-    ['leader', 'deputy'],
-  );
-});
-test('전원 담당 예외는 리더와 부리더만 허용한다', () => {
-  assert.deepEqual(
-    reviewerCandidates(
-      members,
-      members.map((member) => ({ userId: member.userId })),
-    ).map((member) => member.userId),
-    ['leader', 'deputy'],
-  );
-});
-test('일부 담당이면 담당 리더를 예외 후보에 넣지 않는다', () => {
-  assert.deepEqual(
-    reviewerCandidates(members, [{ userId: 'leader' }]).map(
-      (member) => member.userId,
-    ),
-    ['deputy', 'member'],
-  );
-});
 test('작업 수정은 현재 담당자와 팀 리더 역할로 판단한다', () => {
   assert.equal(canEditTask(task, team, 'member'), true);
   assert.equal(canEditTask(task, team, 'leader'), true);
@@ -65,7 +33,7 @@ test('작업 수정은 현재 담당자와 팀 리더 역할로 판단한다', (
     canEditTask(task, { ...team, myMembershipStatus: 'PENDING' }, 'leader'),
     false,
   );
-  for (const status of ['PENDING_APPROVAL', 'DONE'])
+  for (const status of ['DONE'])
     assert.equal(canEditTask({ ...task, status }, team, 'leader'), false);
 });
 test('공용 자료는 작성자가 관리하며 리더는 제목과 분류만 수정한다', () => {
@@ -81,7 +49,7 @@ test('공용 자료는 작성자가 관리하며 리더는 제목과 분류만 �
     remove: true,
   });
 });
-test('연결 자료는 담당자만 관리하고 승인 대기와 완료 후 잠근다', () => {
+test('연결 자료는 담당자만 관리하고 완료 후에는 잠근다', () => {
   const deliverable = { authorId: 'leader', taskId: 1 };
   assert.equal(
     deliverablePermissions(deliverable, task, team, 'leader').content,
@@ -167,4 +135,12 @@ test('1인 팀은 작업 변경과 연결 자료 수정을 막되 자료 정리�
       remove: true,
     },
   );
+});
+
+test('수정 중인 작업과 연결 자료는 현재 담당자가 변경할 수 있다', () => {
+  const revising = {...task, status: 'REVISING'};
+  assert.equal(canEditTask(revising, team, 'member'), true);
+  assert.equal(canEditTask(revising, team, 'leader'), true);
+  assert.deepEqual(deliverablePermissions({taskId:1}, revising, team, 'member'), {metadata:true,content:true,remove:true});
+  assert.equal(canEditTask(revising, team, 'other'), false);
 });

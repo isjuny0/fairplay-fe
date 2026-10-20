@@ -75,7 +75,7 @@ for (const width of [1440, 390]) {
     });
     await expect(attention).toBeVisible();
     await expect(teamOverview).toBeVisible();
-    await expect(summary.getByText('2건', { exact: true })).toHaveCount(3);
+    await expect(summary.getByText('2건', { exact: true })).toHaveCount(1);
     if (width > 720)
       await page
         .getByRole('button', { name: '삼위일체 현황 보기', exact: true })
@@ -86,7 +86,7 @@ for (const width of [1440, 390]) {
     await expect(
       page.getByRole('heading', { name: '삼위일체 현황', exact: true }),
     ).toBeVisible();
-    await expect(summary.getByText('1건', { exact: true })).toHaveCount(3);
+    await expect(summary.getByText('1건', { exact: true })).toHaveCount(1);
     await expect(attention).toHaveCount(0);
     await expect(teamOverview).toHaveCount(0);
     const teamInfo = page.getByRole('region', {
@@ -201,7 +201,7 @@ for (const width of [1440, 390]) {
         page.getByRole('button', { name: '삼위일체 현황 보기', exact: true }),
       ).toHaveCount(0);
     }
-    await expect(summary.getByText('2건', { exact: true })).toHaveCount(3);
+    await expect(summary.getByText('2건', { exact: true })).toHaveCount(1);
     await page.getByLabel('팀 상태', { exact: true }).selectOption('overdue');
     await page.getByLabel('팀 정렬', { exact: true }).selectOption('progress');
     await page.reload();

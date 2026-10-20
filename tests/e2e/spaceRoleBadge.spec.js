@@ -48,12 +48,11 @@ for (const [name, teams, label = '참여자'] of [
     '팀원',
   ],
   [
-    '부리더',
+    '다른 팀원',
     [
       {
         id: 10,
         leaderId: 'other',
-        deputyId: 'user-1',
         myMembershipStatus: 'APPROVED',
       },
     ],
@@ -190,7 +189,7 @@ test('팀 역할 조회 중에는 참여자로 잘못 표시하지 않는다', a
 for (const [role, label] of [
   ['leader', '팀 리더'],
   ['member', '팀원'],
-  ['reviewer', '팀원'],
+  ['teammate', '팀원'],
   ['participant', '참여자'],
   ['manager', '관리자'],
 ]) {

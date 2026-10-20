@@ -51,11 +51,11 @@ async function workspace(
     dueAt: '2030-12-01T18:00:00+09:00',
     status: 'IN_PROGRESS',
     version: 0,
-    completionReviewerId: 'leader',
+    completedAt: null,
+    completionBlockReason: null,
     assignees: [{ userId: 'member', allocationPercent: 100 }],
 
   };
-  let approvals = [];
   let deliverables = [];
   let joinCode = null;
   let conflict = false;
@@ -68,7 +68,6 @@ async function workspace(
     spaceId: 1,
     name: '삼위일체 팀',
     leaderId: 'leader',
-    deputyId: null,
     myMembershipStatus: manager ? null : 'APPROVED',
     approvedMemberCount: memberCount,
     teamBuildingStatus: 'OPEN',
@@ -283,7 +282,8 @@ async function workspace(
           version: task.version + 1,
         };
 
-        task.completionBlockReason = task.status === 'IN_PROGRESS'
+        task.completedAt = task.status === 'DONE' ? new Date().toISOString() : null;
+        task.completionBlockReason = ['IN_PROGRESS', 'REVISING'].includes(task.status)
           ? null
           : 'INVALID_TASK_STATE';
         return respond(task);
@@ -291,52 +291,11 @@ async function workspace(
       return respond({
         task,
         deliverableSummary: deliverables.filter((item) => item.taskId === task.id).map(({ id, title, category, type, version }) => ({ id, title, category, type, version })),
-        approvalStatus: approvals[0]?.status || null,
         contributions: task.assignees.map(({ userId: assigneeId }) => ({
           userId: assigneeId,
           contributionDescription: '탈퇴 정책 구현과 테스트를 수행했습니다.',
         })),
       });
-    }
-    if (path === '/api/tasks/10/approvals' || path === '/api/teams/1/approvals')
-      return respond(approvals);
-    if (path === '/api/tasks/10/completion-requests') {
-      approvals = [
-        {
-          id: 20,
-          taskId: 10,
-          status: 'PENDING',
-          requesterId: 'member',
-          reviewerId: 'leader',
-          requestedAt: '2026-10-05T10:00:00+09:00',
-        },
-      ];
-      task = {
-        ...task,
-        status: 'PENDING_APPROVAL',
-        version: task.version + 1,
-
-      };
-      return respond(approvals[0], 201);
-    }
-    if (path === '/api/approvals/20/reject') {
-      approvals[0] = {
-        ...approvals[0],
-        status: 'REJECTED',
-        reason: request.postDataJSON().reason,
-        decidedAt: '2026-10-05T11:00:00+09:00',
-      };
-      task = { ...task, status: 'IN_PROGRESS', version: task.version + 1 };
-      return respond(approvals[0]);
-    }
-    if (path === '/api/approvals/20/approve') {
-      approvals[0] = {
-        ...approvals[0],
-        status: 'APPROVED',
-        decidedAt: '2026-10-05T11:00:00+09:00',
-      };
-      task = { ...task, status: 'DONE', version: task.version + 1 };
-      return respond(approvals[0]);
     }
     if (path === '/api/teams/1/applications') return respond([]);
     if (path === '/api/teams/1/deliverables') return respond(deliverables);
@@ -399,18 +358,6 @@ async function workspace(
     setTaskTeamId: (id) => {
       task.teamId = id;
     },
-    setPending: () => {
-      approvals = [
-        {
-          id: 20,
-          taskId: 10,
-          status: 'PENDING',
-          requesterId: 'member',
-          reviewerId: 'leader',
-        },
-      ];
-      task.status = 'PENDING_APPROVAL';
-    },
   };
 }
 
@@ -440,7 +387,7 @@ for (const [label, weight] of [
     await dialog.getByLabel('작업 설명', { exact: true }).fill('팀과 합의한 작업 범위입니다.');
     await fillDateTime(dialog, '마감', '2030-12-01T18:00');
     await dialog.getByLabel('담당자 · 팀원').check();
-    await dialog.getByLabel('완료 승인자', { exact: true }).selectOption('leader');
+
     await dialog.getByRole('button', { name: '저장', exact: true }).click();
     await expect(page.getByRole('heading', { name: '예상 작업량 확인' })).toBeVisible();
     const request = requests.find(({ method, path }) =>
@@ -460,7 +407,7 @@ for (const [label, weight] of [
     await expect(page.getByLabel('작업 기본 정보').getByText(changedLabel, { exact: true })).toBeVisible();
   });
 
-test('담당자가 작업을 생성하고 버전으로 완료 요청하면 수정이 잠긴다', async ({
+test('담당자가 작업을 생성하고 PATCH 상태와 버전으로 직접 완료하면 잠긴다', async ({
   page,
 }) => {
   const { requests, addLinkedDeliverable } = await workspace(page);
@@ -475,9 +422,7 @@ test('담당자가 작업을 생성하고 버전으로 완료 요청하면 수�
     .fill('완료 조건과 담당 범위를 정의합니다.');
   await fillDateTime(dialog, '마감', '2030-12-01T18:00');
   await dialog.getByLabel('담당자 · 팀원').check();
-  await dialog
-    .getByLabel('완료 승인자', { exact: true })
-    .selectOption('leader');
+
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: '새 기능 구현' }),
@@ -487,49 +432,48 @@ test('담당자가 작업을 생성하고 버전으로 완료 요청하면 수�
   );
   expect(JSON.parse(creation.body)).toMatchObject({
     dueAt: '2030-12-01T18:00:00+09:00',
-    completionReviewerId: 'leader',
     assignees: [{ userId: 'member', allocationPercent: 100 }],
   });
   expect(creation.headers['x-csrf-token']).toBe('test-token');
+  expect(Object.keys(JSON.parse(creation.body)).sort()).toEqual(['assignees','description','dueAt','startAt','title','weight']);
   await expect(
-    page.getByRole('button', { name: '완료 요청', exact: true }),
+    page.getByRole('button', { name: '완료 처리', exact: true }),
   ).toBeDisabled();
   addLinkedDeliverable();
   await page.getByRole('button', { name: '작업 시작', exact: true }).click();
   await expect(
-    page.getByRole('button', { name: '완료 요청', exact: true }),
+    page.getByRole('button', { name: '완료 처리', exact: true }),
   ).toBeEnabled();
-  await page.getByRole('button', { name: '완료 요청', exact: true }).click();
+  await page.getByRole('button', { name: '완료 처리', exact: true }).click();
+  await page.getByRole('dialog', {name:'작업 완료',exact:true}).getByRole('button',{name:'완료 처리',exact:true}).click();
   await expect(
     page.getByRole('button', { name: '작업 수정', exact: true }),
   ).toHaveCount(0);
   expect(
     JSON.parse(
-      requests.find(({ path }) => path.endsWith('/completion-requests')).body,
+      requests.find(({ path, method, body }) => path === '/api/tasks/10' && method === 'PATCH' && JSON.parse(body).status === 'DONE').body,
     ),
-  ).toEqual({ expectedVersion: 1 });
+  ).toEqual({ expectedVersion: 1, status:'DONE' });
+
+  const badge = page.locator('.task-detail-page .page-heading .status-badge');
+  await expect(badge).toHaveText('완료');
+  await expect(page.getByRole('button',{name:'산출물 등록',exact:true})).toHaveCount(0);
+  await page.getByRole('button',{name:'수정 중으로 전환',exact:true}).click();
+  await page.getByRole('dialog',{name:'완료 후 수정',exact:true}).getByRole('button',{name:'수정 중으로 전환',exact:true}).click();
+  await expect(badge).toHaveText('수정 중');
+  await expect(page.getByRole('button',{name:'작업 수정',exact:true})).toBeEnabled();
+  await expect(page.getByRole('button',{name:'할 일로 되돌리기',exact:true})).toHaveCount(0);
+  await page.getByRole('button',{name:'다시 완료',exact:true}).click();
+  await page.getByRole('dialog',{name:'작업 완료',exact:true}).getByRole('button',{name:'완료 처리',exact:true}).click();
+  await expect(badge).toHaveText('완료');
+  expect(requests.filter(({method,path})=>method==='PATCH'&&path==='/api/tasks/10').map(({body})=>JSON.parse(body))).toEqual([
+    {expectedVersion:0,status:'IN_PROGRESS'}, {expectedVersion:1,status:'DONE'},
+    {expectedVersion:2,status:'REVISING'}, {expectedVersion:3,status:'DONE'},
+  ]);
+  expect(requests.some(({path})=>/approvals|completion-requests|deputy/.test(path))).toBe(false);
 });
 
-test('지정 승인자가 사유를 입력해 반려하면 이력과 작업 수정이 다시 열린다', async ({
-  page,
-}) => {
-  const state = await workspace(page, { userId: 'leader' });
-  state.setPending();
-  await page.getByRole('button', { name: '승인 검토', exact: true }).click();
-  await page.getByRole('button', { name: '작업 검토', exact: true }).click();
-  await page.getByRole('button', { name: '반려', exact: true }).click();
-  await page
-    .getByLabel('반려 사유')
-    .fill('탈퇴 후 게시글 처리 테스트를 보완해 주세요.');
-  await page.getByRole('button', { name: '반려 확정', exact: true }).click();
-  await page.getByText('완료 요청 이력 · 1건', { exact: true }).click();
-  await expect(
-    page.getByText('반려 사유: 탈퇴 후 게시글 처리 테스트를 보완해 주세요.'),
-  ).toBeVisible();
-  await expect(
-    page.getByRole('button', { name: '작업 수정', exact: true }),
-  ).toBeVisible();
-});
+
 
 test('팀원이 1명이면 작업 생성 버튼이 비활성화된다', async ({ page }) => {
   await workspace(page, { userId: 'leader', memberCount: 1 });
@@ -539,27 +483,7 @@ test('팀원이 1명이면 작업 생성 버튼이 비활성화된다', async ({
   ).toBeDisabled();
 });
 
-test('지정 승인자가 승인하면 완료 상태가 되고 수정·등록이 잠긴다', async ({
-  page,
-}) => {
-  const state = await workspace(page, { userId: 'leader' });
-  state.setPending();
-  await page.getByRole('button', { name: '승인 검토', exact: true }).click();
-  await page.getByRole('button', { name: '작업 검토', exact: true }).click();
-  await page.getByRole('button', { name: '완료 승인', exact: true }).click();
-  await page.getByRole('dialog').getByRole('button', { name: '승인 확정', exact: true }).click();
-  await expect(page.getByText('완료', { exact: true })).toBeVisible();
-  await expect(
-    page.getByRole('button', { name: '작업 수정', exact: true }),
-  ).toHaveCount(0);
-  await expect(
-    page.getByRole('button', { name: '산출물 등록', exact: true }),
-  ).toHaveCount(0);
-  expect(
-    state.requests.find(({ path }) => path === '/api/approvals/20/approve')
-      .body,
-  ).toBe(null);
-});
+
 
 test('스페이스 관리자는 타 팀 자료만 조회하고 팀 작업 API를 호출하지 않는다', async ({
   page,
@@ -755,13 +679,11 @@ test('모바일·태블릿·데스크톱에서 팀 탐색과 작업 생성 폼�
     const dialog = page.getByRole('dialog');
     if (width <= 600) {
       await dialog.getByLabel('작업 제목', { exact: true }).fill('반응형 입력 검증');
-      await dialog.getByLabel('작업 설명', { exact: true }).fill('각 화면 폭에서 담당·승인 설정을 확인합니다.');
+      await dialog.getByLabel('작업 설명', { exact: true }).fill('각 화면 폭에서 담당·배분 설정을 확인합니다.');
       await fillDateTime(dialog, '마감', '2030-12-01T18:00');
-      await dialog.getByRole('button', { name: '다음: 담당·승인', exact: true }).click();
+      await dialog.getByRole('button', { name: '다음: 담당·배분', exact: true }).click();
     }
-    await expect(
-      dialog.getByLabel('완료 승인자', { exact: true }),
-    ).toBeVisible();
+
     expect(
       await dialog.evaluate(
         (element) => element.scrollWidth <= element.clientWidth,
@@ -1005,7 +927,7 @@ test('탈퇴에 남은 의존성이 있으면 담당 작업과 자료 정리를 
   await page.getByRole('button', { name: '팀 탈퇴하기' }).click();
   await page.getByRole('button', { name: '탈퇴 확정' }).click();
   await expect(page.getByRole('dialog').getByRole('alert')).toContainText(
-    '담당 작업·승인 요청·공용 산출물',
+    '담당 작업·공용 산출물',
   );
   await page
     .getByRole('dialog')
@@ -1084,7 +1006,7 @@ test('삭제 동의 중에는 작업·수행 설명·자료를 변경할 수 없
     page.getByRole('button', { name: '수행 설명 저장' }),
   ).toBeDisabled();
   await expect(
-    page.getByRole('button', { name: '완료 요청', exact: true }),
+    page.getByRole('button', { name: '완료 처리', exact: true }),
   ).toBeDisabled();
   await expect(
     page.getByRole('button', { name: '할 일로 되돌리기' }),
@@ -1104,32 +1026,7 @@ test('삭제 동의 중에는 작업·수행 설명·자료를 변경할 수 없
   ).toHaveCount(0);
 });
 
-test('삭제 동의 중에는 승인·반려를 막고 관리자에게는 팀 설정을 제공하지 않는다', async ({
-  page,
-}) => {
-  const state = await workspace(page, {
-    userId: 'leader',
-    initialDeletion: deletionRequest(),
-  });
-  state.setPending();
-  await page.getByRole('button', { name: '승인 검토', exact: true }).click();
-  await page.getByRole('button', { name: '작업 검토' }).click();
-  await expect(page.getByRole('button', { name: '완료 승인' })).toBeDisabled();
-  await expect(
-    page.getByRole('button', { name: '반려', exact: true }),
-  ).toBeDisabled();
-  await page.unroute('**/api/**');
-  const managerState = await workspace(page, {
-    manager: true,
-    userId: 'manager',
-  });
-  await expect(
-    page.getByRole('button', { name: '팀 설정', exact: true }),
-  ).toHaveCount(0);
-  expect(
-    managerState.requests.some(({ path }) => path.includes('deletion-request')),
-  ).toBe(false);
-});
+
 
 test('삭제 요청 없음 외의 404는 오류로 표시하고 작업 변경을 막는다', async ({
   page,
@@ -1190,8 +1087,6 @@ const workspaceRoutes = [
   ['/spaces/1/teams/1/tasks', '작업'],
   ['/spaces/1/teams/1/tasks/10', '회원 탈퇴 구현'],
   ['/spaces/1/teams/1/deliverables', '산출물 관리'],
-  ['/spaces/1/teams/1/approvals', '승인 검토'],
-  ['/spaces/1/teams/1/approvals/tasks/10', '회원 탈퇴 구현'],
   ['/spaces/1/teams/1/members', '팀원 관리'],
   ['/spaces/1/teams/1/settings', '팀 설정'],
 ];
@@ -1262,14 +1157,10 @@ test('작업의 상태·내 작업 필터는 새로고침과 상세 복귀 후 �
   expect(new URL(page.url()).searchParams.get('mine')).toBe('1');
 });
 
-test('승인 상태 필터와 산출물 작업 범위·페이지는 주소에서 복원된다', async ({
+test('산출물 작업 범위·페이지는 주소에서 복원된다', async ({
   page,
 }) => {
   await workspace(page);
-  await page.goto('/spaces/1/teams/1/approvals?status=REJECTED');
-  await expect(page.getByLabel('요청 상태')).toHaveValue('REJECTED');
-  await page.reload();
-  await expect(page.getByLabel('요청 상태')).toHaveValue('REJECTED');
   await page.goto('/spaces/1/teams/1/deliverables?taskId=10&page=2');
   await expect(page.getByLabel('작업별 조회')).toHaveValue('10');
   await expect(page.getByText('3 페이지', { exact: true })).toBeVisible();
@@ -1363,7 +1254,7 @@ test('작업의 실제 팀이 URL의 팀과 다르면 상세와 변경 기능을
     '이 팀에 속한 작업이 아닙니다.',
   );
   await expect(
-    page.getByRole('button', { name: '완료 요청', exact: true }),
+    page.getByRole('button', { name: '완료 처리', exact: true }),
   ).toHaveCount(0);
 });
 
@@ -1497,7 +1388,7 @@ test('작업 충돌은 내 입력과 최신 내용을 비교한 뒤 확인한 �
   expect(versions).toEqual([0, 2, 3]);
 });
 
-for (const changedState of ['PENDING_APPROVAL', 'DONE']) test(`최신 작업이 ${changedState}로 바뀌면 충돌 입력을 보존하고 재저장을 막는다`, async ({ page }) => {
+for (const changedState of ['DONE']) test(`최신 작업이 ${changedState}로 바뀌면 충돌 입력을 보존하고 재저장을 막는다`, async ({ page }) => {
   const state = await workspace(page);
   await page.goto('/spaces/1/teams/1/tasks/10');
   await page.getByRole('button', { name: '작업 수정', exact: true }).click();
@@ -1517,7 +1408,7 @@ test('충돌 후 현재 담당자·리더 권한을 잃으면 내 입력으로 �
   await page.getByRole('button', { name: '작업 수정', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '작업 수정' });
   await dialog.getByLabel('작업 제목', { exact: true }).fill('유지할 제목');
-  state.changeTask({ assignees: [{ userId: 'leader', allocationPercent: 100 }], completionReviewerId: 'member', version: 1 });
+  state.changeTask({ assignees: [{ userId: 'leader', allocationPercent: 100 }], version: 1 });
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
   await dialog.getByRole('button', { name: '최신 내용 확인', exact: true }).click();
   await expect(dialog.getByRole('button', { name: '내 입력으로 다시 저장', exact: true })).toBeDisabled();
@@ -1562,7 +1453,7 @@ test('작업 시작일은 생성 시 필수이며 일정 검증 후 오프셋과
   await dialog.getByLabel('작업 제목', { exact: true }).fill('계획 일정 작업');
   await dialog.getByLabel('작업 설명', { exact: true }).fill('예정된 기간에 수행할 작업입니다.');
   await dialog.getByLabel('담당자 · 팀원').check();
-  await dialog.getByLabel('완료 승인자', { exact: true }).selectOption('leader');
+
   await fillDateTime(dialog, '마감', '2030-12-01T18:00');
   await dialog.getByLabel('시작일 날짜', { exact: true }).fill('');
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
@@ -1607,32 +1498,34 @@ test('저장된 시작일은 비울 수 없고 제목만 수정할 때 기존 �
 });
 
 
-test('적격 승인자 입력으로 이동하고 조회 복구가 변경 요청을 재전송하지 않는다', async ({ page }) => {
-  const { changeTask } = await workspace(page);
-  changeTask({ completionReviewerId: 'unavailable', completionBlockReason: 'REVIEWER_UNAVAILABLE' });
-  await page.route('**/api/tasks/10/ai-review', route => route.fulfill({ status: 404, json: { code: 'AI_REVIEW_NOT_FOUND', message: '아직 요청한 검토가 없습니다.' } }));
+
+
+
+
+test('비담당 리더는 내용을 정리할 수 있지만 완료·재수정·AI 검토를 대신하지 못한다', async ({page})=>{
+  const state=await workspace(page,{userId:'leader'});
   await page.goto('/spaces/1/teams/1/tasks/10');
-  await page.getByRole('button', { name: '승인자 선택', exact: true }).click();
-  const reviewer = page.getByLabel('승인자 변경', { exact: true });
-  await expect(reviewer).toBeFocused();
-  await reviewer.selectOption('leader');
-  let changes = 0;
-  await page.route('**/api/tasks/10', async route => {
-    if (route.request().method() !== 'PATCH') return route.fallback();
-    changes++;
-    return route.fulfill({ status: 409, json: { code: 'VERSION_CONFLICT', message: '승인자를 저장하지 못했습니다.' } });
-  });
-  await page.getByRole('button', { name: '승인자 저장', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText('승인자를 저장하지 못했습니다.');
-  await page.getByRole('button', { name: '다시 불러오기', exact: true }).click();
-  await expect(page.getByRole('alert')).toHaveCount(0);
-  expect(changes).toBe(1);
+  await expect(page.getByRole('button',{name:'작업 수정',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'완료 처리',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'AI 검토',exact:true})).toHaveCount(0);
+  state.changeTask({status:'DONE',completedAt:'2026-10-20T10:00:00+09:00',version:1});
+  await page.reload();
+  await expect(page.getByRole('button',{name:'수정 중으로 전환',exact:true})).toHaveCount(0);
+  expect(state.requests.some(({path})=>/approvals|completion-requests|deputy|ai-review/.test(path))).toBe(false);
 });
 
-test('현재 승인자를 다시 선택하면 중복 저장을 막는다', async ({ page }) => {
-  const { requests } = await workspace(page);
+test('최종 평가 마감과 팀 삭제 동의 중에는 직접 완료·재수정을 막는다', async ({page})=>{
+  const state=await workspace(page);
+  state.addLinkedDeliverable();
+  state.changeTask({completionBlockReason:'WORK_PERIOD_CLOSED'});
   await page.goto('/spaces/1/teams/1/tasks/10');
-  await page.getByLabel('승인자 변경', { exact: true }).selectOption('leader');
-  await expect(page.getByRole('button', { name: '승인자 저장', exact: true })).toBeDisabled();
-  expect(requests.filter(({ method, path }) => method === 'PATCH' && path === '/api/tasks/10')).toHaveLength(0);
+  await expect(page.getByRole('button',{name:'완료 처리',exact:true})).toBeDisabled();
+  state.changeTask({status:'DONE',completedAt:'2026-10-20T10:00:00+09:00'});
+  await page.reload();
+  await expect(page.getByRole('button',{name:'수정 중으로 전환',exact:true})).toBeDisabled();
+  state.changeTask({completionBlockReason:'INVALID_TASK_STATE'});
+  state.setDeletion(deletionRequest());
+  await page.reload();
+  await expect(page.getByRole('button',{name:'수정 중으로 전환',exact:true})).toBeDisabled();
+  expect(state.requests.filter(({method,path})=>method==='PATCH'&&path==='/api/tasks/10')).toHaveLength(0);
 });
