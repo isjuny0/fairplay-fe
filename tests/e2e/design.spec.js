@@ -200,3 +200,17 @@ for (const width of [1920, 1440, 1280, 1024, 768, 390, 320]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   });
 }
+
+test('상세 작업 카드는 담당자 수에 맞춰 높이를 사용한다', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/preview/spaces/1/teams/1/tasks');
+  const twoAssigneeCard = page.locator('.board-task-card').filter({ hasText: '#102' });
+  const oneAssigneeCard = page.locator('.board-task-card').filter({ hasText: '#103' });
+  await twoAssigneeCard.getByRole('button', { name: /상세 보기$/ }).click();
+  await oneAssigneeCard.getByRole('button', { name: /상세 보기$/ }).click();
+  const [twoAssigneeHeight, oneAssigneeHeight] = await Promise.all([
+    twoAssigneeCard.evaluate((card) => card.getBoundingClientRect().height),
+    oneAssigneeCard.evaluate((card) => card.getBoundingClientRect().height),
+  ]);
+  expect(twoAssigneeHeight).toBeGreaterThan(oneAssigneeHeight);
+});

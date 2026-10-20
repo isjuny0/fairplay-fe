@@ -1664,7 +1664,11 @@ h1[tabindex="-1"]:focus {
   border-top: 1px solid var(--border);
 }
 .board-task-details .task-workload-line { order: 1; margin: 0; }
-.board-task-details .task-card-meta { order: 2; }
+.task-board-page .board-task-details .task-card-meta {
+  order: 2;
+  grid-template-rows: none;
+  min-height: 0;
+}
 .task-board-page .board-task-card .board-card-overdue {
   position: absolute;
   top: 14px;
