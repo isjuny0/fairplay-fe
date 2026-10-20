@@ -447,8 +447,24 @@
 .page-heading .eyebrow {
   margin-bottom: 12px;
 }
+.page-heading.page-heading--compact {
+  padding-bottom: 12px;
+}
+.page-heading--compact .eyebrow {
+  margin-bottom: 8px;
+}
+.page-heading--compact h1 {
+  margin-bottom: 0;
+}
 .main-content > .stack {
   gap: 24px;
+}
+.main-content > :is(
+    .peer-evaluation-page,
+    .contribution-report-page,
+    .team-member-directory
+  ) {
+  gap: 16px;
 }
 .main-content .stack > .panel:not(.danger-zone, .save-recovery, .empty-state) {
   padding: 24px 0;

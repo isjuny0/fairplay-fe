@@ -11,11 +11,10 @@ export default function MidFeedback({ context }) {
   );
   return (
     <section className="stack mid-feedback-page">
-      <div className="page-heading">
+      <div className="page-heading page-heading--compact">
         <div>
           <span className="eyebrow">나의 협업 피드백</span>
           <h1>중간 피드백</h1>
-          <p>최종 평가 전에 내 협업 방식을 돌아보고 다음 작업을 준비하세요.</p>
         </div>
         <button
           className="secondary-button"
@@ -49,10 +48,6 @@ export default function MidFeedback({ context }) {
             ))}
         </ResourceState>
       )}
-      <p className="field-help">
-        중간 평가 마감과 우리 팀 전원 제출 후 확인할 수 있습니다. 관리자
-        공개와는 별개이며, 소규모 팀의 익명성을 보장하지 않습니다.
-      </p>
     </section>
   );
 }

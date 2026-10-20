@@ -523,14 +523,10 @@ export default function PeerEvaluation({ context }) {
     rounds[0];
   return (
     <section className="stack peer-evaluation-page">
-      <div className="page-heading">
+      <div className="page-heading page-heading--compact">
         <div>
           <span className="eyebrow">협업 돌아보기</span>
           <h1>동료 평가</h1>
-          <p>
-            같은 팀의 동료가 수행한 행동을 기준으로 평가해 주세요. 본인은 평가
-            대상에서 제외됩니다.
-          </p>
         </div>
         <button
           className="secondary-button"

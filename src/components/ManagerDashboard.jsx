@@ -124,11 +124,10 @@ export default function ManagerDashboard({ context }) {
   };
   return (
     <section className="stack manager-dashboard">
-      <div className="page-heading">
+      <div className="page-heading page-heading--compact">
         <div>
           <span className="eyebrow">스페이스 관리자</span>
           <h1>관리자 대시보드</h1>
-          <p>팀들의 진행을 살펴보고 필요한 조율과 지원을 준비하세요.</p>
         </div>
         <button
           className="secondary-button"
