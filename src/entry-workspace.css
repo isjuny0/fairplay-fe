@@ -274,15 +274,97 @@
 }
 
 /* Space selection and team formation share quiet, comparable rows. */
-.main-content .space-directory .page-heading h1 {
-  font-size: clamp(24px, 2vw, 30px);
+.main-content:has(.space-page-header) {
+  --space-page-title-size: clamp(24px, 2vw, 30px);
+  --space-page-header-height: 136px;
+  /* Mirror the space from the title's bottom to the header divider. */
+  --space-page-divider-space: calc(var(--space-page-header-height) - 29.5px - var(--space-page-title-size) * 1.35 - 1px);
+  padding-top: var(--space-page-divider-space);
+}
+.main-content .space-page-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(24px, auto);
+  align-items: start;
+  align-content: start;
+  gap: 12px 24px;
+  min-height: var(--space-page-header-height);
+  margin: 0;
+  padding: 0 0 28px;
+  border-bottom: 1px solid var(--border);
+}
+.space-page-heading {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+}
+.main-content .space-page-header .space-page-eyebrow {
+  display: block;
+  margin: 0 0 10px;
+  color: var(--brand);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+.main-content .space-page-header h1 {
+  margin: 0;
+  font-size: var(--space-page-title-size);
   font-weight: 650;
+  line-height: 1.35;
   letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+.main-content .space-page-header .space-page-home-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.space-page-home-label .ui-icon {
+  width: 14px;
+  height: 14px;
+}
+.space-page-header > .heading-actions {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+}
+.main-content .space-page-header > .space-page-description {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  margin: 0;
+  max-width: 80ch;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 900px) {
+  .main-content:has(.space-page-header) {
+    --space-page-header-height: 200px;
+  }
+  .main-content .space-page-header {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(45px, auto) 40px;
+  }
+  .space-page-header > .heading-actions {
+    grid-column: 1;
+    grid-row: 3;
+    justify-self: end;
+  }
 }
 .space-directory .page-heading,
 .team-directory .page-heading,
 .team-member-directory .page-heading {
   margin-bottom: 0;
+}
+.main-content .space-directory .space-page-header {
+  min-height: calc(var(--space-page-header-height) - 28px);
+  padding-bottom: 0;
+}
+.main-content > .space-directory {
+  row-gap: calc(var(--space-page-divider-space) - 28px);
 }
 .directory-toolbar {
   display: flex;

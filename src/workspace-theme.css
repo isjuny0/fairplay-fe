@@ -412,7 +412,7 @@
 }
 
 .success-toast {
-  background: var(--brand-dark);
+  background: var(--surface);
 }
 
 .loading-spinner {

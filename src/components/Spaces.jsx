@@ -176,9 +176,15 @@ export default function Spaces({ onSelect, user }) {
       />
       <main className="main-content spaces-main">
         <section className="space-directory stack">
-          <div className="page-heading page-heading--compact">
-            <div>
-              <span className="eyebrow">프로젝트 공간을 만들거나 참여 코드로 함께 시작하세요.</span>
+          <div className="page-heading page-heading--compact space-page-header">
+            <div className="space-page-heading">
+              <span className="eyebrow space-page-eyebrow space-page-home-label">
+                <svg className="ui-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 2.5a1 1 0 0 1 .65.24l9 7.75a1 1 0 0 1-.65 1.76h-2v8.25a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-8.25H3a1 1 0 0 1-.65-1.76l9-7.75A1 1 0 0 1 12 2.5Z" />
+                  <rect x="9.5" y="14" width="5" height="6" rx=".5" fill="#fff" />
+                </svg>
+                홈
+              </span>
               <h1>내 스페이스</h1>
             </div>
             <div className="heading-actions">
