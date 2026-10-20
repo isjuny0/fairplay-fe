@@ -114,6 +114,9 @@ test('공간·팀 선택의 좌우 여백을 유지하고 뒤로가기는 접기
     .locator('.directory-sidebar-link')
     .first()
     .boundingBox();
+  const directoryToggle = await page
+    .locator('.space-directory-sidebar-toggle')
+    .boundingBox();
   const directoryPadding = await page
     .locator('.space-directory-sidebar')
     .evaluate((el) => {
@@ -132,6 +135,8 @@ test('공간·팀 선택의 좌우 여백을 유지하고 뒤로가기는 접기
   expect(workspacePadding).toEqual(directoryPadding);
   expect(workspace.x).toBe(directory.x);
   const toggle = await page.locator('.workspace-sidebar-toggle').boundingBox();
+  expect(toggle.y).toBe(directoryToggle.y);
+  expect(toggle.height).toBe(directoryToggle.height);
   expect(workspace.width).toBeLessThan(directory.width);
   expect(workspace.x + workspace.width).toBeLessThanOrEqual(toggle.x);
   expect(
