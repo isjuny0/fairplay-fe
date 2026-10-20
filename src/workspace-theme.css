@@ -1624,6 +1624,7 @@ h1[tabindex="-1"]:focus {
   gap: 8px;
   flex-wrap: wrap;
 }
+.board-card-heading { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
 .task-board-page .board-card-footer .task-deadline {
   min-width: 0;
   flex: 1 1 120px;
@@ -1664,7 +1665,15 @@ h1[tabindex="-1"]:focus {
 }
 .board-task-details .task-workload-line { order: 1; margin: 0; }
 .board-task-details .task-card-meta { order: 2; }
-.board-card-overdue { position: static; flex: 0 0 auto; white-space: nowrap; }
+.task-board-page .board-task-card .board-card-overdue {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  bottom: auto;
+  left: auto;
+  z-index: 1;
+  white-space: nowrap;
+}
 
 /* Calendar markers show only each task's start and due date. */
 .task-calendar-table .calendar-dates td {

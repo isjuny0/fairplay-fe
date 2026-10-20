@@ -177,6 +177,20 @@ for (const width of [1920, 1440, 1280, 1024, 768, 390, 320]) {
     await expect(firstCard.locator('.task-number')).toBeVisible();
     await expect(firstCard.locator('.task-workload-line')).toHaveCount(0);
     await expect(firstCard.locator('.task-card-meta')).toHaveCount(0);
+    const overdueCard = page.locator('.board-task-card').filter({
+      has: page.locator('.board-card-overdue'),
+    }).first();
+    await expect(overdueCard.locator('.board-card-overdue')).toBeVisible();
+    const overduePosition = await overdueCard.evaluate((card) => {
+      const cardBounds = card.getBoundingClientRect();
+      const badgeBounds = card.querySelector('.board-card-overdue').getBoundingClientRect();
+      return {
+        top: badgeBounds.top - cardBounds.top,
+        right: cardBounds.right - badgeBounds.right,
+      };
+    });
+    expect(overduePosition.top).toBeLessThanOrEqual(15);
+    expect(overduePosition.right).toBeLessThanOrEqual(15);
     await firstCard.getByRole('button', { name: /상세 보기$/ }).click();
     await expect(firstCard.locator('.task-workload-line')).toBeVisible();
     await expect(firstCard.locator('.task-card-meta')).toBeVisible();

@@ -527,8 +527,14 @@ export default function TaskBoard({
                               className={`board-task-card${detailsExpanded ? ' is-expanded' : ''}`}
                             >
                               <div className="board-card-top">
-                                <span className="mobile-task-state">{label}</span>
-                                <span className="task-number">#{task.id}</span>
+                                <span className="board-card-heading">
+                                  <span className="mobile-task-state">{label}</span>
+                                  <span className="task-number">#{task.id}</span>
+                                </span>
+                                {task.status !== 'DONE' &&
+                                  Date.parse(task.dueAt) < now && (
+                                    <span className="is-overdue board-card-overdue">마감 지남</span>
+                                  )}
                               </div>
                               <button
                                 className="task-title-button"
@@ -541,10 +547,6 @@ export default function TaskBoard({
                                   <Icon name="calendar" />
                                   <small>마감 {formatDate(task.dueAt)}</small>
                                 </div>
-                                {task.status !== 'DONE' &&
-                                  Date.parse(task.dueAt) < now && (
-                                    <span className="is-overdue board-card-overdue">마감 지남</span>
-                                  )}
                               <button
                                 className="board-card-details-toggle"
                                 aria-expanded={detailsExpanded}
