@@ -97,11 +97,10 @@ export default function RoundManagement({ context, onChanged }) {
   };
   return (
     <section className="stack round-management-page">
-      <div className="page-heading">
+      <div className="page-heading page-heading--compact">
         <div>
           <span className="eyebrow">스페이스 단위 평가</span>
           <h1>평가 회차 관리</h1>
-          <p>중간·최종 평가 일정을 정하고 제출 상태에 맞춰 운영하세요.</p>
         </div>
         <div className="heading-actions">
           <button

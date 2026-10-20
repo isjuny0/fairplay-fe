@@ -109,11 +109,10 @@ export default function TeamSettings({
     request?.canDelete;
   return (
     <section className="stack team-settings">
-      <div className="page-heading">
+      <div className="page-heading page-heading--compact">
         <div>
           <span className="eyebrow">팀 관리</span>
           <h1>팀 설정</h1>
-          <p>팀을 떠나거나, 모든 팀원의 동의를 받아 팀을 정리할 수 있습니다.</p>
         </div>
       </div>
       {membershipLocked && (

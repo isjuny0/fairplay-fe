@@ -48,7 +48,32 @@ export function FeedbackSummary({ member }) {
   return (
     <div className="feedback-layout">
       <section className="feedback-score-list" aria-label="항목별 협업 평균">
-        <h2>항목별 평균</h2>
+        <div className="feedback-score-heading">
+          <h2>항목별 평균</h2>
+          <span className="feedback-help">
+            <button
+              type="button"
+              className="feedback-help-button"
+              aria-label="항목별 평균 안내"
+              aria-describedby="feedback-score-help"
+            >
+              ?
+            </button>
+            <span
+              className="feedback-help-tooltip"
+              id="feedback-score-help"
+              role="tooltip"
+            >
+              <span>
+                동료에게 받은 평균입니다. 최종 기여율과는 다른 지표입니다.
+              </span>
+              <span>
+                중간 평가 마감과 우리 팀 전원 제출 후 확인할 수 있습니다. 관리자
+                공개와는 별개이며, 소규모 팀의 익명성을 보장하지 않습니다.
+              </span>
+            </span>
+          </span>
+        </div>
         <dl>
           {Object.entries(peerCriteria).map(([code, label]) => (
             <div key={code}>
@@ -57,13 +82,30 @@ export function FeedbackSummary({ member }) {
             </div>
           ))}
         </dl>
-        <p className="field-help">
-          동료에게 받은 평균입니다. 최종 기여율과는 다른 지표입니다.
-        </p>
       </section>
       <section className="panel guidance-panel">
         <span className="eyebrow">다음 협업을 위한 안내</span>
-        <h2>다음 작업에서 확인할 점</h2>
+        <div className="guidance-heading">
+          <h2>다음 작업에서 확인할 점</h2>
+          <span className="feedback-help">
+            <button
+              type="button"
+              className="feedback-help-button"
+              aria-label="다음 작업 안내 기준"
+              aria-describedby="guidance-help"
+            >
+              ?
+            </button>
+            <span
+              className="feedback-help-tooltip"
+              id="guidance-help"
+              role="tooltip"
+            >
+              수신 평균과 고정 행동 안내입니다. 평가자·개별 점수·사유 원문은
+              제공하지 않습니다.
+            </span>
+          </span>
+        </div>
         {member.improvementGuidance.length ? (
           member.improvementGuidance.map((guidance) => (
             <p key={guidance}>{guidance}</p>
@@ -73,10 +115,6 @@ export function FeedbackSummary({ member }) {
             현재 평균 3점 미만인 항목이 없습니다. 지금의 협업 방식을 이어가세요.
           </p>
         )}
-        <p className="field-help">
-          수신 평균과 고정 행동 안내입니다. 평가자·개별 점수·사유 원문은
-          제공하지 않습니다.
-        </p>
       </section>
     </div>
   );

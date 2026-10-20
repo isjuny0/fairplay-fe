@@ -69,14 +69,9 @@ export default function TeamMembers({
     });
   return (
     <section className="stack team-member-directory">
-      <div className="page-heading">
+      <div className="page-heading page-heading--compact">
         <div>
           <h1>팀원 관리</h1>
-          <p>
-            {isLeader
-              ? '팀 구성을 확인하고 가입 신청을 검토하세요.'
-              : '팀의 구성원과 역할을 확인하세요.'}
-          </p>
         </div>
         <button
           className="secondary-button"

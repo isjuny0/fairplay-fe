@@ -443,11 +443,10 @@ export function TeamReport({ context, manager = false }) {
 export default function ContributionReport({ context }) {
   return (
     <section className="stack contribution-report-page">
-      <div className="page-heading">
+      <div className="page-heading page-heading--compact">
         <div>
           <span className="eyebrow">함께 만든 최종 결과</span>
           <h1>기여도 리포트</h1>
-          <p>관리자가 공개한 팀 결과와 본인의 계산 근거를 확인하세요.</p>
         </div>
       </div>
       <TeamReport context={context} />

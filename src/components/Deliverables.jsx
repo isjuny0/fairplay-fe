@@ -659,11 +659,16 @@ export default function Deliverables({
   };
   return (
     <section className="stack deliverables-section">
-      <div className={taskId == null ? "page-heading" : "section-heading"}>
+      <div
+        className={
+          taskId == null
+            ? "page-heading page-heading--compact"
+            : "section-heading"
+        }
+      >
         {taskId == null ? (
           <div>
             <h1>산출물 관리</h1>
-            <p>팀 공용 자료와 작업에 연결된 최신 산출물을 확인하세요.</p>
           </div>
         ) : (
           <h2>연결 산출물</h2>
