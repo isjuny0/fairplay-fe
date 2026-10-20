@@ -254,12 +254,11 @@ export default function SpaceWorkspace({
     setBusy(true);
     setError(null);
     try {
-      const created = await createTeam(spaceId, name.trim());
+      await createTeam(spaceId, name.trim());
       setCreating(false);
       clearChanges();
       notify('팀을 생성했습니다. 팀원을 모집해 작업을 시작하세요.');
       reloadWorkspace();
-      navigate(teamMenuPath(spaceId, created.id, '팀 홈'));
     } catch (requestError) {
       setError(requestError);
     } finally {

@@ -2,6 +2,7 @@ import Icon from './Icon.jsx';
 import DateTimeInput from './DateTimeInput.jsx';
 import SpaceDirectorySidebar from './SpaceDirectorySidebar.jsx';
 import SpaceRoleBadge from './SpaceRoleBadge.jsx';
+import WorkspaceContextSelect from './WorkspaceContextSelect.jsx';
 import { currentDateTime } from '../lib/dateTime.js';
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
@@ -216,19 +217,18 @@ export default function Spaces({ onSelect, user }) {
                       }
                     />
                   </label>
-                  <label>
-                    <span className="sr-only">내 역할 필터</span>
-                    <select
+                  <div className="directory-role-filter">
+                    <WorkspaceContextSelect
+                      accessibleLabel="내 역할 필터"
                       value={role}
-                      onChange={(event) =>
-                        updateFilters({ role: event.target.value })
-                      }
-                    >
-                      <option value="ALL">모든 역할</option>
-                      <option value="MANAGER">관리자</option>
-                      <option value="USER">참여 중</option>
-                    </select>
-                  </label>
+                      onChange={(nextRole) => updateFilters({ role: nextRole })}
+                      options={[
+                        { value: 'ALL', label: '모든 역할' },
+                        { value: 'MANAGER', label: '관리자' },
+                        { value: 'USER', label: '참여 중' },
+                      ]}
+                    />
+                  </div>
                   <span className="directory-count" role="status">
                     {visibleSpaces.length} / {resource.data.length}개
                   </span>

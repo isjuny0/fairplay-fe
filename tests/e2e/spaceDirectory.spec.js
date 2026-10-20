@@ -62,14 +62,15 @@ test('사이드바의 역할별 보기는 기존 검색과 역할 필터를 함�
   await expect(list.getByRole('listitem')).toHaveCount(2);
   await page.getByLabel('스페이스 이름 검색').fill('서비스');
   await sidebar.getByRole('button', { name: '참여 중', exact: true }).click();
-  await expect(page.getByLabel('내 역할 필터')).toHaveValue('USER');
+  await expect(page.getByLabel('내 역할 필터')).toHaveAttribute('data-value', 'USER');
   await expect(page.getByLabel('스페이스 이름 검색')).toHaveValue('서비스');
   await expect(list.getByRole('listitem')).toHaveCount(1);
   await sidebar.getByRole('button', { name: '관리 중', exact: true }).click();
   await expect(
     page.getByText('조건에 맞는 스페이스가 없습니다.'),
   ).toBeVisible();
-  await page.getByLabel('내 역할 필터').selectOption('ALL');
+  await page.getByLabel('내 역할 필터').click();
+  await page.getByRole('option', { name: '모든 역할', exact: true }).click();
   await expect(
     sidebar.getByRole('button', { name: '내 스페이스', exact: true }),
   ).toHaveAttribute('aria-pressed', 'true');
@@ -309,7 +310,7 @@ for (const width of [1440, 1024, 768, 390, 320]) {
       await sidebar
         .getByRole('button', { name: '관리 중', exact: true })
         .click();
-      await expect(page.getByLabel('내 역할 필터')).toHaveValue('MANAGER');
+      await expect(page.getByLabel('내 역할 필터')).toHaveAttribute('data-value', 'MANAGER');
       await toggle.click();
       await expect(toggle).toHaveAttribute('aria-expanded', 'false');
     }
@@ -362,12 +363,13 @@ test('스페이스 이름과 내 역할 조건을 함께 적용하고 초기화 
   await expect(list.getByRole('listitem')).toHaveCount(3);
   await page.getByLabel('스페이스 이름 검색').fill('서비스');
   await expect(list.getByRole('listitem')).toHaveCount(2);
-  await page.getByLabel('내 역할 필터').selectOption({ label: '참여 중' });
+  await page.getByLabel('내 역할 필터').click();
+  await page.getByRole('option', { name: '참여 중', exact: true }).click();
   await expect(list.getByRole('listitem')).toHaveCount(1);
   await expect(list).toContainText('서비스 디자인');
   await page.reload();
   await expect(page.getByLabel('스페이스 이름 검색')).toHaveValue('서비스');
-  await expect(page.getByLabel('내 역할 필터')).toHaveValue('USER');
+  await expect(page.getByLabel('내 역할 필터')).toHaveAttribute('data-value', 'USER');
   await page.route('**/api/spaces/1', (route) =>
     route.fulfill({ json: spaces[0] }),
   );
@@ -378,7 +380,7 @@ test('스페이스 이름과 내 역할 조건을 함께 적용하고 초기화 
   await expect(page).toHaveURL(/\/spaces\/1$/);
   await page.goBack();
   await expect(page.getByLabel('스페이스 이름 검색')).toHaveValue('서비스');
-  await expect(page.getByLabel('내 역할 필터')).toHaveValue('USER');
+  await expect(page.getByLabel('내 역할 필터')).toHaveAttribute('data-value', 'USER');
   await expect(list.getByRole('listitem')).toHaveCount(1);
   await page.getByLabel('스페이스 이름 검색').fill('없는 공간');
   await expect(

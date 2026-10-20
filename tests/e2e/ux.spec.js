@@ -606,7 +606,9 @@ test('가입 대기 참여자는 내 팀 없이 승인 대기 상태와 새로�
   const pending = teams.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '삼위일체', exact: true }) });
   await expect(pending).toContainText('가입 승인 대기');
   await expect(pending.getByRole('button', { name: /가입 신청|다시 신청/ })).toHaveCount(0);
-  await expect(page.getByRole('region', { name: '내 팀', exact: true }).getByRole('button', { name: '팀 만들기', exact: true })).toBeVisible();
+  const own = page.getByRole('region', { name: '내 팀', exact: true });
+  await expect(own.getByRole('button', { name: '팀 만들기', exact: true })).toHaveCount(0);
+  await expect(own.getByRole('status')).toContainText('팀 가입승인 대기 상태 이므로 팀을 만들 수 없습니다.');
   await page.getByRole('button', { name: '팀 목록 새로고침', exact: true }).click();
   await expect(pending).toContainText('가입 승인 대기');
 });

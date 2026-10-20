@@ -35,7 +35,8 @@ test('승인된 팀 리더는 팀 리더로 표시하고 참여 중 필터에 �
     { id: 10, leaderId: 'user-1', myMembershipStatus: 'APPROVED' },
   ]);
   await expect(badge).toHaveText('팀 리더');
-  await page.getByLabel('내 역할 필터').selectOption('USER');
+  await page.getByLabel('내 역할 필터').click();
+  await page.getByRole('option', { name: '참여 중', exact: true }).click();
   await expect(badge).toHaveText('팀 리더');
   await page.reload();
   await expect(badge).toHaveText('팀 리더');

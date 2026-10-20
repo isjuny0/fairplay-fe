@@ -112,17 +112,21 @@ export default function SpaceHome({
               </svg>
             </span>
           </div>
+        ) : directoryReady && !directoryError && pendingTeam ? (
+          <div className="space-home-empty space-home-pending-card" role="status">
+            <p>팀 가입승인 대기 상태 이므로 팀을 만들 수 없습니다. 팀을 만드려면 신청 취소 해주세요</p>
+          </div>
         ) : directoryReady && !directoryError ? (
           <button
             type="button"
             className="space-home-empty space-home-create-card"
             aria-label="팀 만들기"
-            aria-describedby={!pendingTeam && teamCreationRestriction ? 'team-create-restriction' : undefined}
-            disabled={busy || loading || (!pendingTeam && Boolean(teamCreationRestriction))}
+            aria-describedby={teamCreationRestriction ? 'team-create-restriction' : undefined}
+            disabled={busy || loading || Boolean(teamCreationRestriction)}
             onClick={onCreate}
           >
             <span className="space-home-create-label"><Icon name="plus" />팀 만들기</span>
-            {!pendingTeam && teamCreationRestriction && (
+            {teamCreationRestriction && (
               <span id="team-create-restriction" className="space-home-create-restriction">{teamCreationRestriction}</span>
             )}
           </button>

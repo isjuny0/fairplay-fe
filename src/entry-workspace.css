@@ -393,6 +393,29 @@
   font-size: var(--text-support);
   font-variant-numeric: tabular-nums;
 }
+.directory-role-filter {
+  width: 132px;
+  max-width: 100%;
+  flex-shrink: 0;
+}
+.directory-role-filter .workspace-context-trigger {
+  height: 36px;
+  min-height: 36px;
+  padding: 7px 10px;
+}
+.directory-role-filter .workspace-context-copy > strong {
+  font-size: var(--text-support);
+  font-weight: 400;
+  line-height: 1.5;
+}
+.directory-role-filter .workspace-context-trigger[data-value]:not([data-value='ALL']) {
+  border-color: var(--brand);
+  color: var(--brand);
+  background: var(--brand-light);
+}
+.directory-role-filter .workspace-context-options {
+  min-width: 100%;
+}
 .directory-refresh {
   margin-left: auto;
 }
