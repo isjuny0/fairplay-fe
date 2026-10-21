@@ -226,3 +226,90 @@
     font-size: var(--text-support);
   }
 }
+
+.task-comments-panel {
+  min-width: 0;
+  width: 100%;
+}
+.task-comments-heading,
+.task-comment-author,
+.task-comment-form-actions,
+.task-comment-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.task-detail-page .task-comments-heading h2 {
+  margin: 0;
+}
+.task-comments-heading {
+  margin-bottom: 16px;
+}
+.task-comments-heading .text-button,
+.task-comment-actions .text-button {
+  padding: 4px;
+  font-size: var(--text-caption);
+  white-space: nowrap;
+}
+.task-comment-form textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+.task-comment-form-actions {
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.task-comment-form-actions .field-help {
+  margin: 0;
+  font-size: var(--text-caption);
+}
+.task-comment-form-actions > div,
+.task-comment-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.task-comment-form-actions > div {
+  margin-left: auto;
+}
+.task-comment-form-actions button,
+.task-comment-pagination button {
+  min-height: 36px;
+  padding: 6px 10px;
+  font-size: var(--text-caption);
+}
+.task-comment-entry {
+  padding-block: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.task-comment-author {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.task-comment-author strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--text-support);
+  font-weight: 600;
+}
+.task-comment-time,
+.task-comments-empty,
+.task-comment-pagination {
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+}
+.task-comment-time {
+  margin: 4px 0 10px;
+}
+.task-comment-content {
+  margin: 0;
+  font-size: var(--text-support);
+  overflow-wrap: anywhere;
+}
+.task-comments-empty {
+  margin: 20px 0 0;
+}
+.task-comment-pagination {
+  margin-top: 16px;
+}
