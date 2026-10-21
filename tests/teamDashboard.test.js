@@ -1,9 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  dashboardKey,
-  emptyDashboard,
-  readDashboard,
   taskOverview,
   validateCalendarEvent,
   calendarMonthDays,
@@ -54,63 +51,6 @@ test('캘린더는 종일·시간 일정과 윤년을 검사하고 불완전한 
   ]) {
     assert.notEqual(validateCalendarEvent({ ...event, ...patch }), '');
   }
-});
-test('저장된 손상 데이터는 제외하고 위젯 중복·알 수 없는 위젯을 제거한다', () => {
-  const storage = {
-    getItem: () =>
-      JSON.stringify({
-        widgets: ['memo', 'unknown', 'memo', 'mywork'],
-        events: [event, { ...event, id: 'bad', date: 'invalid' }],
-        memo: '회의 준비',
-      }),
-  };
-  assert.deepEqual(readDashboard(storage, 'key'), {
-    widgets: ['calendar', 'progress', 'contribution', 'memo', 'mywork'],
-    events: [event],
-    memo: '회의 준비',
-  });
-  assert.deepEqual(
-    readDashboard({ getItem: () => '{broken' }, 'key'),
-    emptyDashboard(),
-  );
-});
-
-test('새 구성에서 제거한 기본 위젯은 복원하지 않고 일정과 메모는 보존한다', () => {
-  const saved = {
-    version: 2,
-    widgets: ['memo', 'progress'],
-    events: [event],
-    memo: '보관',
-  };
-  assert.deepEqual(
-    readDashboard({ getItem: () => JSON.stringify(saved) }, 'key'),
-    { widgets: ['memo', 'progress'], events: [event], memo: '보관' },
-  );
-});
-test('팀·사용자·스페이스·미리보기별 저장소가 겹치지 않는다', () => {
-  const keys = [
-    dashboardKey(1, 1, 'a', true),
-    dashboardKey(2, 1, 'a', true),
-    dashboardKey(1, 2, 'a', true),
-    dashboardKey(1, 1, 'b', true),
-    dashboardKey(1, 1, 'a', false),
-  ];
-  assert.equal(new Set(keys).size, 5);
-});
-
-test('브라우저 저장소 접근 오류는 화면에서 안내할 수 있도록 전달한다', () => {
-  assert.throws(
-    () =>
-      readDashboard(
-        {
-          getItem() {
-            throw new Error('storage blocked');
-          },
-        },
-        'key',
-      ),
-    /storage blocked/,
-  );
 });
 test('다가오는 작업은 내 미완료 작업만 마감순으로, 7일 안을 구분한다', () => {
   const now = Date.parse('2026-10-21T00:00:00Z');

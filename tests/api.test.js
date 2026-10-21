@@ -6,11 +6,7 @@ import {
 import { getMemberContributions } from '../src/api/dashboard.js';
 import { getManagerPeerResponses } from '../src/api/evaluations.js';
 import { getAiReview, requestAiReview } from '../src/api/aiReviews.js';
-import {
-  getMyWorkSummary,
-  getTeam,
-  getTeamMembers,
-} from '../src/api/teams.js';
+import { getMyWorkSummary, getTeam, getTeamMembers } from '../src/api/teams.js';
 import { invalidateSpaceList, listSpaces } from '../src/api/spaces.js';
 import { invalidateSharedReads } from '../src/api/sharedReads.js';
 import {
@@ -221,8 +217,14 @@ test('직접 완료와 재수정은 PATCH 상태와 버전만 전송한다', asy
   });
   assert.equal(calls[2].url, '/api/tasks/7');
   assert.equal(calls[2].method, 'PATCH');
-  assert.deepEqual(JSON.parse(calls[2].body), {status:'DONE', expectedVersion: 4 });
-  assert.deepEqual(JSON.parse(calls[3].body), {status:'REVISING', expectedVersion: 5 });
+  assert.deepEqual(JSON.parse(calls[2].body), {
+    status: 'DONE',
+    expectedVersion: 4,
+  });
+  assert.deepEqual(JSON.parse(calls[3].body), {
+    status: 'REVISING',
+    expectedVersion: 5,
+  });
 });
 test('가입 처리는 팀 경로가 아닌 application 경로를 사용한다', async () => {
   await reviewTeamApplication(5, 'APPROVED');
@@ -461,5 +463,65 @@ test('리포트 생성·공개에는 본문이나 쿼리 없이 CSRF만 전송�
           call.headers['Content-Type'] === undefined &&
           call.headers['X-CSRF-TOKEN'] === 'token',
       ),
+  );
+});
+
+test('팀 홈 API는 표시 구간·개인 부분 수정과 일정 version·CSRF·204 삭제 계약을 사용한다', async () => {
+  const {
+    listCalendarEvents,
+    createCalendarEvent,
+    updateCalendarEvent,
+    deleteCalendarEvent,
+    getHomePreferences,
+    updateHomePreferences,
+  } = await import('../src/api/teamHome.js');
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, ...options });
+    if (url.endsWith('/csrf'))
+      return jsonResponse({ headerName: 'X-CSRF-TOKEN', token: 'token' });
+    if (options.method === 'DELETE') return new Response(null, { status: 204 });
+    return jsonResponse(
+      options.method === 'GET' && url.includes('calendar-events')
+        ? []
+        : { teamId: 1 },
+    );
+  };
+  await listCalendarEvents(1, '2026-09-27', '2026-10-31');
+  await getHomePreferences(1);
+  await updateHomePreferences(1, { widgets: [] });
+  await updateHomePreferences(1, { memo: '' });
+  const body = {
+    title: '회의',
+    kind: 'meeting',
+    notes: '',
+    allDay: true,
+    startAt: '2026-10-21T00:00:00',
+    endAt: '2026-10-22T00:00:00',
+    schedule: { mode: 'single' },
+  };
+  await createCalendarEvent(1, body);
+  await updateCalendarEvent(7, { ...body, expectedVersion: 3 });
+  assert.equal(await deleteCalendarEvent(7, 4), null);
+  const actual = calls.filter((call) => !call.url.endsWith('/csrf'));
+  assert.deepEqual(
+    actual.map((call) => [call.method, call.url]),
+    [
+      ['GET', '/api/teams/1/calendar-events?from=2026-09-27&to=2026-10-31'],
+      ['GET', '/api/teams/1/home-preferences/me'],
+      ['PATCH', '/api/teams/1/home-preferences/me'],
+      ['PATCH', '/api/teams/1/home-preferences/me'],
+      ['POST', '/api/teams/1/calendar-events'],
+      ['PATCH', '/api/calendar-events/7'],
+      ['DELETE', '/api/calendar-events/7?expectedVersion=4'],
+    ],
+  );
+  assert.deepEqual(JSON.parse(actual[2].body), { widgets: [] });
+  assert.deepEqual(JSON.parse(actual[3].body), { memo: '' });
+  assert.equal(JSON.parse(actual[5].body).expectedVersion, 3);
+  assert.ok(actual.every((call) => call.credentials === 'include'));
+  assert.ok(
+    actual
+      .filter((call) => call.method !== 'GET')
+      .every((call) => call.headers['X-CSRF-TOKEN'] === 'token'),
   );
 });

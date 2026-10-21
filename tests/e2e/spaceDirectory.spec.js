@@ -181,6 +181,8 @@ for (const membership of ['APPROVED', 'PENDING', 'REJECTED', null]) {
     } }));
     await page.route('**/api/teams/10/members', route => route.fulfill({ json: [{ userId: 'user-1', name: '박선우', role: 'LEADER' }] }));
     await page.route('**/api/teams/10/deletion-request', route => route.fulfill({ status: 404, json: { code: 'TEAM_DELETION_REQUEST_NOT_FOUND' } }));
+    await page.route('**/api/teams/10/home-preferences/me', route => route.fulfill({ json: { teamId: 10, widgets: ['calendar', 'progress', 'contribution'], memo: '' } }));
+    await page.route('**/api/teams/10/calendar-events?*', route => route.fulfill({ json: [] }));
     await page.route('**/api/teams/10/my-work-summary', route => route.fulfill({ json: {
       teamProgressRate: 0, myAssignedShare: 0, myCompletedContributionRate: 0,
       myTaskCompletionRate: null, myOverdueTaskCount: 0,

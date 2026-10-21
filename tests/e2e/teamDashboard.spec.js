@@ -18,6 +18,10 @@ test('위젯을 선택·재정렬·제거하고 메모와 구성이 새로고침
   await page
     .getByRole('textbox', { name: '빠른 메모', exact: true })
     .fill('다음 회의에서 설문 결과 공유하기');
+  await page.getByRole('button', { name: '메모 저장', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: '메모 저장', exact: true }),
+  ).toBeDisabled();
   await page.getByRole('button', { name: '위젯 편집', exact: true }).click();
   await page
     .getByRole('button', { name: '빠른 메모 앞으로 이동', exact: true })
@@ -166,7 +170,7 @@ test('캘린더 날짜는 키보드로 달 경계를 이동해도 오늘 표시�
   ).toHaveCSS('background-color', 'rgb(8, 124, 85)');
 });
 
-test('역할 변경 시 다른 사용자에게 개인 위젯·일정·메모가 보이지 않는다', async ({
+test('역할 변경 시 다른 사용자에게 개인 위젯·메모가 보이지 않는다', async ({
   page,
 }) => {
   await page.goto('/preview/spaces/1/teams/1');
@@ -174,6 +178,10 @@ test('역할 변경 시 다른 사용자에게 개인 위젯·일정·메모가 
   await page
     .getByRole('textbox', { name: '빠른 메모', exact: true })
     .fill('리더만 보는 메모');
+  await page.getByRole('button', { name: '메모 저장', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: '메모 저장', exact: true }),
+  ).toBeDisabled();
   await page.getByLabel('미리보기 역할').selectOption('member');
   await page.goto('/preview/spaces/1/teams/1');
   await expect(page.locator('.dashboard-heading h1')).toHaveText('삼위일체');
@@ -185,7 +193,7 @@ test('역할 변경 시 다른 사용자에게 개인 위젯·일정·메모가 
   ).toHaveValue('리더만 보는 메모');
 });
 
-test('저장소 용량 오류를 안내하고 캘린더 화면은 계속 사용할 수 있다', async ({
+test('미리보기 저장소 용량이 없어도 현재 탭의 캘린더와 위젯을 사용할 수 있다', async ({
   page,
 }) => {
   await page.goto('/preview/spaces/1/teams/1');
@@ -195,7 +203,9 @@ test('저장소 용량 오류를 안내하고 캘린더 화면은 계속 사용�
     };
   });
   await addDashboardWidgets(page, ['빠른 메모']);
-  await expect(page.locator('.dashboard-storage-error')).toBeVisible();
+  await expect(page.locator('.dashboard-local-note')).toContainText(
+    '일정은 팀원 모두와 공유',
+  );
   await expect(page.locator('.widget-memo')).toBeVisible();
   await expect(
     page.locator('.team-calendar-grid > button').first(),
@@ -254,8 +264,8 @@ for (const width of [390, 320]) {
       await editor
         .getByRole('button', { name: '일정 저장', exact: true })
         .click();
-      await expect(detail.getByRole('status')).toContainText(
-        '일정을 저장했습니다.',
+      await expect(detail.locator('.team-calendar-notice')).toContainText(
+        '팀 공유 일정을 저장했습니다.',
       );
     }
     await detail.getByRole('button', { name: '닫기', exact: true }).click();
