@@ -15,7 +15,7 @@ import {
   validateCalendarEvent,
 } from '../lib/teamDashboard.js';
 import { useInteractions } from '../hooks/useInteractions.js';
-import { Field, Modal } from './ui.jsx';
+import { ErrorNotice, Field, Modal, ResourceState } from './ui.jsx';
 import TeamCalendarDatePicker from './TeamCalendarDatePicker.jsx';
 import CalendarPeriodNavigation from './CalendarPeriodNavigation.jsx';
 import TeamCalendarTimeInput from './TeamCalendarTimeInput.jsx';
@@ -28,6 +28,18 @@ import {
   scheduleAnchor,
   scheduleDescription,
 } from '../lib/calendarSchedule.js';
+import useResource from '../hooks/useResource.js';
+import { teamWorkBlocked } from '../lib/domain.js';
+import {
+  listCalendarEvents,
+  createCalendarEvent,
+  updateCalendarEvent,
+  deleteCalendarEvent,
+} from '../api/teamHome.js';
+import {
+  calendarEventRequest,
+  calendarEventFromResponse,
+} from '../lib/calendarEventContract.js';
 import '../team-calendar.css';
 
 const dateTitle = (date) => {
@@ -45,7 +57,7 @@ const sortEvents = (events) =>
   );
 const weekStart = (date) => shiftDate(date, -dateWeekday(date));
 
-export default function TeamHomeCalendar({ events, onChange, today }) {
+export default function TeamHomeCalendar({ team, today }) {
   const [selected, setSelected] = useState(today);
   const [month, setMonth] = useState(today.slice(0, 7));
   const [calendarView, setCalendarView] = useState('month');
@@ -55,6 +67,10 @@ export default function TeamHomeCalendar({ events, onChange, today }) {
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const [conflict, setConflict] = useState(false);
+  const blocked = teamWorkBlocked(team);
   const [notice, setNotice] = useState(null);
   const [year, monthNumber] = month.split('-').map(Number);
   const grid = useRef(null);
@@ -72,6 +88,21 @@ export default function TeamHomeCalendar({ events, onChange, today }) {
         return isValidDate(date) ? date : null;
       })
     : calendarMonthDays(year, monthNumber - 1);
+  const from = days.find(Boolean);
+  const to = days.filter(Boolean).at(-1);
+  const resource = useResource(
+    async () =>
+      (await listCalendarEvents(team.id, from, to)).map(
+        calendarEventFromResponse,
+      ),
+    [team.id, from, to],
+  );
+  const events = resource.data || [];
+  useEffect(() => {
+    const refresh = () => resource.reload();
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, [resource.reload]);
   const daily = sortEvents(
     events.filter((event) => eventOccursOn(event, selected)),
   );
@@ -90,7 +121,9 @@ export default function TeamHomeCalendar({ events, onChange, today }) {
     return () => cancelAnimationFrame(frame);
   }, [editorOpen]);
   const openEditor = (record) => {
+    if (busyRef.current) return;
     setError('');
+    setConflict(false);
     setNotice(null);
     setCategoriesOpen(false);
     setDatePickerOpen(false);
@@ -111,58 +144,81 @@ export default function TeamHomeCalendar({ events, onChange, today }) {
     setMonth(date.slice(0, 7));
     setDayOpen(true);
   };
-  const save = (event) => {
+  const mutationError = (failure) => {
+    const stale =
+      failure.code === 'CALENDAR_EVENT_VERSION_CONFLICT' ||
+      failure.code === 'CALENDAR_EVENT_NOT_FOUND';
+    setConflict(stale);
+    setError(
+      stale
+        ? '다른 팀원이 일정을 변경하거나 삭제했습니다. 입력 내용은 유지됩니다. 최신 일정을 확인한 뒤 다시 수정해 주세요.'
+        : failure.message,
+    );
+    if (stale) resource.reload();
+  };
+  const save = async (event) => {
     event.preventDefault();
+    if (busyRef.current || blocked || conflict) return;
     const message = validateCalendarEvent(editor);
     if (message) {
       setError(message);
       return;
     }
-    const record = {
-      ...editor,
-      id: editor.id || crypto.randomUUID(),
-      title: editor.title.trim(),
-      notes: editor.notes.trim(),
-    };
-    const persisted = onChange([
-      ...events.filter((item) => item.id !== record.id),
-      record,
-    ]);
-    const destination = eventOccursOn(record, selected)
-      ? selected
-      : record.date;
-    setSelected(destination);
-    setMonth(destination.slice(0, 7));
-    if (fortnight && !days.includes(destination))
-      setFortnightStart(weekStart(destination));
-    setEditor(null);
-    setDayOpen(true);
-    setNotice({
-      success: persisted,
-      message: persisted
-        ? '일정을 저장했습니다.'
-        : '일정을 변경했지만 브라우저에 저장하지 못했습니다.',
-    });
+    busyRef.current = true;
+    setBusy(true);
+    setError('');
+    try {
+      const body = calendarEventRequest(editor);
+      const response = editor.id
+        ? await updateCalendarEvent(editor.id, {
+            ...body,
+            expectedVersion: editor.version,
+          })
+        : await createCalendarEvent(team.id, body);
+      const record = calendarEventFromResponse(response);
+      const destination = eventOccursOn(record, selected)
+        ? selected
+        : record.date;
+      setSelected(destination);
+      setMonth(destination.slice(0, 7));
+      if (fortnight && !days.includes(destination))
+        setFortnightStart(weekStart(destination));
+      resource.reload();
+      setEditor(null);
+      setDayOpen(true);
+      setNotice({ success: true, message: '팀 공유 일정을 저장했습니다.' });
+    } catch (failure) {
+      mutationError(failure);
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
   };
   const remove = async () => {
+    if (busyRef.current || blocked || conflict) return;
     if (
       !(await confirm({
         title: '일정 삭제',
-        message: `‘${editor.title}’ ${eventSchedule(editor).mode === 'single' ? '일정을' : '일정 전체를'} 삭제할까요?`,
+        message: `‘${editor.title}’ ${eventSchedule(editor).mode === 'single' ? '일정을' : '일정 전체를'} 삭제할까요? 팀원 모두의 캘린더에서 제거됩니다.`,
         label: '삭제',
       }))
     )
       return;
-    const persisted = onChange(
-      events.filter((event) => event.id !== editor.id),
-    );
-    setEditor(null);
-    setNotice({
-      success: persisted,
-      message: persisted
-        ? '일정을 삭제했습니다.'
-        : '일정을 삭제했지만 브라우저 저장소에 반영하지 못했습니다.',
-    });
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    setError('');
+    try {
+      await deleteCalendarEvent(editor.id, editor.version);
+      resource.reload();
+      setEditor(null);
+      setNotice({ success: true, message: '팀 공유 일정을 삭제했습니다.' });
+    } catch (failure) {
+      mutationError(failure);
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
   };
   const focusDay = (date) => {
     setSelected(date);
@@ -186,7 +242,7 @@ export default function TeamHomeCalendar({ events, onChange, today }) {
             <CalendarDays size={18} />
           </span>
           <h2>캘린더</h2>
-          <span className="dashboard-tag">직접 등록</span>
+          <span className="dashboard-tag">팀 공유</span>
         </div>
         <div
           className="team-calendar-view-switch"
@@ -212,6 +268,18 @@ export default function TeamHomeCalendar({ events, onChange, today }) {
           ))}
         </div>
       </header>
+      {blocked && (
+        <p className="field-help">
+          팀 삭제 동의 현황을 확인 중이거나 삭제 동의가 진행 중일 때는 일정을
+          조회만 할 수 있습니다.
+        </p>
+      )}
+      <ErrorNotice error={resource.error} onRetry={resource.reload} />
+      {resource.loading && (
+        <p className="field-help" role="status">
+          팀 공유 일정을 불러오는 중…
+        </p>
+      )}
       <CalendarPeriodNavigation
         month={month}
         onMonthChange={(next) => {
@@ -369,47 +437,56 @@ export default function TeamHomeCalendar({ events, onChange, today }) {
               </p>
             )}
             <div className="team-calendar-day-content">
-              {daily.length ? (
-                <ul className="team-calendar-agenda">
-                  {daily.map((event) => (
-                    <li key={event.id}>
-                      <button
-                        className={`team-calendar-agenda-event event-${event.kind}`}
-                        aria-label={`${event.title} 일정 수정`}
-                        onClick={() => openEditor(event)}
-                      >
-                        <span className="team-calendar-agenda-marker" />
-                        <span className="team-calendar-agenda-copy">
-                          <span className="team-calendar-agenda-category">
-                            {eventKinds[event.kind]}
-                            {eventSchedule(event).mode !== 'single' &&
-                              ` · ${scheduleDescription(eventSchedule(event))}`}
+              <ResourceState resource={resource} label="팀 공유 일정">
+                {daily.length ? (
+                  <ul className="team-calendar-agenda">
+                    {daily.map((event) => (
+                      <li key={event.id}>
+                        <button
+                          className={`team-calendar-agenda-event event-${event.kind}`}
+                          aria-label={`${event.title} 일정 수정`}
+                          disabled={busy}
+                          onClick={() => openEditor(event)}
+                        >
+                          <span className="team-calendar-agenda-marker" />
+                          <span className="team-calendar-agenda-copy">
+                            <span className="team-calendar-agenda-category">
+                              {eventKinds[event.kind]}
+                              {eventSchedule(event).mode !== 'single' &&
+                                ` · ${scheduleDescription(eventSchedule(event))}`}
+                            </span>
+                            <strong>{event.title}</strong>
+                            <span className="team-calendar-agenda-time">
+                              <Clock3 size={12} />
+                              {event.start
+                                ? `${event.start} – ${event.endNextDay ? '다음 날 ' : ''}${event.end}`
+                                : '종일'}
+                            </span>
+                            {event.notes && <small>{event.notes}</small>}
                           </span>
-                          <strong>{event.title}</strong>
-                          <span className="team-calendar-agenda-time">
-                            <Clock3 size={12} />
-                            {event.start
-                              ? `${event.start} – ${event.end}`
-                              : '종일'}
-                          </span>
-                          {event.notes && <small>{event.notes}</small>}
-                        </span>
-                        <Pencil size={14} />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="team-calendar-empty-day">
-                  <span>
-                    <CalendarDays size={28} strokeWidth={1.3} />
-                  </span>
-                  <strong>아직 등록된 일정이 없어요</strong>
-                  <p>회의부터 작은 약속까지, 함께할 일을 남겨 보세요.</p>
-                </div>
-              )}
+                          {!blocked && <Pencil size={14} />}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="team-calendar-empty-day">
+                    <span>
+                      <CalendarDays size={28} strokeWidth={1.3} />
+                    </span>
+                    <strong>아직 등록된 일정이 없어요</strong>
+                    <p>회의부터 작은 약속까지, 함께할 일을 남겨 보세요.</p>
+                  </div>
+                )}
+              </ResourceState>
             </div>
-            <button className="team-calendar-add-day" onClick={newEvent}>
+            <button
+              className="team-calendar-add-day"
+              disabled={
+                busy || blocked || resource.loading || Boolean(resource.error)
+              }
+              onClick={newEvent}
+            >
               <Plus size={18} />새 일정 추가
             </button>
           </Modal>
@@ -434,188 +511,224 @@ export default function TeamHomeCalendar({ events, onChange, today }) {
         >
           <Modal
             title={editor.id ? '일정 수정' : '일정 추가'}
-            onClose={() => setEditor(null)}
+            onClose={() => {
+              if (!busy) setEditor(null);
+            }}
           >
             <form className="team-calendar-event-form" onSubmit={save}>
-              <div className="team-calendar-title-field">
-                <Field label="일정 이름">
-                  <input
-                    ref={titleInput}
-                    required
-                    maxLength={80}
-                    value={editor.title}
-                    placeholder="어떤 일정을 기록할까요?"
-                    onChange={(event) => {
-                      setError('');
-                      setEditor({ ...editor, title: event.target.value });
-                    }}
-                  />
-                </Field>
-              </div>
-              <div className="team-calendar-entry-options">
-                <div className="team-calendar-date-control">
-                  <span>날짜</span>
-                  <button
-                    type="button"
-                    ref={dateTrigger}
-                    aria-label="날짜 선택"
-                    aria-controls={datePanelId}
-                    aria-expanded={datePickerOpen}
-                    onClick={() => {
-                      setDatePickerOpen(!datePickerOpen);
-                      setCategoriesOpen(false);
-                    }}
-                  >
-                    <CalendarDays size={15} />
-                    <span>
-                      {eventSchedule(editor).mode === 'single'
-                        ? dateTitle(editor.date)
-                        : scheduleDescription(eventSchedule(editor))}
-                    </span>
-                    <ChevronDown size={14} />
-                  </button>
+              <fieldset
+                className="team-calendar-editor-fields"
+                disabled={busy || blocked}
+              >
+                <div className="team-calendar-title-field">
+                  <Field label="일정 이름">
+                    <input
+                      ref={titleInput}
+                      required
+                      maxLength={80}
+                      value={editor.title}
+                      placeholder="어떤 일정을 기록할까요?"
+                      onChange={(event) => {
+                        setError('');
+                        setEditor({ ...editor, title: event.target.value });
+                      }}
+                    />
+                  </Field>
                 </div>
-                <div className="team-calendar-category-control">
-                  <span>카테고리</span>
-                  <button
-                    ref={categoryTrigger}
-                    type="button"
-                    className={`team-calendar-category-trigger event-${editor.kind}`}
-                    aria-label={`카테고리: ${eventKinds[editor.kind]}`}
-                    aria-expanded={categoriesOpen}
-                    aria-controls={categoryPanelId}
-                    onClick={() => {
-                      setCategoriesOpen(!categoriesOpen);
-                      setDatePickerOpen(false);
-                    }}
-                  >
-                    <i />
-                    {eventKinds[editor.kind]}
-                    <ChevronDown size={14} />
-                  </button>
-                  {categoriesOpen && (
-                    <CalendarPopover
-                      anchorRef={categoryTrigger}
-                      onClose={() => setCategoriesOpen(false)}
-                      id={categoryPanelId}
-                      className="team-calendar-categories team-calendar-category-dropdown"
-                      onKeyDown={(event) => {
-                        if (event.key === 'Escape') {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          setCategoriesOpen(false);
-                          categoryTrigger.current?.focus();
-                        }
+                <div className="team-calendar-entry-options">
+                  <div className="team-calendar-date-control">
+                    <span>날짜</span>
+                    <button
+                      type="button"
+                      ref={dateTrigger}
+                      aria-label="날짜 선택"
+                      aria-controls={datePanelId}
+                      aria-expanded={datePickerOpen}
+                      onClick={() => {
+                        setDatePickerOpen(!datePickerOpen);
+                        setCategoriesOpen(false);
                       }}
                     >
-                      <div role="radiogroup" aria-label="일정 종류">
-                        {Object.entries(eventKinds).map(([kind, label]) => (
-                          <label
-                            className={`team-calendar-category event-${kind}`}
-                            key={kind}
-                          >
-                            <input
-                              type="radio"
-                              name={categoryName}
-                              value={kind}
-                              checked={editor.kind === kind}
-                              onChange={() => {
-                                setEditor({ ...editor, kind });
-                                setCategoriesOpen(false);
-                                categoryTrigger.current?.focus();
-                              }}
-                            />
-                            <span>
-                              <i />
-                              {label}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-                    </CalendarPopover>
-                  )}
+                      <CalendarDays size={15} />
+                      <span>
+                        {eventSchedule(editor).mode === 'single'
+                          ? dateTitle(editor.date)
+                          : scheduleDescription(eventSchedule(editor))}
+                      </span>
+                      <ChevronDown size={14} />
+                    </button>
+                  </div>
+                  <div className="team-calendar-category-control">
+                    <span>카테고리</span>
+                    <button
+                      ref={categoryTrigger}
+                      type="button"
+                      className={`team-calendar-category-trigger event-${editor.kind}`}
+                      aria-label={`카테고리: ${eventKinds[editor.kind]}`}
+                      aria-expanded={categoriesOpen}
+                      aria-controls={categoryPanelId}
+                      onClick={() => {
+                        setCategoriesOpen(!categoriesOpen);
+                        setDatePickerOpen(false);
+                      }}
+                    >
+                      <i />
+                      {eventKinds[editor.kind]}
+                      <ChevronDown size={14} />
+                    </button>
+                    {categoriesOpen && (
+                      <CalendarPopover
+                        anchorRef={categoryTrigger}
+                        onClose={() => setCategoriesOpen(false)}
+                        id={categoryPanelId}
+                        className="team-calendar-categories team-calendar-category-dropdown"
+                        onKeyDown={(event) => {
+                          if (event.key === 'Escape') {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            setCategoriesOpen(false);
+                            categoryTrigger.current?.focus();
+                          }
+                        }}
+                      >
+                        <div role="radiogroup" aria-label="일정 종류">
+                          {Object.entries(eventKinds).map(([kind, label]) => (
+                            <label
+                              className={`team-calendar-category event-${kind}`}
+                              key={kind}
+                            >
+                              <input
+                                type="radio"
+                                name={categoryName}
+                                value={kind}
+                                checked={editor.kind === kind}
+                                onChange={() => {
+                                  setEditor({ ...editor, kind });
+                                  setCategoriesOpen(false);
+                                  categoryTrigger.current?.focus();
+                                }}
+                              />
+                              <span>
+                                <i />
+                                {label}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </CalendarPopover>
+                    )}
+                  </div>
                 </div>
-              </div>
-              {datePickerOpen && (
-                <TeamCalendarDatePicker
-                  anchorRef={dateTrigger}
-                  id={datePanelId}
-                  value={eventSchedule(editor)}
-                  today={today}
-                  onClose={() => {
-                    setDatePickerOpen(false);
-                    dateTrigger.current?.focus();
-                  }}
-                  onConfirm={(schedule) => {
-                    setEditor({
-                      ...editor,
-                      date: scheduleAnchor(schedule),
-                      schedule,
-                    });
-                    setDatePickerOpen(false);
-                    requestAnimationFrame(() => dateTrigger.current?.focus());
-                  }}
-                />
-              )}
-              {editor.id && eventSchedule(editor).mode !== 'single' && (
-                <p className="calendar-series-notice">
-                  수정·삭제하면 이 일정의 모든 날짜에 함께 적용돼요.
-                </p>
-              )}
-              <details
-                className="team-calendar-event-extras"
-                open={
-                  Boolean(editor.id && (editor.start || editor.notes)) ||
-                  undefined
-                }
-              >
-                <summary>
-                  <Clock3 size={15} />
-                  시간·메모 추가
-                  <ChevronDown size={14} />
-                </summary>
-                <div className="team-calendar-extras-body">
-                  <div className="team-calendar-time-row">
-                    <Field label="시작 시간" help="비워 두면 종일 일정">
-                      <TeamCalendarTimeInput
-                        value={editor.start}
+                {datePickerOpen && (
+                  <TeamCalendarDatePicker
+                    anchorRef={dateTrigger}
+                    id={datePanelId}
+                    value={eventSchedule(editor)}
+                    today={today}
+                    onClose={() => {
+                      setDatePickerOpen(false);
+                      dateTrigger.current?.focus();
+                    }}
+                    onConfirm={(schedule) => {
+                      setEditor({
+                        ...editor,
+                        date: scheduleAnchor(schedule),
+                        schedule,
+                      });
+                      setDatePickerOpen(false);
+                      requestAnimationFrame(() => dateTrigger.current?.focus());
+                    }}
+                  />
+                )}
+                {editor.id && eventSchedule(editor).mode !== 'single' && (
+                  <p className="calendar-series-notice">
+                    수정·삭제하면 이 일정의 모든 날짜에 함께 적용돼요.
+                  </p>
+                )}
+                <details
+                  className="team-calendar-event-extras"
+                  open={
+                    Boolean(editor.id && (editor.start || editor.notes)) ||
+                    undefined
+                  }
+                >
+                  <summary>
+                    <Clock3 size={15} />
+                    시간·메모 추가
+                    <ChevronDown size={14} />
+                  </summary>
+                  <div className="team-calendar-extras-body">
+                    <div className="team-calendar-time-row">
+                      <Field label="시작 시간" help="비워 두면 종일 일정">
+                        <TeamCalendarTimeInput
+                          value={editor.start}
+                          onChange={(event) =>
+                            setEditor({ ...editor, start: event.target.value })
+                          }
+                        />
+                      </Field>
+                      <Field label="종료 시간">
+                        <TeamCalendarTimeInput
+                          value={editor.end}
+                          onChange={(event) =>
+                            setEditor({ ...editor, end: event.target.value })
+                          }
+                        />
+                      </Field>
+                    </div>
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(editor.endNextDay)}
                         onChange={(event) =>
-                          setEditor({ ...editor, start: event.target.value })
+                          setEditor({
+                            ...editor,
+                            endNextDay: event.target.checked,
+                          })
                         }
                       />
-                    </Field>
-                    <Field label="종료 시간">
-                      <TeamCalendarTimeInput
-                        value={editor.end}
+                      종료 시간은 다음 날
+                    </label>
+                    <Field label="메모">
+                      <textarea
+                        rows={3}
+                        maxLength={1000}
+                        placeholder="장소나 함께 나눌 이야기를 적어 주세요."
+                        value={editor.notes}
                         onChange={(event) =>
-                          setEditor({ ...editor, end: event.target.value })
+                          setEditor({ ...editor, notes: event.target.value })
                         }
                       />
                     </Field>
                   </div>
-                  <Field label="메모">
-                    <textarea
-                      rows={3}
-                      maxLength={1000}
-                      placeholder="장소나 함께 나눌 이야기를 적어 주세요."
-                      value={editor.notes}
-                      onChange={(event) =>
-                        setEditor({ ...editor, notes: event.target.value })
-                      }
-                    />
-                  </Field>
-                </div>
-              </details>
+                </details>
+              </fieldset>
+              {blocked && (
+                <p className="field-help">현재 일정을 변경할 수 없습니다.</p>
+              )}
               {error && (
                 <p className="dashboard-form-error" role="alert">
                   {error}
                 </p>
+              )}
+              {conflict && (
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => {
+                    setEditor(null);
+                    resource.reload();
+                  }}
+                >
+                  최신 일정 확인
+                </button>
               )}
               <div className="modal-actions">
                 {editor.id && (
                   <button
                     type="button"
                     className="dashboard-delete-event"
+                    disabled={busy || blocked || conflict}
                     onClick={remove}
                   >
                     <Trash2 size={15} />
@@ -625,12 +738,17 @@ export default function TeamHomeCalendar({ events, onChange, today }) {
                 <button
                   type="button"
                   className="secondary-button"
+                  disabled={busy}
                   onClick={() => setEditor(null)}
                 >
                   취소
                 </button>
-                <button type="submit" className="primary-button">
-                  일정 저장
+                <button
+                  type="submit"
+                  className="primary-button"
+                  disabled={busy || blocked || conflict}
+                >
+                  {busy ? '저장 중…' : '일정 저장'}
                 </button>
               </div>
             </form>

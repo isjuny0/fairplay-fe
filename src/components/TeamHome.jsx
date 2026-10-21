@@ -1,5 +1,5 @@
 import { koreanDateTime } from '../lib/koreanTime.js';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router';
 import {
   ArrowUpRight,
@@ -14,6 +14,11 @@ import TeamHomeCalendar from './TeamHomeCalendar.jsx';
 import DashboardMetricHelp from './DashboardMetricHelp.jsx';
 import DashboardWidgetFrame from './DashboardWidgetFrame.jsx';
 import TeamHomeContribution from './TeamHomeContribution.jsx';
+import { getHomePreferences, updateHomePreferences } from '../api/teamHome.js';
+import {
+  useInteractions,
+  useUnsavedChanges,
+} from '../hooks/useInteractions.js';
 import { getTeamReport } from '../api/reports.js';
 import '../team-dashboard.css';
 import '../dashboard-layout.css';
@@ -23,16 +28,10 @@ import { getMyWorkSummary } from '../api/teams.js';
 import { listTasks } from '../api/tasks.js';
 import { formatDate, statusLabels, toDateInput } from '../lib/domain.js';
 import { formatPercent } from '../lib/evaluation.js';
-import {
-  dashboardKey,
-  dashboardWidgets,
-  emptyDashboard,
-  readDashboard,
-  taskOverview,
-} from '../lib/teamDashboard.js';
+import { dashboardWidgets, taskOverview } from '../lib/teamDashboard.js';
 import { isPreviewPath } from '../lib/previewPath.js';
 import { teamMenuPath } from '../lib/routes.js';
-import { Modal, ResourceState } from './ui.jsx';
+import { ErrorNotice, Modal, ResourceState } from './ui.jsx';
 import { ProgressBar } from './PlanningUi.jsx';
 
 function TeamProgressRing({ value }) {
@@ -74,25 +73,89 @@ function TeamProgressRing({ value }) {
 export default function TeamHome(props) {
   const { pathname } = useLocation();
   const { space, team, user } = props.context;
-  const storageKey = dashboardKey(
-    space.id,
-    team.id,
-    user.id,
-    isPreviewPath(pathname),
-  );
-  return <TeamDashboard key={storageKey} {...props} storageKey={storageKey} />;
+  const scopeKey = `${isPreviewPath(pathname)}:${space.id}:${team.id}:${user.id}`;
+  return <TeamHomePreferences key={scopeKey} {...props} />;
 }
 
-function TeamDashboard({ context, onNavigate, storageKey }) {
-  const [initial] = useState(() => {
-    try {
-      return { value: readDashboard(localStorage, storageKey), error: false };
-    } catch {
-      return { value: emptyDashboard(), error: true };
-    }
-  });
-  const [dashboard, setDashboard] = useState(initial.value);
-  const [storageError, setStorageError] = useState(initial.error);
+function TeamHomePreferences(props) {
+  const { team, user } = props.context;
+  const resource = useResource(
+    () => getHomePreferences(team.id),
+    [team.id, user.id],
+  );
+  const summaryResource = useResource(
+    () => getMyWorkSummary(team.id),
+    [team.id, user.id],
+  );
+  return (
+    <ResourceState resource={resource} label="팀 홈 설정">
+      {resource.data && (
+        <TeamDashboard
+          {...props}
+          initialPreferences={resource.data}
+          summaryResource={summaryResource}
+        />
+      )}
+    </ResourceState>
+  );
+}
+
+function DashboardMemo({ value, onSave, busy, onDirtyChange }) {
+  const [draft, setDraft] = useState(value);
+  const previousValue = useRef(value);
+  useEffect(() => {
+    const previous = previousValue.current;
+    previousValue.current = value;
+    setDraft((current) => (current === previous ? value : current));
+  }, [value]);
+  const changed = draft !== value;
+  useUnsavedChanges(changed);
+  useEffect(() => onDirtyChange(changed), [changed, onDirtyChange]);
+  return (
+    <form
+      onSubmit={async (event) => {
+        event.preventDefault();
+        if (changed && !busy) await onSave({ memo: draft });
+      }}
+    >
+      <label className="sr-only" htmlFor="dashboard-memo">
+        빠른 메모
+      </label>
+      <textarea
+        id="dashboard-memo"
+        className="dashboard-memo"
+        maxLength={3000}
+        placeholder="잊지 않을 아이디어를 적어 보세요."
+        value={draft}
+        disabled={busy}
+        onChange={(event) => setDraft(event.target.value)}
+      />
+      <span className="dashboard-memo-foot">
+        나만의 메모 · {draft.length.toLocaleString()} / 3,000
+      </span>
+      <button
+        type="submit"
+        className="secondary-button"
+        disabled={busy || !changed}
+      >
+        {busy ? '저장 중…' : '메모 저장'}
+      </button>
+    </form>
+  );
+}
+
+function TeamDashboard({
+  context,
+  onNavigate,
+  initialPreferences,
+  summaryResource,
+}) {
+  const [dashboard, setDashboard] = useState(initialPreferences);
+  const [saveError, setSaveError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const { confirm } = useInteractions();
+  const [memoDirty, setMemoDirty] = useState(false);
   const [catalog, setCatalog] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draggedId, setDraggedId] = useState(null);
@@ -105,22 +168,23 @@ function TeamDashboard({ context, onNavigate, storageKey }) {
     return () => clearInterval(timer);
   }, []);
   const today = toDateInput(koreanDateTime(now)).slice(0, 10);
-  const save = (patch) => {
-    const next = { ...dashboard, ...patch };
-    setDashboard(next);
+  const save = async (patch) => {
+    if (savingRef.current) return false;
+    savingRef.current = true;
+    setSaving(true);
+    setSaveError(null);
     try {
-      localStorage.setItem(storageKey, JSON.stringify({ ...next, version: 2 }));
-      setStorageError(false);
+      const saved = await updateHomePreferences(context.team.id, patch);
+      setDashboard(saved);
       return true;
-    } catch {
-      setStorageError(true);
+    } catch (error) {
+      setSaveError(error);
       return false;
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
     }
   };
-  const summaryResource = useResource(
-    () => getMyWorkSummary(context.team.id),
-    [context.team.id, context.user.id],
-  );
   const reportResource = useResource(async () => {
     if (!dashboard.widgets.includes('contribution')) return null;
     try {
@@ -167,7 +231,7 @@ function TeamDashboard({ context, onNavigate, storageKey }) {
     setDraggedId(id);
     if (!id) setDropId(null);
   };
-  const dropWidget = (source, target) => {
+  const dropWidget = async (source, target) => {
     setDraggedId(null);
     setDropId(null);
     const from = dashboard.widgets.indexOf(source),
@@ -176,7 +240,7 @@ function TeamDashboard({ context, onNavigate, storageKey }) {
     const widgets = [...dashboard.widgets];
     widgets.splice(from, 1);
     widgets.splice(to, 0, source);
-    save({ widgets });
+    if (!(await save({ widgets }))) return;
     setAnnouncement(
       dashboardWidgets.find((widget) => widget.id === source).title +
         ' 위젯을 ' +
@@ -186,13 +250,7 @@ function TeamDashboard({ context, onNavigate, storageKey }) {
   };
   const widgetContent = (id) => {
     if (id === 'calendar')
-      return (
-        <TeamHomeCalendar
-          events={dashboard.events}
-          onChange={(events) => save({ events })}
-          today={today}
-        />
-      );
+      return <TeamHomeCalendar team={context.team} today={today} />;
     if (id === 'contribution')
       return (
         <TeamHomeContribution
@@ -437,22 +495,12 @@ function TeamDashboard({ context, onNavigate, storageKey }) {
       );
     if (id === 'memo')
       return (
-        <>
-          <label className="sr-only" htmlFor="dashboard-memo">
-            빠른 메모
-          </label>
-          <textarea
-            id="dashboard-memo"
-            className="dashboard-memo"
-            maxLength={3000}
-            placeholder="회의 전에 나누고 싶은 이야기, 잊지 않을 아이디어를 적어 보세요."
-            value={dashboard.memo}
-            onChange={(event) => save({ memo: event.target.value })}
-          />
-          <span className="dashboard-memo-foot">
-            나만의 메모 · {dashboard.memo.length.toLocaleString()} / 3,000
-          </span>
-        </>
+        <DashboardMemo
+          value={dashboard.memo}
+          onSave={save}
+          busy={saving}
+          onDirtyChange={setMemoDirty}
+        />
       );
     if (id === 'status')
       return (
@@ -506,20 +554,25 @@ function TeamDashboard({ context, onNavigate, storageKey }) {
             className={`secondary-button ${editing ? 'is-active' : ''}`}
             onClick={() => setEditing(!editing)}
             aria-pressed={editing}
+            disabled={saving}
           >
             <Settings2 size={15} />
             {editing ? '편집 완료' : '위젯 편집'}
           </button>
-          <button className="primary-button" onClick={() => setCatalog(true)}>
+          <button
+            className="primary-button"
+            disabled={saving}
+            onClick={() => setCatalog(true)}
+          >
             <Plus size={16} />
             위젯 추가
           </button>
         </div>
       </header>
-      {storageError && (
-        <p className="dashboard-storage-error" role="alert">
-          브라우저 저장소를 사용할 수 없어 변경 내용은 이 화면을 떠나면 사라질
-          수 있습니다.
+      <ErrorNotice error={saveError} />
+      {saving && (
+        <p role="status" className="field-help">
+          개인 홈 설정을 저장하는 중…
         </p>
       )}
       {editing && (
@@ -543,17 +596,29 @@ function TeamDashboard({ context, onNavigate, storageKey }) {
               index={index}
               count={dashboard.widgets.length}
               editing={editing}
+              disabled={saving}
               draggedId={draggedId}
               dropId={dropId}
               onDrag={finishDrag}
               onTarget={setDropId}
               onDrop={dropWidget}
               onMove={move}
-              onRemove={(removed) =>
-                save({
+              onRemove={async (removed) => {
+                if (
+                  removed === 'memo' &&
+                  memoDirty &&
+                  !(await confirm({
+                    title: '저장하지 않은 메모',
+                    message:
+                      '메모를 저장하지 않았습니다. 입력 내용을 버리고 위젯을 제거할까요?',
+                    label: '위젯 제거',
+                  }))
+                )
+                  return;
+                await save({
                   widgets: dashboard.widgets.filter((item) => item !== removed),
-                })
-              }
+                });
+              }}
             >
               {base ? (
                 widgetContent(id)
@@ -582,13 +647,15 @@ function TeamDashboard({ context, onNavigate, storageKey }) {
       </div>
       <button
         className="dashboard-add-placeholder"
+        disabled={saving}
         onClick={() => setCatalog(true)}
       >
         <Plus size={18} />
         <strong>필요한 위젯 추가하기</strong>
       </button>
       <footer className="dashboard-local-note">
-        위젯 구성·직접 등록한 일정·메모는 이 브라우저에 나만 저장됩니다.
+        일정은 팀원 모두와 공유됩니다. 위젯 구성과 메모는 내 계정에만
+        저장됩니다.
       </footer>
       {catalog && (
         <Modal title="위젯 추가" onClose={() => setCatalog(false)} wide>
@@ -601,7 +668,7 @@ function TeamDashboard({ context, onNavigate, storageKey }) {
               return (
                 <button
                   className={added ? 'is-added' : ''}
-                  disabled={added}
+                  disabled={added || saving}
                   aria-label={`${widget.title} ${added ? '추가됨' : '추가'}`}
                   key={widget.id}
                   onClick={() =>

@@ -1,3 +1,4 @@
+import { previewTeamHome } from './teamHome.js';
 import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
 import { isMutable } from '../lib/domain.js';
 import { previewTaskComments } from './taskComments.js';
@@ -138,6 +139,15 @@ export async function previewRequest(
   const url = new URL(path, 'https://preview.local');
   const parts = url.pathname.split('/').filter(Boolean);
   const id = Number(parts[2]);
+  if (
+    (parts[1] === 'teams' &&
+      ['calendar-events', 'home-preferences'].includes(parts[3])) ||
+    parts[1] === 'calendar-events'
+  ) {
+    const result = previewTeamHome(context, state, parts, url, method, body);
+    if (method !== 'GET') saveMockState(context, state);
+    return structuredClone(result);
+  }
   if (
     (parts[1] === 'tasks' && parts[3] === 'comments' && parts.length === 4) ||
     (parts[1] === 'task-comments' && parts.length === 3)
