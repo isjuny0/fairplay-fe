@@ -6,7 +6,7 @@ import {
   normalizeSchedule,
   validateSchedule,
 } from '../src/lib/calendarSchedule.js';
-import { calendarMonthDays, readDashboard } from '../src/lib/teamDashboard.js';
+import { calendarMonthDays } from '../src/lib/teamDashboard.js';
 const makeEvent = (schedule, id = 'a') => ({
   id,
   title: '회의',
@@ -101,25 +101,4 @@ test('기간 막대는 주마다 같은 행을 쓰고 겹치는 일정은 다른
   assert.equal(lanes.get('2026-10-14').slots[1].event.id, 'b');
   assert.equal(lanes.get('2026-10-18').slots[0].showTitle, true);
   assert.equal(lanes.get('2026-10-19').slots[0].endsHere, true);
-});
-test('기존 단일 일정과 새로운 반복·다중 일정이 재시작 후 유지된다', () => {
-  const events = [
-    makeEvent({
-      mode: 'repeat',
-      frequency: 'weekly',
-      weekdays: [3],
-      startDate: '2026-10-21',
-      endDate: '',
-    }),
-    makeEvent({ mode: 'multiple', dates: ['2026-11-01', '2026-11-05'] }, 'b'),
-  ];
-  const loaded = readDashboard(
-    {
-      getItem: () =>
-        JSON.stringify({ version: 2, widgets: ['calendar'], events, memo: '' }),
-    },
-    'key',
-  );
-  assert.deepEqual(loaded.events, events);
-  assert.equal(eventOccursOn({ date: '2026-10-21' }, '2026-10-21'), true);
 });

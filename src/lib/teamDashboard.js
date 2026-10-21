@@ -1,6 +1,6 @@
 import { apiTimeToEpoch } from './koreanTime.js';
 import { calendarDays, dateKey, isValidDate, shiftDate } from './dateTime.js';
-import { normalizeSchedule, validateSchedule } from './calendarSchedule.js';
+import { validateSchedule } from './calendarSchedule.js';
 
 export const dashboardWidgets = [
   {
@@ -96,14 +96,7 @@ export function calendarRelativeDay(date, today) {
   );
   return days === 0 ? '오늘' : days > 0 ? `D-${days}` : `D+${Math.abs(days)}`;
 }
-export const dashboardKey = (spaceId, teamId, userId, preview) =>
-  `fairplay:team-home:v1:${preview ? 'preview' : 'live'}:${userId}:${spaceId}:${teamId}`;
 export const defaultDashboardWidgets = ['calendar', 'progress', 'contribution'];
-export const emptyDashboard = () => ({
-  widgets: [...defaultDashboardWidgets],
-  events: [],
-  memo: '',
-});
 export function validateCalendarEvent(event) {
   if (typeof event.title !== 'string' || !event.title.trim())
     return '일정 이름을 입력해 주세요.';
@@ -124,55 +117,19 @@ export function validateCalendarEvent(event) {
       !/^([01]\d|2[0-3]):[0-5]\d$/.test(event.end || '')
     )
       return '시작과 종료 시간을 함께 입력해 주세요.';
-    if (event.end <= event.start)
+    const schedule = event.schedule;
+    const spansDays =
+      schedule?.mode === 'range' && schedule.endDate > schedule.startDate;
+    if (!spansDays && !event.endNextDay && event.end <= event.start)
       return '종료 시간은 시작 시간보다 늦어야 합니다.';
+    if (
+      schedule?.mode !== 'range' &&
+      event.endNextDay &&
+      event.end > event.start
+    )
+      return '일반·반복·다중 일정은 24시간 이내로 설정해 주세요.';
   }
   return '';
-}
-export function readDashboard(storage, key) {
-  const stored = storage.getItem(key);
-  try {
-    const data = JSON.parse(stored);
-    if (!data || typeof data !== 'object') return emptyDashboard();
-    const known = new Set(dashboardWidgets.map((widget) => widget.id));
-    return {
-      widgets: [
-        ...new Set([
-          ...(data.version === 2 ? [] : defaultDashboardWidgets),
-          ...(Array.isArray(data.widgets)
-            ? data.widgets.filter((id) => known.has(id))
-            : []),
-        ]),
-      ],
-      events: Array.isArray(data.events)
-        ? data.events
-            .filter(
-              (event) =>
-                event &&
-                typeof event.id === 'string' &&
-                typeof event.title === 'string' &&
-                typeof event.date === 'string' &&
-                !validateCalendarEvent(event) &&
-                typeof (event.notes || '') === 'string',
-            )
-            .map((event) => ({
-              id: event.id,
-              title: event.title.trim(),
-              date: event.date,
-              kind: event.kind,
-              start: event.start || '',
-              end: event.end || '',
-              notes: (event.notes || '').slice(0, 1000),
-              ...(event.schedule
-                ? { schedule: normalizeSchedule(event.schedule) }
-                : {}),
-            }))
-        : [],
-      memo: typeof data.memo === 'string' ? data.memo.slice(0, 3000) : '',
-    };
-  } catch {
-    return emptyDashboard();
-  }
 }
 export function taskOverview(tasks, userId, now = Date.now()) {
   const mine = tasks.filter(

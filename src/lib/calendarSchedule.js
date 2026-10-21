@@ -1,4 +1,4 @@
-import { isValidDate } from './dateTime.js';
+import { isValidDate, shiftDate } from './dateTime.js';
 
 export const scheduleModes = {
   single: '일반',
@@ -27,6 +27,8 @@ export function validateSchedule(schedule) {
   if (schedule.mode === 'multiple') {
     if (!Array.isArray(schedule.dates) || !schedule.dates.length)
       return '날짜를 한 개 이상 선택해 주세요.';
+    if (schedule.dates.length > 366)
+      return '다중 날짜는 최대 366개까지 선택할 수 있습니다.';
     return schedule.dates.every(isValidDate)
       ? ''
       : '올바른 날짜를 선택해 주세요.';
@@ -75,6 +77,16 @@ export function normalizeSchedule(schedule) {
   };
 }
 export function eventOccursOn(event, date) {
+  if (eventStartsOn(event, date)) return true;
+  // A timed occurrence continuing past midnight also appears on its final day.
+  return Boolean(
+    event.endNextDay &&
+    event.end > '00:00' &&
+    eventSchedule(event).mode !== 'range' &&
+    eventStartsOn(event, shiftDate(date, -1)),
+  );
+}
+function eventStartsOn(event, date) {
   if (!isValidDate(date)) return false;
   const schedule = eventSchedule(event);
   if (schedule.mode === 'single') return schedule.startDate === date;

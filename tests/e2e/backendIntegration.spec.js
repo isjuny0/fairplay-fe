@@ -2,7 +2,7 @@ import { koreanDateTime } from '../../src/lib/koreanTime.js';
 import { readFile } from 'node:fs/promises';
 import { test, expect } from '@playwright/test';
 import { fillDateTime } from './helpers/dateTime.js';
-import { addDashboardWidgets } from './helpers/teamDashboard.js';
+import { openCalendarEventEditor, addDashboardWidgets } from './helpers/teamDashboard.js';
 
 const members = [
   {
@@ -28,6 +28,8 @@ async function backend(
   } = {},
 ) {
   const requests = [];
+  let calendarEvents = [];
+  let homePreferences = { teamId: 1, widgets: ['calendar', 'progress', 'contribution'], memo: '' };
   const space = {
     id: 1,
     name: '실제 API 스페이스',
@@ -107,6 +109,17 @@ async function backend(
       headers: request.headers(),
     });
     const respond = (json, status = 200) => route.fulfill({ status, json });
+    if (path === '/api/teams/1/home-preferences/me') {
+      if (method === 'PATCH') homePreferences = { ...homePreferences, ...request.postDataJSON() };
+      return respond(homePreferences);
+    }
+    if (path === '/api/teams/1/calendar-events') {
+      if (method === 'GET') return respond(calendarEvents);
+      const event = { ...request.postDataJSON(), id: calendarEvents.length + 1, teamId: 1, version: 0, authorId: members[0].userId };
+      calendarEvents.push(event);
+      return respond(event, 201);
+    }
+    if (path === '/api/tasks/10/comments' && method === 'GET') return respond([]);
     if (path === '/api/me')
       return respond({
         id: manager
@@ -444,9 +457,10 @@ test('서버 조회 오류를 예시 현황으로 대체하지 않는다', async
   );
   await page.goto('/spaces/1/teams/1');
   await expect(page.getByRole('alert')).toContainText('실제 현황 조회 실패');
-  await page.getByRole('button', { name: '일정 추가', exact: true }).click();
-  await page.getByRole('dialog').getByLabel('일정 이름', { exact: true }).fill('API 오류 중에도 회의 추가');
-  await page.getByRole('dialog').getByRole('button', { name: '일정 저장', exact: true }).click();
+  await openCalendarEventEditor(page);
+  const editor = page.getByRole('dialog', { name: '일정 추가', exact: true });
+  await editor.getByLabel('일정 이름', { exact: true }).fill('API 오류 중에도 회의 추가');
+  await editor.getByRole('button', { name: '일정 저장', exact: true }).click();
   await expect(page.getByRole('button', { name: 'API 오류 중에도 회의 추가 일정 수정', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: /내 승인 대기/ })).toHaveCount(
     0,

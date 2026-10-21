@@ -1521,3 +1521,11 @@
     }
   }
 }
+
+.team-calendar-editor-fields {
+  display: contents;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}

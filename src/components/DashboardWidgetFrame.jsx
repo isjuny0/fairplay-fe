@@ -5,6 +5,7 @@ export default function DashboardWidgetFrame({
   index,
   count,
   editing,
+  disabled = false,
   draggedId,
   dropId,
   onDrag,
@@ -19,14 +20,14 @@ export default function DashboardWidgetFrame({
       className={`dashboard-widget widget-${widget.id} ${editing ? 'is-editing' : ''} ${dropId === widget.id ? 'is-drop-target' : ''} ${draggedId === widget.id ? 'is-dragging' : ''}`}
       data-widget-id={widget.id}
       onDragOver={(event) => {
-        if (editing && draggedId && draggedId !== widget.id) {
+        if (editing && !disabled && draggedId && draggedId !== widget.id) {
           event.preventDefault();
           event.dataTransfer.dropEffect = 'move';
           onTarget(widget.id);
         }
       }}
       onDrop={(event) => {
-        if (!editing) return;
+        if (!editing || disabled) return;
         event.preventDefault();
         event.stopPropagation();
         onDrop(
@@ -43,7 +44,8 @@ export default function DashboardWidgetFrame({
           <button
             type="button"
             className="dashboard-drag-handle"
-            draggable
+            disabled={disabled}
+            draggable={!disabled}
             aria-label={`${widget.title} 위젯 드래그`}
             title="끌어서 순서 변경"
             onDragStart={(event) => {
@@ -59,7 +61,7 @@ export default function DashboardWidgetFrame({
           <button
             type="button"
             className="dashboard-icon-button"
-            disabled={index === 0}
+            disabled={disabled || index === 0}
             onClick={() => onMove(index, -1)}
             aria-label={`${widget.title} 앞으로 이동`}
           >
@@ -68,7 +70,7 @@ export default function DashboardWidgetFrame({
           <button
             type="button"
             className="dashboard-icon-button"
-            disabled={index === count - 1}
+            disabled={disabled || index === count - 1}
             onClick={() => onMove(index, 1)}
             aria-label={`${widget.title} 뒤로 이동`}
           >
@@ -77,6 +79,7 @@ export default function DashboardWidgetFrame({
           <button
             type="button"
             className="dashboard-icon-button"
+            disabled={disabled}
             onClick={() => onRemove(widget.id)}
             aria-label={`${widget.title} 위젯 제거`}
           >

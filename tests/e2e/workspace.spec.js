@@ -108,6 +108,9 @@ async function workspace(
         { code: 'UNAUTHORIZED', message: '로그인이 필요합니다.' },
         401,
       );
+    if (path === '/api/teams/1/home-preferences/me')
+      return respond({ teamId: 1, widgets: ['calendar', 'progress', 'contribution'], memo: '' });
+    if (path === '/api/teams/1/calendar-events') return respond([]);
     if (path === '/api/auth/csrf')
       return respond({ headerName: 'X-CSRF-TOKEN', token: 'test-token' });
     if (path === '/api/me')

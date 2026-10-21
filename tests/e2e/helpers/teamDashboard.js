@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test';
 export async function openCalendarEventEditor(page) {
   const calendar = page.getByRole('region', {
     name: '직접 등록 일정 캘린더',
@@ -10,6 +11,13 @@ export async function openCalendarEventEditor(page) {
     .locator('.team-calendar-day-dialog')
     .getByRole('button', { name: '새 일정 추가', exact: true })
     .click();
+  await page
+    .getByRole('dialog', { name: '일정 추가', exact: true })
+    .evaluate((element) =>
+      Promise.all(
+        element.getAnimations().map((animation) => animation.finished),
+      ),
+    );
 }
 
 export async function addDashboardWidgets(page, titles) {
@@ -19,6 +27,9 @@ export async function addDashboardWidgets(page, titles) {
     await catalog
       .getByRole('button', { name: `${title} 추가`, exact: true })
       .click();
+  await expect(
+    page.getByRole('button', { name: '위젯 추가', exact: true }),
+  ).toBeEnabled();
   await catalog.getByRole('button', { name: '완료', exact: true }).click();
 }
 

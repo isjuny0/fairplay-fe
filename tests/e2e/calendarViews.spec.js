@@ -15,9 +15,9 @@ for (const width of [1440, 390, 320]) {
       .getByRole('button', { name: '팀 전체 진행률 뒤로 이동', exact: true })
       .click();
     await page.getByRole('button', { name: '편집 완료', exact: true }).click();
-    await page.evaluate(() => {
+    await page.evaluate(async () => {
       const key = Object.keys(localStorage).find((key) =>
-        key.startsWith('fairplay:team-home:'),
+        key.startsWith('fairplay:mock:v7:'),
       );
       const state = JSON.parse(localStorage.getItem(key));
       state.events = Array.from({ length: 7 }, (_, index) => ({
@@ -43,6 +43,16 @@ for (const width of [1440, 390, 320]) {
           endDate: '2026-10-23',
         },
       });
+      const { calendarEventRequest } =
+        await import('/src/lib/calendarEventContract.js');
+      state.calendarEvents = state.events.map((event, index) => ({
+        ...calendarEventRequest(event),
+        id: index + 1,
+        teamId: 1,
+        authorId: 'seed',
+        version: 0,
+      }));
+      delete state.events;
       localStorage.setItem(key, JSON.stringify(state));
     });
     await page.reload();
