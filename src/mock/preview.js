@@ -1,4 +1,5 @@
 import { isMutable } from '../lib/domain.js';
+import { previewTaskComments } from './taskComments.js';
 import { searchPreviewDeliverables } from './deliverableSearch.js';
 import { previewAiReview, invalidateReview } from './aiReviews.js';
 import {
@@ -137,6 +138,14 @@ export async function previewRequest(
   const parts = url.pathname.split('/').filter(Boolean);
   const id = Number(parts[2]);
   if (
+    (parts[1] === 'tasks' && parts[3] === 'comments' && parts.length === 4) ||
+    (parts[1] === 'task-comments' && parts.length === 3)
+  ) {
+    const result = previewTaskComments(context, state, parts, url, method, body);
+    if (method !== 'GET') saveMockState(context, state);
+    return structuredClone(result);
+  }
+  if (
     method !== 'GET' &&
     (['tasks', 'deliverables'].includes(parts[1]) ||
       (parts[1] === 'teams' && ['tasks', 'deliverables'].includes(parts[3])))
@@ -260,6 +269,10 @@ export async function previewRequest(
       state.teams[id] || missing('TEAM_NOT_FOUND', '팀이 없습니다.');
     if (parts.length === 3) {
       if (method === 'DELETE') {
+        const taskIds = new Set(entry.tasks.map((task) => task.id));
+        state.taskComments = (state.taskComments || []).filter(
+          (comment) => !taskIds.has(comment.taskId),
+        );
         delete state.teams[id];
         result = null;
       } else return teamDetail(entry, context, state);
@@ -534,6 +547,9 @@ export async function previewRequest(
           '완료된 작업은 수정 중으로 전환해 주세요.',
         );
       entry.tasks = entry.tasks.filter((item) => item.id !== id);
+      state.taskComments = (state.taskComments || []).filter(
+        (comment) => comment.taskId !== id,
+      );
       entry.deliverables = entry.deliverables.filter(
         (item) => item.taskId !== id,
       );

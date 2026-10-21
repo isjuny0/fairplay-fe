@@ -27,6 +27,12 @@ import assert from 'node:assert/strict';
 import { apiRequest, clearCsrfToken } from '../src/api/client.js';
 import { updateTask } from '../src/api/tasks.js';
 import {
+  listTaskComments,
+  createTaskComment,
+  updateTaskComment,
+  deleteTaskComment,
+} from '../src/api/taskComments.js';
+import {
   createTeamDeletionRequest,
   deleteTeam,
   getTeamDeletionRequest,
@@ -61,6 +67,38 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
   clearCsrfToken();
   delete globalThis.window;
+});
+
+test('댓글 4개 API는 페이지 배열·본문 필드·세션과 CSRF·204 삭제 계약을 사용한다', async () => {
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, ...options });
+    if (url.endsWith('/csrf'))
+      return jsonResponse({ headerName: 'X-CSRF-TOKEN', token: 'token' });
+    if (options.method === 'DELETE') return new Response(null, { status: 204 });
+    return jsonResponse(
+      options.method === 'GET' ? [] : { id: 7, content: '본문' },
+    );
+  };
+  assert.deepEqual(await listTaskComments(101, 1, 20), []);
+  await createTaskComment(101, '본문');
+  await updateTaskComment(7, '변경');
+  assert.equal(await deleteTaskComment(7), null);
+  assert.deepEqual(
+    calls.map((call) => [call.url, call.method || 'GET']),
+    [
+      ['/api/tasks/101/comments?page=1&size=20', 'GET'],
+      ['/api/auth/csrf', 'GET'],
+      ['/api/tasks/101/comments', 'POST'],
+      ['/api/task-comments/7', 'PATCH'],
+      ['/api/task-comments/7', 'DELETE'],
+    ],
+  );
+  assert.deepEqual(JSON.parse(calls[2].body), { content: '본문' });
+  assert.deepEqual(JSON.parse(calls[3].body), { content: '변경' });
+  for (const call of calls.slice(2)) {
+    assert.equal(call.credentials, 'include');
+    assert.equal(call.headers['X-CSRF-TOKEN'], 'token');
+  }
 });
 
 test('동시 팀 조회는 공유하지만 완료 후에는 최신 가입·권한 상태를 확인한다', async () => {

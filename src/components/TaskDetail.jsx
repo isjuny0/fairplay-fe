@@ -26,6 +26,7 @@ import {
 import AiReview from './AiReview.jsx';
 import Deliverables from './Deliverables.jsx';
 import TaskForm from './TaskForm.jsx';
+import TaskComments from './TaskComments.jsx';
 import { ErrorNotice, Field, ResourceState } from './ui.jsx';
 
 function OwnContribution({ task, contribution, busy, blocked, onSave }) {
@@ -202,6 +203,7 @@ export default function TaskDetail({
               ['task-contributions-section', '수행 설명'],
               ['task-deliverables-section', '산출물'],
               ['task-assignment-section', '담당·배분'],
+              ['task-comments-section', '댓글'],
             ].map(([id, label]) => (
               <button
                 key={id}
@@ -495,6 +497,12 @@ export default function TaskDetail({
                     ))}
                   </ul>
                 </section>
+                <TaskComments
+                  key={`${team.id}-${task.id}-${user.id}`}
+                  taskId={task.id}
+                  team={team}
+                  user={user}
+                />
               </aside>
             </div>
             {isMutable(task) && isTeamEditor(team, user.id) && (
