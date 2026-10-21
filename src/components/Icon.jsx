@@ -15,6 +15,10 @@ import {
   X,
   Download,
   Users,
+  UsersRound,
+  UserRound,
+  UserPlus,
+  LayoutDashboard,
   ClipboardCheck,
   MessageSquareText,
   ChartNoAxesCombined,
@@ -22,6 +26,11 @@ import {
 } from "lucide-react";
 
 const icons = {
+  space: LayoutGrid,
+  team: UsersRound,
+  member: UserRound,
+  join: UserPlus,
+  dashboard: LayoutDashboard,
   grid: LayoutGrid,
   users: Users,
   home: House,

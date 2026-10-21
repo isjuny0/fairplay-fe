@@ -194,7 +194,7 @@ for (const membership of ['APPROVED', 'PENDING', 'REJECTED', null]) {
       exact: true,
     });
     await expect(shortcut.locator('.directory-shortcut-name')).toHaveText(membership === 'APPROVED' ? team.name : sidebarSpaces[0].name);
-    await expect(shortcut.locator('.directory-shortcut-symbol')).toHaveText(membership === 'APPROVED' ? '내' : '서');
+    await expect(shortcut.locator(membership === 'APPROVED' ? '.directory-shortcut-symbol .lucide-users-round' : '.directory-shortcut-symbol .lucide-layout-grid')).toBeVisible();
     await shortcut.click();
     await expect(page).toHaveURL(membership === 'APPROVED' ? /\/spaces\/1\/teams\/10$/ : /\/spaces\/1$/);
     await expect(page.getByRole('heading', { name: membership === 'APPROVED' ? team.name : sidebarSpaces[0].name, exact: true })).toBeVisible();
@@ -227,7 +227,7 @@ test('미리보기 사이드바는 서버 요청 없이 내 팀 홈으로 바로
     name: '스페이스 사이드바',
   });
   await expect(sidebar.locator('.directory-shortcut-name')).toHaveText('삼위일체');
-  await expect(sidebar.locator('.directory-shortcut-symbol')).toHaveText('삼');
+  await expect(sidebar.locator('.directory-shortcut-symbol .lucide-users-round')).toBeVisible();
   await sidebar
     .getByRole('button', {
       name: '팀 바로가기: 삼위일체',

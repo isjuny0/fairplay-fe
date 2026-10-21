@@ -97,7 +97,7 @@ export default function SpaceHome({
               aria-label={`${joinedTeam.name} 팀 홈으로 이동`}
               onClick={() => onOpenTeam(joinedTeam)}
             />
-            <span className="space-home-team-icon" aria-hidden="true"><Icon name="users" /></span>
+            <span className="space-home-team-icon" aria-hidden="true"><Icon name="team" /></span>
             <span className="space-home-team-copy">
               <span className="space-home-team-name">{joinedTeam.name}</span>
               <span className="space-home-team-meta">
@@ -106,7 +106,7 @@ export default function SpaceHome({
               </span>
             </span>
             <span className="space-home-team-indicator" aria-hidden="true">
-              <Icon name="home" />
+              <Icon name="team" />
               <svg width="14" height="16" viewBox="0 0 14 16" fill="none">
                 <path d="M4 2L9 8L4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -132,7 +132,7 @@ export default function SpaceHome({
           </button>
         ) : (
           <div className="space-home-empty" role={!directoryReady && !directoryError ? 'status' : undefined}>
-            <Icon name="users" />
+            <Icon name="team" />
             <p>{directoryError
               ? '팀 정보를 다시 불러와 주세요.'
               : '팀 정보를 확인하고 있습니다.'}</p>
@@ -171,7 +171,7 @@ export default function SpaceHome({
                         : '';
               return (
                 <li className="space-home-team-row" key={team.id}>
-                  <span className="space-home-team-icon" aria-hidden="true"><Icon name="users" /></span>
+                  <span className="space-home-team-icon" aria-hidden="true"><Icon name="team" /></span>
                   <div className="space-home-team-row-info">
                     <h3>{team.name}</h3>
                     <div className="space-home-team-row-meta">
@@ -206,7 +206,7 @@ export default function SpaceHome({
           </ul>
         ) : directoryReady && (
           <div className="space-home-empty">
-            <Icon name="users" />
+            <Icon name="team" />
             <p>{joinedTeam ? '아직 다른 팀이 없습니다.' : '아직 만들어진 팀이 없습니다.'}</p>
           </div>
         )}

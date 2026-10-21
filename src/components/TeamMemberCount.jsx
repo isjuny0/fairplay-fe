@@ -50,7 +50,7 @@ export default function TeamMemberCount({ team }) {
           }
         }}
       >
-        <Icon name="users" />
+        <Icon name="member" />
         {count == null ? '인원 확인 중' : `인원 ${count}명`}
       </button>
       {open && (

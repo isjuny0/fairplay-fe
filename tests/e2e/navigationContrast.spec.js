@@ -346,6 +346,35 @@ for (const role of ['member', 'manager', 'participant']) {
   });
 }
 
+for (const role of ['member', 'manager']) {
+  for (const width of [1440, 375]) {
+    test(`${role} ${width}px 하위 화면에서도 사이드바의 스페이스 홈으로 돌아간다`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.addInitScript((value) => localStorage.setItem('fairplay:preview-role', value), role);
+      const paths = role === 'manager'
+        ? ['/dashboard', '/reports', '/settings']
+        : ['/teams/1', '/teams/1/tasks', '/teams/1/deliverables'];
+      for (const path of paths) {
+        await page.goto(`/preview/spaces/1${path}`);
+        const sidebar = page.getByRole('navigation', { name: '스페이스 메뉴', exact: true });
+        if (width <= 720) await page.getByRole('button', { name: '스페이스 메뉴 펼치기', exact: true }).click();
+        const home = sidebar.getByRole('button', { name: '스페이스 홈', exact: true });
+        await expect(home).toBeVisible();
+        await expect(home).not.toHaveAttribute('aria-current', 'page');
+        await home.click();
+        await expect(page).toHaveURL(/\/preview\/spaces\/1$/);
+        if (width <= 720) await page.getByRole('button', { name: '스페이스 메뉴 펼치기', exact: true }).click();
+        await expect(home).toHaveAttribute('aria-current', 'page');
+        if (role === 'manager' && width > 720)
+          await expect(sidebar.getByRole('button', { name: '관리자 대시보드', exact: true })).toBeVisible();
+      }
+      await page.reload();
+      if (width <= 720) await page.getByRole('button', { name: '스페이스 메뉴 펼치기', exact: true }).click();
+      await expect(page.getByRole('navigation', { name: '스페이스 메뉴', exact: true }).getByRole('button', { name: '스페이스 홈', exact: true })).toHaveAttribute('aria-current', 'page');
+    });
+  }
+}
+
 for (const width of [768, 390, 320]) {
   test(`${width}px 사이드바 선택과 모바일 이동에 가로 잘림이 없다`, async ({
     page,

@@ -191,6 +191,12 @@ test('로그인한 사용자는 상세 응답의 소속으로 내 팀과 다른 
   await expect(sidebar.getByRole('combobox', { name: '팀 선택', exact: true })).toHaveCount(0);
   await sidebar.getByRole('button', { name: '내 팀 · 삼위일체', exact: true }).click();
   await expect(page).toHaveURL(/\/spaces\/1\/teams\/1$/);
+  const spaceHomeLink = sidebar.getByRole('button', { name: '스페이스 홈', exact: true });
+  await expect(spaceHomeLink).toBeVisible();
+  await expect(spaceHomeLink).not.toHaveAttribute('aria-current', 'page');
+  await spaceHomeLink.click();
+  await expect(page).toHaveURL(/\/spaces\/1$/);
+  await expect(spaceHomeLink).toHaveAttribute('aria-current', 'page');
 });
 
 for (const rejected of [false, true]) {
