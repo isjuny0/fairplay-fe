@@ -137,7 +137,7 @@ export default function WorkspaceNavigation({
           </div>
         </div>
         <div className="workspace-navigation-links">
-          {navButton('스페이스 홈', 'space', spacePath(spaceId), view === 'teams')}
+          {navButton('스페이스 홈', 'home', spacePath(spaceId), view === 'teams')}
           {isManager && (
             <div className="workspace-nav-group manager-workspace-navigation">
               <p className="nav-section">스페이스 운영</p>
