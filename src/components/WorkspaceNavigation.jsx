@@ -115,7 +115,7 @@ export default function WorkspaceNavigation({
             <WorkspaceContextSelect
               label="공간"
               accessibleLabel="스페이스 선택"
-              icon="grid"
+              icon="space"
               value={spaceId}
               disabled={spaces.loading && !spaces.data}
               options={[
@@ -137,11 +137,12 @@ export default function WorkspaceNavigation({
           </div>
         </div>
         <div className="workspace-navigation-links">
+          {navButton('스페이스 홈', 'space', spacePath(spaceId), view === 'teams')}
           {isManager && (
             <div className="workspace-nav-group manager-workspace-navigation">
               <p className="nav-section">스페이스 운영</p>
               {[
-                ['dashboard', '관리자 대시보드', 'grid'],
+                ['dashboard', '관리자 대시보드', 'dashboard'],
                 ['rounds', '평가 회차 관리', 'calendar'],
                 ['reports', '리포트 검토·공개', 'chart'],
                 ['settings', '스페이스 관리', 'settings'],
@@ -161,7 +162,7 @@ export default function WorkspaceNavigation({
             !isManager &&
             navButton(
               `내 팀 · ${selectedTeam.name}`,
-              'home',
+              'team',
               teamMenuPath(spaceId, selectedTeam.id, '팀 홈'),
               false,
             )}
@@ -173,7 +174,7 @@ export default function WorkspaceNavigation({
                   {menus.map((label) =>
                     navButton(
                       label,
-                      label === '산출물' ? 'file' : 'users',
+                      label === '산출물' ? 'file' : 'member',
                       teamMenuPath(spaceId, team.id, label),
                       view === 'team' && teamMenu === label,
                     ),

@@ -543,6 +543,11 @@ test('스페이스 관리자는 타 팀 자료만 조회하고 팀 작업 API를
   expect(requests.some(({ path }) => path === '/api/teams/1/tasks')).toBe(
     false,
   );
+  const sidebar = page.getByRole('navigation', { name: '스페이스 메뉴', exact: true });
+  await sidebar.getByRole('button', { name: '스페이스 홈', exact: true }).click();
+  await expect(page).toHaveURL(/\/spaces\/1$/);
+  await expect(sidebar.getByRole('button', { name: '스페이스 홈', exact: true })).toHaveAttribute('aria-current', 'page');
+  await expect(sidebar.getByRole('button', { name: '관리자 대시보드', exact: true })).toBeVisible();
 });
 
 test('버전 충돌에서 요청을 재전송하지 않고 입력 내용을 유지한다', async ({

@@ -16,9 +16,9 @@ function readSidebarPreference() {
 }
 
 const views = [
-  { role: 'ALL', label: '내 스페이스', icon: 'grid' },
+  { role: 'ALL', label: '내 스페이스', icon: 'space' },
   { role: 'MANAGER', label: '관리 중', icon: 'settings' },
-  { role: 'USER', label: '참여 중', icon: 'users' },
+  { role: 'USER', label: '참여 중', icon: 'member' },
 ];
 
 function SpaceShortcut({ space, userId, openingSpaceId, onSelect }) {
@@ -40,7 +40,7 @@ function SpaceShortcut({ space, userId, openingSpaceId, onSelect }) {
       onClick={() => onSelect(space.id)}
     >
       <span className="directory-shortcut-symbol" aria-hidden="true">
-        {label.slice(0, 1)}
+        <Icon name={team ? 'team' : 'space'} />
       </span>
       <span className="directory-shortcut-name">{label}</span>
       <ChevronRight size={13} aria-hidden="true" />
@@ -138,7 +138,7 @@ export default function SpaceDirectorySidebar({
               <span>새 스페이스</span>
             </button>
             <button className="directory-sidebar-link" onClick={onJoin}>
-              <Icon name="users" />
+              <Icon name="join" />
               <span>스페이스 참여</span>
             </button>
           </div>
