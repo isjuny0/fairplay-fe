@@ -3,6 +3,9 @@ import { getMockState } from '../../src/mock/planned.js';
 import { previewContext } from '../../src/mock/preview.js';
 import { currentTaskMonth } from '../../src/lib/taskSchedule.js';
 
+const timelinePreview = (page) =>
+  page.getByRole('tooltip').and(page.locator('.timeline-preview'));
+
 async function seed(page, view = 'list', extra = '', customize = () => {}) {
   const state = structuredClone(getMockState(previewContext()));
   const dates = [
@@ -87,7 +90,8 @@ test('캘린더는 시작·마감일 점을 표시하고 날짜 작업의 상세
   await expect(page.getByLabel('캘린더 상태 범례')).toContainText('할 일');
   const calendarHelp = page.getByLabel(/일정 읽는 법 도움말/);
   await calendarHelp.hover();
-  await expect(page.getByRole('tooltip')).toContainText('시작일 또는 마감일');
+  await expect(calendarHelp.getByRole('tooltip')).toContainText('시작일 또는 마감일');
+  await expect(calendarHelp.getByRole('tooltip')).toHaveCSS('opacity', '1');
   await page.screenshot({
     path: testInfo.outputPath('task-calendar.png'),
     fullPage: true,
@@ -274,7 +278,8 @@ test('3개월 타임라인은 시작일 순서·오늘·지연 구간을 표시�
   await expect(page.getByLabel('타임라인 상태 범례')).toContainText('진행 중');
   const timelineHelp = page.getByLabel(/일정 읽는 법 도움말/);
   await timelineHelp.hover();
-  await expect(page.getByRole('tooltip')).toContainText('빨간 빗금');
+  await expect(timelineHelp.getByRole('tooltip')).toContainText('빨간 빗금');
+  await expect(timelineHelp.getByRole('tooltip')).toHaveCSS('opacity', '1');
   await expect(
     page.getByRole('heading', { name: '2026년 11월 – 2027년 1월' }),
   ).toBeVisible();
@@ -323,7 +328,7 @@ test('타임라인 미리보기는 마우스·키보드로 확인하고 짧은 �
   await seed(page, 'timeline');
   const bar = page.getByRole('button', { name: /프로토타입 사용성 검증 · 시작일/ });
   await bar.hover();
-  const preview = page.getByRole('tooltip');
+  const preview = timelinePreview(page);
   await expect(preview).toContainText('프로토타입 사용성 검증');
   await expect(preview).toContainText('담당');
   await expect(preview).toContainText('2026. 11. 12. 11:00');
@@ -431,9 +436,9 @@ test('일정을 넓게 보고 작업명 너비를 조절해도 조회 조건을 
   await page.screenshot({ path: testInfo.outputPath('task-timeline-expanded.png') });
   const task = dialog.getByRole('button', { name: '서비스 흐름 설계', exact: true });
   await task.focus();
-  await expect(page.getByRole('tooltip')).toBeVisible();
+  await expect(timelinePreview(page)).toBeVisible();
   await page.keyboard.press('Escape');
-  await expect(page.getByRole('tooltip')).toHaveCount(0);
+  await expect(timelinePreview(page)).toHaveCount(0);
   await expect(dialog).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
@@ -456,16 +461,16 @@ test('마우스로 잠깐 지나친 작업은 미리보기를 열지 않고 키�
   const task = page.getByRole('button', { name: '서비스 흐름 설계', exact: true });
   await task.hover();
   await page.clock.runFor(150);
-  await expect(page.getByRole('tooltip')).toHaveCount(0);
+  await expect(timelinePreview(page)).toHaveCount(0);
   await page.mouse.move(0, 0);
   await page.clock.runFor(100);
-  await expect(page.getByRole('tooltip')).toHaveCount(0);
+  await expect(timelinePreview(page)).toHaveCount(0);
   await task.hover();
   await page.clock.runFor(220);
-  await expect(page.getByRole('tooltip')).toContainText('서비스 흐름 설계');
+  await expect(timelinePreview(page)).toContainText('서비스 흐름 설계');
   await page.keyboard.press('Escape');
   await task.focus();
-  await expect(page.getByRole('tooltip')).toBeVisible();
+  await expect(timelinePreview(page)).toBeVisible();
 });
 
 test('작업 표는 가로·세로로 스크롤해도 열 제목과 작업 제목을 유지한다', async ({ page }, testInfo) => {
@@ -507,9 +512,15 @@ test('빈 달·기간에서 현재 검색과 담당 조건을 유지한 채 작�
     await expect(page.getByRole('checkbox', { name: '내 담당 작업만', exact: true })).toBeChecked();
     await expect(page.locator('.list-summary')).toContainText('현재 기간 1개');
   }
-  const help = page.getByText('타임라인 읽는 법', { exact: true });
-  await help.click();
-  await expect(page.getByText('막대의 위치와 겹침으로 일정의 순서와 병행 구간을 비교합니다.', { exact: false })).toBeVisible();
+  const help = page.getByLabel(/일정 읽는 법 도움말/);
+  const tooltip = help.getByRole('tooltip');
+  await help.hover();
+  await expect(tooltip).toContainText('막대의 위치와 겹침으로 일정의 순서와 병행 구간을 비교합니다.');
+  await expect(tooltip).toHaveCSS('opacity', '1');
+  await page.mouse.move(0, 0);
+  await expect(tooltip).toHaveCSS('opacity', '0');
+  await help.focus();
+  await expect(tooltip).toHaveCSS('opacity', '1');
   await expect(page.getByText('기간 내 작업', { exact: false })).toHaveCount(0);
 });
 
@@ -646,7 +657,7 @@ test('작업 표는 날짜와 시간을 생략 없이 한 줄로 표시하고 �
   await titles.first().focus();
   await page.keyboard.press('Tab');
   await expect(titles.nth(1)).toBeFocused();
-  await expect(page.getByRole('tooltip')).toContainText(secondTitle);
+  await expect(timelinePreview(page)).toContainText(secondTitle);
   await page.keyboard.press('Enter');
   await expect(page.getByRole('heading', { name: secondTitle, exact: true })).toBeVisible();
 });
