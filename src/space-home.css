@@ -314,14 +314,118 @@
   list-style: none;
 }
 .space-home-team-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 130px 140px 140px;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
   min-width: 0;
-  padding: 20px 16px;
+  min-height: 88px;
+  padding: 16px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
+}
+.space-home-team-toolbar {
+  margin-top: 0;
+}
+.space-home-team-toolbar.space-home-section-heading {
+  align-items: center;
+  justify-content: flex-start;
+  padding-right: 0;
+}
+.space-home-team-toolbar h2 {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.space-home-team-toolbar .space-home-actions {
+  margin-left: 0;
+}
+.space-home-team-toolbar .directory-search {
+  margin-left: auto;
+}
+.space-home-team-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 130px 140px 140px;
+  align-items: center;
+  gap: 24px;
+  padding: 10px 16px;
+  background: var(--surface-secondary);
+  border-block: 1px solid var(--border);
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+}
+.space-home-team-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.space-home-team-name-cell .space-home-team-icon {
+  width: 36px;
+  height: 36px;
+  flex-basis: 36px;
+  border-radius: 9px;
+}
+.space-home-team-row-action {
+  justify-self: end;
+}
+.space-home-team-no-results {
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--text-support);
+  border-bottom: 1px solid var(--border);
+}
+.space-home-other-teams .space-home-team-list {
+  margin-top: 0;
+  border-top: 0;
+}
+@media (max-width: 1100px) {
+  .space-home-team-row,
+  .space-home-team-columns {
+    grid-template-columns: minmax(0, 1fr) 100px 110px 120px;
+    gap: 16px;
+  }
+}
+@media (max-width: 720px) {
+  .space-home-team-columns {
+    display: none;
+  }
+  .space-home-other-teams .space-home-team-list {
+    border-top: 1px solid var(--border);
+  }
+  .space-home-team-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 12px;
+  }
+  .space-home-team-row-info {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .space-home-team-row > .space-home-members {
+    grid-column: 1;
+    grid-row: 2;
+    margin-left: 48px;
+  }
+  .space-home-team-row-action {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .space-home-team-row-state {
+    grid-column: 2;
+    grid-row: 2;
+    text-align: right;
+  }
+  .space-home-team-toolbar {
+    gap: 8px;
+  }
+  .space-home-team-toolbar .directory-search {
+    flex: 1;
+    min-width: 120px;
+    width: auto;
+  }
+  .space-home-team-toolbar.space-home-section-heading .space-home-actions {
+    margin-left: 0;
+  }
 }
 .space-home-team-row-info {
   min-width: 0;
@@ -394,7 +498,9 @@
   font: inherit;
   text-align: center;
   cursor: pointer;
-  transition: background-color 150ms, border-color 150ms;
+  transition:
+    background-color 150ms,
+    border-color 150ms;
 }
 .space-home-create-label {
   display: inline-flex;

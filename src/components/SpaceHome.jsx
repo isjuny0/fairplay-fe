@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
-import { buildingLabels, teamBuildingCountdown, formatDate } from '../lib/domain.js';
+import {
+  buildingLabels,
+  teamBuildingCountdown,
+  formatDate,
+} from '../lib/domain.js';
 import Icon from './Icon.jsx';
 import TeamMemberCount from './TeamMemberCount.jsx';
 import { ErrorNotice } from './ui.jsx';
@@ -15,9 +19,13 @@ function Period({ label, start, end, countdown }) {
             <time dateTime={start}>{formatDate(start)}</time>
             <span aria-hidden="true">~</span>
             <time dateTime={end}>{formatDate(end)}</time>
-            {countdown && <span className="space-home-countdown">{countdown}</span>}
+            {countdown && (
+              <span className="space-home-countdown">{countdown}</span>
+            )}
           </>
-        ) : <span>기간 미설정</span>}
+        ) : (
+          <span>기간 미설정</span>
+        )}
       </dd>
     </div>
   );
@@ -38,7 +46,8 @@ function SpaceSchedule({ space }) {
   const inPeriod = canBuild && start <= now && now < end;
   const status = inPeriod
     ? '진행중'
-    : (canBuild && closed) || ['CLOSED', 'LOCKED'].includes(space.teamBuildingStatus)
+    : (canBuild && closed) ||
+        ['CLOSED', 'LOCKED'].includes(space.teamBuildingStatus)
       ? '고정'
       : buildingLabels[space.teamBuildingStatus] || '상태 확인 중';
   return (
@@ -64,30 +73,61 @@ function SpaceSchedule({ space }) {
 }
 
 export default function SpaceHome({
-  space, teams, joinedTeam, user, directoryReady, buildingOpen,
-  loading, busy, error, directoryError, teamCreationRestriction,
-  onReload, onCreate, onOpenTeam, onApply, onCancelApplication,
+  space,
+  teams,
+  joinedTeam,
+  user,
+  directoryReady,
+  buildingOpen,
+  loading,
+  busy,
+  error,
+  directoryError,
+  teamCreationRestriction,
+  onReload,
+  onCreate,
+  onOpenTeam,
+  onApply,
+  onCancelApplication,
 }) {
   const isManager = space.myRole === 'MANAGER';
   const otherTeams = teams.filter((team) => team.id !== joinedTeam?.id);
-  const pendingTeam = teams.find((team) => team.myMembershipStatus === 'PENDING');
+  const [teamSearch, setTeamSearch] = useState('');
+  const visibleTeams = otherTeams.filter((team) =>
+    team.name
+      .toLocaleLowerCase()
+      .includes(teamSearch.trim().toLocaleLowerCase()),
+  );
+  const pendingTeam = teams.find(
+    (team) => team.myMembershipStatus === 'PENDING',
+  );
   return (
     <section className="space-home" aria-label="스페이스 홈">
       <header className="space-home-intro space-page-header">
         <div className="space-page-heading">
-          <span className="space-home-eyebrow space-page-eyebrow">스페이스 홈</span>
+          <span className="space-home-eyebrow space-page-eyebrow">
+            스페이스 홈
+          </span>
           <div className="space-home-title-row">
             <h1>{space.name}</h1>
           </div>
         </div>
-        {space.description && <p className="space-page-description">소개: {space.description}</p>}
+        <p
+          className="space-page-description"
+          aria-hidden={!space.description || undefined}
+        >
+          {space.description ? `소개: ${space.description}` : ''}
+        </p>
       </header>
 
       <SpaceSchedule space={space} />
 
       <ErrorNotice error={error} onRetry={onReload} />
       <ErrorNotice error={directoryError} onRetry={onReload} />
-      <section className="space-home-own-team" aria-labelledby="space-own-team-heading">
+      <section
+        className="space-home-own-team"
+        aria-labelledby="space-own-team-heading"
+      >
         <h2 id="space-own-team-heading">내 팀</h2>
         {joinedTeam ? (
           <div className="space-home-own-card">
@@ -97,52 +137,96 @@ export default function SpaceHome({
               aria-label={`${joinedTeam.name} 팀 홈으로 이동`}
               onClick={() => onOpenTeam(joinedTeam)}
             />
-            <span className="space-home-team-icon" aria-hidden="true"><Icon name="team" /></span>
+            <span className="space-home-team-icon" aria-hidden="true">
+              <Icon name="team" />
+            </span>
             <span className="space-home-team-copy">
               <span className="space-home-team-name">{joinedTeam.name}</span>
               <span className="space-home-team-meta">
                 <TeamMemberCount team={joinedTeam} />
-                <span>{joinedTeam.leaderId === user.id ? '팀 리더' : '팀원'}</span>
+                <span>
+                  {joinedTeam.leaderId === user.id ? '팀 리더' : '팀원'}
+                </span>
               </span>
             </span>
             <span className="space-home-team-indicator" aria-hidden="true">
               <Icon name="team" />
               <svg width="14" height="16" viewBox="0 0 14 16" fill="none">
-                <path d="M4 2L9 8L4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d="M4 2L9 8L4 14"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </span>
           </div>
         ) : directoryReady && !directoryError && pendingTeam ? (
-          <div className="space-home-empty space-home-pending-card" role="status">
-            <p>팀 가입승인 대기 상태 이므로 팀을 만들 수 없습니다. 팀을 만드려면 신청 취소 해주세요</p>
+          <div
+            className="space-home-empty space-home-pending-card"
+            role="status"
+          >
+            <p>
+              팀 가입승인 대기 상태 이므로 팀을 만들 수 없습니다. 팀을 만드려면
+              신청 취소 해주세요
+            </p>
           </div>
         ) : directoryReady && !directoryError ? (
           <button
             type="button"
             className="space-home-empty space-home-create-card"
             aria-label="팀 만들기"
-            aria-describedby={teamCreationRestriction ? 'team-create-restriction' : undefined}
+            aria-describedby={
+              teamCreationRestriction ? 'team-create-restriction' : undefined
+            }
             disabled={busy || loading || Boolean(teamCreationRestriction)}
             onClick={onCreate}
           >
-            <span className="space-home-create-label"><Icon name="plus" />팀 만들기</span>
+            <span className="space-home-create-label">
+              <Icon name="plus" />팀 만들기
+            </span>
             {teamCreationRestriction && (
-              <span id="team-create-restriction" className="space-home-create-restriction">{teamCreationRestriction}</span>
+              <span
+                id="team-create-restriction"
+                className="space-home-create-restriction"
+              >
+                {teamCreationRestriction}
+              </span>
             )}
           </button>
         ) : (
-          <div className="space-home-empty" role={!directoryReady && !directoryError ? 'status' : undefined}>
+          <div
+            className="space-home-empty"
+            role={!directoryReady && !directoryError ? 'status' : undefined}
+          >
             <Icon name="team" />
-            <p>{directoryError
-              ? '팀 정보를 다시 불러와 주세요.'
-              : '팀 정보를 확인하고 있습니다.'}</p>
+            <p>
+              {directoryError
+                ? '팀 정보를 다시 불러와 주세요.'
+                : '팀 정보를 확인하고 있습니다.'}
+            </p>
           </div>
         )}
       </section>
 
-      <section className="space-home-other-teams" aria-labelledby="space-other-teams-heading">
-        <div className="space-home-section-heading">
-          <h2 id="space-other-teams-heading">팀 목록 <span>{otherTeams.length}</span></h2>
+      <section
+        className="space-home-other-teams"
+        aria-labelledby="space-other-teams-heading"
+      >
+        <div className="directory-toolbar space-home-team-toolbar space-home-section-heading">
+          <h2 id="space-other-teams-heading">
+            팀 목록 <span>{otherTeams.length}</span>
+          </h2>
+          <label className="directory-search">
+            <span className="sr-only">팀 이름 검색</span>
+            <input
+              type="search"
+              placeholder="팀 이름 검색"
+              value={teamSearch}
+              onChange={(event) => setTeamSearch(event.target.value)}
+            />
+          </label>
           <div className="space-home-actions">
             <button
               className="secondary-button space-home-refresh"
@@ -150,12 +234,20 @@ export default function SpaceHome({
               title="새로고침"
               disabled={loading || busy}
               onClick={onReload}
-            ><Icon name="refresh" /></button>
+            >
+              <Icon name="refresh" />
+            </button>
           </div>
+        </div>
+        <div className="space-home-team-columns" aria-hidden="true">
+          <span>팀</span>
+          <span>인원</span>
+          <span>가입 상태</span>
+          <span />
         </div>
         {otherTeams.length ? (
           <ul className="space-home-team-list" aria-label="팀 목록">
-            {otherTeams.map((team) => {
+            {visibleTeams.map((team) => {
               const pending = team.myMembershipStatus === 'PENDING';
               const rejected = team.myMembershipStatus === 'REJECTED';
               const restriction = !directoryReady
@@ -171,44 +263,95 @@ export default function SpaceHome({
                         : '';
               return (
                 <li className="space-home-team-row" key={team.id}>
-                  <span className="space-home-team-icon" aria-hidden="true"><Icon name="team" /></span>
-                  <div className="space-home-team-row-info">
+                  <div className="space-home-team-row-info space-home-team-name-cell">
+                    <span className="space-home-team-icon" aria-hidden="true">
+                      <Icon name="team" />
+                    </span>
                     <h3>{team.name}</h3>
-                    <div className="space-home-team-row-meta">
-                      <TeamMemberCount team={team} />
-                      {(isManager || pending || rejected || !directoryReady) && (
-                        <span className={`space-home-membership${!isManager && pending ? ' is-pending' : !isManager && rejected ? ' is-rejected' : ''}`}>
-                          {isManager ? '관리자 조회' : pending ? '가입 승인 대기' : rejected ? '가입 신청 반려' : '확인 중'}
-                        </span>
-                      )}
-                    </div>
+                  </div>
+                  <TeamMemberCount team={team} />
+                  <div className="space-home-team-row-state">
+                    {(isManager || pending || rejected || !directoryReady) && (
+                      <span
+                        className={`space-home-membership${!isManager && pending ? ' is-pending' : !isManager && rejected ? ' is-rejected' : ''}`}
+                      >
+                        {isManager
+                          ? '관리자 조회'
+                          : pending
+                            ? '가입 승인 대기'
+                            : rejected
+                              ? '가입 신청 반려'
+                              : '확인 중'}
+                      </span>
+                    )}
+                    {!isManager && !pending && !rejected && directoryReady && (
+                      <span className="space-home-membership">—</span>
+                    )}
                   </div>
                   <div className="space-home-team-row-action">
                     {isManager ? (
-                      <button className="secondary-button" onClick={() => onOpenTeam(team)}>팀 자료 조회</button>
+                      <button
+                        className="secondary-button"
+                        onClick={() => onOpenTeam(team)}
+                      >
+                        팀 자료 조회
+                      </button>
                     ) : (
                       <button
                         className="primary-button space-home-team-button"
-                        disabled={busy || loading || !directoryReady || (!pending && Boolean(restriction))}
-                        title={!pending && restriction || undefined}
-                        aria-describedby={!pending && restriction ? `team-join-restriction-${team.id}` : undefined}
+                        disabled={
+                          busy ||
+                          loading ||
+                          !directoryReady ||
+                          (!pending && Boolean(restriction))
+                        }
+                        title={(!pending && restriction) || undefined}
+                        aria-describedby={
+                          !pending && restriction
+                            ? `team-join-restriction-${team.id}`
+                            : undefined
+                        }
                         aria-label={`${team.name} ${pending ? '신청 취소' : rejected ? '다시 신청' : '가입 신청'}`}
-                        onClick={() => pending ? onCancelApplication(team) : onApply(team)}
-                      >{pending ? '신청 취소' : rejected ? '다시 신청' : '가입 신청'}</button>
+                        onClick={() =>
+                          pending ? onCancelApplication(team) : onApply(team)
+                        }
+                      >
+                        {pending
+                          ? '신청 취소'
+                          : rejected
+                            ? '다시 신청'
+                            : '가입 신청'}
+                      </button>
                     )}
                   </div>
                   {!isManager && !pending && restriction && (
-                    <span className="sr-only" id={`team-join-restriction-${team.id}`}>{restriction}</span>
+                    <span
+                      className="sr-only"
+                      id={`team-join-restriction-${team.id}`}
+                    >
+                      {restriction}
+                    </span>
                   )}
                 </li>
               );
             })}
+            {!visibleTeams.length && (
+              <li className="space-home-team-no-results">
+                검색한 팀이 없습니다.
+              </li>
+            )}
           </ul>
-        ) : directoryReady && (
-          <div className="space-home-empty">
-            <Icon name="team" />
-            <p>{joinedTeam ? '아직 다른 팀이 없습니다.' : '아직 만들어진 팀이 없습니다.'}</p>
-          </div>
+        ) : (
+          directoryReady && (
+            <div className="space-home-empty">
+              <Icon name="team" />
+              <p>
+                {joinedTeam
+                  ? '아직 다른 팀이 없습니다.'
+                  : '아직 만들어진 팀이 없습니다.'}
+              </p>
+            </div>
+          )
         )}
       </section>
     </section>

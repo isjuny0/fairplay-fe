@@ -1,4 +1,5 @@
 import { fillDateTime } from './helpers/dateTime.js';
+import { addDashboardWidgets } from './helpers/teamDashboard.js';
 import { test, expect } from '@playwright/test';
 
 async function selectWorkspaceOption(page, label, value) {
@@ -396,22 +397,25 @@ test('모바일 스페이스 메뉴는 하나의 접힌 영역에 있고 작업 
   ).toBeHidden();
 });
 
-test('데스크톱 홈은 확인할 작업을 먼저 배치하고 입력·읽기 화면 폭을 유지한다', async ({
+test('데스크톱 홈은 기본 위젯 다음 추가 위젯을 배치하고 입력·읽기 화면 폭을 유지한다', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1800, height: 1000 });
   await openPreview(page, '/spaces/1/teams/1');
+  await addDashboardWidgets(page, ['지금 확인할 작업', '내 작업 현황']);
   const action = await page
-    .locator('.team-home-summary .next-action-panel')
+    .locator('.widget-attention')
     .boundingBox();
   const own = await page
     .getByRole('region', { name: '본인 작업 현황' })
     .boundingBox();
-  const progress = await page.locator('.home-team-progress').boundingBox();
-  expect(own.y).toBeGreaterThanOrEqual(action.y + action.height);
+  const progress = await page.locator('.dashboard-team-progress').boundingBox();
+  expect(own.y).toBeGreaterThanOrEqual(action.y);
   expect(own.y).toBeGreaterThanOrEqual(progress.y + progress.height);
-  expect(Math.abs(progress.y - action.y)).toBeLessThan(2);
-  expect(progress.x + progress.width).toBeLessThanOrEqual(action.x);
+  const calendar = await page.locator('.dashboard-calendar').boundingBox();
+  expect(Math.abs(progress.y - calendar.y)).toBeLessThan(2);
+  expect(calendar.x + calendar.width).toBeLessThanOrEqual(progress.x);
+  expect(Math.abs(progress.height - calendar.height)).toBeLessThanOrEqual(1);
   const wide = await page.getByRole('main').boundingBox();
   await page.getByRole('button', { name: '중간 피드백', exact: true }).click();
   const reading = await page.getByRole('main').boundingBox();
@@ -679,7 +683,8 @@ test('팀 홈의 본인·마감 지연은 각 조건의 작업 목록으로 연�
   page,
 }) => {
   await openPreview(page, '/spaces/1/teams/1');
-  await page.getByRole('button', { name: '내 작업 확인', exact: true }).click();
+  await addDashboardWidgets(page, ['다가오는 작업', '지금 확인할 작업']);
+  await page.getByRole('button', { name: '내 작업 전체 보기', exact: true }).click();
   await expect(page.getByLabel('내 담당 작업만')).toBeChecked();
   await expect(page.locator('.board-task-card')).toHaveCount(4);
   await page.goBack();
@@ -918,6 +923,7 @@ test('팀 홈 수행 지연에서 완료 후 수정 중인 작업도 포함한�
   page,
 }) => {
   await openPreview(page, '/spaces/1/teams/1');
+  await addDashboardWidgets(page, ['지금 확인할 작업']);
   await expect(page.getByRole('button', { name: /내 마감 지연.*1건/ })).toBeVisible();
   await page.evaluate(() => {
     const key = 'fairplay:mock:v6:preview:1';

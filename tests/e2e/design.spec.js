@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { addDashboardWidgets } from './helpers/teamDashboard.js';
 
 for (const width of [1440, 390]) {
   test(`헤더 ${width}px: 스페이스만 표시하고 본문에는 팀·메뉴만 표시`, async ({ page }) => {
@@ -54,18 +55,20 @@ for (const width of [1440, 1024, 390, 320]) {
   test(`팀 홈 ${width}px: 확인할 작업 버튼의 문구와 건수 줄바꿈 방지`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/preview/spaces/1/teams/1');
+    await addDashboardWidgets(page, ['지금 확인할 작업']);
     await expect(page.getByRole('heading', { name: '지금 확인할 작업', exact: true })).toBeVisible();
-    const buttons = await page.locator('.action-summary button').evaluateAll(elements => elements.map(button => {
-      const title = button.querySelector('.home-action-title');
-      const parts = [...title.children].map(el => el.getBoundingClientRect());
-      const lineHeight = Math.max(...[...title.children].map(el => parseFloat(getComputedStyle(el).lineHeight)));
+    const buttons = await page.locator('.dashboard-attention button').evaluateAll(elements => elements.map(button => {
+      const title = button.children[1];
+      const count = button.children[2];
+      const parts = [title, count].map(el => el.getBoundingClientRect());
+      const lineHeight = parseFloat(getComputedStyle(title).lineHeight);
       return {
         oneLine: title.getBoundingClientRect().height <= lineHeight + 1,
         aligned: parts[1].left >= parts[0].right && Math.max(parts[0].top, parts[1].top) < Math.min(parts[0].bottom, parts[1].bottom),
         fits: button.scrollWidth <= button.clientWidth && title.scrollWidth <= title.clientWidth,
       };
     }));
-    expect(buttons).toHaveLength(1);
+    expect(buttons).toHaveLength(2);
     for (const button of buttons) {
       expect(button.oneLine).toBe(true);
       expect(button.aligned).toBe(true);

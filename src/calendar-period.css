@@ -1,0 +1,138 @@
+.calendar-period-navigation {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.calendar-period-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 17px;
+}
+.calendar-period-caption {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+.calendar-period-caption h3 {
+  font-size: 22px;
+  font-weight: 650;
+  margin: 0;
+  letter-spacing: -0.7px;
+}
+.calendar-period-up {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  letter-spacing: inherit;
+  border-radius: 5px;
+}
+.calendar-period-up:hover {
+  color: var(--brand);
+}
+.calendar-period-up small {
+  font-size: 17px;
+  font-weight: 550;
+}
+.calendar-period-count {
+  color: var(--calendar-muted, #7e8983);
+  font-size: 9px;
+  white-space: nowrap;
+}
+.calendar-period-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.calendar-year-block {
+  font-size: 17px;
+  white-space: nowrap;
+}
+.calendar-period-options-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 0;
+}
+.calendar-period-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: min(100%, 315px);
+}
+.calendar-period-options > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 54px;
+  padding: 10px 4px;
+  border: 0;
+  border-radius: 12px;
+  background: #f5f8f6;
+  font-size: 14px;
+  color: #5b7063;
+}
+.calendar-period-options > button:hover {
+  background: #e8f1eb;
+  color: var(--brand);
+}
+.calendar-period-options > button[aria-current='date'] {
+  box-shadow: inset 0 0 0 1px #aac9b6;
+}
+.calendar-period-options > button[aria-pressed='true'] {
+  background: var(--brand);
+  color: white;
+  font-weight: 600;
+}
+.team-calendar-date-picker .calendar-period-navigation {
+  min-height: 300px;
+}
+.team-calendar-date-picker .calendar-period-options {
+  width: 100%;
+}
+.team-calendar-date-picker .calendar-period-options > button {
+  min-height: 60px;
+  background: white;
+}
+.team-calendar-date-picker
+  .calendar-period-options
+  > button[aria-pressed='true'] {
+  background: var(--brand);
+}
+.calendar-picker-square-face .team-calendar-picker-grid {
+  row-gap: 0;
+}
+.calendar-picker-square-face .team-calendar-picker-grid > :is(button, span) {
+  aspect-ratio: 1;
+  min-height: 0;
+  width: 100%;
+  height: auto;
+}
+.calendar-picker-square-face .team-calendar-picker-grid > button > span {
+  width: min(42px, 82%);
+  height: auto;
+  aspect-ratio: 1;
+}
+@media (max-width: 560px) {
+  .calendar-period-caption h3 {
+    font-size: 22px;
+  }
+  .calendar-period-up small {
+    font-size: 16px;
+  }
+  .calendar-period-options > button {
+    min-height: 50px;
+  }
+  .calendar-period-controls .team-calendar-today {
+    padding-inline: 8px;
+  }
+}
