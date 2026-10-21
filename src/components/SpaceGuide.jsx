@@ -1,3 +1,4 @@
+import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import { formatDate } from '../lib/domain.js';
 import { spacePath, teamMenuPath } from '../lib/routes.js';
 
@@ -30,7 +31,7 @@ export default function SpaceGuide({
       onAction = () => navigate(`${spacePath(space.id)}/settings`);
     } else if (
       buildingOpen ||
-      new Date(space.teamBuildingOpensAt) > new Date()
+      new Date(apiTimeToEpoch(space.teamBuildingOpensAt)) > new Date()
     ) {
       title = buildingOpen
         ? '참여 코드를 공유하고 팀 구성을 확인하세요'
@@ -82,7 +83,7 @@ export default function SpaceGuide({
     title = '팀 빌딩 기간을 확인하세요';
     description =
       space.teamBuildingOpensAt &&
-      new Date(space.teamBuildingOpensAt) > new Date()
+      new Date(apiTimeToEpoch(space.teamBuildingOpensAt)) > new Date()
         ? `${formatDate(space.teamBuildingOpensAt)}부터 팀 생성과 가입 신청이 가능합니다.`
         : '현재 팀 생성과 가입 신청이 제한됩니다. 팀 빌딩 일정은 스페이스 관리자에게 확인하세요.';
   }

@@ -1,3 +1,4 @@
+import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
 import { MockError } from './planned.js';
 
 export function invalidateReview(state, taskId) {
@@ -19,7 +20,7 @@ export function previewAiReview(state, context, entry, task, method) {
     Date.now() >= review.completesAt
   ) {
     review.status = review.isCurrent ? 'COMPLETED' : 'FAILED';
-    review.updatedAt = new Date().toISOString();
+    review.updatedAt = koreanDateTime();
     if (!review.isCurrent) review.failureCode = 'REVIEW_INPUT_CHANGED';
     else {
       review.summary =
@@ -73,7 +74,7 @@ export function previewAiReview(state, context, entry, task, method) {
           'AI_REVIEW_IN_PROGRESS',
           '기존 검토가 종료된 후 다시 요청해 주세요.',
         );
-      if (review && Date.now() - Date.parse(review.createdAt) < 60000)
+      if (review && Date.now() - apiTimeToEpoch(review.createdAt) < 60000)
         throw new MockError(
           'AI_REVIEW_RATE_LIMITED',
           '새 검토는 작업당 1분에 한 번 요청할 수 있습니다.',
@@ -88,7 +89,7 @@ export function previewAiReview(state, context, entry, task, method) {
           '작업에 연결된 산출물이 필요합니다.',
           400,
         );
-      const timestamp = new Date().toISOString();
+      const timestamp = koreanDateTime();
       review = {
         id: Date.now(),
         taskId: task.id,

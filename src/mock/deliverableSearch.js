@@ -1,3 +1,4 @@
+import { apiTimeToEpoch } from '../lib/koreanTime.js';
 // 예시 화면에서도 서버와 같이 조건 적용 후 페이지를 나눈다.
 export function searchPreviewDeliverables(deliverables, params) {
   const query = (params.get("q") || "").trim().toLocaleLowerCase();
@@ -25,10 +26,10 @@ export function searchPreviewDeliverables(deliverables, params) {
       const primary =
         sort === "TITLE_ASC"
           ? left.title.localeCompare(right.title)
-          : Date.parse(
+          : apiTimeToEpoch(
               right[sort === "UPDATED_DESC" ? "updatedAt" : "createdAt"],
             ) -
-            Date.parse(
+            apiTimeToEpoch(
               left[sort === "UPDATED_DESC" ? "updatedAt" : "createdAt"],
             );
       return primary || right.id - left.id;

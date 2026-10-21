@@ -1,3 +1,4 @@
+import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import ManagerPeerResponses from './ManagerPeerResponses.jsx';
 import { useState } from 'react';
 import DateTimeInput from './DateTimeInput.jsx';
@@ -80,7 +81,7 @@ export default function RoundManagement({ context, onChanged }) {
         return '평가에 참여할 팀이 필요합니다.';
       if (submissions.data.teams.some((team) => team.approvedMemberCount < 2))
         return '모든 팀에 승인된 팀원 2명 이상이 필요합니다.';
-      if (new Date(context.space.teamBuildingClosesAt) > new Date())
+      if (new Date(apiTimeToEpoch(context.space.teamBuildingClosesAt)) > new Date())
         return '팀 빌딩 기간이 종료된 뒤 시작할 수 있습니다.';
       if (
         round.type === 'FINAL' &&
@@ -88,8 +89,8 @@ export default function RoundManagement({ context, onChanged }) {
       )
         return '중간 평가를 먼저 마감해 주세요.';
       if (
-        new Date(round.opensAt) > new Date() ||
-        new Date(round.closesAt) <= new Date()
+        new Date(apiTimeToEpoch(round.opensAt)) > new Date() ||
+        new Date(apiTimeToEpoch(round.closesAt)) <= new Date()
       )
         return '설정한 시작 시각부터 마감 시각 전까지만 시작할 수 있습니다.';
     }

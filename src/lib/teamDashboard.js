@@ -1,3 +1,4 @@
+import { apiTimeToEpoch } from './koreanTime.js';
 import { calendarDays, dateKey, isValidDate, shiftDate } from './dateTime.js';
 import { normalizeSchedule, validateSchedule } from './calendarSchedule.js';
 
@@ -179,15 +180,15 @@ export function taskOverview(tasks, userId, now = Date.now()) {
       task.assignees?.some((entry) => entry.userId === userId) &&
       task.status !== 'DONE',
   );
-  const overdue = mine.filter((task) => Date.parse(task.dueAt) < now);
+  const overdue = mine.filter((task) => apiTimeToEpoch(task.dueAt) < now);
   const upcoming = mine
-    .filter((task) => Date.parse(task.dueAt) >= now)
-    .sort((a, b) => Date.parse(a.dueAt) - Date.parse(b.dueAt));
+    .filter((task) => apiTimeToEpoch(task.dueAt) >= now)
+    .sort((a, b) => apiTimeToEpoch(a.dueAt) - apiTimeToEpoch(b.dueAt));
   return {
     overdue,
     upcoming,
     soon: upcoming.filter(
-      (task) => Date.parse(task.dueAt) <= now + 7 * 86400000,
+      (task) => apiTimeToEpoch(task.dueAt) <= now + 7 * 86400000,
     ),
   };
 }

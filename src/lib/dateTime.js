@@ -1,6 +1,6 @@
-import { toDateInput } from './domain.js';
+import { koreanDateTime } from './koreanTime.js';
 
-export const currentDateTime = () => toDateInput(new Date().toISOString());
+export const currentDateTime = () => koreanDateTime().slice(0, 16);
 export const dateKey = (year, month, day) =>
   `${String(year).padStart(4, '0')}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 export function isValidDate(value) {
