@@ -188,6 +188,7 @@ export default function Spaces({ onSelect, user }) {
               </span>
               <h1>내 스페이스</h1>
             </div>
+            <p className="space-page-description" aria-hidden="true" />
             <div className="heading-actions">
               <button className="secondary-button" onClick={() => open('join')}>
                 코드로 참여
@@ -234,11 +235,12 @@ export default function Spaces({ onSelect, user }) {
                   </span>
                   <button
                     className="secondary-button directory-refresh"
+                    aria-label="새로고침"
+                    title="새로고침"
                     onClick={resource.reload}
                     disabled={resource.loading}
                   >
                     <Icon name="refresh" />
-                    새로고침
                   </button>
                 </div>
                 <div className="space-directory-columns" aria-hidden="true">

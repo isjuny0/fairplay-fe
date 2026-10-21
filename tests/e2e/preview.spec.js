@@ -62,7 +62,7 @@ test('팀 홈과 관리자 현황은 가중치 숫자 대신 비율과 계산 �
   await preview(page);
   await expect(page.getByText('완료 가중치', { exact: false })).toHaveCount(0);
   await expect(page.locator('.home-definition-body')).toBeHidden();
-  await page.locator('.home-definitions > summary').click();
+  await page.getByRole('button',{name:'팀 전체 진행률 계산 기준',exact:true}).click();
   await expect(
     page.getByText('작업 개수가 아닌 예상 작업량을 기준으로 계산해요.', { exact: false }),
   ).toBeVisible();

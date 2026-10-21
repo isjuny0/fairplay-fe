@@ -333,7 +333,7 @@ export default function SpaceWorkspace({
                   ))}
                 </nav>
               )}
-              {view !== 'teams' && <nav className="workspace-breadcrumb" aria-label="현재 위치">
+              {view !== 'teams' && !(view === 'team' && teamMenu === '팀 홈') && <nav className="workspace-breadcrumb" aria-label="현재 위치">
                 {team && (
                   <>
                     <button

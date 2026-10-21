@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { test, expect } from '@playwright/test';
 import { fillDateTime } from './helpers/dateTime.js';
+import { addDashboardWidgets } from './helpers/teamDashboard.js';
 
 const members = [
   {
@@ -365,19 +366,19 @@ test('일반 팀 홈은 서버 본인 집계를 사용하고 null을 0%로 표�
   await page.setViewportSize({ width: 1280, height: 800 });
   const { requests } = await backend(page);
   await page.goto('/spaces/1/teams/1');
+  await addDashboardWidgets(page, ['지금 확인할 작업', '내 작업 현황']);
   await expect(
     page.getByRole('button', { name: /내 마감 지연.*9건/ }),
   ).toBeVisible();
   await expect(page.getByText('계산할 작업 없음').first()).toBeVisible();
   await expect(page.locator('.home-progress-ring')).not.toHaveAttribute('aria-valuenow');
   const actions = await page.getByRole('region', { name: '지금 확인할 작업' }).boundingBox();
-  expect(actions.y + actions.height).toBeLessThan(800);
-  await expect(page.locator('.home-my-work')).toBeVisible();
+  await expect(page.locator('.widget-mywork')).toBeVisible();
   const ownWork = await page.getByRole('region', { name: '본인 작업 현황' }).boundingBox();
-  expect(ownWork.y).toBeGreaterThanOrEqual(actions.y + actions.height);
-  await expect(page.locator('.home-definition-body')).toBeHidden();
-  await page.locator('.home-definitions > summary').click();
-  await expect(page.locator('.home-definition-body > p')).toBeVisible();
+  expect(ownWork.y).toBeGreaterThanOrEqual(actions.y);
+  await page.getByRole('button', { name: '내 작업 현황 계산 기준', exact: true }).click();
+  const definitions = page.getByRole('dialog', { name: '내 작업 현황 계산 기준', exact: true });
+  await expect(definitions.locator('.home-definition-body > p').first()).toBeVisible();
   await expect(page.getByText('목업', { exact: true })).toHaveCount(0);
   expect(
     requests.some((request) => request.path.endsWith('/my-work-summary')),
@@ -394,6 +395,7 @@ test('팀 홈은 확인할 작업이 없음을 안내하고 계산할 작업 없
     },
   }));
   await page.goto('/spaces/1/teams/1');
+  await addDashboardWidgets(page, ['지금 확인할 작업', '내 작업 현황', '다가오는 작업']);
   await expect(page.getByText('확인할 작업 없음', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: /내 마감 지연.*0건/ })).toBeEnabled();
   const ownWork = page.getByRole('region', { name: '본인 작업 현황' });
@@ -401,10 +403,36 @@ test('팀 홈은 확인할 작업이 없음을 안내하고 계산할 작업 없
   await expect(ownWork.getByText('담당 작업 없음', { exact: true })).toBeVisible();
   await expect(page.getByRole('progressbar', { name: '예상 작업량을 반영한 팀 진행률' })).toHaveAttribute('aria-valuenow', '0');
   await expect(page.locator('.home-ring-value')).toHaveAttribute('stroke-opacity', '0');
-  await page.getByRole('button', { name: '내 작업 확인', exact:true }).click();
+  await page.getByRole('button', { name: '내 작업 전체 보기', exact:true }).click();
   await expect(page).toHaveURL(/mine=1/);
   await expect(page.getByLabel('작업 상태', { exact: true })).toHaveValue('ALL');
 });
+test('다가오는 작업 위젯은 실제 작업 상세로 이동한다', async ({ page }) => {
+  const { requests } = await backend(page);
+  await page.goto('/spaces/1/teams/1');
+  await addDashboardWidgets(page, ['다가오는 작업']);
+  await page.locator('.widget-upcoming').getByRole('button', { name: /현재 작업/ }).click();
+  await expect(page).toHaveURL(/\/tasks\/10$/);
+  await expect(page.getByRole('heading', { name: '현재 작업', exact: true })).toBeVisible();
+  expect(requests.some(request => request.path === '/api/teams/1/tasks')).toBe(true);
+});
+
+test('내 기여도는 공개된 최종 리포트만 사용하고 현재 완료 비중으로 대체하지 않는다', async ({ page }) => {
+  await backend(page);
+  let status = 'PUBLISHED';
+  await page.route('**/api/teams/1/report', route => route.fulfill({ json: { status, myDetails: { totalPercent: 63.4 }, members: [] } }));
+  await page.goto('/spaces/1/teams/1');
+  const contribution = page.getByRole('region', { name: '내 기여도', exact: true });
+  await expect(contribution.locator('.dashboard-contribution-result > strong')).toHaveText('63.40%');
+  await contribution.getByRole('button', { name: '내 기여도 계산 기준', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: '내 기여도 계산 기준', exact: true })).toContainText('완료 작업 · 70%');
+  await page.keyboard.press('Escape');
+  status = 'UNPUBLISHED';
+  await page.reload();
+  await expect(contribution.getByText('공개 대기', { exact: true })).toBeVisible();
+  await expect(contribution.locator('.dashboard-contribution-result > strong')).toHaveText('—');
+});
+
 test('서버 조회 오류를 예시 현황으로 대체하지 않는다', async ({ page }) => {
   await backend(page);
   await page.route('**/api/teams/1/my-work-summary', (route) =>
@@ -415,6 +443,10 @@ test('서버 조회 오류를 예시 현황으로 대체하지 않는다', async
   );
   await page.goto('/spaces/1/teams/1');
   await expect(page.getByRole('alert')).toContainText('실제 현황 조회 실패');
+  await page.getByRole('button', { name: '일정 추가', exact: true }).click();
+  await page.getByRole('dialog').getByLabel('일정 이름', { exact: true }).fill('API 오류 중에도 회의 추가');
+  await page.getByRole('dialog').getByRole('button', { name: '일정 저장', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'API 오류 중에도 회의 추가 일정 수정', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: /내 승인 대기/ })).toHaveCount(
     0,
   );

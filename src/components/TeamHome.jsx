@@ -1,11 +1,37 @@
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router';
+import {
+  ArrowUpRight,
+  Check,
+  ChevronRight,
+  LayoutDashboard,
+  Plus,
+  Settings2,
+} from 'lucide-react';
 import Icon from './Icon.jsx';
-import '../team-home-restored.css';
-import { Check, ChartNoAxesCombined, ClipboardCheck } from 'lucide-react';
-import { formatDate } from '../lib/domain.js';
+import TeamHomeCalendar from './TeamHomeCalendar.jsx';
+import DashboardMetricHelp from './DashboardMetricHelp.jsx';
+import DashboardWidgetFrame from './DashboardWidgetFrame.jsx';
+import TeamHomeContribution from './TeamHomeContribution.jsx';
+import { getTeamReport } from '../api/reports.js';
+import '../team-dashboard.css';
+import '../dashboard-layout.css';
 import useResource from '../hooks/useResource.js';
+import useAppNavigate from '../hooks/useAppNavigate.js';
 import { getMyWorkSummary } from '../api/teams.js';
+import { listTasks } from '../api/tasks.js';
+import { formatDate, statusLabels, toDateInput } from '../lib/domain.js';
 import { formatPercent } from '../lib/evaluation.js';
-import { ResourceState } from './ui.jsx';
+import {
+  dashboardKey,
+  dashboardWidgets,
+  emptyDashboard,
+  readDashboard,
+  taskOverview,
+} from '../lib/teamDashboard.js';
+import { isPreviewPath } from '../lib/previewPath.js';
+import { teamMenuPath } from '../lib/routes.js';
+import { Modal, ResourceState } from './ui.jsx';
 import { ProgressBar } from './PlanningUi.jsx';
 
 function TeamProgressRing({ value }) {
@@ -13,7 +39,7 @@ function TeamProgressRing({ value }) {
   const percent = available ? Math.min(100, Math.max(0, Number(value))) : 0;
   return (
     <div
-      className={`home-progress-ring ${available ? '' : 'is-empty'}`}
+      className="dashboard-progress-ring home-progress-ring"
       role="progressbar"
       aria-label="예상 작업량을 반영한 팀 진행률"
       aria-valuemin={0}
@@ -21,13 +47,13 @@ function TeamProgressRing({ value }) {
       aria-valuenow={available ? percent : undefined}
       aria-valuetext={available ? undefined : '계산할 작업 없음'}
     >
-      <svg viewBox="0 0 120 120" aria-hidden="true">
-        <circle className="home-ring-track" cx="60" cy="60" r="50" />
+      <svg viewBox="0 0 160 160" aria-hidden="true">
+        <circle className="home-ring-track" cx="80" cy="80" r="68" />
         <circle
           className="home-ring-value"
-          cx="60"
-          cy="60"
-          r="50"
+          cx="80"
+          cy="80"
+          r="68"
           pathLength="100"
           strokeDasharray="100"
           strokeDashoffset={100 - percent}
@@ -36,267 +62,576 @@ function TeamProgressRing({ value }) {
       </svg>
       <div>
         <strong>{available ? formatPercent(value) : '—'}</strong>
-        {!available && <small>계산할 작업 없음</small>}
+        <small>
+          {available ? '완료한 만큼, 한 걸음 더' : '계산할 작업 없음'}
+        </small>
       </div>
     </div>
   );
 }
 
-function WorkMetric({ label, scope, value, empty, tone }) {
-  return (
-    <article className={`home-work-metric ${tone}`}>
-      <span className="home-metric-scope">{scope}</span>
-      <h3>{label}</h3>
-      <strong className={value == null ? 'is-empty' : ''}>
-        {formatPercent(value, empty)}
-      </strong>
-      <ProgressBar value={value} label={`${label} · ${scope}`} />
-    </article>
+export default function TeamHome(props) {
+  const { pathname } = useLocation();
+  const { space, team, user } = props.context;
+  const storageKey = dashboardKey(
+    space.id,
+    team.id,
+    user.id,
+    isPreviewPath(pathname),
   );
+  return <TeamDashboard key={storageKey} {...props} storageKey={storageKey} />;
 }
 
-export default function TeamHome({ context, onNavigate }) {
-  const resource = useResource(
+function TeamDashboard({ context, onNavigate, storageKey }) {
+  const [initial] = useState(() => {
+    try {
+      return { value: readDashboard(localStorage, storageKey), error: false };
+    } catch {
+      return { value: emptyDashboard(), error: true };
+    }
+  });
+  const [dashboard, setDashboard] = useState(initial.value);
+  const [storageError, setStorageError] = useState(initial.error);
+  const [catalog, setCatalog] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draggedId, setDraggedId] = useState(null);
+  const [dropId, setDropId] = useState(null);
+  const [announcement, setAnnouncement] = useState('');
+  const [now, setNow] = useState(Date.now());
+  const navigate = useAppNavigate();
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+  const today = toDateInput(new Date(now).toISOString()).slice(0, 10);
+  const save = (patch) => {
+    const next = { ...dashboard, ...patch };
+    setDashboard(next);
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({ ...next, version: 2 }));
+      setStorageError(false);
+      return true;
+    } catch {
+      setStorageError(true);
+      return false;
+    }
+  };
+  const summaryResource = useResource(
     () => getMyWorkSummary(context.team.id),
     [context.team.id, context.user.id],
   );
-  const summary = resource.data;
-  return (
-    <section className="stack team-home team-home-visual team-home-restored">
-      <div className="page-heading">
-        <div>
-          <span className="home-eyebrow">OUR WORKSPACE</span>
-          <h1>{context.team.name}</h1>
-        </div>
-        <div className="heading-actions">
+  const reportResource = useResource(async () => {
+    if (!dashboard.widgets.includes('contribution')) return null;
+    try {
+      return await getTeamReport(context.team.id);
+    } catch (error) {
+      if (
+        error.status === 404 &&
+        ['REPORT_NOT_FOUND', 'NOT_FOUND'].includes(error.code)
+      )
+        return null;
+      throw error;
+    }
+  }, [
+    context.team.id,
+    context.user.id,
+    dashboard.widgets.includes('contribution'),
+  ]);
+  const needsTasks = dashboard.widgets.some((id) =>
+    ['attention', 'upcoming', 'status'].includes(id),
+  );
+  const taskResource = useResource(
+    () => (needsTasks ? listTasks(context.team.id) : Promise.resolve([])),
+    [context.team.id, context.user.id, needsTasks],
+  );
+  const tasks = taskResource.data || [];
+  const summary = summaryResource.data;
+  const overview = taskOverview(tasks, context.user.id, now);
+  const overdueCount = summaryResource.error
+    ? overview.overdue.length
+    : (summary?.myOverdueTaskCount ?? overview.overdue.length);
+  const move = (index, direction) => {
+    const widgets = [...dashboard.widgets];
+    [widgets[index], widgets[index + direction]] = [
+      widgets[index + direction],
+      widgets[index],
+    ];
+    save({ widgets });
+  };
+  const taskLink = (task) =>
+    navigate(
+      `${teamMenuPath(context.space.id, context.team.id, '작업')}/${task.id}`,
+    );
+  const finishDrag = (id) => {
+    setDraggedId(id);
+    if (!id) setDropId(null);
+  };
+  const dropWidget = (source, target) => {
+    setDraggedId(null);
+    setDropId(null);
+    const from = dashboard.widgets.indexOf(source),
+      to = dashboard.widgets.indexOf(target);
+    if (from < 0 || to < 0 || from === to) return;
+    const widgets = [...dashboard.widgets];
+    widgets.splice(from, 1);
+    widgets.splice(to, 0, source);
+    save({ widgets });
+    setAnnouncement(
+      dashboardWidgets.find((widget) => widget.id === source).title +
+        ' 위젯을 ' +
+        (to + 1) +
+        '번째로 이동했습니다.',
+    );
+  };
+  const widgetContent = (id) => {
+    if (id === 'calendar')
+      return (
+        <TeamHomeCalendar
+          events={dashboard.events}
+          onChange={(events) => save({ events })}
+          today={today}
+        />
+      );
+    if (id === 'contribution')
+      return (
+        <TeamHomeContribution
+          resource={reportResource}
+          userId={context.user.id}
+          onNavigate={onNavigate}
+        />
+      );
+    if (id === 'progress')
+      return (
+        <section
+          className="dashboard-card dashboard-team-progress"
+          aria-label="팀 진행 현황"
+        >
+          <header className="dashboard-card-heading">
+            <div className="dashboard-title">
+              <span className="dashboard-icon">
+                <Icon name="chart" />
+              </span>
+              <h2>팀 전체 진행률</h2>
+              <DashboardMetricHelp title="팀 전체 진행률" />
+            </div>
+            <button
+              className="dashboard-icon-button"
+              aria-label="현황 새로고침"
+              title="현황 새로고침"
+              disabled={
+                summaryResource.loading || (needsTasks && taskResource.loading)
+              }
+              onClick={() => {
+                summaryResource.reload();
+                if (needsTasks) taskResource.reload();
+                setNow(Date.now());
+              }}
+            >
+              <Icon name="refresh" />
+            </button>
+          </header>
+          <ResourceState resource={summaryResource} label="팀 진행 현황">
+            {summary && (
+              <>
+                <TeamProgressRing value={summary.teamProgressRate} />
+                <div className="dashboard-progress-copy">
+                  <strong>
+                    {summary.teamProgressRate == null
+                      ? '첫 작업을 기다리고 있어요'
+                      : Number(summary.teamProgressRate) >= 100
+                        ? '함께 목표에 도착했어요'
+                        : '조금씩, 함께 앞으로'}
+                  </strong>
+                  <p>현재 등록된 작업의 예상 작업량 기준</p>
+                </div>
+                {summary.asOf && (
+                  <time className="dashboard-caption" dateTime={summary.asOf}>
+                    {formatDate(summary.asOf)} 기준
+                  </time>
+                )}
+                <button
+                  className="dashboard-shortcut-button"
+                  onClick={() => onNavigate('작업', { view: 'board' })}
+                >
+                  작업 보드 보기 <ArrowUpRight size={16} />
+                </button>
+              </>
+            )}
+          </ResourceState>
+        </section>
+      );
+    if (id === 'attention')
+      return (
+        <ResourceState resource={taskResource} label="확인할 작업">
+          <div className="dashboard-attention">
+            <button
+              onClick={() =>
+                onNavigate('작업', { mine: '1', overdue: 'work', view: 'list' })
+              }
+            >
+              <span className="dashboard-icon is-red">
+                <Icon name="clock" />
+              </span>
+              <span>내 마감 지연</span>
+              <strong className="is-red">
+                {overdueCount}
+                <small>건</small>
+              </strong>
+              <ChevronRight size={16} />
+            </button>
+            <button
+              onClick={() => {
+                save({
+                  widgets: dashboard.widgets.includes('upcoming')
+                    ? dashboard.widgets
+                    : [...dashboard.widgets, 'upcoming'],
+                });
+                requestAnimationFrame(() =>
+                  document
+                    .getElementById('dashboard-widget-upcoming')
+                    ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }),
+                );
+              }}
+            >
+              <span className="dashboard-icon is-amber">
+                <Icon name="calendar" />
+              </span>
+              <span>7일 내 마감</span>
+              <strong>
+                {overview.soon.length}
+                <small>건</small>
+              </strong>
+              <ChevronRight size={16} />
+            </button>
+          </div>
+          <p className="dashboard-caption">
+            {overdueCount || overview.soon.length
+              ? '내가 담당한 미완료 작업 기준이에요.'
+              : '확인할 작업 없음'}
+          </p>
+        </ResourceState>
+      );
+    if (id === 'upcoming')
+      return (
+        <ResourceState resource={taskResource} label="다가오는 작업">
+          {overview.upcoming.length ? (
+            <ul className="dashboard-task-list">
+              {overview.upcoming.slice(0, 4).map((task) => (
+                <li key={task.id}>
+                  <button onClick={() => taskLink(task)}>
+                    <span
+                      className={`dashboard-status-dot status-${task.status}`}
+                    />
+                    <span>
+                      <strong>{task.title}</strong>
+                      <small>{formatDate(task.dueAt)}</small>
+                    </span>
+                    <ChevronRight size={15} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="dashboard-empty">
+              <Check size={22} />
+              <p>다가오는 내 작업이 없어요.</p>
+            </div>
+          )}
           <button
-            className="secondary-button"
-            aria-label="현황 새로고침"
-            title="현황 새로고침"
-            disabled={resource.loading}
-            onClick={resource.reload}
-          >
-            <Icon name="refresh" />
-          </button>
-          <button
-            className="primary-button"
+            className="dashboard-text-button dashboard-widget-link"
             onClick={() => onNavigate('작업', { mine: '1' })}
           >
-            내 작업 확인 <Icon name="arrow" />
+            내 작업 전체 보기 <ArrowUpRight size={15} />
           </button>
-        </div>
-      </div>
-      <ResourceState resource={resource} label="본인 작업 현황">
-        {summary && (
-          <>
-            <div className="team-home-summary home-visual-summary">
-              <section className="home-team-progress" aria-label="팀 진행 현황">
-                <div className="home-progress-title">
-                  <span className="home-eyebrow">조금씩, 함께 앞으로</span>
-                  <h2>팀 전체 진행률</h2>
-                  <span>현재 등록된 작업 기준</span>
-                </div>
-                <TeamProgressRing value={summary.teamProgressRate} />
-                <ProgressBar
-                  value={summary.teamProgressRate}
-                  label="예상 작업량을 반영한 팀 진행 막대"
-                />
-                <span className="home-progress-footnote">
-                  예상 작업량을 반영한 값 · 최종 기여도와 달라요
-                </span>
-              </section>
-              <section
-                className="next-action-panel home-actions"
-                aria-label="지금 확인할 작업"
-              >
-                <div className="section-heading home-summary-context">
-                  <h2>지금 확인할 작업</h2>
-                  {summary.asOf && (
-                    <time dateTime={summary.asOf}>
-                      {formatDate(summary.asOf)} 기준
-                    </time>
-                  )}
-                  <Icon name="clock" />
-                </div>
-                <div className="action-summary">
-                  <button
-                    className={`home-action-link${summary.myOverdueTaskCount > 0 ? ' has-overdue' : ''}`}
-                    onClick={() =>
-                      onNavigate('작업', {
-                        mine: '1',
-                        overdue: 'work',
-                        view: 'list',
-                      })
-                    }
-                  >
-                    <span
-                      className="home-action-icon home-overdue-icon"
-                      aria-hidden="true"
-                    >
-                      <Icon name="calendar" />
-                    </span>
-                    <span className="home-action-content">
-                      <span className="home-action-title">
-                        <span>내 마감 지연</span>
-                        <strong>{summary.myOverdueTaskCount}건</strong>
-                      </span>
-                    </span>
-                    <Icon name="arrow" />
-                  </button>
-                </div>
-                {summary.myOverdueTaskCount === 0 && (
-                  <span className="home-all-clear">
-                    <Check size={14} aria-hidden="true" />
-                    확인할 작업 없음
-                  </span>
-                )}
-                {summary.myOverdueTaskCount > 0 && (
-                  <span className="home-action-help">
-                    지연된 담당 작업을 확인하세요.
-                  </span>
-                )}
-              </section>
-            </div>
-            <nav className="home-quick-links" aria-label="평가·리포트">
-              <button
-                className="home-quick-link"
-                aria-label="동료 평가 작성"
-                onClick={() => onNavigate('동료 평가')}
-              >
-                <span className="home-quick-icon" aria-hidden="true">
-                  <ClipboardCheck size={20} />
-                </span>
-                <span className="home-shortcut-copy">
-                  <strong>협업을 돌아볼 시간</strong>
-                  <small>동료 평가 작성</small>
-                </span>
-                <Icon name="arrow" />
-              </button>
-              <button
-                className="home-quick-link"
-                aria-label="공개 리포트 보기"
-                onClick={() => onNavigate('기여도 리포트')}
-              >
-                <span className="home-quick-icon" aria-hidden="true">
-                  <ChartNoAxesCombined size={20} />
-                </span>
-                <span className="home-shortcut-copy">
-                  <strong>함께 만든 결과</strong>
-                  <small>공개 리포트 보기</small>
-                </span>
-                <Icon name="arrow" />
-              </button>
-            </nav>
-            <div className="home-insights">
-              <section
-                className="own-work-panel home-my-work"
-                aria-label="본인 작업 현황"
-              >
-                <div className="section-heading home-metric-heading">
-                  <div>
-                    <span className="home-eyebrow">나의 참여를 한눈에</span>
-                    <h2>내 작업 현황</h2>
-                  </div>
-                  <Icon name="chart" />
-                </div>
-                <div className="home-work-metrics">
-                  <WorkMetric
-                    label="내 담당 비중"
-                    scope="팀 전체 기준"
-                    value={summary.myAssignedShare}
-                    tone="assigned"
-                  />
-                  <WorkMetric
-                    label="내 완료 비중"
-                    scope="팀 전체 기준"
-                    value={summary.myCompletedContributionRate}
-                    tone="completed"
-                  />
-                  <WorkMetric
-                    label="내 작업 완료율"
-                    scope="내 담당 기준"
-                    value={summary.myTaskCompletionRate}
-                    empty={
+        </ResourceState>
+      );
+    if (id === 'mywork')
+      return (
+        <ResourceState resource={summaryResource} label="본인 작업 현황">
+          {summary && (
+            <div className="dashboard-work-metrics">
+              {[
+                ['내 담당 비중', '팀 전체 기준', summary.myAssignedShare],
+                [
+                  '내 완료 비중',
+                  '팀 전체 기준',
+                  summary.myCompletedContributionRate,
+                ],
+                [
+                  '내 작업 완료율',
+                  '내 담당 기준',
+                  summary.myTaskCompletionRate,
+                ],
+              ].map(([label, scope, value]) => (
+                <div className="dashboard-work-metric" key={label}>
+                  <small>{scope}</small>
+                  <h3>{label}</h3>
+                  <strong>
+                    {formatPercent(
+                      value,
                       summary.teamTotalWeight
                         ? '담당 작업 없음'
-                        : '계산할 작업 없음'
-                    }
-                    tone="completion"
-                  />
+                        : '계산할 작업 없음',
+                    )}
+                  </strong>
+                  <ProgressBar value={value} label={`${label} · ${scope}`} />
                 </div>
-              </section>
-              <details className="home-metric-help home-definitions">
-                <summary className="home-definition-heading">
-                  <div>
-                    <h2>지표 계산 기준</h2>
-                    <p>각 비율의 의미와 계산 방법</p>
-                  </div>
-                  <span className="home-definition-toggle">
-                    <span className="when-closed">펼쳐보기</span>
-                    <span className="when-open">접기</span>
-                    <Icon name="arrow" />
-                  </span>
-                </summary>
-                <div className="home-definition-body">
-                  <p>
-                    작업 개수가 아닌 <strong>예상 작업량</strong>을 기준으로
-                    계산해요. 아래의 ‘분량’은 예상 작업량을 뜻하며, 내 분량에는
-                    공동 작업의 담당 비율도 반영합니다.
-                  </p>
-                  <dl>
-                    <div>
-                      <dt>팀 전체 진행률</dt>
-                      <dd>
-                        <span>팀 전체 일 중 얼마나 끝났는지</span>
-                        <small>팀 완료 분량 ÷ 팀 전체 분량 × 100</small>
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>내 담당 비중</dt>
-                      <dd>
-                        <span>팀 전체 일 중 내가 맡은 몫</span>
-                        <small>내 담당 분량 ÷ 팀 전체 분량 × 100</small>
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>내 완료 비중</dt>
-                      <dd>
-                        <span>팀 전체 일 중 내가 완료한 몫</span>
-                        <small>내 완료 분량 ÷ 팀 전체 분량 × 100</small>
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>내 작업 완료율</dt>
-                      <dd>
-                        <span>내가 맡은 일 중 얼마나 끝냈는지</span>
-                        <small>내 완료 분량 ÷ 내 담당 분량 × 100</small>
-                      </dd>
-                    </div>
-                  </dl>
-                  <ul>
-                    <li>
-                      <strong>완료 기준</strong> · ‘완료’ 상태의 작업만
-                      포함하며, 완료 후 ‘수정 중’인 작업은 제외해요.
-                    </li>
-                    <li>
-                      <strong>계산할 분량이 없을 때</strong> · 0% 대신 ‘계산할
-                      작업 없음’ 또는 ‘담당 작업 없음’으로 표시해요.
-                    </li>
-                    <li>
-                      <strong>마감 지연</strong> · 마감이 지난 내 할 일·진행
-                      중·수정 중 작업이에요.
-                    </li>
-                  </ul>
-                  <div className="home-definition-warning">
-                    현재 작업 현황을 보여주는 지표예요. 실제 소요 시간이나 최종
-                    기여도 점수, 무임승차 여부를 뜻하지 않아요.
-                  </div>
-                </div>
-              </details>
+              ))}
             </div>
-          </>
-        )}
-      </ResourceState>
+          )}
+        </ResourceState>
+      );
+    if (id === 'evaluation' || id === 'report')
+      return (
+        <>
+          <div className="dashboard-shortcut-art" aria-hidden="true">
+            <Icon name={id === 'evaluation' ? 'review' : 'chart'} />
+            <span>
+              {id === 'evaluation'
+                ? '서로의 협업을 돌아보는 시간'
+                : '함께 쌓은 기록을 한눈에'}
+            </span>
+          </div>
+          <p className="dashboard-caption">
+            {id === 'evaluation'
+              ? '동료의 노력과 협업 경험을 피드백으로 남겨 주세요.'
+              : '우리 팀의 공개된 기여도 리포트를 확인해 보세요.'}
+          </p>
+          <button
+            className="dashboard-shortcut-button"
+            onClick={() =>
+              onNavigate(id === 'evaluation' ? '동료 평가' : '기여도 리포트')
+            }
+          >
+            {id === 'evaluation' ? '동료 평가 작성' : '공개 리포트 보기'}
+            <ArrowUpRight size={16} />
+          </button>
+        </>
+      );
+    if (id === 'members')
+      return (
+        <>
+          <ul className="dashboard-members">
+            {context.members.map((member) => (
+              <li key={member.userId}>
+                <span className="dashboard-avatar">
+                  {member.name?.slice(0, 1) || '?'}
+                </span>
+                <strong>{member.name}</strong>
+                {member.userId === context.user.id && (
+                  <span className="dashboard-tag">나</span>
+                )}
+                {member.role === 'LEADER' && (
+                  <span className="dashboard-leader">
+                    <i />팀 리더
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+          <p className="dashboard-caption">
+            함께하는 인원 {context.members.length}명
+          </p>
+        </>
+      );
+    if (id === 'memo')
+      return (
+        <>
+          <label className="sr-only" htmlFor="dashboard-memo">
+            빠른 메모
+          </label>
+          <textarea
+            id="dashboard-memo"
+            className="dashboard-memo"
+            maxLength={3000}
+            placeholder="회의 전에 나누고 싶은 이야기, 잊지 않을 아이디어를 적어 보세요."
+            value={dashboard.memo}
+            onChange={(event) => save({ memo: event.target.value })}
+          />
+          <span className="dashboard-memo-foot">
+            나만의 메모 · {dashboard.memo.length.toLocaleString()} / 3,000
+          </span>
+        </>
+      );
+    if (id === 'status')
+      return (
+        <ResourceState resource={taskResource} label="작업 상태 요약">
+          <div className="dashboard-status-bar" aria-hidden="true">
+            {Object.keys(statusLabels).map((status) => (
+              <span
+                className={`status-${status}`}
+                style={{
+                  flexGrow: tasks.filter((task) => task.status === status)
+                    .length,
+                }}
+                key={status}
+              />
+            ))}
+          </div>
+          <ul className="dashboard-status-list">
+            {Object.entries(statusLabels).map(([status, label]) => (
+              <li key={status}>
+                <span className={`dashboard-status-dot status-${status}`} />
+                <span>{label}</span>
+                <strong>
+                  {tasks.filter((task) => task.status === status).length}
+                  <small>개</small>
+                </strong>
+              </li>
+            ))}
+          </ul>
+          <button
+            className="dashboard-text-button dashboard-widget-link"
+            onClick={() => onNavigate('작업', { view: 'board' })}
+          >
+            작업 보드 열기 <ArrowUpRight size={15} />
+          </button>
+        </ResourceState>
+      );
+    return null;
+  };
+  return (
+    <section className="team-dashboard">
+      <header className="dashboard-heading">
+        <div>
+          <span className="dashboard-eyebrow">
+            <LayoutDashboard size={14} />팀 홈
+          </span>
+          <h1>{context.team.name}</h1>
+          <p>우리 팀의 흐름을 한눈에, 필요한 정보는 내 방식대로.</p>
+        </div>
+        <div className="dashboard-heading-actions">
+          <button
+            className={`secondary-button ${editing ? 'is-active' : ''}`}
+            onClick={() => setEditing(!editing)}
+            aria-pressed={editing}
+          >
+            <Settings2 size={15} />
+            {editing ? '편집 완료' : '위젯 편집'}
+          </button>
+          <button className="primary-button" onClick={() => setCatalog(true)}>
+            <Plus size={16} />
+            위젯 추가
+          </button>
+        </div>
+      </header>
+      {storageError && (
+        <p className="dashboard-storage-error" role="alert">
+          브라우저 저장소를 사용할 수 없어 변경 내용은 이 화면을 떠나면 사라질
+          수 있습니다.
+        </p>
+      )}
+      {editing && (
+        <p className="dashboard-edit-hint" role="status">
+          <Settings2 size={15} />
+          손잡이를 끌거나 화살표를 눌러 순서를 바꾸세요. 모든 위젯을 이동·제거할
+          수 있어요.
+        </p>
+      )}
+      <span className="sr-only" role="status">
+        {announcement}
+      </span>
+      <div className="dashboard-widget-grid dashboard-arrange-grid">
+        {dashboard.widgets.map((id, index) => {
+          const widget = dashboardWidgets.find((item) => item.id === id);
+          const base = ['calendar', 'progress', 'contribution'].includes(id);
+          return (
+            <DashboardWidgetFrame
+              key={id}
+              widget={widget}
+              index={index}
+              count={dashboard.widgets.length}
+              editing={editing}
+              draggedId={draggedId}
+              dropId={dropId}
+              onDrag={finishDrag}
+              onTarget={setDropId}
+              onDrop={dropWidget}
+              onMove={move}
+              onRemove={(removed) =>
+                save({
+                  widgets: dashboard.widgets.filter((item) => item !== removed),
+                })
+              }
+            >
+              {base ? (
+                widgetContent(id)
+              ) : (
+                <section
+                  className="dashboard-card dashboard-optional-card"
+                  aria-label={id === 'mywork' ? '본인 작업 현황' : widget.title}
+                >
+                  <header className="dashboard-card-heading">
+                    <div className="dashboard-title">
+                      <span className="dashboard-icon">
+                        <Icon name={widget.icon} />
+                      </span>
+                      <h2>{widget.title}</h2>
+                      {id === 'mywork' && (
+                        <DashboardMetricHelp title="내 작업 현황" />
+                      )}
+                    </div>
+                  </header>
+                  {widgetContent(id)}
+                </section>
+              )}
+            </DashboardWidgetFrame>
+          );
+        })}
+      </div>
+      <button
+        className="dashboard-add-placeholder"
+        onClick={() => setCatalog(true)}
+      >
+        <Plus size={18} />
+        <strong>필요한 위젯 추가하기</strong>
+      </button>
+      <footer className="dashboard-local-note">
+        위젯 구성·직접 등록한 일정·메모는 이 브라우저에 나만 저장됩니다.
+      </footer>
+      {catalog && (
+        <Modal title="위젯 추가" onClose={() => setCatalog(false)} wide>
+          <p className="dashboard-catalog-intro">
+            우리 팀 홈에 필요한 정보를 골라 보세요.
+          </p>
+          <div className="dashboard-catalog">
+            {dashboardWidgets.map((widget) => {
+              const added = dashboard.widgets.includes(widget.id);
+              return (
+                <button
+                  className={added ? 'is-added' : ''}
+                  disabled={added}
+                  aria-label={`${widget.title} ${added ? '추가됨' : '추가'}`}
+                  key={widget.id}
+                  onClick={() =>
+                    save({ widgets: [...dashboard.widgets, widget.id] })
+                  }
+                >
+                  <span className="dashboard-icon">
+                    <Icon name={widget.icon} />
+                  </span>
+                  <span>
+                    <strong>{widget.title}</strong>
+                    <small>{widget.description}</small>
+                  </span>
+                  <span className="dashboard-catalog-action">
+                    {added ? <Check size={16} /> : <Plus size={16} />}
+                    {added ? '추가됨' : '추가'}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="modal-actions">
+            <button
+              className="primary-button"
+              onClick={() => setCatalog(false)}
+            >
+              완료
+            </button>
+          </div>
+        </Modal>
+      )}
     </section>
   );
 }
