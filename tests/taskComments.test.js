@@ -28,7 +28,7 @@ test('모든 작업 상태와 FINAL 이후에도 비담당 팀원이 댓글을 �
   const context = previewContext();
   const state = getMockState(context);
   state.rounds.find((round) => round.type === 'FINAL').closesAt =
-    '2020-01-01T00:00:00Z';
+    '2020-01-01T09:00:00';
   state.aiReviews = { 101: { id: 1, isCurrent: true, status: 'SUCCEEDED' } };
   saveMockState(context, state);
   const before = structuredClone(state.teams[1].tasks);

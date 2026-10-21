@@ -21,19 +21,19 @@ async function teamFormation(page, { period = 'OPEN', joined = true, pending = t
     name: '프로젝트',
     myRole: 'USER',
     teamBuildingStatus: period,
-    startAt: '2026-01-01T00:00:00+09:00',
-    endAt: '2030-12-31T00:00:00+09:00',
+    startAt: '2026-01-01T00:00:00',
+    endAt: '2030-12-31T00:00:00',
     teamBuildingOpensAt:
-      period === 'NOT_CONFIGURED' ? null : '2026-01-01T00:00:00+09:00',
+      period === 'NOT_CONFIGURED' ? null : '2026-01-01T00:00:00',
     teamBuildingClosesAt:
-      period === 'NOT_CONFIGURED' ? null : '2030-01-01T00:00:00+09:00',
+      period === 'NOT_CONFIGURED' ? null : '2030-01-01T00:00:00',
   };
   let applications = [
     {
       id: 7,
       name: '한지민',
       userId: 'applicant',
-      requestedAt: '2026-10-01T12:00:00+09:00',
+      requestedAt: '2026-10-01T12:00:00',
       canApprove: true,
     },
   ];

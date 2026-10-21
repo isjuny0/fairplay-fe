@@ -9,28 +9,28 @@ const timelinePreview = (page) =>
 async function seed(page, view = 'list', extra = '', customize = () => {}) {
   const state = structuredClone(getMockState(previewContext()));
   const dates = [
-    '2026-10-31T15:00:00Z',
-    '2026-10-31T14:59:00Z',
-    '2026-11-12T00:00:00Z',
-    '2026-11-12T02:00:00Z',
-    '2026-11-12T04:00:00Z',
-    '2026-11-12T06:00:00Z',
+    '2026-11-01T00:00:00',
+    '2026-10-31T23:59:00',
+    '2026-11-12T09:00:00',
+    '2026-11-12T11:00:00',
+    '2026-11-12T13:00:00',
+    '2026-11-12T15:00:00',
   ];
   state.teams[1].tasks.forEach((task, index) => {
     task.dueAt = dates[index];
     task.startAt = [
-      '2026-10-30T00:00:00Z',
-      '2026-10-20T00:00:00Z',
-      '2026-10-28T00:00:00Z',
+      '2026-10-30T09:00:00',
+      '2026-10-20T09:00:00',
+      '2026-10-28T09:00:00',
       dates[3],
       dates[4],
-      '2026-11-10T00:00:00Z',
+      '2026-11-10T09:00:00',
     ][index];
   });
   customize(state);
   await page.addInitScript((state) => {
     localStorage.setItem('fairplay:preview-role', 'leader');
-    localStorage.setItem('fairplay:mock:v6:preview:1', JSON.stringify(state));
+    localStorage.setItem('fairplay:mock:v7:preview:1', JSON.stringify(state));
   }, state);
   await page.goto(
     `/preview/spaces/1/teams/1/tasks?view=${view}&month=2026-11${extra}`,
@@ -134,8 +134,8 @@ test('타임라인은 3개월의 계획 기간을 주 눈금으로 비교하고 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await seed(page, 'timeline', '', (state) => {
     state.teams[1].tasks[3].status = 'IN_PROGRESS';
-    state.teams[1].tasks[3].dueAt = '2026-12-10T00:00:00Z';
-    state.teams[1].tasks[5].dueAt = '2027-01-12T00:00:00Z';
+    state.teams[1].tasks[3].dueAt = '2026-12-10T09:00:00';
+    state.teams[1].tasks[5].dueAt = '2027-01-12T09:00:00';
   });
   const timeline = page.getByRole('region', { name: '작업 계획 타임라인' });
   await expect(timeline.locator('.timeline-period')).toHaveCount(5);
@@ -225,8 +225,8 @@ test('3개월을 가로지르는 일정은 양쪽 연속 표시와 실제 기간
   page,
 }) => {
   await seed(page, 'timeline', '', (state) => {
-    state.teams[1].tasks[0].startAt = '2026-10-31T14:59:00Z';
-    state.teams[1].tasks[0].dueAt = '2027-02-01T00:00:00Z';
+    state.teams[1].tasks[0].startAt = '2026-10-31T23:59:00';
+    state.teams[1].tasks[0].dueAt = '2027-02-01T09:00:00';
   });
   const bar = page.getByRole('button', { name: /사용자 인터뷰 계획 · 시작일/ });
   await expect(bar).toHaveClass(/continues-before continues-after/);
@@ -272,7 +272,7 @@ test('3개월 타임라인은 시작일 순서·오늘·지연 구간을 표시�
     state.teams[1].tasks[0].status = 'DONE';
     state.teams[1].tasks[1].status = 'IN_PROGRESS';
     state.teams[1].tasks[3].status = 'TODO';
-    state.teams[1].tasks[3].dueAt = '2026-12-01T00:00:00Z';
+    state.teams[1].tasks[3].dueAt = '2026-12-01T09:00:00';
   });
   const timeline = page.getByRole('region', { name: '작업 계획 타임라인' });
   await expect(page.getByLabel('타임라인 상태 범례')).toContainText('진행 중');
@@ -358,7 +358,7 @@ test('타임라인은 긴 목록에서 월 헤더와 작업명을 고정하고 �
   await seed(page, 'timeline', '', (state) => {
     const original = state.teams[1].tasks[0];
     for (let index = 0; index < 24; index++) {
-      state.teams[1].tasks.push({ ...structuredClone(original), id: 1000 + index, title: `일정 검토 ${index + 1}`, startAt: '2026-11-01T00:00:00Z', dueAt: '2026-11-25T00:00:00Z' });
+      state.teams[1].tasks.push({ ...structuredClone(original), id: 1000 + index, title: `일정 검토 ${index + 1}`, startAt: '2026-11-01T09:00:00', dueAt: '2026-11-25T09:00:00' });
     }
   });
   const timeline = page.getByRole('region', { name: '작업 계획 타임라인' });
@@ -534,9 +534,9 @@ test('검색으로 빈 일정은 필터만 초기화하고 등록된 작업이 �
   await expect(page.getByLabel('조회 시작 월')).toHaveValue('2032-01');
   await expect(page.getByRole('button', { name: '작업 있는 기간으로 이동', exact: true })).toBeVisible();
   await page.evaluate(() => {
-    const state = JSON.parse(localStorage.getItem('fairplay:mock:v6:preview:1'));
+    const state = JSON.parse(localStorage.getItem('fairplay:mock:v7:preview:1'));
     state.teams[1].tasks = [];
-    localStorage.setItem('fairplay:mock:v6:preview:1', JSON.stringify(state));
+    localStorage.setItem('fairplay:mock:v7:preview:1', JSON.stringify(state));
   });
   await page.getByRole('button', { name: '새로고침', exact: true }).click();
   await expect(page.getByText('아직 등록된 작업이 없습니다. 새 작업을 만들어 시작하세요.', { exact: true })).toBeVisible();
@@ -611,7 +611,7 @@ test('열어 둔 타임라인은 분마다 지연을 갱신하고 창·탭 복�
   await page.clock.install({ time: new Date('2026-11-15T14:59:30Z') });
   await seed(page, 'timeline', '', (state) => {
     state.teams[1].tasks.forEach((task) => { task.status = 'DONE'; });
-    Object.assign(state.teams[1].tasks[0], { status: 'IN_PROGRESS', startAt: '2026-11-14T00:00:00Z', dueAt: '2026-11-15T14:59:50Z' });
+    Object.assign(state.teams[1].tasks[0], { status: 'IN_PROGRESS', startAt: '2026-11-14T09:00:00', dueAt: '2026-11-15T23:59:50' });
   });
   const late = page.getByRole('button', { name: /마감 지남 \d/ });
   await expect(late).toHaveText('마감 지남 0');
@@ -646,7 +646,7 @@ test('작업 표는 날짜와 시간을 생략 없이 한 줄로 표시하고 �
   const date = await firstStart.locator('.task-date-day').boundingBox();
   const time = await firstStart.locator('.task-date-clock').boundingBox();
   expect(Math.abs(time.y - date.y)).toBeLessThanOrEqual(2);
-  await expect(firstStart).toHaveAttribute('datetime', '2026-10-20T00:00:00Z');
+  await expect(firstStart).toHaveAttribute('datetime', '2026-10-20T09:00:00');
   await expect(firstStart).toHaveAttribute('aria-label', '2026. 10. 20. 09:00');
   const table = page.getByRole('region', { name: '작업 표', exact: true });
   expect(await table.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);

@@ -1,3 +1,4 @@
+import { koreanDateTime } from '../../src/lib/koreanTime.js';
 import { test, expect } from '@playwright/test';
 import { fillDateTime } from './helpers/dateTime.js';
 import { toDateInput } from '../../src/lib/domain.js';
@@ -84,7 +85,7 @@ test('팀 홈과 관리자 현황은 가중치 숫자 대신 비율과 계산 �
     }),
   ).toContainText('80.00%');
   await page.evaluate(() => {
-    const key = 'fairplay:mock:v6:preview:1';
+    const key = 'fairplay:mock:v7:preview:1';
     const state = JSON.parse(localStorage.getItem(key));
     for (const team of Object.values(state.teams))
       for (const task of team.tasks) task.status = 'TODO';
@@ -252,7 +253,7 @@ test('평가 시작 전 회차 생성·일정 수정·개방 화면을 사용할
   await fillDateTime(
     dialog,
     '평가 마감 시각',
-    toDateInput(new Date(Date.now() + 7 * 86400000).toISOString()),
+    toDateInput(koreanDateTime(Date.now() + 7 * 86400000)),
   );
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
   await expect(

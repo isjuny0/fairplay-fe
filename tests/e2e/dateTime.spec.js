@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { fillDateTime } from './helpers/dateTime.js';
 
+// 화면·API는 브라우저 시간대와 무관하게 한국 시간을 사용한다.
+test.use({ timezoneId: 'America/New_York' });
+
 async function openCreate(page) {
   await page.clock.setFixedTime(new Date('2026-10-12T09:15:00Z'));
   await page.goto('/preview/main');
@@ -92,11 +95,11 @@ for (const width of [1440, 390]) {
     await expect(page).toHaveURL(/\/spaces\/3$/);
     const saved = await page.evaluate(
       () =>
-        JSON.parse(localStorage.getItem('fairplay:mock:v6:preview:1'))
+        JSON.parse(localStorage.getItem('fairplay:mock:v7:preview:1'))
           .extraSpace,
     );
-    expect(saved.startAt).toBe('2028-02-29T10:45:00+09:00');
-    expect(saved.endAt).toBe('2028-03-01T12:30:00+09:00');
+    expect(saved.startAt).toBe('2028-02-29T10:45:00');
+    expect(saved.endAt).toBe('2028-03-01T12:30:00');
     await page.goto('/preview/main');
     await expect(
       page.getByRole('region', { name: '스페이스 목록', exact: true })

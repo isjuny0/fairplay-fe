@@ -121,11 +121,11 @@ test('다가오는 작업은 내 미완료 작업만 마감순으로, 7일 안�
     assignees: [{ userId }],
   });
   const tasks = [
-    task(1, '2026-10-20T00:00:00Z'),
-    task(2, '2026-11-01T00:00:00Z'),
-    task(3, '2026-10-22T00:00:00Z'),
-    task(4, '2026-10-22T00:00:00Z', 'DONE'),
-    task(5, '2026-10-22T00:00:00Z', 'TODO', 'other'),
+    task(1, '2026-10-20T09:00:00'),
+    task(2, '2026-11-01T09:00:00'),
+    task(3, '2026-10-22T09:00:00'),
+    task(4, '2026-10-22T09:00:00', 'DONE'),
+    task(5, '2026-10-22T09:00:00', 'TODO', 'other'),
     task(6, null),
   ];
   const result = taskOverview(tasks, 'me', now);

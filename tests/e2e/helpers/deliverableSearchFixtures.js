@@ -1,3 +1,4 @@
+import { koreanDateTime } from '../../../src/lib/koreanTime.js';
 import { space as baseSpace, team as baseTeam } from "./resourceFixtures.js";
 export const members = [
   {
@@ -28,8 +29,8 @@ export const tasks = [
     description: "조사 결과를 정리합니다.",
     assignees: [{ userId: user.id, allocationPercent: 100 }],
     version: 1,
-    startAt: "2030-01-01T09:00:00+09:00",
-    dueAt: "2030-12-01T18:00:00+09:00",
+    startAt: "2030-01-01T09:00:00",
+    dueAt: "2030-12-01T18:00:00",
   },
 ];
 export const deliverables = Array.from({ length: 45 }, (_, index) => ({
@@ -51,14 +52,14 @@ export const deliverables = Array.from({ length: 45 }, (_, index) => ({
           sizeBytes: 2048,
         },
   version: 1,
-  createdAt: new Date(Date.UTC(2030, 0, index + 1, 1)).toISOString(),
-  updatedAt: new Date(Date.UTC(2030, 0, index + 1, 1)).toISOString(),
+  createdAt: koreanDateTime(Date.UTC(2030, 0, index + 1, 1)),
+  updatedAt: koreanDateTime(Date.UTC(2030, 0, index + 1, 1)),
 }));
 deliverables[0] = {
   ...deliverables[0],
   taskId: null,
   title: "오래된 정책 원본",
   category: "POLICY",
-  updatedAt: "2031-01-01T01:00:00Z",
+  updatedAt: "2031-01-01T10:00:00",
   file: { ...deliverables[0].file, originalFilename: "Policy_100%_final.md" },
 };

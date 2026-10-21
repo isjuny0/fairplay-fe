@@ -10,7 +10,7 @@ async function seed(page, role = 'leader') {
     Array.from({ length: 60 }, (_, index) => `${index + 1}. 첨부 자료의 조사 과정과 결과를 설명합니다.`).join('\n');
   await page.addInitScript(({ state, role }) => {
     localStorage.setItem('fairplay:preview-role', role);
-    localStorage.setItem('fairplay:mock:v6:preview:1', JSON.stringify(state));
+    localStorage.setItem('fairplay:mock:v7:preview:1', JSON.stringify(state));
   }, { state, role });
 }
 

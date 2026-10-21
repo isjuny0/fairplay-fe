@@ -15,14 +15,14 @@ import {
 } from '../src/lib/taskSchedule.js';
 
 test('UTC 마감일은 한국 시간의 일자와 월에 배치한다', () => {
-  assert.equal(taskDate('2026-10-31T14:59:59Z'), '2026-10-31');
-  assert.equal(taskDate('2026-10-31T15:00:00Z'), '2026-11-01');
+  assert.equal(taskDate('2026-10-31T23:59:59'), '2026-10-31');
+  assert.equal(taskDate('2026-11-01T00:00:00'), '2026-11-01');
   const tasks = [
-    { id: 1, startAt: '2026-10-30T00:00:00Z', dueAt: '2026-10-31T15:00:00Z' },
+    { id: 1, startAt: '2026-10-30T09:00:00', dueAt: '2026-11-01T00:00:00' },
     {
       id: 2,
-      startAt: '2026-11-01T00:00:00+09:00',
-      dueAt: '2026-11-01T03:00:00+09:00',
+      startAt: '2026-11-01T00:00:00',
+      dueAt: '2026-11-01T03:00:00',
     },
   ];
   assert.deepEqual(
@@ -72,8 +72,8 @@ test('가까운 마감은 다음 마감부터 찾고 과거 작업뿐이면 마�
 test('캘린더는 시작·종료일을 포함한 모든 날짜에 작업을 배치하고 월 경계를 자른다', () => {
   const task = {
     id: 1,
-    startAt: '2026-10-31T14:59:00Z',
-    dueAt: '2026-11-03T00:00:00Z',
+    startAt: '2026-10-31T23:59:00',
+    dueAt: '2026-11-03T09:00:00',
   };
   const grouped = tasksByDate([task], taskMonthDays('2026-11'));
   for (const date of ['2026-11-01', '2026-11-02', '2026-11-03'])
@@ -89,14 +89,14 @@ test('캘린더 점은 작업의 시작일과 마감일에만 상태별로 배�
   const task = {
     id: 1,
     status: 'IN_PROGRESS',
-    startAt: '2026-11-03T00:00:00Z',
-    dueAt: '2026-11-05T00:00:00Z',
+    startAt: '2026-11-03T09:00:00',
+    dueAt: '2026-11-05T09:00:00',
   };
   const sameDay = {
     id: 2,
     status: 'TODO',
-    startAt: '2026-11-05T00:00:00Z',
-    dueAt: '2026-11-05T12:00:00Z',
+    startAt: '2026-11-05T09:00:00',
+    dueAt: '2026-11-05T21:00:00',
   };
   const markers = taskDateMarkers([task, sameDay], taskMonthDays('2026-11'));
   assert.deepEqual(
@@ -107,9 +107,9 @@ test('캘린더 점은 작업의 시작일과 마감일에만 상태별로 배�
 });
 test('캘린더 기간 막대는 주 경계에서 이어지고 겹치는 작업을 별도 행에 놓는다', () => {
   const tasks = [
-    { id: 1, startAt: '2026-10-30T00:00:00Z', dueAt: '2026-11-09T00:00:00Z' },
-    { id: 2, startAt: '2026-11-01T00:00:00Z', dueAt: '2026-11-02T00:00:00Z' },
-    { id: 3, startAt: '2026-11-03T00:00:00Z', dueAt: '2026-11-04T00:00:00Z' },
+    { id: 1, startAt: '2026-10-30T09:00:00', dueAt: '2026-11-09T09:00:00' },
+    { id: 2, startAt: '2026-11-01T09:00:00', dueAt: '2026-11-02T09:00:00' },
+    { id: 3, startAt: '2026-11-03T09:00:00', dueAt: '2026-11-04T09:00:00' },
   ];
   const segments = calendarWeekTasks(
     tasks,
@@ -169,8 +169,8 @@ test('3개월을 가로지르는 기간은 양 끝을 자르고 같은 날 일�
     now = Date.parse('2026-10-15T00:00:00Z');
   const task = {
     status: 'TODO',
-    startAt: '2026-10-31T14:59:00Z',
-    dueAt: '2027-02-01T00:00:00Z',
+    startAt: '2026-10-31T23:59:00',
+    dueAt: '2027-02-01T09:00:00',
   };
   assert.deepEqual(timelineTaskPeriod(task, window, now).planned, {
     left: 0,
@@ -178,7 +178,7 @@ test('3개월을 가로지르는 기간은 양 끝을 자르고 같은 날 일�
     continuesBefore: true,
     continuesAfter: true,
   });
-  const instant = '2026-11-01T00:00:00+09:00';
+  const instant = '2026-11-01T00:00:00';
   assert.equal(
     timelineTaskPeriod(
       { ...task, startAt: instant, dueAt: instant },
@@ -192,8 +192,8 @@ test('3개월을 가로지르는 기간은 양 끝을 자르고 같은 날 일�
 test('완료 작업은 지연으로 판단하지 않고 미완료의 마감·시작 예정일 경과를 구분한다', () => {
   const now = Date.parse('2026-11-15T09:00:00Z');
   const task = {
-    startAt: '2026-11-01T09:00:00Z',
-    dueAt: '2026-11-12T09:00:00Z',
+    startAt: '2026-11-01T18:00:00',
+    dueAt: '2026-11-12T18:00:00',
     status: 'IN_PROGRESS',
   };
   assert.deepEqual(taskScheduleStatus(task, now), {
@@ -207,14 +207,14 @@ test('완료 작업은 지연으로 판단하지 않고 미완료의 마감·시
   );
   assert.equal(
     taskScheduleStatus(
-      { ...task, status: 'TODO', dueAt: '2026-12-01T00:00:00Z' },
+      { ...task, status: 'TODO', dueAt: '2026-12-01T09:00:00' },
       now,
     ).startPassed,
     true,
   );
   assert.equal(
     taskScheduleStatus(
-      { ...task, status: 'IN_PROGRESS', dueAt: '2026-12-01T00:00:00Z' },
+      { ...task, status: 'IN_PROGRESS', dueAt: '2026-12-01T09:00:00' },
       now,
     ).startPassed,
     false,
@@ -222,8 +222,8 @@ test('완료 작업은 지연으로 판단하지 않고 미완료의 마감·시
 });
 test('이전 기간 마감 후 미완료 작업은 오늘까지 지연 구간이 겹치면 표시한다', () => {
   const task = {
-    startAt: '2026-10-01T00:00:00Z',
-    dueAt: '2026-10-31T00:00:00Z',
+    startAt: '2026-10-01T09:00:00',
+    dueAt: '2026-10-31T09:00:00',
     status: 'IN_PROGRESS',
   };
   const period = timelineTaskPeriod(

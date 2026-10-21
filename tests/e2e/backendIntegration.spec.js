@@ -1,3 +1,4 @@
+import { koreanDateTime } from '../../src/lib/koreanTime.js';
 import { readFile } from 'node:fs/promises';
 import { test, expect } from '@playwright/test';
 import { fillDateTime } from './helpers/dateTime.js';
@@ -33,8 +34,8 @@ async function backend(
     myRole: manager ? 'MANAGER' : 'USER',
     version: 1,
     teamBuildingStatus: 'CLOSED',
-    teamBuildingOpensAt: '2026-01-01T09:00:00+09:00',
-    teamBuildingClosesAt: '2026-01-02T09:00:00+09:00',
+    teamBuildingOpensAt: '2026-01-01T09:00:00',
+    teamBuildingClosesAt: '2026-01-02T09:00:00',
   };
   const team = {
     id: 1,
@@ -56,8 +57,8 @@ async function backend(
       participantCount: 2,
       mySubmissionStatus:
         manager || !participating ? 'NOT_PARTICIPATING' : 'NOT_SUBMITTED',
-      opensAt: '2026-01-03T09:00:00+09:00',
-      closesAt: '2030-12-01T18:00:00+09:00',
+      opensAt: '2026-01-03T09:00:00',
+      closesAt: '2030-12-01T18:00:00',
     },
   ];
   if (reportReady)
@@ -70,8 +71,8 @@ async function backend(
     status: 'IN_PROGRESS',
     version: 2,
     weight: 3,
-    startAt: '2030-11-01T09:00:00+09:00',
-    dueAt: '2030-12-01T18:00:00+09:00',
+    startAt: '2030-11-01T09:00:00',
+    dueAt: '2030-12-01T18:00:00',
     assignees: [{ userId: members[0].userId, allocationPercent: 100 }],
     completionBlockReason: null,
   };
@@ -87,8 +88,8 @@ async function backend(
             communication: 4,
           },
           reason: '마감된 내 응답',
-          updatedAt: '2026-10-14T10:00:00Z',
-          submittedAt: '2026-10-14T10:01:00Z',
+          updatedAt: '2026-10-14T19:00:00',
+          submittedAt: '2026-10-14T19:01:00',
         }
       : null;
   let review = null;
@@ -141,7 +142,7 @@ async function backend(
     if (path === '/api/teams/1/my-work-summary')
       return respond({
         teamId: 1,
-        asOf: '2026-10-14T10:00:00Z',
+        asOf: '2026-10-14T19:00:00',
         teamTotalWeight: 0,
         teamDoneWeight: 0,
         myAssignedWeight: 0,
@@ -176,7 +177,7 @@ async function backend(
     }
     if (path === '/api/evaluation-rounds/11/open') {
       rounds[0].status = 'OPEN';
-      space.membershipLockedAt = '2026-10-14T10:00:00Z';
+      space.membershipLockedAt = '2026-10-14T19:00:00';
       return respond(rounds[0]);
     }
     if (path === '/api/evaluation-rounds/11/targets')
@@ -206,13 +207,13 @@ async function backend(
         ...request.postDataJSON(),
         roundId: 11,
         targetId: members[1].userId,
-        updatedAt: new Date().toISOString(),
+        updatedAt: koreanDateTime(),
         submittedAt: null,
       };
       return respond(response);
     }
     if (path === '/api/evaluation-rounds/11/submit') {
-      response.submittedAt = '2026-10-14T10:00:00Z';
+      response.submittedAt = '2026-10-14T19:00:00';
       rounds[0].mySubmissionStatus = 'SUBMITTED';
       return respond({ roundId: 11, submittedAt: response.submittedAt });
     }
@@ -220,7 +221,7 @@ async function backend(
       return respond({
         roundId: 11,
         teamId: 1,
-        asOf: '2026-10-14T10:00:00Z',
+        asOf: '2026-10-14T19:00:00',
         members: [
           {
             userId: members[0].userId,
@@ -241,7 +242,7 @@ async function backend(
         spaceId: 1,
         spaceName: space.name,
         teamId: url.searchParams.has('teamId') ? 1 : null,
-        asOf: '2026-10-14T10:00:00Z',
+        asOf: '2026-10-14T19:00:00',
         totalTeamCount: 1,
         unassignedCount: 2,
         pendingApplications: 1,
@@ -334,8 +335,8 @@ async function backend(
           limitations: [],
           failureCode: null,
           failureDeliverableId: null,
-          createdAt: '2026-10-14T10:00:00Z',
-          updatedAt: '2026-10-14T10:00:00Z',
+          createdAt: '2026-10-14T19:00:00',
+          updatedAt: '2026-10-14T19:00:00',
         };
         return respond(review, 202);
       }
@@ -388,7 +389,7 @@ test('팀 홈은 확인할 작업이 없음을 안내하고 계산할 작업 없
   await backend(page);
   await page.route('**/api/teams/1/my-work-summary', route => route.fulfill({
     json: {
-      teamId: 1, asOf: '2026-10-18T10:00:00Z',
+      teamId: 1, asOf: '2026-10-18T19:00:00',
       teamTotalWeight: 3, teamDoneWeight: 0, myAssignedWeight: 0, myDoneWeight: 0,
       teamProgressRate: 0, myAssignedShare: 0, myCompletedContributionRate: 0,
       myTaskCompletionRate: null, myOverdueTaskCount: 0,
@@ -558,7 +559,7 @@ test('OPEN 회차 일정 수정은 expectedVersion과 마감만 전송한다', a
   await expect(page.getByRole('dialog')).toHaveCount(0);
   expect(
     JSON.parse(requests.find((request) => request.method === 'PATCH').body),
-  ).toEqual({ closesAt: '2030-12-02T18:00:00+09:00', expectedVersion: 3 });
+  ).toEqual({ closesAt: '2030-12-02T18:00:00', expectedVersion: 3 });
 });
 test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이 근거·질문을 표시한다', async ({
   page,
@@ -794,8 +795,8 @@ test('회차 생성과 개방은 실제 POST를 사용하고 팀 구성 변경�
     ),
   ).toEqual({
     type: 'FINAL',
-    opensAt: '2030-12-02T09:00:00+09:00',
-    closesAt: '2030-12-03T18:00:00+09:00',
+    opensAt: '2030-12-02T09:00:00',
+    closesAt: '2030-12-03T18:00:00',
   });
 });
 
@@ -872,9 +873,9 @@ function reportResponse(manager, status = 'UNPUBLISHED') {
     id: 40,
     teamId: 1,
     status,
-    cutoffAt: '2026-10-14T10:00:00Z',
-    createdAt: '2026-10-15T10:00:00Z',
-    publishedAt: status === 'PUBLISHED' ? '2026-10-15T11:00:00Z' : null,
+    cutoffAt: '2026-10-14T19:00:00',
+    createdAt: '2026-10-15T19:00:00',
+    publishedAt: status === 'PUBLISHED' ? '2026-10-15T20:00:00' : null,
     totalPercent: 100,
     members: members.map((member, index) => ({
       userId: member.userId,
@@ -929,7 +930,7 @@ async function reportBackend(
       report = {
         ...report,
         status: 'PUBLISHED',
-        publishedAt: '2026-10-15T11:00:00Z',
+        publishedAt: '2026-10-15T20:00:00',
       };
     else if (request.method() === 'POST') report ||= reportResponse(manager);
     return route.fulfill({ json: report });
@@ -1120,7 +1121,7 @@ test('관리자는 부분 제출된 평가 원문을 읽고 OPEN 회차 원문�
               communication: 5,
             },
             reason: '관리자 전용 제출 사유입니다.',
-            submittedAt: '2026-10-15T10:00:00Z',
+            submittedAt: '2026-10-15T19:00:00',
           },
         ],
       },
@@ -1205,11 +1206,11 @@ test('관리자 수행 상세는 요약과 별도 현재 산출물 본문·파�
           title: '서버 담당 작업',
           status: 'DONE',
           weight: 3,
-          startAt: '2026-10-01T00:00:00Z',
-          dueAt: '2026-10-14T10:00:00Z',
+          startAt: '2026-10-01T09:00:00',
+          dueAt: '2026-10-14T19:00:00',
           allocationPercent: 60,
           contributionDescription: '서버에 저장한 수행 설명',
-          contributionUpdatedAt: '2026-10-14T10:00:00Z',
+          contributionUpdatedAt: '2026-10-14T19:00:00',
           taskVersion: 2,
           deliverableSummary: [
             {
@@ -1378,7 +1379,7 @@ test('관리자 목록 정렬은 지연 건수와 실제 진행률을 사용하�
         spaceId: 1,
         spaceName: '실제 API 스페이스',
         teamId: null,
-        asOf: '2026-10-14T10:00:00Z',
+        asOf: '2026-10-14T19:00:00',
         totalTeamCount: 3,
         unassignedCount: 0,
         pendingApplications: 0,
@@ -1489,7 +1490,7 @@ test('수행 상세는 대상 팀원의 중간·최종 수신 평균을 구분�
     evaluatorName: '평가자',
     scores,
     reason: '상세에 노출하지 않을 평가 사유',
-    submittedAt: '2026-10-15T10:00:00Z',
+    submittedAt: '2026-10-15T19:00:00',
   });
   await page.route('**/api/evaluation-rounds/*/teams/1/responses', (route) => {
     const isMid = route.request().url().includes('/11/');

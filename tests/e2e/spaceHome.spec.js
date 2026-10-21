@@ -4,10 +4,10 @@ async function spaceHome(page, { joined = true, empty = false, rejected = false 
   const space = {
     id: 1, name: '캡스톤 프로젝트', description: '함께 만드는 서비스',
     myRole: 'USER', teamBuildingStatus: 'OPEN',
-    startAt: '2026-01-01T00:00:00+09:00',
-    endAt: '2030-12-31T23:59:00+09:00',
-    teamBuildingOpensAt: '2026-01-01T00:00:00+09:00',
-    teamBuildingClosesAt: '2030-01-01T00:00:00+09:00',
+    startAt: '2026-01-01T00:00:00',
+    endAt: '2030-12-31T23:59:00',
+    teamBuildingOpensAt: '2026-01-01T00:00:00',
+    teamBuildingClosesAt: '2030-01-01T00:00:00',
   };
   const teams = empty ? [] : [
     {
@@ -409,8 +409,8 @@ test('가입 상태 조회 실패 시 생성을 막고 다시 불러오면 최�
 test('팀 빌딩 D-day는 날짜 변경과 실제 마감 시각에 맞게 자동 갱신한다', async ({ page }) => {
   const fixture = await spaceHome(page);
   await page.clock.install({ time: new Date('2026-09-01T12:00:00+09:00') });
-  fixture.space.teamBuildingOpensAt = '2026-09-01T00:00:00+09:00';
-  fixture.space.teamBuildingClosesAt = '2026-09-15T23:59:00+09:00';
+  fixture.space.teamBuildingOpensAt = '2026-09-01T00:00:00';
+  fixture.space.teamBuildingClosesAt = '2026-09-15T23:59:00';
   fixture.space.teamBuildingStatus = 'OPEN';
   await page.goto('/spaces/1');
   const countdown = page.locator('.space-home-countdown');
@@ -426,7 +426,7 @@ test('팀 빌딩 D-day는 날짜 변경과 실제 마감 시각에 맞게 자동
     page.getByRole('term').filter({ hasText: /^프로젝트 기간$/ }),
     page.getByRole('term').filter({ hasText: /^팀 빌딩 기간$/ }),
   ]) await expect(locator).toHaveCSS('font-weight', '700');
-  fixture.space.teamBuildingClosesAt = '2026-09-20T23:59:00+09:00';
+  fixture.space.teamBuildingClosesAt = '2026-09-20T23:59:00';
   await page.getByRole('button', { name: '팀 목록 새로고침', exact: true }).click();
   await expect(countdown).toHaveText('D-19');
   await page.clock.setSystemTime(new Date('2026-09-20T23:58:58+09:00'));

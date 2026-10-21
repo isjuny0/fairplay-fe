@@ -1,3 +1,4 @@
+import { koreanDateTime } from '../src/lib/koreanTime.js';
 import { beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -182,7 +183,7 @@ test('리포트 생성과 공개는 해당 팀 제출만 확인하고 AI 점수�
     { code: 'REPORT_PUBLICATION_BLOCKED' },
   );
   current.submitted[`12:${current.teams[1].members[0].userId}`] =
-    new Date().toISOString();
+    koreanDateTime();
   saveMockState(manager, current);
   assert.equal(
     (
@@ -327,7 +328,7 @@ test('OPEN 마감 시각만 수정할 수 있고 기한 도달 시 마감 기준
   const manager = context('manager');
   const state = getMockState(manager);
   const final = state.rounds.find((round) => round.type === 'FINAL');
-  const closesAt = new Date(Date.now() + 86400000).toISOString();
+  const closesAt = koreanDateTime(Date.now() + 86400000);
   const changed = await plannedRequest(manager, '/api/evaluation-rounds/12', {
     method: 'PATCH',
     body: { closesAt, expectedVersion: final.version },
@@ -344,7 +345,7 @@ test('OPEN 마감 시각만 수정할 수 있고 기한 도달 시 마감 기준
     }),
     { code: 'INVALID_REQUEST' },
   );
-  final.closesAt = new Date(Date.now() - 1000).toISOString();
+  final.closesAt = koreanDateTime(Date.now() - 1000);
   saveMockState(manager, state);
   const closed = (
     await plannedRequest(manager, '/api/spaces/1/evaluation-rounds')
@@ -363,7 +364,7 @@ test('OPEN 마감 시각만 수정할 수 있고 기한 도달 시 마감 기준
 test('FINAL 기한 이후 작업 변경은 차단하며 과거 검토 조회는 유지한다', async () => {
   const member = context('member');
   const state = getMockState(member);
-  state.rounds[1].closesAt = new Date(Date.now() - 1000).toISOString();
+  state.rounds[1].closesAt = koreanDateTime(Date.now() - 1000);
   saveMockState(member, state);
   await assert.rejects(
     previewRequest('/api/tasks/101', {
@@ -452,7 +453,7 @@ test('본인 수행 지연은 할 일·진행 중·수정 중을 포함하고 �
       id: index + 1,
       status,
       weight: 1,
-      dueAt: '2030-01-01T00:00:00Z',
+      dueAt: '2030-01-01T09:00:00',
       assignees: [{ userId: 'me', allocationPercent: 100 }],
     }),
   );
@@ -461,7 +462,7 @@ test('본인 수행 지연은 할 일·진행 중·수정 중을 포함하고 �
     id: 5,
     assignees: [{ userId: 'other', allocationPercent: 100 }],
   });
-  tasks.push({ ...tasks[0], id: 6, dueAt: '2030-01-03T00:00:00Z' });
+  tasks.push({ ...tasks[0], id: 6, dueAt: '2030-01-03T09:00:00' });
   const summary = workSummary(1, 'me', tasks, new Date('2030-01-02T00:00:00Z'));
   assert.equal(summary.myOverdueTaskCount, 3);
 });

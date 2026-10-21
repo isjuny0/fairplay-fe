@@ -1,3 +1,4 @@
+import { koreanDateTime } from '../../src/lib/koreanTime.js';
 import { test, expect } from '@playwright/test';
 import { getMockState } from '../../src/mock/planned.js';
 import { previewContext } from '../../src/mock/preview.js';
@@ -37,9 +38,9 @@ async function backend(
     status,
     version: 7,
     weight: 3,
-    startAt: '2026-01-01T00:00:00Z',
-    dueAt: '2026-02-01T00:00:00Z',
-    completedAt: '2026-02-01T00:00:00Z',
+    startAt: '2026-01-01T09:00:00',
+    dueAt: '2026-02-01T09:00:00',
+    completedAt: '2026-02-01T09:00:00',
     completionBlockReason: 'WORK_PERIOD_CLOSED',
     assignees: [{ userId: 'member', allocationPercent: 100 }],
   };
@@ -49,8 +50,8 @@ async function backend(
     authorId: index === 0 ? 'member' : 'leader',
     authorName: index === 0 ? '팀원' : '리더',
     content: `기존 댓글 ${index + 1}`,
-    createdAt: `2026-01-01T00:${String(index).padStart(2, '0')}:00Z`,
-    updatedAt: `2026-01-01T00:${String(index).padStart(2, '0')}:00Z`,
+    createdAt: `2026-01-01T09:${String(index).padStart(2, '0')}:00`,
+    updatedAt: `2026-01-01T09:${String(index).padStart(2, '0')}:00`,
   }));
   let nextId = count + 1;
   await page.route('**/api/**', async (route) => {
@@ -121,8 +122,8 @@ async function backend(
         authorId: 'leader',
         authorName: '리더',
         content: request.postDataJSON().content,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: koreanDateTime(),
+        updatedAt: koreanDateTime(),
       };
       comments.push(comment);
       return reply(comment, 201);
@@ -136,7 +137,7 @@ async function backend(
       const comment = comments.find((comment) => comment.id === id);
       Object.assign(comment, {
         content: request.postDataJSON().content,
-        updatedAt: new Date().toISOString(),
+        updatedAt: koreanDateTime(),
       });
       return reply(comment);
     }
@@ -290,12 +291,12 @@ for (const width of [390, 1440])
   }, testInfo) => {
     const state = structuredClone(getMockState(previewContext()));
     state.rounds.find((round) => round.type === 'FINAL').closesAt =
-      '2020-01-01T00:00:00Z';
+      '2020-01-01T09:00:00';
     await page.addInitScript((state) => {
       localStorage.setItem('fairplay:preview-role', 'teammate');
-      if (!localStorage.getItem('fairplay:mock:v6:preview:1'))
+      if (!localStorage.getItem('fairplay:mock:v7:preview:1'))
         localStorage.setItem(
-          'fairplay:mock:v6:preview:1',
+          'fairplay:mock:v7:preview:1',
           JSON.stringify(state),
         );
     }, state);
