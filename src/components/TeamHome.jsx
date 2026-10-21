@@ -1,3 +1,4 @@
+import { koreanDateTime } from '../lib/koreanTime.js';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
 import {
@@ -103,7 +104,7 @@ function TeamDashboard({ context, onNavigate, storageKey }) {
     const timer = setInterval(() => setNow(Date.now()), 60000);
     return () => clearInterval(timer);
   }, []);
-  const today = toDateInput(new Date(now).toISOString()).slice(0, 10);
+  const today = toDateInput(koreanDateTime(now)).slice(0, 10);
   const save = (patch) => {
     const next = { ...dashboard, ...patch };
     setDashboard(next);

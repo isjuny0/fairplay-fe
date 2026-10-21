@@ -1,3 +1,4 @@
+import { koreanDateTime } from '../lib/koreanTime.js';
 export const previewUsers = {
   participant: { id: '00000000-0000-4000-8000-000000000007', name: '한지민' },
   leader: { id: '00000000-0000-4000-8000-000000000001', name: '김하늘' },
@@ -19,12 +20,12 @@ export const previewSpace = {
   name: '2026 서비스 디자인 프로젝트',
   description:
     '일상 속 불편을 발견하고, 조사부터 제안까지 함께 완성하는 프로젝트',
-  startAt: '2026-09-01T00:00:00+09:00',
-  endAt: '2030-12-31T23:59:00+09:00',
-  teamBuildingOpensAt: '2026-09-01T00:00:00+09:00',
-  teamBuildingClosesAt: '2026-09-15T23:59:00+09:00',
+  startAt: '2026-09-01T00:00:00',
+  endAt: '2030-12-31T23:59:00',
+  teamBuildingOpensAt: '2026-09-01T00:00:00',
+  teamBuildingClosesAt: '2026-09-15T23:59:00',
   teamBuildingStatus: 'LOCKED',
-  membershipLockedAt: '2026-09-16T09:00:00+09:00',
+  membershipLockedAt: '2026-09-16T09:00:00',
   version: 1,
 };
 
@@ -33,7 +34,7 @@ export const previewTeams = [
     id: 1,
     spaceId: 1,
     name: '삼위일체',
-    createdAt: '2026-10-01T00:00:00Z',
+    createdAt: '2026-10-01T09:00:00',
     leaderId: previewUsers.leader.id,
     approvedMemberCount: 3,
     canCreateTask: true,
@@ -42,7 +43,7 @@ export const previewTeams = [
     id: 2,
     spaceId: 1,
     name: '파도',
-    createdAt: '2026-10-01T00:00:00Z',
+    createdAt: '2026-10-01T09:00:00',
     leaderId: '00000000-0000-4000-8000-000000000005',
     approvedMemberCount: 2,
     canCreateTask: false,
@@ -81,14 +82,12 @@ export function exampleTasks(team, members) {
     weight: [3, 5, 3, 2, 5, 2][index],
     status: states[index],
     version: 1,
-    startAt: new Date(now - (8 - index) * 86400000).toISOString(),
-    dueAt: new Date(
-      now + (index === 1 ? -86400000 : 7 * 86400000),
-    ).toISOString(),
-    createdAt: new Date(now - 10 * 86400000).toISOString(),
-    updatedAt: new Date(now - 3 * 86400000).toISOString(),
-    completedAt: states[index] === 'DONE' ? new Date(now - 3 * 86400000).toISOString() : null,
-    lastActivityAt: new Date(now - 3 * 86400000).toISOString(),
+    startAt: koreanDateTime(now - (8 - index) * 86400000),
+    dueAt: koreanDateTime(now + (index === 1 ? -86400000 : 7 * 86400000),),
+    createdAt: koreanDateTime(now - 10 * 86400000),
+    updatedAt: koreanDateTime(now - 3 * 86400000),
+    completedAt: states[index] === 'DONE' ? koreanDateTime(now - 3 * 86400000) : null,
+    lastActivityAt: koreanDateTime(now - 3 * 86400000),
     assignees:
       index === 1
         ? [
@@ -165,7 +164,7 @@ export function exampleDeliverables(team, tasks, members) {
   ].map((item) => ({
     ...item,
     authorId: members[0]?.userId,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: koreanDateTime(),
+    updatedAt: koreanDateTime(),
   }));
 }

@@ -1,3 +1,4 @@
+import { koreanDateTime } from '../lib/koreanTime.js';
 import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { formatDate, memberName, statusLabels } from '../lib/domain.js';
@@ -157,7 +158,7 @@ export function TaskCalendar({
   const [selectedDate, setSelectedDate] = useState(null);
   const days = taskMonthDays(month),
     markersByDate = taskDateMarkers(tasks, days);
-  const today = taskDate(new Date(now).toISOString());
+  const today = taskDate(koreanDateTime(now));
   return (
     <section className="task-schedule" aria-label="작업 캘린더">
       <div className="calendar-overview">
@@ -353,7 +354,7 @@ export function TaskTimeline({
   const visible = tasks
     .map((task) => ({ task, period: timelineTaskPeriod(task, window, now) }))
     .filter(({ period }) => period);
-  const today = taskDate(new Date(now).toISOString());
+  const today = taskDate(koreanDateTime(now));
   const todayPosition =
     today >= window.first && today <= window.last
       ? window.position(today) + 50 / window.dayCount

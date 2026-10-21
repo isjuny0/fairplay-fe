@@ -1,3 +1,4 @@
+import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
 import { MockError } from './planned.js';
 
 export function previewTaskComments(context, state, parts, url, method, body) {
@@ -51,7 +52,7 @@ export function previewTaskComments(context, state, parts, url, method, body) {
       .filter((comment) => comment.taskId === taskId)
       .sort(
         (a, b) =>
-          Date.parse(a.createdAt) - Date.parse(b.createdAt) || a.id - b.id,
+          apiTimeToEpoch(a.createdAt) - apiTimeToEpoch(b.createdAt) || a.id - b.id,
       )
       .slice(page * size, (page + 1) * size)
       .map(response);
@@ -86,7 +87,7 @@ export function previewTaskComments(context, state, parts, url, method, body) {
       '댓글은 1~2,000자로 작성해 주세요.',
       400,
     );
-  const timestamp = new Date().toISOString();
+  const timestamp = koreanDateTime();
   if (method === 'PATCH') {
     Object.assign(existing, { content, updatedAt: timestamp });
     return response(existing);

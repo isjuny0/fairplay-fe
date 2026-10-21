@@ -1,3 +1,4 @@
+import { koreanDateTime } from '../../src/lib/koreanTime.js';
 import { fillDateTime } from './helpers/dateTime.js';
 import { expect, test } from '@playwright/test';
 
@@ -13,7 +14,7 @@ function deletionRequest(overrides = {}) {
     status: 'PENDING',
     version: 0,
     requestedBy: 'leader',
-    requestedAt: '2026-10-06T10:00:00+09:00',
+    requestedAt: '2026-10-06T10:00:00',
     canDelete: false,
     taskCount: 1,
     deliverableCount: 2,
@@ -47,8 +48,8 @@ async function workspace(
     title: '회원 탈퇴 구현',
     description: '탈퇴 정책에 따라 기능 구현',
     weight: 3,
-    startAt: '2030-11-01T09:00:00+09:00',
-    dueAt: '2030-12-01T18:00:00+09:00',
+    startAt: '2030-11-01T09:00:00',
+    dueAt: '2030-12-01T18:00:00',
     status: 'IN_PROGRESS',
     version: 0,
     completedAt: null,
@@ -78,14 +79,14 @@ async function workspace(
     spaceId: 1,
     name: '프로젝트 스페이스',
     description: '우리 프로젝트',
-    startAt: '2026-01-01T00:00:00+09:00',
-    endAt: '2030-12-31T23:00:00+09:00',
-    teamBuildingOpensAt: '2026-01-01T00:00:00+09:00',
-    teamBuildingClosesAt: '2030-12-31T23:00:00+09:00',
+    startAt: '2026-01-01T00:00:00',
+    endAt: '2030-12-31T23:00:00',
+    teamBuildingOpensAt: '2026-01-01T00:00:00',
+    teamBuildingClosesAt: '2030-12-31T23:00:00',
     teamBuildingStatus: 'OPEN',
     version: 0,
     myRole: manager ? 'MANAGER' : 'MEMBER',
-    membershipLockedAt: membershipLocked ? '2026-10-06T10:00:00+09:00' : null,
+    membershipLockedAt: membershipLocked ? '2026-10-06T10:00:00' : null,
   };
   await page.route('**/api/**', async (route) => {
     const request = route.request();
@@ -148,8 +149,8 @@ async function workspace(
       joinCode = {
         spaceId: 1,
         code: 'A1B2C3D4',
-        createdAt: '2026-10-05T10:00:00+09:00',
-        expiresAt: '2030-12-31T23:00:00+09:00',
+        createdAt: '2026-10-05T10:00:00',
+        expiresAt: '2030-12-31T23:00:00',
       };
       return respond(joinCode, 201);
     }
@@ -218,7 +219,7 @@ async function workspace(
           ? {
               ...member,
               decision: agree ? 'AGREED' : 'REJECTED',
-              consentedAt: agree ? '2026-10-06T11:00:00+09:00' : null,
+              consentedAt: agree ? '2026-10-06T11:00:00' : null,
             }
           : member,
       );
@@ -282,7 +283,7 @@ async function workspace(
           version: task.version + 1,
         };
 
-        task.completedAt = task.status === 'DONE' ? new Date().toISOString() : null;
+        task.completedAt = task.status === 'DONE' ? koreanDateTime() : null;
         task.completionBlockReason = ['IN_PROGRESS', 'REVISING'].includes(task.status)
           ? null
           : 'INVALID_TASK_STATE';
@@ -310,7 +311,7 @@ async function workspace(
           category: 'OTHER',
           type: 'FILE',
           version: 0,
-          updatedAt: '2026-10-05T10:00:00+09:00',
+          updatedAt: '2026-10-05T10:00:00',
           file: {
             originalFilename: 'design.md',
             sizeBytes: 8,
@@ -471,7 +472,7 @@ test('담당자가 작업을 생성하고 PATCH 상태와 버전으로 직접 �
     ({ method, path }) => method === 'POST' && path === '/api/teams/1/tasks',
   );
   expect(JSON.parse(creation.body)).toMatchObject({
-    dueAt: '2030-12-01T18:00:00+09:00',
+    dueAt: '2030-12-01T18:00:00',
     assignees: [{ userId: 'member', allocationPercent: 100 }],
   });
   expect(creation.headers['x-csrf-token']).toBe('test-token');
@@ -653,7 +654,7 @@ test('관리자는 스페이스 생성 후 팀 빌딩 기간을 지정하고 코
     ),
   ).toMatchObject({
     expectedVersion: 0,
-    teamBuildingOpensAt: '2026-10-05T10:00:00+09:00',
+    teamBuildingOpensAt: '2026-10-05T10:00:00',
   });
   await page.getByLabel('코드 유효 기간', { exact: true }).selectOption('custom');
   await page.getByLabel('유효 기간 (분)').fill('60');
@@ -757,7 +758,7 @@ function readyDeletion() {
     members: members.map((member) => ({
       userId: member.userId,
       name: member.name,
-      consentedAt: '2026-10-06T11:00:00+09:00',
+      consentedAt: '2026-10-06T11:00:00',
       decision: 'AGREED',
     })),
   });
@@ -1512,7 +1513,7 @@ test('작업 시작일은 생성 시 필수이며 일정 검증 후 오프셋과
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   const created = requests.find(({ method, path }) => method === 'POST' && path === '/api/teams/1/tasks');
-  expect(JSON.parse(created.body)).toMatchObject({ startAt: '2030-12-01T18:00:00+09:00', dueAt: '2030-12-01T18:00:00+09:00' });
+  expect(JSON.parse(created.body)).toMatchObject({ startAt: '2030-12-01T18:00:00', dueAt: '2030-12-01T18:00:00' });
   await expect(page.getByLabel('작업 기본 정보').locator('div').filter({ has: page.getByText('시작일', { exact: true }) }).getByText('2030. 12. 01. 18:00', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '작업 수정', exact: true }).click();
   await expect(dialog.getByLabel('시작일 날짜', { exact: true })).toHaveValue('2030-12-01');
@@ -1520,12 +1521,12 @@ test('작업 시작일은 생성 시 필수이며 일정 검증 후 오프셋과
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   const updated = requests.find(({ method, path }) => method === 'PATCH' && path.startsWith('/api/tasks/'));
-  expect(JSON.parse(updated.body)).toMatchObject({ startAt: '2030-11-30T09:00:00+09:00', expectedVersion: 0 });
+  expect(JSON.parse(updated.body)).toMatchObject({ startAt: '2030-11-30T09:00:00', expectedVersion: 0 });
 });
 
 test('저장된 시작일은 비울 수 없고 제목만 수정할 때 기존 시각 정밀도를 보존한다', async ({ page }) => {
   const { requests, changeTask } = await workspace(page);
-  changeTask({ startAt: '2030-11-01T09:00:45+09:00' });
+  changeTask({ startAt: '2030-11-01T09:00:45' });
   await page.goto('/spaces/1/teams/1/tasks/10');
   await page.getByRole('button', { name: '작업 수정', exact: true }).click();
   const dialog = page.getByRole('dialog');
@@ -1553,7 +1554,7 @@ test('비담당 리더는 내용을 정리할 수 있지만 완료·재수정·A
   await expect(page.getByRole('button',{name:'작업 수정',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'완료 처리',exact:true})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'AI 검토',exact:true})).toHaveCount(0);
-  state.changeTask({status:'DONE',completedAt:'2026-10-20T10:00:00+09:00',version:1});
+  state.changeTask({status:'DONE',completedAt:'2026-10-20T10:00:00',version:1});
   await page.reload();
   await expect(page.getByRole('button',{name:'수정 중으로 전환',exact:true})).toHaveCount(0);
   expect(state.requests.some(({path})=>/approvals|completion-requests|deputy|ai-review/.test(path))).toBe(false);
@@ -1565,7 +1566,7 @@ test('최종 평가 마감과 팀 삭제 동의 중에는 직접 완료·재수�
   state.changeTask({completionBlockReason:'WORK_PERIOD_CLOSED'});
   await page.goto('/spaces/1/teams/1/tasks/10');
   await expect(page.getByRole('button',{name:'완료 처리',exact:true})).toBeDisabled();
-  state.changeTask({status:'DONE',completedAt:'2026-10-20T10:00:00+09:00'});
+  state.changeTask({status:'DONE',completedAt:'2026-10-20T10:00:00'});
   await page.reload();
   await expect(page.getByRole('button',{name:'수정 중으로 전환',exact:true})).toBeDisabled();
   state.changeTask({completionBlockReason:'INVALID_TASK_STATE'});

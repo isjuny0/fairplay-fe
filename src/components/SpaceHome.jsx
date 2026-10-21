@@ -1,3 +1,4 @@
+import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import { useEffect, useState } from 'react';
 import {
   buildingLabels,
@@ -33,8 +34,8 @@ function Period({ label, start, end, countdown }) {
 
 function SpaceSchedule({ space }) {
   const [now, setNow] = useState(Date.now);
-  const start = Date.parse(space.teamBuildingOpensAt);
-  const end = Date.parse(space.teamBuildingClosesAt);
+  const start = apiTimeToEpoch(space.teamBuildingOpensAt);
+  const end = apiTimeToEpoch(space.teamBuildingClosesAt);
   const closed = Number.isFinite(end) && now >= end;
   useEffect(() => {
     setNow(Date.now());

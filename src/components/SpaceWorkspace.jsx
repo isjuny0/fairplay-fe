@@ -1,3 +1,4 @@
+import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import { screenLoaders } from '../lib/routeScreens.js';
 import { deferScreen } from './DeferredScreen.jsx';
 import { useCallback, useContext, useEffect, useState } from 'react';
@@ -192,8 +193,8 @@ export default function SpaceWorkspace({
           : '관리자 조회';
   const buildingOpen =
     space?.teamBuildingStatus === 'OPEN' &&
-    new Date(space.teamBuildingOpensAt) <= new Date() &&
-    new Date(space.teamBuildingClosesAt) > new Date();
+    new Date(apiTimeToEpoch(space.teamBuildingOpensAt)) <= new Date() &&
+    new Date(apiTimeToEpoch(space.teamBuildingClosesAt)) > new Date();
   const teamCreationRestriction = !directoryReady
     ? '팀 가입 상태를 확인한 뒤 팀을 만들 수 있습니다.'
     : joinedTeam

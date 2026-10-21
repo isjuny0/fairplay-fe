@@ -1,3 +1,4 @@
+import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
 import { isMutable } from '../lib/domain.js';
 import { previewTaskComments } from './taskComments.js';
 import { searchPreviewDeliverables } from './deliverableSearch.js';
@@ -109,7 +110,7 @@ function previewTaskResponse(state, context, entry, task) {
   else if (
     finalRound &&
     finalRound.status !== 'DRAFT' &&
-    new Date(finalRound.closesAt) <= new Date()
+    new Date(apiTimeToEpoch(finalRound.closesAt)) <= new Date()
   )
     completionBlockReason = 'WORK_PERIOD_CLOSED';
   else if (!['IN_PROGRESS', 'REVISING'].includes(task.status))
@@ -223,7 +224,7 @@ export async function previewRequest(
         id: Math.max(...Object.keys(state.teams).map(Number)) + 1,
         spaceId: id,
         name: body.name,
-        createdAt: new Date().toISOString(),
+        createdAt: koreanDateTime(),
         leaderId: context.user.id,
         approvedMemberCount: 1,
       };
@@ -253,10 +254,8 @@ export async function previewRequest(
             .replaceAll('-', '')
             .slice(0, 8)
             .toUpperCase(),
-          createdAt: new Date().toISOString(),
-          expiresAt: new Date(
-            Date.now() + (body.expirationMinutes || 1440) * 60000,
-          ).toISOString(),
+          createdAt: koreanDateTime(),
+          expiresAt: koreanDateTime(Date.now() + (body.expirationMinutes || 1440) * 60000,),
         };
         result = state.joinCode;
       }
@@ -326,7 +325,7 @@ export async function previewRequest(
         status: 'PENDING',
         canApprove: false,
         decidedAt: null,
-        requestedAt: new Date().toISOString(),
+        requestedAt: koreanDateTime(),
       };
       if (existing) Object.assign(existing, application);
       else state.applications.push(application);
@@ -338,8 +337,8 @@ export async function previewRequest(
         );
       if (
         !body.startAt ||
-        !Number.isFinite(Date.parse(body.startAt)) ||
-        new Date(body.startAt) > new Date(body.dueAt)
+        !Number.isFinite(apiTimeToEpoch(body.startAt)) ||
+        new Date(apiTimeToEpoch(body.startAt)) > new Date(apiTimeToEpoch(body.dueAt))
       )
         throw new MockError(
           'INVALID_REQUEST',
@@ -351,9 +350,9 @@ export async function previewRequest(
         id: Math.max(0, ...entry.tasks.map((task) => task.id)) + 1,
         teamId: id,
         version: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        lastActivityAt: new Date().toISOString(),
+        createdAt: koreanDateTime(),
+        updatedAt: koreanDateTime(),
+        lastActivityAt: koreanDateTime(),
         status: 'TODO',
         completedAt: null,
         completionBlockReason: 'INVALID_TASK_STATE',
@@ -385,8 +384,8 @@ export async function previewRequest(
         teamId: id,
         authorId: context.user.id,
         version: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: koreanDateTime(),
+        updatedAt: koreanDateTime(),
       };
       if (body instanceof FormData) fileContents.set(item.id, body.get('file'));
       entry.deliverables.push(item);
@@ -410,7 +409,7 @@ export async function previewRequest(
         status: 'PENDING',
         version: 0,
         requestedBy: context.user.id,
-        requestedAt: new Date().toISOString(),
+        requestedAt: koreanDateTime(),
         canDelete: false,
         taskCount: entry.tasks.length,
         deliverableCount: entry.deliverables.length,
@@ -433,7 +432,7 @@ export async function previewRequest(
       state.applications?.find((item) => item.id === id) ||
       missing('TEAM_APPLICATION_NOT_FOUND', '가입 신청이 없습니다.');
     application.status = body.status;
-    application.decidedAt = new Date().toISOString();
+    application.decidedAt = koreanDateTime();
     application.canApprove = false;
     if (body.status === 'APPROVED') {
       const entry = state.teams[application.teamId];
@@ -601,8 +600,8 @@ export async function previewRequest(
       const dueAt = body.dueAt ?? task.dueAt;
       if (
         (Object.hasOwn(body, 'startAt') &&
-          (!body.startAt || !Number.isFinite(Date.parse(body.startAt)))) ||
-        new Date(startAt) > new Date(dueAt)
+          (!body.startAt || !Number.isFinite(apiTimeToEpoch(body.startAt)))) ||
+        new Date(apiTimeToEpoch(startAt)) > new Date(apiTimeToEpoch(dueAt))
       )
         throw new MockError(
           'INVALID_REQUEST',
@@ -616,10 +615,10 @@ export async function previewRequest(
         invalidateReview(state, task.id);
       Object.assign(task, changes);
       task.completedAt =
-        task.status === 'DONE' ? new Date().toISOString() : null;
+        task.status === 'DONE' ? koreanDateTime() : null;
     }
     task.version++;
-    task.updatedAt = new Date().toISOString();
+    task.updatedAt = koreanDateTime();
     result = previewTaskResponse(state, context, entry, task);
   } else if (parts[1] === 'deliverables') {
     const entry = Object.values(state.teams).find((entry) =>
@@ -666,7 +665,7 @@ export async function previewRequest(
         fileContents.set(id, file);
       } else Object.assign(item, metadata);
       item.version++;
-      item.updatedAt = new Date().toISOString();
+      item.updatedAt = koreanDateTime();
       result = item;
     }
   } else if (parts[1] === 'team-deletion-requests') {
@@ -678,7 +677,7 @@ export async function previewRequest(
     );
     if (member) {
       member.decision = body.agree ? 'AGREED' : 'REJECTED';
-      member.consentedAt = body.agree ? new Date().toISOString() : null;
+      member.consentedAt = body.agree ? koreanDateTime() : null;
     }
     if (!body.agree) {
       deletion.status = 'CANCELLED';

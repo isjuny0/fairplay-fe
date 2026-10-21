@@ -1,3 +1,4 @@
+import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
 import { exampleDeliverables, exampleTasks, peerCriteria } from './fixtures.js';
 import { validatePeerResponse, workSummary } from '../lib/evaluation.js';
 
@@ -11,11 +12,11 @@ export class MockError extends Error {
 const fail = (code, message, status) => {
   throw new MockError(code, message, status);
 };
-const now = () => new Date().toISOString();
+const now = () => koreanDateTime();
 const clone = (value) => structuredClone(value);
 const memoryStates = new Map();
 export const mockKey = (context) =>
-  `fairplay:mock:v6:${context.preview ? 'preview' : context.user.id}:${context.space.id}`;
+  `fairplay:mock:v7:${context.preview ? 'preview' : context.user.id}:${context.space.id}`;
 export function getMockState(context) {
   const key = mockKey(context);
   let state = memoryStates.get(key);
@@ -40,8 +41,8 @@ export function getMockState(context) {
           type: 'MID',
           status: 'CLOSED',
           version: 1,
-          opensAt: new Date(timestamp - 15 * 86400000).toISOString(),
-          closesAt: new Date(timestamp - 8 * 86400000).toISOString(),
+          opensAt: koreanDateTime(timestamp - 15 * 86400000),
+          closesAt: koreanDateTime(timestamp - 8 * 86400000),
         },
         {
           id: context.space.id * 10 + 2,
@@ -49,8 +50,8 @@ export function getMockState(context) {
           type: 'FINAL',
           status: 'OPEN',
           version: 1,
-          opensAt: new Date(timestamp - 86400000).toISOString(),
-          closesAt: new Date(timestamp + 7 * 86400000).toISOString(),
+          opensAt: koreanDateTime(timestamp - 86400000),
+          closesAt: koreanDateTime(timestamp + 7 * 86400000),
         },
       ],
     };
@@ -71,7 +72,7 @@ export function getMockState(context) {
   for (const round of state.rounds) {
     if (round.status === 'CLOSED' && !round.seeded)
       seedSubmittedRound(state, round);
-    if (round.status === 'OPEN' && new Date(round.closesAt) <= new Date()) {
+    if (round.status === 'OPEN' && new Date(apiTimeToEpoch(round.closesAt)) <= new Date()) {
       round.status = 'CLOSED';
       round.seeded = true;
 
@@ -99,8 +100,8 @@ export function resetMockState(context, scenario = 'active') {
     state.spaceOverrides = {
       membershipLockedAt: null,
       teamBuildingStatus: 'OPEN',
-      teamBuildingOpensAt: new Date(Date.now() - 86400000).toISOString(),
-      teamBuildingClosesAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+      teamBuildingOpensAt: koreanDateTime(Date.now() - 86400000),
+      teamBuildingClosesAt: koreanDateTime(Date.now() + 7 * 86400000),
     };
     state.applications = [
       {
@@ -116,8 +117,8 @@ export function resetMockState(context, scenario = 'active') {
   }
   if (scenario === 'published' || scenario === 'review') {
     state.rounds.forEach((round) => {
-      if (new Date(round.closesAt) > new Date())
-        round.closesAt = new Date(Date.now() - 1000).toISOString();
+      if (new Date(apiTimeToEpoch(round.closesAt)) > new Date())
+        round.closesAt = koreanDateTime(Date.now() - 1000);
       round.status = 'CLOSED';
 
       round.version++;
@@ -192,7 +193,7 @@ export function requireWorkBeforeFinalDeadline(state) {
   if (
     final &&
     final.status !== 'DRAFT' &&
-    new Date(final.closesAt) <= new Date()
+    new Date(apiTimeToEpoch(final.closesAt)) <= new Date()
   )
     fail(
       'TASK_WORK_CLOSED',
@@ -343,7 +344,7 @@ function dashboard(state, context, teamFilter) {
     tasks.filter((task) => task.status === status).length;
   const overdue = (tasks) =>
     tasks.filter(
-      (task) => task.status !== 'DONE' && new Date(task.dueAt) < new Date(),
+      (task) => task.status !== 'DONE' && new Date(apiTimeToEpoch(task.dueAt)) < new Date(),
     ).length;
   const teams = entries.map(({ team, members, tasks, deliverables }) => ({
     teamId: team.id,
@@ -365,7 +366,7 @@ function dashboard(state, context, teamFilter) {
     staleTaskCount: tasks.filter(
       (task) =>
         ['IN_PROGRESS', 'REVISING'].includes(task.status) &&
-        Date.now() - new Date(task.lastActivityAt).getTime() >= 48 * 3600000,
+        Date.now() - new Date(apiTimeToEpoch(task.lastActivityAt)).getTime() >= 48 * 3600000,
     ).length,
     deliverableCount: deliverables.length,
     reportId:
@@ -552,7 +553,7 @@ export async function plannedRequest(
       else if (segments[3] === 'responses' && method === 'GET')
         result = Object.values(saved);
       else if (segments[3] === 'responses') {
-        if (round.status !== 'OPEN' || new Date(round.closesAt) <= new Date())
+        if (round.status !== 'OPEN' || new Date(apiTimeToEpoch(round.closesAt)) <= new Date())
           fail('ROUND_CLOSED', '평가 작성 기간이 아닙니다.');
         if (state.submitted[key])
           fail(
@@ -580,7 +581,7 @@ export async function plannedRequest(
         if (state.submitted[key])
           result = { roundId: id, submittedAt: state.submitted[key] };
         else {
-          if (round.status !== 'OPEN' || new Date(round.closesAt) <= new Date())
+          if (round.status !== 'OPEN' || new Date(apiTimeToEpoch(round.closesAt)) <= new Date())
             fail('ROUND_CLOSED', '평가 작성 기간이 아닙니다.');
           if (!targets.every((target) => saved[target.userId]))
             fail(
@@ -626,14 +627,14 @@ export async function plannedRequest(
         if (round.status !== 'DRAFT')
           fail('INVALID_ROUND_STATE', '일정 대기 회차만 시작할 수 있습니다.');
         if (
-          new Date(round.opensAt) > new Date() ||
-          new Date(round.closesAt) <= new Date()
+          new Date(apiTimeToEpoch(round.opensAt)) > new Date() ||
+          new Date(apiTimeToEpoch(round.closesAt)) <= new Date()
         )
           fail(
             'ROUND_OUTSIDE_WINDOW',
             '시작 시각부터 마감 시각 전까지만 시작할 수 있습니다.',
           );
-        if (new Date(context.space.teamBuildingClosesAt) > new Date())
+        if (new Date(apiTimeToEpoch(context.space.teamBuildingClosesAt)) > new Date())
           fail(
             'TEAM_BUILDING_OPEN',
             '팀 빌딩 기간 종료 후 시작할 수 있습니다.',
@@ -803,10 +804,10 @@ function validateSchedule(state, context, body) {
     !['MID', 'FINAL'].includes(body.type) ||
     !body.opensAt ||
     !body.closesAt ||
-    !Number.isFinite(Date.parse(body.opensAt)) ||
-    !Number.isFinite(Date.parse(body.closesAt)) ||
-    new Date(body.opensAt) >= new Date(body.closesAt) ||
-    new Date(body.closesAt) <= new Date()
+    !Number.isFinite(apiTimeToEpoch(body.opensAt)) ||
+    !Number.isFinite(apiTimeToEpoch(body.closesAt)) ||
+    new Date(apiTimeToEpoch(body.opensAt)) >= new Date(apiTimeToEpoch(body.closesAt)) ||
+    new Date(apiTimeToEpoch(body.closesAt)) <= new Date()
   )
     fail(
       'INVALID_ROUND_WINDOW',
@@ -817,7 +818,7 @@ function validateSchedule(state, context, body) {
     body.type === 'MID'
       ? context.space.teamBuildingClosesAt
       : state.rounds.find((round) => round.type === 'MID')?.closesAt;
-  if (!earliest || new Date(body.opensAt) < new Date(earliest))
+  if (!earliest || new Date(apiTimeToEpoch(body.opensAt)) < new Date(apiTimeToEpoch(earliest)))
     fail(
       'EVALUATION_SCHEDULE_CONFLICT',
       body.type === 'MID'

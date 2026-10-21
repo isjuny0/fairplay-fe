@@ -1,3 +1,4 @@
+import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import { screenLoaders } from '../lib/routeScreens.js';
 import { deferScreen } from './DeferredScreen.jsx';
 import Icon from './Icon.jsx';
@@ -186,7 +187,7 @@ export default function TaskBoard({
     team.canCreateTask && members.length >= 2 && canModifyTeamWork(team);
   const hasFilters = appliedFilterCount > 0;
   const isOverdue = (task) =>
-    task.status !== 'DONE' && Date.parse(task.dueAt) < now;
+    task.status !== 'DONE' && apiTimeToEpoch(task.dueAt) < now;
   const tasks = (resource.data || [])
     .filter(
       (task) =>
@@ -200,14 +201,14 @@ export default function TaskBoard({
     )
     .sort((left, right) =>
       sort === 'newest'
-        ? (Date.parse(right.createdAt) || 0) -
-            (Date.parse(left.createdAt) || 0) || right.id - left.id
+        ? (apiTimeToEpoch(right.createdAt) || 0) -
+            (apiTimeToEpoch(left.createdAt) || 0) || right.id - left.id
         : sort === 'start'
-          ? Date.parse(left.startAt) - Date.parse(right.startAt) ||
-            Date.parse(left.dueAt) - Date.parse(right.dueAt) ||
+          ? apiTimeToEpoch(left.startAt) - apiTimeToEpoch(right.startAt) ||
+            apiTimeToEpoch(left.dueAt) - apiTimeToEpoch(right.dueAt) ||
             left.id - right.id
-          : (Date.parse(left.dueAt) || Infinity) -
-              (Date.parse(right.dueAt) || Infinity) || right.id - left.id,
+          : (apiTimeToEpoch(left.dueAt) || Infinity) -
+              (apiTimeToEpoch(right.dueAt) || Infinity) || right.id - left.id,
     );
   const isSchedule = view === 'calendar' || view === 'timeline';
   const scheduleWindow = view === 'timeline' ? timelineWindow(month) : null;
@@ -532,7 +533,7 @@ export default function TaskBoard({
                                   <span className="task-number">#{task.id}</span>
                                 </span>
                                 {task.status !== 'DONE' &&
-                                  Date.parse(task.dueAt) < now && (
+                                  apiTimeToEpoch(task.dueAt) < now && (
                                     <span className="is-overdue board-card-overdue">마감 지남</span>
                                   )}
                               </div>

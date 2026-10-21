@@ -1,3 +1,4 @@
+import { apiTimeToEpoch, koreanDateTime } from './koreanTime.js';
 export const roundLabels = { MID: '중간 평가', FINAL: '최종 평가' };
 export const roundStatusLabels = {
   DRAFT: '일정 대기',
@@ -41,7 +42,7 @@ export function validatePeerResponse(scores, reason) {
 }
 
 export function isTaskExecutionOverdue(task, now = new Date()) {
-  return ['TODO', 'IN_PROGRESS', 'REVISING'].includes(task.status) && Date.parse(task.dueAt) < Number(now);
+  return ['TODO', 'IN_PROGRESS', 'REVISING'].includes(task.status) && apiTimeToEpoch(task.dueAt) < Number(now);
 }
 
 export function workSummary(teamId, userId, tasks, now = new Date()) {
@@ -68,7 +69,7 @@ export function workSummary(teamId, userId, tasks, now = new Date()) {
   );
   return {
     teamId,
-    asOf: now.toISOString(),
+    asOf: koreanDateTime(now),
     teamTotalWeight,
     teamDoneWeight,
     myAssignedWeight,

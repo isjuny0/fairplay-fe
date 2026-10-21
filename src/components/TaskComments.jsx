@@ -1,3 +1,4 @@
+import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import { useRef, useState } from 'react';
 import {
   createTaskComment,
@@ -242,8 +243,8 @@ export default function TaskComments({ taskId, team, user }) {
                   <time dateTime={comment.createdAt}>
                     {formatDate(comment.createdAt)}
                   </time>
-                  {Date.parse(comment.updatedAt) >
-                    Date.parse(comment.createdAt) && (
+                  {apiTimeToEpoch(comment.updatedAt) >
+                    apiTimeToEpoch(comment.createdAt) && (
                     <span title={`수정 ${formatDate(comment.updatedAt)}`}>
                       {' '}
                       · 수정됨

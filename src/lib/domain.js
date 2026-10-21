@@ -1,3 +1,4 @@
+import { apiTimeToEpoch } from './koreanTime.js';
 export const statusLabels = {
   TODO: '할 일',
   IN_PROGRESS: '진행 중',
@@ -87,36 +88,24 @@ export function deliverablePermissions(deliverable, task, team, userId) {
 export const formatDate = (value) =>
   value
     ? new Intl.DateTimeFormat('ko-KR', {
-        timeZone: 'Asia/Seoul',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      }).format(new Date(value))
+        timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false,
+      }).format(new Date(apiTimeToEpoch(value)))
     : '미설정';
 export function teamBuildingCountdown(end, now = Date.now()) {
   if (!end) return null;
-  const endTime = Date.parse(end);
-  const currentTime = new Date(now).getTime();
-  if (!Number.isFinite(endTime) || !Number.isFinite(currentTime))
-    return null;
+  const endTime = apiTimeToEpoch(end);
+  const currentTime = typeof now === 'string' ? apiTimeToEpoch(now) : Number(now);
+  if (!Number.isFinite(endTime) || !Number.isFinite(currentTime)) return null;
   if (currentTime >= endTime) return '마감';
-  // D-day follows Korean calendar dates; the exact closing time ends it.
   const day = 86400000;
   const koreaOffset = 9 * 3600000;
   const remaining = Math.floor((endTime + koreaOffset) / day)
     - Math.floor((currentTime + koreaOffset) / day);
   return remaining > 0 ? `D-${remaining}` : 'D-day';
 }
-export const toDateInput = (value) =>
-  value
-    ? new Date(new Date(value).getTime() + 9 * 3600000)
-        .toISOString()
-        .slice(0, 16)
-    : '';
-export const fromDateInput = (value) => `${value}:00+09:00`;
+export const toDateInput = (value) => value ? value.slice(0, 16) : '';
+export const fromDateInput = (value) => `${value}:00`;
 export function errorMessage(error) {
   if (error.code === 'REPORT_INPUT_INCOMPLETE')
     return '해당 팀의 중간·최종 평가 마감과 필수 제출을 확인해 주세요. 목록에 마감으로 표시되어도 서버의 마감 정리가 끝날 때까지 기다린 뒤 다시 시도해야 합니다.';

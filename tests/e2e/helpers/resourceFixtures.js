@@ -6,8 +6,8 @@ export const space = {
   id: 1,
   name: '여러 팀이 함께 사용하는 프로젝트 스페이스',
   myRole: 'USER',
-  startAt: '2026-01-01T09:00:00+09:00',
-  endAt: '2030-12-31T18:00:00+09:00',
+  startAt: '2026-01-01T09:00:00',
+  endAt: '2030-12-31T18:00:00',
   teamBuildingStatus: 'OPEN',
   version: 1,
 };
@@ -32,8 +32,8 @@ export const tasks = Array.from({ length: 100 }, (_, index) => ({
     .repeat(25)
     .slice(0, 1000),
   weight: 3,
-  startAt: '2030-11-01T09:00:00+09:00',
-  dueAt: '2030-11-20T18:00:00+09:00',
+  startAt: '2030-11-01T09:00:00',
+  dueAt: '2030-11-20T18:00:00',
   status: ['TODO', 'IN_PROGRESS', 'REVISING', 'DONE'][index % 4],
   version: 1,
   assignees: [{ userId: 'member', allocationPercent: 100 }],
@@ -53,8 +53,8 @@ export function deliverablePage(page = 0) {
     category: 'OTHER',
     type: 'FILE',
     version: 1,
-    createdAt: '2030-11-01T09:00:00+09:00',
-    updatedAt: '2030-11-02T10:00:00+09:00',
+    createdAt: '2030-11-01T09:00:00',
+    updatedAt: '2030-11-02T10:00:00',
     file: {
       originalFilename:
         `${'project-deliverable-with-a-long-filename-'.repeat(6)}.md`.slice(

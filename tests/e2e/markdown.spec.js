@@ -10,7 +10,7 @@ async function open(page, target = path, customize = () => {}) {
   customize(state);
   await page.addInitScript(state => {
     localStorage.setItem('fairplay:preview-role', 'leader');
-    localStorage.setItem('fairplay:mock:v6:preview:1', JSON.stringify(state));
+    localStorage.setItem('fairplay:mock:v7:preview:1', JSON.stringify(state));
   }, state);
   await page.goto(target);
 }

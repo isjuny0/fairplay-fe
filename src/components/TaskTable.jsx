@@ -1,3 +1,4 @@
+import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import {
   formatDate,
   formatBoardWorkload,
@@ -71,7 +72,7 @@ export default function TaskTable({ tasks, members, onOpenTask, now }) {
               <td>
                 <TaskDateTime value={task.dueAt} />
                 {task.status !== 'DONE' &&
-                  Date.parse(task.dueAt) < now && (
+                  apiTimeToEpoch(task.dueAt) < now && (
                     <span className="is-overdue">마감 지남</span>
                   )}
               </td>

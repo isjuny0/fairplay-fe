@@ -1,3 +1,4 @@
+import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   useInteractions,
@@ -253,7 +254,7 @@ function RoundResponses({ context, round, onSubmitted }) {
     round.mySubmissionStatus === 'SUBMITTED' ||
     targets.some((target) => target.submittedAt);
   const locked =
-    round.status !== 'OPEN' || Date.parse(round.closesAt) <= now || submitted;
+    round.status !== 'OPEN' || apiTimeToEpoch(round.closesAt) <= now || submitted;
   const currentTargetId = targets.some(
     (target) => target.targetId === activeTargetId,
   )
@@ -291,7 +292,7 @@ function RoundResponses({ context, round, onSubmitted }) {
         {resource.data && (
           <>
             {round.status === 'OPEN' &&
-              Date.parse(round.closesAt) <= now &&
+              apiTimeToEpoch(round.closesAt) <= now &&
               !submitted && (
                 <p className="notice" role="status">
                   평가 시간이 마감되어 저장·제출할 수 없습니다. 저장한 응답을

@@ -1,3 +1,4 @@
+import { apiTimeToEpoch, koreanDateTime } from './koreanTime.js';
 import {
   calendarDays,
   dateKey,
@@ -9,7 +10,7 @@ import { toDateInput } from './domain.js';
 
 export const taskDate = (value) => toDateInput(value).slice(0, 10);
 export const currentTaskMonth = () =>
-  taskDate(new Date().toISOString()).slice(0, 7);
+  koreanDateTime().slice(0, 10).slice(0, 7);
 export const isTaskMonth = (value) =>
   typeof value === 'string' && isValidDate(`${value}-01`);
 
@@ -99,7 +100,7 @@ export function calendarWeekTasks(tasks, dates) {
 
 export function nearestTaskMonth(
   tasks,
-  today = taskDate(new Date().toISOString()),
+  today = koreanDateTime().slice(0, 10),
 ) {
   const dates = tasks.map((task) => taskDate(task.dueAt)).sort();
   return (dates.find((date) => date >= today) || dates.at(-1))?.slice(0, 7);
@@ -131,10 +132,10 @@ export function timelineWindow(month) {
 export function taskScheduleStatus(task, now = Date.now()) {
   if (task.status === 'DONE')
     return { overdue: false, startPassed: false, label: '' };
-  const overdue = Date.parse(task.dueAt) < now;
+  const overdue = apiTimeToEpoch(task.dueAt) < now;
   const startPassed =
-    !overdue && task.status === 'TODO' && Date.parse(task.startAt) < now;
-  const days = Math.floor((now - Date.parse(task.dueAt)) / dayMilliseconds);
+    !overdue && task.status === 'TODO' && apiTimeToEpoch(task.startAt) < now;
+  const days = Math.floor((now - apiTimeToEpoch(task.dueAt)) / dayMilliseconds);
   return {
     overdue,
     startPassed,
@@ -151,7 +152,7 @@ export function taskScheduleStatus(task, now = Date.now()) {
 export function timelineTaskPeriod(task, window, now = Date.now()) {
   const start = taskDate(task.startAt),
     due = taskDate(task.dueAt);
-  const today = taskDate(new Date(now).toISOString());
+  const today = taskDate(koreanDateTime(now));
   const status = taskScheduleStatus(task, now);
   const position = (first, last) => ({
     left: window.position(first),
