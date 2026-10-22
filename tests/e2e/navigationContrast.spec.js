@@ -273,7 +273,8 @@ test('타임라인·캘린더·목록은 밝은 상태 배경과 읽기 쉬운 �
   await expect(overdue).toHaveCSS('background-color', 'rgb(255, 240, 241)');
   await expect(page.locator('.task-table td:has(> .is-overdue) > time').first()).toHaveCSS('color', 'rgb(255, 85, 92)');
   await page.getByRole('button', { name: '캘린더', exact: true }).click();
-  await expect(page.locator('.calendar-period')).toHaveCount(0);
+  await expect(page.locator('.calendar-period')).not.toHaveCount(0);
+  await expect(page.locator('.calendar-period.schedule-task-done')).toHaveCount(0);
   await expect(page.locator('.calendar-date-marker')).not.toHaveCount(0);
 });
 

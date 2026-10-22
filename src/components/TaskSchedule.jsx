@@ -1,6 +1,5 @@
 import { koreanDateTime } from '../lib/koreanTime.js';
-import { useEffect, useId, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { Fragment, useRef, useState } from 'react';
 import { formatDate, memberName, statusLabels } from '../lib/domain.js';
 import {
   currentTaskMonth,
@@ -10,10 +9,13 @@ import {
   taskDate,
   taskMonthDays,
   taskDateMarkers,
+  tasksByDate,
+  calendarWeekTasks,
   timelineTaskPeriod,
   timelineWindow,
 } from '../lib/taskSchedule.js';
 import { Modal } from './ui.jsx';
+import TaskSchedulePreview, { useTaskSchedulePreview } from './TaskSchedulePreview.jsx';
 
 const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
 const monthLabel = (month) =>
@@ -149,6 +151,7 @@ function ScheduleTask({ task, onOpenTask, members }) {
 }
 
 export function TaskCalendar({
+  summary,
   now,
   tasks,
   month,
@@ -156,13 +159,51 @@ export function TaskCalendar({
   members,
 }) {
   const [selectedDate, setSelectedDate] = useState(null);
-  const days = taskMonthDays(month),
-    markersByDate = taskDateMarkers(tasks, days);
+  const previewController = useTaskSchedulePreview(tasks, month);
+  const openDate = (date) => {
+    previewController.dismissPreview();
+    setSelectedDate(date);
+  };
+  const days = taskMonthDays(month);
+  const ongoingTasks = tasks.filter((task) => task.status !== 'DONE');
+  const markersByDate = taskDateMarkers(
+    tasks.filter((task) => task.status === 'DONE'),
+    days,
+  );
+  const ongoingByDate = tasksByDate(ongoingTasks, days);
+  const tasksOnDate = (date) => [
+    ...new Map([
+      ...(ongoingByDate.get(date) || []).map((task) => [task.id, task]),
+      ...(markersByDate.get(date) || []).map(({ task }) => [task.id, task]),
+    ]).values(),
+  ];
   const today = taskDate(koreanDateTime(now));
   return (
     <section className="task-schedule" aria-label="작업 캘린더">
       <div className="calendar-overview">
-        <ScheduleStatusLegend label="캘린더 상태 범례" />
+        {summary}
+        <div className="calendar-legends">
+          <div
+            className="calendar-event-legend"
+            aria-label="캘린더 시작·마감 범례"
+          >
+            <span>
+              <span
+                className="calendar-event-symbol is-start"
+                aria-hidden="true"
+              />
+              완료 시작
+            </span>
+            <span>
+              <span
+                className="calendar-event-symbol is-due"
+                aria-hidden="true"
+              />
+              완료 마감
+            </span>
+          </div>
+          <ScheduleStatusLegend label="캘린더 상태 범례" />
+        </div>
       </div>
       <div
         className="task-calendar-scroll"
@@ -172,7 +213,7 @@ export function TaskCalendar({
       >
         <table
           className="task-calendar-table"
-          aria-label={`${monthLabel(month)} 작업 시작·마감 일정`}
+          aria-label={`${monthLabel(month)} 작업 일정`}
         >
           <thead>
             <tr>
@@ -186,64 +227,133 @@ export function TaskCalendar({
           <tbody>
             {Array.from({ length: days.length / 7 }, (_, week) => {
               const dates = days.slice(week * 7, week * 7 + 7);
+              const segments = calendarWeekTasks(ongoingTasks, dates);
+              const lanes = Math.max(
+                2,
+                ...segments.map(({ lane }) => lane + 1),
+              );
               return (
-                <tr className="calendar-dates" key={week}>
-                  {dates.map((date, index) => {
-                    const markers = date ? markersByDate.get(date) || [] : [];
-                    return (
-                      <td
-                        key={date || `empty-${index}`}
-                        className={date === today ? 'is-today' : ''}
-                        aria-label={date ? `${date} 작업 일정` : undefined}
-                      >
-                        {date && (markers.length ? (
-                          <button
-                            className="calendar-date-markers"
-                            aria-label={`${date} 시작·마감 작업 ${markers.length}개 보기`}
-                            onClick={() => setSelectedDate(date)}
-                          >
-                            <time
-                              dateTime={date}
-                              aria-current={date === today ? 'date' : undefined}
-                            >
-                              {Number(date.slice(-2))}
-                            </time>
-                            <span className="calendar-marker-list" aria-hidden="true">
-                              {markers.map(({ task, type }, markerIndex) => (
+                <Fragment key={week}>
+                  <tr className="calendar-dates">
+                    {dates.map((date, index) => {
+                      const markers = markersByDate.get(date) || [];
+                      const dateTasks = date ? tasksOnDate(date) : [];
+                      const dateLabel = date && (
+                        <time
+                          dateTime={date}
+                          aria-current={date === today ? 'date' : undefined}
+                        >
+                          {Number(date.slice(-2))}
+                        </time>
+                      );
+                      return (
+                        <td
+                          key={date || `empty-${index}`}
+                          className={date === today ? 'is-today' : ''}
+                          aria-label={date ? `${date} 작업 일정` : undefined}
+                        >
+                          {date && (
+                            <div className="calendar-date-header">
+                              {dateTasks.length ? (
+                                <button
+                                  className="calendar-date-open"
+                                  aria-label={`${date} 작업 ${dateTasks.length}개 보기`}
+                                  onClick={() => openDate(date)}
+                                >
+                                  {dateLabel}
+                                </button>
+                              ) : (
+                                dateLabel
+                              )}
+                              {!!markers.length && (
                                 <span
-                                  key={`${task.id}-${type}-${markerIndex}`}
-                                  className={`calendar-date-marker schedule-task-${task.status.toLowerCase()}`}
-                                  title={`${task.title} ${type === 'start' ? '시작' : '마감'}`}
-                                />
-                              ))}
-                            </span>
-                          </button>
-                        ) : (
-                          <time
-                            dateTime={date}
-                            aria-current={date === today ? 'date' : undefined}
-                          >
-                            {Number(date.slice(-2))}
-                          </time>
+                                  className="calendar-marker-list"
+                                  aria-label="완료 작업 시작·마감"
+                                >
+                                  {markers.map(({ task, type }) => (
+                                    <button
+                                      key={`${task.id}-${type}`}
+                                      className={`calendar-date-marker is-${type} schedule-task-done`}
+                                      aria-label={`${task.title} · ${type === 'start' ? '시작' : '마감'} · 완료`}
+                                      {...previewController.previewEvents(
+                                        task,
+                                        type,
+                                      )}
+                                      onClick={() => openDate(date)}
+                                    />
+                                  ))}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                  <tr className="calendar-period-row">
+                    <td colSpan={7}>
+                      <div
+                        className="calendar-week-periods"
+                        style={{ '--calendar-lanes': lanes }}
+                      >
+                        {dates.map((date, index) => (
+                          <span
+                            key={date || `empty-${index}`}
+                            className={`calendar-period-day${date === today ? ' is-today' : ''}`}
+                            style={{ gridColumn: index + 1, gridRow: '1 / -1' }}
+                            aria-hidden="true"
+                          />
                         ))}
-                      </td>
-                    );
-                  })}
-                </tr>
+                        {segments.map(
+                          ({
+                            task,
+                            startColumn,
+                            endColumn,
+                            lane,
+                            continuesBefore,
+                            continuesAfter,
+                          }) => (
+                            <button
+                              key={task.id}
+                              className={`calendar-period schedule-task-${task.status.toLowerCase()}${continuesBefore ? ' continues-before' : ''}${continuesAfter ? ' continues-after' : ''}`}
+                              style={{
+                                gridColumn: `${startColumn} / ${endColumn + 1}`,
+                                gridRow: lane + 1,
+                              }}
+                              aria-label={`${task.title} · 작업 기간 · ${statusLabels[task.status]}`}
+                              {...previewController.previewEvents(
+                                task,
+                                'period',
+                              )}
+                              onClick={() => {
+                                previewController.dismissPreview();
+                                onOpenTask(task.id);
+                              }}
+                            />
+                          ),
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                </Fragment>
               );
             })}
           </tbody>
         </table>
       </div>
+      <TaskSchedulePreview
+        controller={previewController}
+        members={members}
+        now={now}
+        variant="calendar"
+      />
       {selectedDate && (
         <Modal
           title={`${selectedDate} 작업 일정`}
           onClose={() => setSelectedDate(null)}
         >
           <div className="stack">
-            {[...new Map(
-              (markersByDate.get(selectedDate) || []).map(({ task }) => [task.id, task]),
-            ).values()].map((task) => (
+            {tasksOnDate(selectedDate).map((task) => (
               <ScheduleTask
                 key={task.id}
                 task={task}
@@ -270,87 +380,10 @@ export function TaskTimeline({
   labelWidth,
   onLabelWidthChange,
 }) {
-  const [preview, setPreview] = useState(null);
-  const previewId = useId();
-  const closeTimer = useRef(null);
-  const hoverTimer = useRef(null);
+  const previewController = useTaskSchedulePreview(tasks, month);
+  const { previewEvents } = previewController;
   const resizeStart = useRef(null);
-  const previousSchedule = useRef({ tasks, month });
-  const cancelHover = () => clearTimeout(hoverTimer.current);
-  const cancelClose = () => clearTimeout(closeTimer.current);
-  const closePreview = () => {
-    cancelClose();
-    cancelHover();
-    closeTimer.current = setTimeout(() => {
-      setPreview((current) =>
-        document.activeElement === current?.anchor ? current : null,
-      );
-    }, 120);
-  };
-  const previewEvents = (task, period) => ({
-    'aria-describedby': preview?.task.id === task.id ? previewId : undefined,
-    onMouseEnter: (event) => {
-      cancelHover();
-      cancelClose();
-      const anchor = event.currentTarget;
-      hoverTimer.current = setTimeout(() => showPreview(anchor, task, period), 200);
-    },
-    onMouseLeave: (event) => {
-      cancelHover();
-      if (document.activeElement !== event.currentTarget) closePreview();
-    },
-    onFocus: (event) => showPreview(event.currentTarget, task, period),
-    onBlur: closePreview,
-  });
-  const showPreview = (anchor, task, period) => {
-    cancelHover();
-    cancelClose();
-    const bounds = anchor.getBoundingClientRect();
-    const width = Math.min(320, globalThis.innerWidth - 24);
-    const left = Math.max(
-      12,
-      Math.min(bounds.left, globalThis.innerWidth - width - 12),
-    );
-    setPreview({ task, period, anchor, left, top: bounds.bottom + 8, width });
-  };
-  useEffect(() => {
-    const dismiss = (event) => {
-      if (event?.target instanceof Element && event.target.closest('.timeline-preview')) return;
-      clearTimeout(closeTimer.current);
-      clearTimeout(hoverTimer.current);
-      setPreview(null);
-    };
-    const dismissOnEscape = (event) => {
-      if (event.key !== 'Escape') return;
-      if (document.getElementById(previewId)) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-      dismiss();
-    };
-    globalThis.addEventListener('scroll', dismiss, true);
-    globalThis.addEventListener('resize', dismiss);
-    globalThis.addEventListener('keydown', dismissOnEscape, true);
-    return () => {
-      clearTimeout(closeTimer.current);
-      clearTimeout(hoverTimer.current);
-      globalThis.removeEventListener('scroll', dismiss, true);
-      globalThis.removeEventListener('resize', dismiss);
-      globalThis.removeEventListener('keydown', dismissOnEscape, true);
-    };
-  }, []);
-  useEffect(() => {
-    const previous = previousSchedule.current;
-    previousSchedule.current = { tasks, month };
-    const sameTasks = previous.tasks.length === tasks.length &&
-      previous.tasks.every((task, index) => task === tasks[index]);
-    if (previous.month === month && sameTasks) return;
-    clearTimeout(hoverTimer.current);
-    clearTimeout(closeTimer.current);
-    setPreview(null);
-  }, [tasks, month]);
   const window = timelineWindow(month);
-  const previewPeriod = preview ? timelineTaskPeriod(preview.task, window, now) : null;
   const visible = tasks
     .map((task) => ({ task, period: timelineTaskPeriod(task, window, now) }))
     .filter(({ period }) => period);
@@ -487,7 +520,7 @@ export function TaskTimeline({
                     <span className="timeline-task-id">#{task.id}</span>
                     <button
                       className="task-title-button"
-                      {...previewEvents(task, period)}
+                      {...previewEvents(task)}
                       onClick={() => onOpenTask(task.id)}
                     >
                       {task.title}
@@ -553,7 +586,7 @@ export function TaskTimeline({
                       }}
                       aria-label={description}
                       tabIndex={-1}
-                      {...previewEvents(task, period)}
+                      {...previewEvents(task)}
                       onClick={() => onOpenTask(task.id)}
                     >
                       <span className="timeline-period-content">
@@ -621,43 +654,7 @@ export function TaskTimeline({
           })}
         </div>
       </div>
-      {preview && createPortal(
-        <div
-          id={previewId}
-          role="tooltip"
-          ref={(element) => {
-            if (!element) return;
-            const bounds = element.getBoundingClientRect();
-            const anchorBounds = preview.anchor.getBoundingClientRect();
-            const top = anchorBounds.bottom + bounds.height + 20 <= globalThis.innerHeight
-              ? anchorBounds.bottom + 8
-              : anchorBounds.top - bounds.height - 8;
-            element.style.top = `${Math.max(12, Math.min(top, globalThis.innerHeight - bounds.height - 12))}px`;
-          }}
-          className="timeline-preview"
-          style={{ left: preview.left, top: preview.top, width: preview.width }}
-          onMouseEnter={cancelClose}
-          onMouseLeave={closePreview}
-        >
-          <span className={`status-badge task-state-${preview.task.status.toLowerCase()}`}>
-            {statusLabels[preview.task.status]}
-          </span>
-          <strong>#{preview.task.id} {preview.task.title}</strong>
-          <dl>
-            <div>
-              <dt>담당</dt>
-              <dd>{preview.task.assignees.map(({ userId }) => memberName(members, userId)).join(' · ')}</dd>
-            </div>
-            <div><dt>시작일</dt><dd>{formatDate(preview.task.startAt)}</dd></div>
-            <div><dt>마감일</dt><dd>{formatDate(preview.task.dueAt)}</dd></div>
-          </dl>
-          {previewPeriod?.label && (
-            <span className={previewPeriod.overdue ? 'timeline-late-label' : 'timeline-start-label'}>
-              {previewPeriod.label}
-            </span>
-          )}
-        </div>, document.body,
-      )}
+      <TaskSchedulePreview controller={previewController} members={members} now={now} variant="timeline" />
     </section>
   );
 }

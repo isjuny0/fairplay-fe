@@ -215,8 +215,11 @@ export default function TaskBoard({
   const periodTaskCount = view === 'timeline'
     ? tasks.filter((task) => timelineTaskPeriod(task, scheduleWindow, now)).length
     : tasks.filter((task) =>
-        taskDate(task.startAt).slice(0, 7) === month ||
-        taskDate(task.dueAt).slice(0, 7) === month,
+        task.status === 'DONE'
+          ? taskDate(task.startAt).slice(0, 7) === month ||
+            taskDate(task.dueAt).slice(0, 7) === month
+          : taskDate(task.startAt).slice(0, 7) <= month &&
+            taskDate(task.dueAt).slice(0, 7) >= month,
       ).length;
   const nearestMonth = nearestTaskMonth(tasks, `${month}-01`);
   const hasSearchFilters = filter !== 'ALL' || onlyMine || onlyOverdue || Boolean(query.trim());
@@ -227,8 +230,23 @@ export default function TaskBoard({
     ...(query.trim() ? [{ key: 'q', label: `검색: ${query.trim()}` }] : []),
     ...(sort !== defaultSort ? [{ key: 'sort', label: `정렬: ${sortLabel}` }] : []),
   ];
+  const listSummary = (
+    <div className="list-summary" aria-live="polite">
+      <span>
+        검색 결과 {tasks.length}개 · 전체 {resource.data?.length || 0}개
+        {isSchedule && ` · 현재 기간 ${periodTaskCount}개${view === 'timeline' ? ' (지연 포함)' : ''}`} ·{' '}
+        {view === 'board' ? '상태별 ' : ''}
+        {sortLabel}
+      </span>
+      {hasFilters && (
+        <button className="text-button collection-reset-button" title="검색·상태·담당·마감·정렬 조건을 초기화하고 보기와 조회 기간은 유지합니다." onClick={clearFilters}>
+          검색·필터 초기화
+        </button>
+      )}
+    </div>
+  );
   const content = (
-    <section className="stack task-board-page">
+    <section className="stack task-board-page" data-task-view={view}>
       <div className="page-heading task-collection-heading">
         <h1>작업</h1>
         <div
@@ -399,7 +417,7 @@ export default function TaskBoard({
             onMonthChange={(next) => setListOption('month', next)}
             tasks={tasks}
             helpText={view === 'calendar'
-              ? '점은 작업의 시작일 또는 마감일이며, 색으로 진행 상태를 구분합니다. 점이 있는 날짜를 선택하면 해당 작업을 확인할 수 있습니다.'
+                ? '미완료 작업은 시작일부터 마감일까지 상태 색상의 막대로 표시합니다. 완료 작업은 날짜 옆에만 점을 표시하며, 빈 원은 시작일, 채운 원은 마감일입니다. 점이나 막대에 마우스를 올리거나 키보드로 초점을 맞추면 작업을 미리 볼 수 있습니다. 날짜나 완료 점을 선택하면 해당 날짜의 작업 목록을, 막대를 선택하면 작업 상세를 확인할 수 있습니다.'
               : '막대의 위치와 겹침으로 일정의 순서와 병행 구간을 비교합니다. 막대는 계획 기간, 빨간 빗금은 마감 이후 오늘까지의 지연 구간입니다. 작업 제목이나 막대를 선택하면 상세를 확인할 수 있습니다.'}
           />
           <button
@@ -434,19 +452,7 @@ export default function TaskBoard({
         </div>
       )}
       <ResourceState resource={resource} label="작업 목록">
-        <div className="list-summary" aria-live="polite">
-          <span>
-            검색 결과 {tasks.length}개 · 전체 {resource.data?.length || 0}개
-            {isSchedule && ` · 현재 기간 ${periodTaskCount}개${view === 'timeline' ? ' (지연 포함)' : ''}`} ·{' '}
-            {view === 'board' ? '상태별 ' : ''}
-            {sortLabel}
-          </span>
-          {hasFilters && (
-            <button className="text-button collection-reset-button" title="검색·상태·담당·마감·정렬 조건을 초기화하고 보기와 조회 기간은 유지합니다." onClick={clearFilters}>
-              검색·필터 초기화
-            </button>
-          )}
-        </div>
+        {(view !== 'calendar' || periodTaskCount === 0) && listSummary}
         {isSchedule && periodTaskCount === 0 ? (
           <EmptyState>
             <p>{view === 'calendar'
@@ -470,6 +476,7 @@ export default function TaskBoard({
           </EmptyState>
         ) : view === 'calendar' ? (
           <TaskCalendar
+            summary={listSummary}
             now={now}
             tasks={tasks}
             month={month}
