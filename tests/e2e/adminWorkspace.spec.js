@@ -31,7 +31,7 @@ for (const width of [1440, 320]) {
     await expect(
       table.getByText('박서연 → 김하늘', { exact: true }),
     ).toBeVisible();
-    for (const criterion of ['작업 수행', '책임감', '협업', '의사소통'])
+    for (const criterion of ['작업 수행', '책임감', '적극성', '의사소통'])
       await expect(
         table.getByRole('columnheader', { name: criterion, exact: true }),
       ).toHaveCount(1);

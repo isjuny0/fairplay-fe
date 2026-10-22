@@ -168,6 +168,11 @@ test('실제 로그인 경로에서 댓글 CRUD·CSRF·일반 텍스트와 작�
 }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   const { requests } = await backend(page);
+  const navigation = page.getByRole('navigation', { name: '작업 상세 항목', exact: true });
+  await expect(navigation.getByRole('button')).toHaveCount(3);
+  await expect(navigation.getByRole('button', { name: '댓글 영역으로 이동', exact: true })).toHaveCount(0);
+  await expect(navigation.getByRole('button', { name: '담당·배분 영역으로 이동', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: '담당자와 배분', exact: true })).toHaveCount(1);
   const panel = page.getByRole('region', { name: '작업 댓글', exact: true });
   await expect(panel.getByText('아직 댓글이 없습니다.')).toBeVisible();
   await panel

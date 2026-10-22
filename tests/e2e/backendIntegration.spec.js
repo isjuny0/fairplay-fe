@@ -466,12 +466,26 @@ test('서버 조회 오류를 예시 현황으로 대체하지 않는다', async
     0,
   );
 });
+test('실제 작업 상세는 완료 조건을 읽기 전용 체크리스트로 표시한다', async ({ page }) => {
+  const { requests } = await backend(page);
+  await page.goto('/spaces/1/teams/1/tasks/10');
+  await expect(page.getByRole('heading', { name: '현재 작업', exact: true })).toBeVisible();
+  const readiness = page.getByRole('list', { name: '완료 준비 상태' });
+  await expect(readiness.getByRole('img', { name: '충족', exact: true })).toHaveCount(2);
+  await expect(readiness.getByRole('img', { name: '미충족', exact: true })).toHaveCount(1);
+  await expect(readiness.getByRole('checkbox')).toHaveCount(0);
+  await readiness.getByRole('img', { name: '미충족', exact: true }).click();
+  await expect(page.locator('.task-detail-page .status-badge')).toHaveText('진행 중');
+  await expect(page.getByRole('button', { name: '완료 처리', exact: true })).toBeDisabled();
+  expect(requests.some(({ method }) => ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method))).toBe(false);
+});
+
 test('동료 평가는 실제 PUT과 POST로 저장·제출하고 새로고침 후 잠근다', async ({
   page,
 }) => {
   const { requests } = await backend(page);
   await page.goto('/spaces/1/teams/1/peer-evaluations');
-  for (const label of ['작업 수행', '책임감', '협업', '의사소통'])
+  for (const label of ['작업 수행', '책임감', '적극성', '의사소통'])
     await page.getByLabel(`리더 ${label} 4점`, { exact: true }).check();
   await page.getByRole('button', { name: '리더 평가 저장' }).click();
   await page.getByRole('button', { name: '최종 제출', exact: true }).click();

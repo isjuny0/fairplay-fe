@@ -1,7 +1,7 @@
 export const peerCriteria = {
   taskExecution: '작업 수행',
   responsibility: '책임감',
-  collaboration: '협업',
+  collaboration: '적극성',
   communication: '의사소통',
 };
 export const peerGuides = {

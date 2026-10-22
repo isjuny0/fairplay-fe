@@ -105,7 +105,7 @@ test('대상별 평가를 저장하고 제출하면 새로고침 후에도 수�
   });
   for (const member of ['이지원', '박서연']) {
     await page.getByRole('group', { name: '평가할 팀원 선택', exact: true }).getByRole('button', { name: new RegExp(`^${member}`) }).click();
-    for (const criterion of ['작업 수행', '책임감', '협업', '의사소통'])
+    for (const criterion of ['작업 수행', '책임감', '적극성', '의사소통'])
       await page
         .getByLabel(`${member} ${criterion} 4점`, { exact: true })
         .check();
@@ -134,7 +134,7 @@ test('저점 사유 누락을 안내하고 공개 전 리포트는 팀원에게 
   page,
 }) => {
   await preview(page, { path: '/spaces/1/teams/1/peer-evaluations' });
-  for (const criterion of ['작업 수행', '책임감', '협업', '의사소통'])
+  for (const criterion of ['작업 수행', '책임감', '적극성', '의사소통'])
     await page.getByLabel(`이지원 ${criterion} 2점`, { exact: true }).check();
   await page
     .getByRole('button', { name: '이지원 평가 저장', exact: true })
