@@ -86,20 +86,24 @@ export function EmptyState({ children }) {
 }
 export function Field({
   label,
+  labelAccessory,
   children,
   help,
   error,
   requiredIndicator = '필수',
+  showRequiredIndicator = true,
 }) {
   const fieldId = useId();
-  const Container = children.type?.compositeField ? 'div' : 'label';
+  const Container =
+    children.type?.compositeField || labelAccessory ? 'div' : 'label';
+  const Label = labelAccessory ? 'div' : 'span';
   const [validationMessage, setValidationMessage] = useState('');
   const fieldError = error || validationMessage;
   return (
     <Container className="form-field">
-      <span className="field-label">
+      <Label className="field-label">
         <span id={`${fieldId}-label`}>{label}</span>
-        {children.props.required && (
+        {children.props.required && showRequiredIndicator && (
           <span
             className={`required-label ${requiredIndicator === '*' ? 'required-asterisk' : ''}`}
             aria-hidden="true"
@@ -107,7 +111,8 @@ export function Field({
             {requiredIndicator}
           </span>
         )}
-      </span>
+        {labelAccessory}
+      </Label>
       {cloneElement(children, {
         ...(children.type?.compositeField ? { labelText: label } : {}),
         'aria-labelledby': `${fieldId}-label`,
