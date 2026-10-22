@@ -80,7 +80,7 @@ for (const width of [1440, 1280, 390]) {
     });
     await expect(save).toBeEnabled();
     expect(await withinViewport(save)).toBe(true);
-    for (const criterion of ['작업 수행', '책임감', '협업', '의사소통'])
+    for (const criterion of ['작업 수행', '책임감', '적극성', '의사소통'])
       await page.getByLabel(`이지원 ${criterion} 4점`, { exact: true }).check();
     await dock
       .getByRole('button', { name: '다음 팀원 · 박서연', exact: true })

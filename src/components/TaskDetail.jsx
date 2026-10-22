@@ -27,7 +27,23 @@ import AiReview from './AiReview.jsx';
 import Deliverables from './Deliverables.jsx';
 import TaskForm from './TaskForm.jsx';
 import TaskComments from './TaskComments.jsx';
+import Icon from './Icon.jsx';
 import { ErrorNotice, Field, ResourceState } from './ui.jsx';
+
+function ReadinessItem({ complete, children }) {
+  return (
+    <li className={`readiness-item${complete ? ' is-complete' : ''}`}>
+      <span
+        className="readiness-checkbox"
+        role="img"
+        aria-label={complete ? '충족' : '미충족'}
+      >
+        {complete && <Icon name="checkmark" />}
+      </span>
+      <div className="readiness-item-content">{children}</div>
+    </li>
+  );
+}
 
 function OwnContribution({ task, contribution, busy, blocked, onSave }) {
   const [description, setDescription] = useState(contribution || '');
@@ -202,8 +218,6 @@ export default function TaskDetail({
               ['task-description-section', '작업 설명'],
               ['task-contributions-section', '수행 설명'],
               ['task-deliverables-section', '산출물'],
-              ['task-assignment-section', '담당·배분'],
-              ['task-comments-section', '댓글'],
             ].map(([id, label]) => (
               <button
                 key={id}
@@ -380,18 +394,19 @@ export default function TaskDetail({
                           className="completion-readiness"
                           aria-label="완료 준비 상태"
                         >
-                          <li>
-                            {['IN_PROGRESS', 'REVISING'].includes(task.status)
-                              ? '✓'
-                              : '○'}{' '}
+                          <ReadinessItem
+                            complete={['IN_PROGRESS', 'REVISING'].includes(
+                              task.status,
+                            )}
+                          >
                             {task.status === 'REVISING'
                               ? '완료 후 수정 중'
                               : '작업 진행 중'}
-                          </li>
-                          <li>
+                          </ReadinessItem>
+                          <ReadinessItem complete={hasDeliverables}>
                             {hasDeliverables
-                              ? '✓ 연결 산출물 등록 완료'
-                              : '○ 연결 산출물 미등록'}
+                              ? '연결 산출물 등록 완료'
+                              : '연결 산출물 미등록'}
                             {!hasDeliverables && (
                               <button
                                 className="text-button readiness-link"
@@ -402,14 +417,16 @@ export default function TaskDetail({
                                 산출물 확인
                               </button>
                             )}
-                          </li>
+                          </ReadinessItem>
                           {task.assignees.map((assignment) => {
                             const missing = missingContributions.some(
                               (entry) => entry.userId === assignment.userId,
                             );
                             return (
-                              <li key={assignment.userId}>
-                                {missing ? '○' : '✓'}{' '}
+                              <ReadinessItem
+                                key={assignment.userId}
+                                complete={!missing}
+                              >
                                 {memberName(members, assignment.userId)} 수행
                                 설명 {missing ? '미작성' : '작성 완료'}
                                 {missing &&
@@ -426,7 +443,7 @@ export default function TaskDetail({
                                       내 수행 설명 작성
                                     </button>
                                   )}
-                              </li>
+                              </ReadinessItem>
                             );
                           })}
                         </ul>

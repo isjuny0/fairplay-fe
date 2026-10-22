@@ -1,6 +1,7 @@
 import { koreanDateTime } from '../src/lib/koreanTime.js';
 import { beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { peerCriteria } from '../src/lib/peerCriteria.js';
 import {
   workSummary,
   validatePeerResponse,
@@ -38,6 +39,15 @@ const scores = {
 beforeEach(() => {
   storage.clear();
   resetMockState(context('leader'));
+});
+
+test('적극성 표시 이름은 기존 collaboration API 키를 유지한다', () => {
+  assert.deepEqual(peerCriteria, {
+    taskExecution: '작업 수행',
+    responsibility: '책임감',
+    collaboration: '적극성',
+    communication: '의사소통',
+  });
 });
 
 test('작업 현황은 가중치와 본인 배분을 반영하며 분모가 없으면 null이다', () => {

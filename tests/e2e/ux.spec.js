@@ -33,7 +33,7 @@ async function fillEvaluation(page, member, score = 4) {
       .getByRole('group', { name: '평가할 팀원 선택', exact: true })
       .getByRole('button', { name: new RegExp(`^${member}`) })
       .click();
-  for (const criterion of ['작업 수행', '책임감', '협업', '의사소통'])
+  for (const criterion of ['작업 수행', '책임감', '적극성', '의사소통'])
     await page
       .getByLabel(`${member} ${criterion} ${score}점`, { exact: true })
       .check();

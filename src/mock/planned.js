@@ -331,7 +331,7 @@ function feedback(state, teamId, context) {
           communication: 4.5,
         },
         improvementGuidance: [
-          '협업: 역할을 함께 조율하고 어려움을 겪는 팀원에게 필요한 지원을 제공해 보세요.',
+          '적극성: 역할을 함께 조율하고 어려움을 겪는 팀원에게 필요한 지원을 제공해 보세요.',
         ],
       })),
   };
