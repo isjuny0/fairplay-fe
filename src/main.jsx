@@ -15,6 +15,7 @@ import './entry-workspace.css';
 import './task-detail.css';
 import './task-review.css';
 import './task-editor.css';
+import './compact-time-picker.css';
 import './deliverable-editor.css';
 import './manager-peer-review.css';
 import './resource-states.css';

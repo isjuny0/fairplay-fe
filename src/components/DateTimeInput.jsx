@@ -18,6 +18,7 @@ export default function DateTimeInput({
   disabled,
   onInvalid,
   labelText,
+  compactTime = false,
   'aria-labelledby': labelledBy,
   'aria-describedby': describedBy,
   'aria-invalid': invalid,
@@ -213,6 +214,7 @@ export default function DateTimeInput({
         </button>
       </div>
       <TimeInput
+        compact={compactTime}
         name={name}
         required={required}
         disabled={disabled}

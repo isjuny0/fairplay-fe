@@ -35,6 +35,7 @@ export default function TeamCalendarTimeInput({
     >
       <TimeInput
         {...props}
+        compact
         label={labelText.replace(/ 시간$/, '')}
         describedBy={describedBy}
         invalid={invalid}

@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { currentDateTime } from '../lib/dateTime.js';
 import Icon from './Icon.jsx';
+import CalendarPopover from './CalendarPopover.jsx';
 
 const pad = (value) => String(value).padStart(2, '0');
 const validTime = (value) => /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
@@ -19,9 +20,12 @@ export default function TimeInput({
   onOpen,
   onClose,
   triggerRef,
+  compact = false,
 }) {
   const id = useId();
   const input = useRef(null);
+  const control = useRef(null);
+  const Panel = compact ? CalendarPopover : 'div';
   const hours = useRef(null);
   const minutes = useRef(null);
   const [hour, setHour] = useState(0);
@@ -79,7 +83,7 @@ export default function TimeInput({
   };
   return (
     <>
-      <div className="time-control">
+      <div className="time-control" ref={control}>
         <input
           ref={input}
           name={name ? `${name}-time` : undefined}
@@ -112,8 +116,11 @@ export default function TimeInput({
         </button>
       </div>
       {open && (
-        <div
-          className="time-picker-panel"
+        <Panel
+          {...(compact
+            ? { anchorRef: control, onClose, fitContent: true }
+            : {})}
+          className={`time-picker-panel ${compact ? 'compact-time-picker' : ''}`}
           id={`${id}-panel`}
           role="region"
           aria-label="시간 선택"
@@ -206,7 +213,7 @@ export default function TimeInput({
               시간 적용
             </button>
           </div>
-        </div>
+        </Panel>
       )}
     </>
   );

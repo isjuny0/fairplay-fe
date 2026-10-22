@@ -84,7 +84,13 @@ export function ResourceState({ resource, children, label = '화면 정보' }) {
 export function EmptyState({ children }) {
   return <div className="empty-state">{children}</div>;
 }
-export function Field({ label, children, help, error }) {
+export function Field({
+  label,
+  children,
+  help,
+  error,
+  requiredIndicator = '필수',
+}) {
   const fieldId = useId();
   const Container = children.type?.compositeField ? 'div' : 'label';
   const [validationMessage, setValidationMessage] = useState('');
@@ -94,8 +100,11 @@ export function Field({ label, children, help, error }) {
       <span className="field-label">
         <span id={`${fieldId}-label`}>{label}</span>
         {children.props.required && (
-          <span className="required-label" aria-hidden="true">
-            필수
+          <span
+            className={`required-label ${requiredIndicator === '*' ? 'required-asterisk' : ''}`}
+            aria-hidden="true"
+          >
+            {requiredIndicator}
           </span>
         )}
       </span>

@@ -1,132 +1,302 @@
+.modal-editor:has(.task-editor-form) {
+  width: min(1120px, calc(100vw - 48px));
+}
+.task-editor-intro {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.task-editor-intro p {
+  margin: 0;
+}
+.task-editor-intro > span {
+  white-space: nowrap;
+  font-size: 12px;
+}
+.task-editor-form .required-asterisk {
+  color: #d83b45;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  background: none;
+  padding: 0;
+}
 .task-editor-form .task-form-layout {
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-  gap: 32px;
+  grid-template-columns: minmax(0, 1.55fr) minmax(300px, 1fr);
+  align-items: start;
+  gap: 28px;
 }
 .task-editor-form .task-form-section {
-  gap: 20px;
+  gap: 16px;
 }
 .task-editor-form .form-section-title {
-  font-size: var(--text-subheading);
-  font-weight: 600;
-  padding-bottom: 16px;
+  font-size: 17px;
+  font-weight: 700;
+  padding-bottom: 14px;
+  color: var(--text-primary);
 }
-.task-editor-form .assignment-form-section {
-  padding-left: 32px;
+.task-editor-form .field-label {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
 }
-.task-editor-form .task-workload-field > .form-field {
+.task-editor-form .form-field {
   margin: 0;
+  gap: 8px;
 }
-.task-editor-form :is(.task-schedule-fields, .assignment-form-section) h4 {
-  margin: 0;
-  font-size: var(--text-body);
+.task-editor-form .form-field > :is(input, select, textarea) {
+  border-color: #d4ded9;
+  border-radius: 8px;
+  background: white;
+  font-size: 14px;
+}
+.task-editor-form .form-field > input[name='title'] {
+  font-size: 16px;
   font-weight: 600;
+}
+.task-editor-form .form-field :is(input, select, textarea):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.task-description-field {
+  min-width: 0;
+}
+.task-editor-form .task-description-field textarea {
+  min-height: 104px;
+  height: 104px;
+}
+.task-editor-form .task-description-field .character-count {
+  margin: 6px 0 0;
+  text-align: right;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.task-editor-form .field-help {
+  font-size: 12px;
+  line-height: 1.6;
 }
 .task-schedule-fields {
   display: grid;
-  gap: 16px;
-  padding-top: 20px;
+  gap: 14px;
+  padding-top: 16px;
   border-top: 1px solid var(--border);
 }
+.task-editor-form .task-schedule-fields h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
 .task-editor-form .task-schedule-fields .two-columns {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
+}
+.task-editor-form .task-schedule-fields > .field-help {
+  margin: 0;
+}
+.task-editor-form .assignment-form-section {
+  border: 1px solid #e0e9e4;
+  border-radius: 14px;
+  background: #f7faf8;
+  padding: 20px;
+}
+.task-editor-form .assignment-form-section .form-section-title {
+  border: 0;
+  padding: 0;
 }
 .task-editor-form .assignment-form-section .section-heading {
   align-items: center;
-  margin: 20px 0 12px;
+  gap: 10px;
+  margin: 10px 0 22px;
+}
+.task-editor-form .assignment-form-section .section-heading p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+.task-editor-form .assignment-form-section .secondary-button {
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+  background: white;
 }
 .allocation-summary {
   display: flex;
   justify-content: space-between;
-  flex-wrap: wrap;
   gap: 8px;
-  font-size: var(--text-support);
+  font-size: 13px;
   color: var(--text-muted);
 }
 .allocation-summary strong {
   color: var(--text-primary);
-  font-weight: 600;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 .allocation-summary .allocation-complete {
-  color: var(--brand-dark);
+  color: var(--brand);
+}
+.allocation-total-track {
+  height: 6px;
+  margin-top: 10px;
+  background: #e1e9e4;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.allocation-total-track > span {
+  display: block;
+  height: 100%;
+  background: var(--brand);
+  border-radius: inherit;
+}
+.allocation-total-track.is-over > span {
+  background: #d83b45;
 }
 .task-editor-form #assignment-help {
-  margin: 8px 0 16px;
+  margin: 8px 0 18px;
+  min-height: 20px;
 }
 .task-editor-form .assignment-inputs {
-  gap: 0;
-  border-block: 1px solid var(--border);
-}
-.task-editor-form .allocation-row {
-  padding: 10px 0;
   gap: 8px;
   border: 0;
-  border-bottom: 1px solid var(--border);
-  border-radius: 0;
-  min-height: 65px;
 }
-.task-editor-form .allocation-row:last-child {
-  border-bottom: 0;
+.task-editor-form .allocation-row {
+  padding: 10px;
+  gap: 8px;
+  border: 1px solid #e0e6e2;
+  border-radius: 10px;
+  background: white;
+  min-height: 70px;
+}
+.task-editor-form .allocation-row.is-selected {
+  border-color: #a3cdb8;
 }
 .task-editor-form .allocation-row:has(:focus-visible) {
-  background: var(--surface-secondary);
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
 }
 .task-editor-form .allocation-member {
   min-width: 0;
-  line-height: 1.6;
+  line-height: 1.5;
   overflow-wrap: anywhere;
   cursor: pointer;
+  gap: 10px;
 }
 .task-editor-form .allocation-member input {
   flex-shrink: 0;
 }
+.task-editor-form .allocation-avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f0f4f1;
+  color: #5c7568;
+  font-size: 12px;
+  font-weight: 600;
+}
+.task-editor-form .allocation-member-name {
+  font-weight: 600;
+}
 .allocation-role {
+  display: block;
   color: var(--text-muted);
-  font-size: var(--text-support);
+  font-size: 11px;
   font-weight: 400;
 }
 .task-editor-form .allocation-value {
-  flex: 0 0 104px;
+  flex: 0 0 76px;
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 4px;
   color: var(--text-muted);
-  font-size: var(--text-support);
+  font-size: 12px;
 }
 .task-editor-form .allocation-value input {
-  width: 76px;
-  text-align: right;
+  width: 56px;
+  min-height: 36px;
+  padding: 8px 4px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 .task-editor-form .allocation-value .field-error {
   flex-basis: 100%;
   text-align: left;
 }
+.allocation-unselected {
+  color: #748078;
+  font-size: 11px;
+  padding-right: 4px;
+  white-space: nowrap;
+}
 .task-editor-form .form-help {
-  margin-bottom: 0;
+  margin: 0;
+  padding: 12px 14px;
+  background: #f7f9f8;
+  border-radius: 8px;
 }
 .task-editor-form .form-help summary {
-  font-size: var(--text-support);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.task-editor-form .form-help p {
+  margin-bottom: 0;
+}
+@media (max-width: 1000px) {
+  .task-editor-form .task-form-layout {
+    grid-template-columns: minmax(0, 1.3fr) minmax(280px, 1fr);
+    gap: 20px;
+  }
+  .task-editor-form .assignment-form-section {
+    padding: 16px;
+  }
+  .task-editor-form .allocation-avatar {
+    display: none;
+  }
 }
 @media (max-width: 900px) {
   .task-editor-form .task-form-layout {
     grid-template-columns: minmax(0, 1fr);
-    gap: 28px;
+    gap: 24px;
   }
-  .task-editor-form .assignment-form-section {
-    padding-left: 0;
+  .task-editor-form .allocation-avatar {
+    display: grid;
   }
 }
 @media (max-width: 720px) {
+  .modal-editor:has(.task-editor-form) {
+    width: 100%;
+  }
+  .task-editor-intro {
+    margin-bottom: 16px;
+  }
+  .task-editor-intro p {
+    max-width: 28ch;
+    line-height: 1.6;
+  }
   .task-editor-form .task-form-section {
-    gap: 16px;
+    gap: 18px;
   }
-  .task-editor-form .allocation-value {
-    flex-basis: 88px;
+}
+@media (max-width: 600px) {
+  .task-editor-form .task-schedule-fields .two-columns {
+    grid-template-columns: minmax(0, 1fr);
   }
-  .task-editor-form .allocation-value input {
-    width: 64px;
+  .task-editor-form .task-form-steps {
+    top: -20px;
+    margin-top: 0;
+  }
+  .task-editor-form .assignment-form-section {
+    padding: 16px 12px;
   }
 }
