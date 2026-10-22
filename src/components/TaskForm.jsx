@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import DateTimeInput from './DateTimeInput.jsx';
+import TaskWorkloadHelp from './TaskWorkloadHelp.jsx';
 import { currentDateTime } from '../lib/dateTime.js';
 import useMobileLayout from '../hooks/useMobileLayout.js';
 import useSaveRecovery from '../hooks/useSaveRecovery.js';
@@ -28,6 +29,20 @@ function TaskField(props) {
   return <Field {...props} requiredIndicator="*" />;
 }
 
+function distributeEqually(assignees) {
+  return assignees.map((assignment, index) => ({
+    ...assignment,
+    allocationPercent:
+      Math.floor(100 / assignees.length) +
+      (index < 100 % assignees.length ? 1 : 0),
+  }));
+}
+
+function withDefaultTime(value, fallback) {
+  const [date, time] = value.split('T');
+  return date ? `${date}T${time || fallback.split('T')[1]}` : '';
+}
+
 export default function TaskForm({
   task,
   team,
@@ -52,6 +67,14 @@ export default function TaskForm({
     assignees: task?.assignees.map((assignment) => ({ ...assignment })) || [],
   });
   const [form, setForm] = useState(initialForm);
+  const startAt = withDefaultTime(
+    form.startAt,
+    initialForm.startAt || defaultDateTime,
+  );
+  const dueAt = withDefaultTime(
+    form.dueAt,
+    initialForm.dueAt || defaultDateTime,
+  );
   const mobile = useMobileLayout();
   const [step, setStep] = useState(0);
   const formElement = useRef(null);
@@ -86,17 +109,13 @@ export default function TaskForm({
   const toggle = (member, checked) =>
     update(
       'assignees',
-      checked
-        ? [
-            ...form.assignees,
-            {
-              userId: member.userId,
-              allocationPercent: form.assignees.length ? 1 : 100,
-            },
-          ]
-        : form.assignees.filter(
-            (assignment) => assignment.userId !== member.userId,
-          ),
+      distributeEqually(
+        checked
+          ? [...form.assignees, { userId: member.userId }]
+          : form.assignees.filter(
+              (assignment) => assignment.userId !== member.userId,
+            ),
+      ),
     );
   const canReapply =
     !recovery.latest ||
@@ -114,7 +133,7 @@ export default function TaskForm({
       return;
     }
     const allErrors = collectFieldErrors(event.currentTarget, {
-      ...(form.startAt && form.dueAt && form.startAt > form.dueAt
+      ...(startAt && dueAt && startAt > dueAt
         ? { dueAt: '마감은 시작일과 같거나 이후여야 합니다.' }
         : {}),
       ...(!form.assignees.length
@@ -170,12 +189,12 @@ export default function TaskForm({
         description: form.description.trim(),
         weight: Number(form.weight),
         ...(!task ||
-        form.startAt !== initialForm.startAt ||
+        startAt !== initialForm.startAt ||
         (recovery.latest &&
-          form.startAt !== toDateInput(recovery.latest.task.startAt))
-          ? { startAt: fromDateInput(form.startAt) }
+          startAt !== toDateInput(recovery.latest.task.startAt))
+          ? { startAt: fromDateInput(startAt) }
           : {}),
-        dueAt: fromDateInput(form.dueAt),
+        dueAt: fromDateInput(dueAt),
         assignees: form.assignees.map((assignment) => ({
           userId: assignment.userId,
           allocationPercent: Number(assignment.allocationPercent),
@@ -199,15 +218,6 @@ export default function TaskForm({
         onSubmit={submit}
         noValidate
       >
-        <div className="task-editor-intro">
-          <p>작업 내용과 일정을 정하고, 함께할 담당자를 선택하세요.</p>
-          <span>
-            <span className="required-asterisk" aria-hidden="true">
-              *
-            </span>{' '}
-            필수 입력
-          </span>
-        </div>
         {mobile && (
           <ol className="task-form-steps" aria-label="작업 입력 단계">
             {['작업 내용', '담당·배분', '저장 전 확인'].map((label, index) => (
@@ -269,6 +279,7 @@ export default function TaskForm({
               <div className="task-workload-field">
                 <TaskField
                   label="예상 작업량"
+                  labelAccessory={<TaskWorkloadHelp />}
                   help="담당자 전체의 예상 시간을 합산해 선택하세요."
                 >
                   <select
@@ -292,72 +303,65 @@ export default function TaskForm({
               >
                 <h4>계획 일정</h4>
                 <div className="two-columns">
-                  <TaskField label="시작일" error={fieldErrors.startAt}>
+                  <TaskField
+                    label="시작일"
+                    error={fieldErrors.startAt}
+                    showRequiredIndicator={false}
+                  >
                     <DateTimeInput
                       name="startAt"
                       compactTime
                       required
+                      timeRequired={false}
+                      showRequirements
                       value={form.startAt}
                       onChange={(event) =>
                         update('startAt', event.target.value)
                       }
                     />
                   </TaskField>
-                  <TaskField label="마감" error={fieldErrors.dueAt}>
+                  <TaskField
+                    label="마감"
+                    error={fieldErrors.dueAt}
+                    showRequiredIndicator={false}
+                  >
                     <DateTimeInput
                       name="dueAt"
                       compactTime
                       required
+                      timeRequired={false}
+                      showRequirements
                       value={form.dueAt}
                       onChange={(event) => update('dueAt', event.target.value)}
                     />
                   </TaskField>
                 </div>
-                <p className="field-help">
-                  시작일부터 마감까지의 계획 일정입니다.
-                </p>
               </section>
-              <details className="form-help">
-                <summary>예상 작업량과 담당 비율은 어떻게 사용되나요?</summary>
-                <p className="field-help">
-                  예상 작업량과 담당 비율은 기여도 계산에 반영됩니다. 실제로
-                  오래 걸렸다는 이유로 자동 증가하지 않으며, 작업 범위가 바뀌면
-                  팀과 합의해 조정해주세요.
-                </p>
-              </details>
             </section>
             <section
               hidden={mobile && step !== 1}
               className="task-form-section assignment-form-section"
               aria-label="담당·배분 설정 입력"
             >
-              <div>
-                <h3
-                  tabIndex={-1}
-                  data-step-title="1"
-                  className="form-section-title"
-                >
-                  담당자와 배분{' '}
-                  <span className="required-asterisk" aria-hidden="true">
-                    *
-                  </span>
-                </h3>
+              <h3
+                tabIndex={-1}
+                data-step-title="1"
+                className="form-section-title"
+              >
+                담당자와 배분{' '}
+                <span className="required-asterisk" aria-hidden="true">
+                  *
+                </span>
+              </h3>
+              <div className="assignment-allocation-panel">
                 <div className="section-heading">
-                  <p>담당자를 선택한 뒤 비율을 나누세요.</p>
+                  <p>담당자를 선택하면 자동으로 균등 배분됩니다.</p>
                   <button
                     type="button"
                     className="secondary-button"
                     disabled={!form.assignees.length}
                     onClick={() =>
-                      update(
-                        'assignees',
-                        form.assignees.map((assignment, index) => ({
-                          ...assignment,
-                          allocationPercent:
-                            Math.floor(100 / form.assignees.length) +
-                            (index < 100 % form.assignees.length ? 1 : 0),
-                        })),
-                      )
+                      update('assignees', distributeEqually(form.assignees))
                     }
                   >
                     균등 배분
@@ -537,17 +541,13 @@ export default function TaskForm({
                   <div>
                     <dt>시작일</dt>
                     <dd>
-                      {form.startAt
-                        ? formatDate(fromDateInput(form.startAt))
-                        : '미입력'}
+                      {startAt ? formatDate(fromDateInput(startAt)) : '미입력'}
                     </dd>
                   </div>
                   <div>
                     <dt>마감</dt>
                     <dd>
-                      {form.dueAt
-                        ? formatDate(fromDateInput(form.dueAt))
-                        : '미입력'}
+                      {dueAt ? formatDate(fromDateInput(dueAt)) : '미입력'}
                     </dd>
                   </div>
                   <div>

@@ -1,23 +1,6 @@
 .modal-editor:has(.task-editor-form) {
   width: min(1120px, calc(100vw - 48px));
 }
-.task-editor-intro {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 8px 20px;
-  margin-bottom: 20px;
-  font-size: 13px;
-  color: var(--text-muted);
-}
-.task-editor-intro p {
-  margin: 0;
-}
-.task-editor-intro > span {
-  white-space: nowrap;
-  font-size: 12px;
-}
 .task-editor-form .required-asterisk {
   color: #d83b45;
   font-size: 16px;
@@ -35,9 +18,14 @@
   gap: 16px;
 }
 .task-editor-form .form-section-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 17px;
   font-weight: 700;
+  line-height: 24px;
   padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
   color: var(--text-primary);
 }
 .task-editor-form .field-label {
@@ -80,6 +68,80 @@
   font-size: 12px;
   line-height: 1.6;
 }
+.task-editor-form .task-workload-field .field-label {
+  align-items: center;
+}
+.task-editor-form .task-workload-field .field-help {
+  text-align: right;
+}
+.task-workload-help {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+.task-workload-help-trigger {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+}
+.task-workload-help-trigger:hover,
+.task-workload-help-trigger[aria-expanded='true'] {
+  background: var(--brand-light);
+  color: var(--brand);
+}
+.task-workload-help-trigger:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.task-workload-popover {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px 12px 12px 3px;
+  background: white;
+  color: var(--text-primary);
+  box-shadow: 0 8px 28px #172c2424;
+  font-size: 13px;
+  line-height: 1.65;
+  word-break: keep-all;
+  overflow: auto;
+}
+.task-workload-popover-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.task-workload-popover h4 {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.task-workload-popover-heading button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+}
+.task-workload-popover-heading button:hover {
+  background: var(--surface-secondary);
+}
+.task-workload-popover p {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+}
 .task-schedule-fields {
   display: grid;
   gap: 14px;
@@ -95,23 +157,32 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
 }
-.task-editor-form .task-schedule-fields > .field-help {
-  margin: 0;
+.task-editor-form .task-schedule-fields .date-time-caption {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.task-editor-form .time-optional-label {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-muted);
 }
 .task-editor-form .assignment-form-section {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.task-editor-form .assignment-allocation-panel {
   border: 1px solid #e0e9e4;
   border-radius: 14px;
   background: #f7faf8;
   padding: 20px;
 }
-.task-editor-form .assignment-form-section .form-section-title {
-  border: 0;
-  padding: 0;
-}
 .task-editor-form .assignment-form-section .section-heading {
   align-items: center;
   gap: 10px;
-  margin: 10px 0 22px;
+  margin: 0 0 22px;
 }
 .task-editor-form .assignment-form-section .section-heading p {
   margin: 0;
@@ -257,7 +328,7 @@
     grid-template-columns: minmax(0, 1.3fr) minmax(280px, 1fr);
     gap: 20px;
   }
-  .task-editor-form .assignment-form-section {
+  .task-editor-form .assignment-allocation-panel {
     padding: 16px;
   }
   .task-editor-form .allocation-avatar {
@@ -277,13 +348,6 @@
   .modal-editor:has(.task-editor-form) {
     width: 100%;
   }
-  .task-editor-intro {
-    margin-bottom: 16px;
-  }
-  .task-editor-intro p {
-    max-width: 28ch;
-    line-height: 1.6;
-  }
   .task-editor-form .task-form-section {
     gap: 18px;
   }
@@ -296,7 +360,7 @@
     top: -20px;
     margin-top: 0;
   }
-  .task-editor-form .assignment-form-section {
+  .task-editor-form .assignment-allocation-panel {
     padding: 16px 12px;
   }
 }

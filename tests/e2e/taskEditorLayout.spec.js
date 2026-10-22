@@ -1,6 +1,33 @@
 import { test, expect } from '@playwright/test';
 import { openCalendarEventEditor } from './helpers/teamDashboard.js';
 
+for (const width of [1024, 1440, 1920]) {
+  test(`${width}px 작업 내용과 담당 배분 제목·상단 여백이 같은 줄에 맞는다`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto('/preview/spaces/1/teams/1/tasks/103');
+    await page.getByRole('button', { name: '작업 수정', exact: true }).click();
+    const editor = page.getByRole('dialog', { name: '작업 수정', exact: true });
+    const left = await editor
+      .getByRole('heading', { name: '작업 내용', exact: true })
+      .boundingBox();
+    const right = await editor
+      .getByRole('heading', { name: '담당자와 배분', exact: true })
+      .boundingBox();
+    expect(Math.abs(left.y - right.y)).toBeLessThanOrEqual(1);
+    expect(Math.abs(left.height - right.height)).toBeLessThanOrEqual(1);
+    const firstField = await editor
+      .locator('.task-form-section > .form-field')
+      .first()
+      .boundingBox();
+    const panel = await editor
+      .locator('.assignment-allocation-panel')
+      .boundingBox();
+    expect(Math.abs(firstField.y - panel.y)).toBeLessThanOrEqual(1);
+  });
+}
+
 for (const width of [1440, 768, 390, 320]) {
   test(`${width}px 작업 수정은 필수 별표와 담당 배분을 구분하고 저장한다`, async ({
     page,
@@ -9,9 +36,9 @@ for (const width of [1440, 768, 390, 320]) {
     await page.goto('/preview/spaces/1/teams/1/tasks/103');
     await page.getByRole('button', { name: '작업 수정', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: '작업 수정', exact: true });
-    await expect(dialog.locator('.field-label .required-label')).toHaveCount(5);
+    await expect(dialog.locator('.form-field .required-label')).toHaveCount(5);
     for (const star of await dialog
-      .locator('.field-label .required-label')
+      .locator('.form-field .required-label')
       .all()) {
       await expect(star).toHaveText('*');
       await expect(star).toHaveCSS('color', 'rgb(216, 59, 69)');
@@ -29,9 +56,6 @@ for (const width of [1440, 768, 390, 320]) {
     await dialog
       .getByRole('checkbox', { name: '이지원 · 팀원', exact: true })
       .check();
-    await dialog
-      .getByRole('button', { name: '균등 배분', exact: true })
-      .click();
     await expect(
       dialog.getByLabel('김하늘 배분율', { exact: true }),
     ).toHaveValue('50');

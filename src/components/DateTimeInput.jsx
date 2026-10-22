@@ -15,6 +15,8 @@ export default function DateTimeInput({
   value = '',
   onChange,
   required,
+  timeRequired,
+  showRequirements = false,
   disabled,
   onInvalid,
   labelText,
@@ -24,6 +26,7 @@ export default function DateTimeInput({
   'aria-invalid': invalid,
 }) {
   const id = useId();
+  const isTimeRequired = timeRequired ?? required;
   const root = useRef(null);
   const trigger = useRef(null);
   const timeTrigger = useRef(null);
@@ -122,7 +125,10 @@ export default function DateTimeInput({
   };
   const selectDate = (selected) => {
     setDraft(selected);
-    change(selected, timeValue || currentDateTime().slice(11));
+    change(
+      selected,
+      timeValue || (timeRequired === false ? '' : currentDateTime().slice(11)),
+    );
     setOpen(false);
     trigger.current?.focus();
   };
@@ -170,9 +176,25 @@ export default function DateTimeInput({
     >
       <span id={`${id}-date-label`} className="date-time-caption">
         날짜
+        {showRequirements && required && (
+          <span className="required-label required-asterisk" aria-hidden="true">
+            *
+          </span>
+        )}
       </span>
-      <span id={`${id}-time-label`} className="date-time-caption">
+      <span
+        id={`${id}-time-label`}
+        className="date-time-caption"
+        title={
+          showRequirements && !isTimeRequired
+            ? '미입력 시 기존 시간(새 작업은 기본 시간)을 유지합니다.'
+            : undefined
+        }
+      >
         시간
+        {showRequirements && !isTimeRequired && (
+          <span className="time-optional-label">(선택)</span>
+        )}
       </span>
       <div className="date-control">
         <input
@@ -193,7 +215,8 @@ export default function DateTimeInput({
             setDraft(event.target.value);
             change(
               event.target.value,
-              timeValue || currentDateTime().slice(11),
+              timeValue ||
+                (timeRequired === false ? '' : currentDateTime().slice(11)),
             );
           }}
         />
@@ -216,7 +239,7 @@ export default function DateTimeInput({
       <TimeInput
         compact={compactTime}
         name={name}
-        required={required}
+        required={isTimeRequired}
         disabled={disabled}
         value={timeValue}
         label={labelText}
