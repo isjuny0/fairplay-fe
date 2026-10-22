@@ -24,6 +24,10 @@ import {
   focusFirstFieldError,
 } from '../lib/formValidation.js';
 
+function TaskField(props) {
+  return <Field {...props} requiredIndicator="*" />;
+}
+
 export default function TaskForm({
   task,
   team,
@@ -195,6 +199,15 @@ export default function TaskForm({
         onSubmit={submit}
         noValidate
       >
+        <div className="task-editor-intro">
+          <p>작업 내용과 일정을 정하고, 함께할 담당자를 선택하세요.</p>
+          <span>
+            <span className="required-asterisk" aria-hidden="true">
+              *
+            </span>{' '}
+            필수 입력
+          </span>
+        </div>
         {mobile && (
           <ol className="task-form-steps" aria-label="작업 입력 단계">
             {['작업 내용', '담당·배분', '저장 전 확인'].map((label, index) => (
@@ -225,40 +238,41 @@ export default function TaskForm({
               >
                 작업 내용
               </h3>
-              <Field label="작업 제목" error={fieldErrors.title}>
+              <TaskField label="작업 제목" error={fieldErrors.title}>
                 <input
                   name="title"
                   required
                   maxLength={100}
+                  placeholder="어떤 작업인가요?"
                   value={form.title}
                   onChange={(event) => update('title', event.target.value)}
                 />
-              </Field>
-              <Field
-                label="작업 설명"
-                error={fieldErrors.description}
-                help="무엇을 수행할지, 결과에 어떤 내용이 포함되어야 할지 적어주세요."
-              >
-                <textarea
-                  name="description"
-                  required
-                  maxLength={1000}
-                  rows={3}
-                  value={form.description}
-                  onChange={(event) =>
-                    update('description', event.target.value)
-                  }
-                />
-              </Field>
-              <p className="character-count">
-                {form.description.length} / 1000자
-              </p>
+              </TaskField>
+              <div className="task-description-field">
+                <TaskField label="작업 설명" error={fieldErrors.description}>
+                  <textarea
+                    name="description"
+                    required
+                    maxLength={1000}
+                    rows={4}
+                    placeholder="수행할 내용과 결과물에 포함할 내용을 적어 주세요."
+                    value={form.description}
+                    onChange={(event) =>
+                      update('description', event.target.value)
+                    }
+                  />
+                </TaskField>
+                <p className="character-count">
+                  {form.description.length} / 1000자
+                </p>
+              </div>
               <div className="task-workload-field">
-                <Field
+                <TaskField
                   label="예상 작업량"
-                  help="모든 담당자의 준비·수행·검토 시간을 합산합니다. 대기 시간은 제외합니다."
+                  help="담당자 전체의 예상 시간을 합산해 선택하세요."
                 >
                   <select
+                    required
                     value={form.weight}
                     onChange={(event) =>
                       update('weight', Number(event.target.value))
@@ -270,7 +284,7 @@ export default function TaskForm({
                       </option>
                     ))}
                   </select>
-                </Field>
+                </TaskField>
               </div>
               <section
                 className="task-schedule-fields"
@@ -278,29 +292,30 @@ export default function TaskForm({
               >
                 <h4>계획 일정</h4>
                 <div className="two-columns">
-                  <Field
-                    label="시작일"
-                    error={fieldErrors.startAt}
-                    help="계획 일정이며 시작일 전에도 작업할 수 있습니다."
-                  >
+                  <TaskField label="시작일" error={fieldErrors.startAt}>
                     <DateTimeInput
                       name="startAt"
+                      compactTime
                       required
                       value={form.startAt}
                       onChange={(event) =>
                         update('startAt', event.target.value)
                       }
                     />
-                  </Field>
-                  <Field label="마감" error={fieldErrors.dueAt}>
+                  </TaskField>
+                  <TaskField label="마감" error={fieldErrors.dueAt}>
                     <DateTimeInput
                       name="dueAt"
+                      compactTime
                       required
                       value={form.dueAt}
                       onChange={(event) => update('dueAt', event.target.value)}
                     />
-                  </Field>
+                  </TaskField>
                 </div>
+                <p className="field-help">
+                  시작일부터 마감까지의 계획 일정입니다.
+                </p>
               </section>
               <details className="form-help">
                 <summary>예상 작업량과 담당 비율은 어떻게 사용되나요?</summary>
@@ -322,10 +337,13 @@ export default function TaskForm({
                   data-step-title="1"
                   className="form-section-title"
                 >
-                  담당·배분 설정
+                  담당자와 배분{' '}
+                  <span className="required-asterisk" aria-hidden="true">
+                    *
+                  </span>
                 </h3>
                 <div className="section-heading">
-                  <h4>담당자와 배분</h4>
+                  <p>담당자를 선택한 뒤 비율을 나누세요.</p>
                   <button
                     type="button"
                     className="secondary-button"
@@ -353,6 +371,14 @@ export default function TaskForm({
                     합계 {total}%
                   </strong>
                 </div>
+                <div
+                  className={`allocation-total-track ${total > 100 ? 'is-over' : ''}`}
+                  aria-hidden="true"
+                >
+                  <span
+                    style={{ width: `${Math.min(100, Math.max(0, total))}%` }}
+                  />
+                </div>
                 <p
                   id="assignment-help"
                   className={
@@ -362,8 +388,8 @@ export default function TaskForm({
                 >
                   {fieldErrors.assignees ||
                     (total === 100
-                      ? '담당 비율 합계가 100%입니다.'
-                      : '담당자를 선택하고 비율 합계를 100%로 맞춰 주세요.')}
+                      ? '100% 배분 완료'
+                      : '합계를 100%로 맞춰 주세요.')}
                 </p>
                 <div className="assignment-inputs">
                   {editingMembers.map((member) => {
@@ -371,10 +397,14 @@ export default function TaskForm({
                       (item) => item.userId === member.userId,
                     );
                     return (
-                      <div key={member.userId} className="allocation-row">
+                      <div
+                        key={member.userId}
+                        className={`allocation-row ${assignment ? 'is-selected' : ''}`}
+                      >
                         <label className="allocation-member">
                           <input
                             name="assignees"
+                            aria-label={`${member.name} · ${memberRole(member)}`}
                             aria-describedby="assignment-help"
                             aria-invalid={Boolean(fieldErrors.assignees)}
                             type="checkbox"
@@ -383,10 +413,16 @@ export default function TaskForm({
                               toggle(member, event.target.checked)
                             }
                           />{' '}
-                          <span>
-                            {member.name}{' '}
+                          <span
+                            className="allocation-avatar"
+                            aria-hidden="true"
+                          >
+                            {member.name.slice(0, 1)}
+                          </span>
+                          <span className="allocation-member-name">
+                            {member.name}
                             <span className="allocation-role">
-                              · {memberRole(member)}
+                              {memberRole(member)}
                             </span>
                           </span>
                         </label>
@@ -434,6 +470,9 @@ export default function TaskForm({
                               </span>
                             )}
                           </label>
+                        )}
+                        {!assignment && (
+                          <span className="allocation-unselected">미선택</span>
                         )}
                       </div>
                     );

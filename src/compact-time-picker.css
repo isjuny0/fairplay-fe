@@ -1,0 +1,76 @@
+/* Shared team-calendar and task-editor time selection. */
+.compact-time-picker.time-picker-panel {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  box-sizing: border-box;
+  width: 100%;
+  max-height: none;
+  padding: 8px;
+  border: 1px solid #dce8e0;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 4px 16px #193d2814;
+}
+.compact-time-picker .time-picker-heading {
+  color: #4d695a;
+  font-size: 11px;
+  padding-bottom: 6px;
+}
+.compact-time-picker .time-picker-heading > span {
+  display: none;
+}
+.compact-time-picker .time-picker-options {
+  height: 96px;
+  border: 0;
+  border-radius: 6px;
+  background: #fff;
+  scrollbar-color: #b7cec0 transparent;
+}
+.compact-time-picker .time-picker-options button {
+  min-height: 28px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #4d695a;
+}
+.compact-time-picker .time-picker-options button:hover {
+  background: #f1f8f3;
+}
+.compact-time-picker .time-picker-options button[aria-pressed='true'] {
+  background: #e6f3eb;
+  color: var(--brand);
+}
+.compact-time-picker .time-picker-footer {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px;
+  margin-top: 6px;
+  padding-top: 6px;
+  background: #fff;
+  border-color: #dce8e0;
+}
+.compact-time-picker .time-picker-footer .text-button {
+  display: none;
+}
+.compact-time-picker .time-picker-footer > strong {
+  font-size: 11px;
+}
+.compact-time-picker .time-picker-footer .primary-button {
+  font-weight: 700;
+  min-width: 0;
+  min-height: 24px;
+  height: 24px;
+  justify-self: end;
+  width: auto;
+  padding: 3px 6px;
+  background: var(--brand);
+  color: #fff;
+  border-color: transparent;
+  font-size: 9px;
+  border-radius: 6px;
+}
+.compact-time-picker .time-picker-footer .primary-button:hover {
+  background: var(--brand-dark);
+}
+.compact-time-picker.time-picker-panel :focus-visible {
+  outline-color: var(--brand);
+}
