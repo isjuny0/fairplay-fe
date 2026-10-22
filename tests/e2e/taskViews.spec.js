@@ -74,23 +74,34 @@ test('목록은 일곱 열의 표로 제공하고 상세 복귀·필터·보기 
   await expect(table).toBeVisible();
 });
 
-test('캘린더는 시작·마감일 점을 표시하고 날짜 작업의 상세로 이동한다', async ({
+test('캘린더는 미완료 기간 막대와 날짜 옆 완료 점을 표시하고 날짜 작업의 상세로 이동한다', async ({
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await seed(page, 'calendar');
+  const monthHeading = await page.getByRole('heading', { name: '2026년 11월', exact: true }).boundingBox();
+  for (const name of ['이전 달', '다음 달']) {
+    const arrow = await page.getByRole('button', { name, exact: true }).boundingBox();
+    expect(Math.abs(monthHeading.y + monthHeading.height / 2 - arrow.y - arrow.height / 2)).toBeLessThanOrEqual(1);
+  }
+  const controls = await page.locator('.task-schedule-controls').boundingBox();
+  const calendar = await page.getByRole('region', { name: '월간 작업 일정', exact: true }).boundingBox();
+  expect(calendar.y - controls.y - controls.height).toBeLessThanOrEqual(56);
   await expect(
     page.locator('.calendar-period'),
-  ).toHaveCount(0);
+  ).not.toHaveCount(0);
   const markers = page.getByRole('button', {
-    name: '2026-11-12 시작·마감 작업 6개 보기',
+    name: '2026-11-12 작업 4개 보기',
     exact: true,
   });
-  await expect(markers.locator('.calendar-date-marker')).toHaveCount(6);
+  await expect(page.getByRole('cell', { name: '2026-11-12 작업 일정', exact: true }).locator('.calendar-date-marker')).toHaveCount(3);
+  await expect(page.locator('.calendar-date-marker:not(.schedule-task-done)')).toHaveCount(0);
+  await expect(page.locator('.calendar-period.schedule-task-done')).toHaveCount(0);
   await expect(page.getByLabel('캘린더 상태 범례')).toContainText('할 일');
+  await page.screenshot({ path: testInfo.outputPath('task-calendar-compact.png'), fullPage: true });
   const calendarHelp = page.getByLabel(/일정 읽는 법 도움말/);
   await calendarHelp.hover();
-  await expect(calendarHelp.getByRole('tooltip')).toContainText('시작일 또는 마감일');
+  await expect(calendarHelp.getByRole('tooltip')).toContainText('미완료 작업은 시작일부터 마감일까지');
   await expect(calendarHelp.getByRole('tooltip')).toHaveCSS('opacity', '1');
   await page.screenshot({
     path: testInfo.outputPath('task-calendar.png'),
@@ -108,6 +119,128 @@ test('캘린더는 시작·마감일 점을 표시하고 날짜 작업의 상세
   await expect(
     page.getByRole('button', { name: '캘린더', exact: true }),
   ).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('캘린더 점의 미리보기는 작업별 정보와 키보드 초점을 제공하고 클릭은 날짜 목록을 연다', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await seed(page, 'calendar');
+  const cell = page.getByRole('cell', { name: '2026-11-12 작업 일정', exact: true });
+  const legend = page.getByLabel('캘린더 시작·마감 범례');
+  await expect(legend).toContainText('시작');
+  await expect(legend).toContainText('마감');
+  const marker = page.getByRole('button', { name: '서비스 흐름 설계 · 작업 기간 · 수정 중', exact: true }).last();
+  const preview = page.getByRole('tooltip').and(page.locator('.calendar-preview'));
+  await expect(marker).toHaveText('');
+  const periodStyle = await marker.evaluate((element) => ({
+    lineHeight: getComputedStyle(element, '::before').height,
+    lineEndRadius: getComputedStyle(element, '::before').borderTopRightRadius,
+    lineShadow: getComputedStyle(element, '::before').boxShadow,
+    lineHighlight: getComputedStyle(element, '::before').backgroundImage,
+    lineBorder: getComputedStyle(element, '::before').borderTopStyle,
+    lineStartWidth: getComputedStyle(element, '::before').borderLeftWidth,
+    lineColor: getComputedStyle(element, '::before').backgroundColor,
+    statusColor: getComputedStyle(element).getPropertyValue('--schedule-color').trim(),
+    hitHeight: element.getBoundingClientRect().height,
+  }));
+  expect(periodStyle.lineHeight).toBe('10px');
+  expect(periodStyle.lineEndRadius).toBe('3px');
+  expect(periodStyle.lineShadow).toContain('inset');
+  expect(periodStyle.lineHighlight).toContain('linear-gradient');
+  expect(periodStyle.lineBorder).toBe('solid');
+  expect(periodStyle.lineStartWidth).toBe('2px');
+  expect(periodStyle.hitHeight).toBeGreaterThanOrEqual(22);
+  await expect(marker.locator('..')).toHaveCSS('row-gap', '2px');
+  expect(periodStyle.lineColor).not.toBe('rgba(0, 0, 0, 0)');
+  expect(periodStyle.statusColor).not.toBe('');
+  await expect(page.locator('.calendar-period-endpoint')).toHaveCount(0);
+  await expect(marker).toHaveCSS('opacity', '0.6');
+  const sameDayPeriod = page.getByRole('button', { name: '프로토타입 사용성 검증 · 작업 기간 · 할 일', exact: true });
+  await expect(sameDayPeriod).toBeVisible();
+  await marker.hover();
+  await expect(preview).toContainText('#103 서비스 흐름 설계');
+  await expect(preview.locator('.calendar-preview-kind')).toHaveText('작업 기간');
+  await expect(preview).toContainText('수정 중');
+  await expect(preview).toContainText('담당');
+  await expect(preview).toContainText('김하늘');
+  await expect(preview).toContainText('2026. 10. 28. 09:00');
+  await expect(preview).toContainText('2026. 11. 12. 09:00');
+  await expect(marker).toHaveAttribute('aria-describedby', await preview.getAttribute('id'));
+  await preview.hover();
+  await expect(preview).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(preview).toHaveCount(0);
+  const other = cell.getByRole('button', { name: '최종 발표 자료 · 시작 · 완료', exact: true });
+  const sameDayDue = cell.getByRole('button', { name: '최종 발표 자료 · 마감 · 완료', exact: true });
+  await expect(other).toHaveClass(/is-start/);
+  await expect(sameDayDue).toHaveClass(/is-due/);
+  const startStyle = await other.evaluate((element) => ({ fill: getComputedStyle(element, '::before').backgroundColor, stroke: getComputedStyle(element, '::before').borderTopColor }));
+  const dueStyle = await sameDayDue.evaluate((element) => ({ fill: getComputedStyle(element, '::before').backgroundColor, stroke: getComputedStyle(element, '::before').borderTopColor }));
+  expect(startStyle.fill).toBe('rgba(0, 0, 0, 0)');
+  expect(dueStyle.fill).toBe(dueStyle.stroke);
+  expect(startStyle.stroke).toBe(dueStyle.stroke);
+  const dateBounds = await cell.locator('time').boundingBox();
+  const markerBounds = await other.boundingBox();
+  expect(markerBounds.x).toBeGreaterThanOrEqual(dateBounds.x + dateBounds.width);
+  expect(Math.abs(markerBounds.y + markerBounds.height / 2 - dateBounds.y - dateBounds.height / 2)).toBeLessThanOrEqual(1);
+  await other.focus();
+  await expect(preview).toContainText('#105 최종 발표 자료');
+  await expect(preview.locator('.calendar-preview-kind')).toHaveText('시작 일정');
+  await expect(preview).not.toContainText('서비스 흐름 설계');
+  await page.screenshot({ path: testInfo.outputPath('calendar-marker-preview.png') });
+  await sameDayDue.focus();
+  await expect(preview.locator('.calendar-preview-kind')).toHaveText('마감 일정');
+  await expect(other).not.toHaveAttribute('aria-describedby');
+  await expect(sameDayDue).toHaveAttribute('aria-describedby', await preview.getAttribute('id'));
+  await sameDayDue.click();
+  await expect(preview).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: '2026-11-12 작업 일정', exact: true })).toBeVisible();
+});
+
+test('캘린더 점을 스쳐 지나치면 미리보기를 열지 않고 조회 조건 변경 시 닫는다', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-11-01T09:00:00Z') });
+  await seed(page, 'calendar');
+  await page.clock.pauseAt(new Date('2026-11-01T09:01:00Z'));
+  const marker = page.getByRole('button', { name: '서비스 흐름 설계 · 작업 기간 · 수정 중', exact: true }).last();
+  const preview = page.getByRole('tooltip').and(page.locator('.calendar-preview'));
+  await marker.hover();
+  await page.clock.runFor(150);
+  await expect(preview).toHaveCount(0);
+  await page.mouse.move(0, 0);
+  await page.clock.runFor(100);
+  await expect(preview).toHaveCount(0);
+  await marker.hover();
+  await page.clock.runFor(220);
+  await expect(preview).toContainText('서비스 흐름 설계');
+  await page.getByLabel('작업 제목 검색').fill('프로토타입');
+  await expect(preview).toHaveCount(0);
+  await expect(marker).toHaveCount(0);
+  const other = page.getByRole('button', { name: '프로토타입 사용성 검증 · 작업 기간 · 할 일', exact: true });
+  await other.focus();
+  await expect(preview).toContainText('프로토타입 사용성 검증');
+  await page.getByLabel('조회 월', { exact: true }).fill('2026-12');
+  await expect(preview).toHaveCount(0);
+});
+
+test('좁은 캘린더의 점 미리보기는 화면 안에 표시되고 스크롤·화면 크기 변경 시 닫힌다', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await seed(page, 'calendar');
+  const marker = page.getByRole('button', { name: '서비스 흐름 설계 · 작업 기간 · 수정 중', exact: true }).last();
+  const preview = page.getByRole('tooltip').and(page.locator('.calendar-preview'));
+  await marker.focus();
+  await expect(preview).toContainText('서비스 흐름 설계');
+  const bounds = await preview.boundingBox();
+  expect(bounds.x).toBeGreaterThanOrEqual(12);
+  expect(bounds.x + bounds.width).toBeLessThanOrEqual(378);
+  expect(bounds.y).toBeGreaterThanOrEqual(12);
+  expect(bounds.y + bounds.height).toBeLessThanOrEqual(832);
+  await page.getByRole('region', { name: '월간 작업 일정', exact: true }).evaluate((element) => { element.scrollLeft += 60; });
+  await expect(preview).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await marker.blur();
+  await marker.focus();
+  await expect(preview).toBeVisible();
+  await page.setViewportSize({ width: 400, height: 844 });
+  await expect(preview).toHaveCount(0);
 });
 
 test('캘린더 월 이동은 빈 달·연말·오늘과 URL 새로고침을 처리한다', async ({
@@ -244,13 +377,14 @@ test('3개월을 가로지르는 일정은 양쪽 연속 표시와 실제 기간
   ).toBeVisible();
 });
 
-test('캘린더는 기간 중간 날짜에는 점을 표시하지 않고 시작·마감일 작업을 연다', async ({
+test('캘린더는 완료 작업 점과 미완료 작업 기간을 구분하고 날짜 목록을 연다', async ({
   page,
 }) => {
   await seed(page, 'calendar');
-  await expect(page.locator('.calendar-period')).toHaveCount(0);
+  await expect(page.locator('.calendar-period')).not.toHaveCount(0);
+  await expect(page.locator('.calendar-period.schedule-task-done')).toHaveCount(0);
   await page
-    .getByRole('button', { name: '2026-11-12 시작·마감 작업 6개 보기', exact: true })
+    .getByRole('button', { name: '2026-11-12 작업 4개 보기', exact: true })
     .click();
   await expect(
     page.getByRole('dialog').getByRole('button', { name: /서비스 흐름 설계/ }),
@@ -261,6 +395,27 @@ test('캘린더는 기간 중간 날짜에는 점을 표시하지 않고 시작�
       .getByRole('cell', { name: '2026-11-13 작업 일정', exact: true })
       .getByRole('button'),
   ).toHaveCount(0);
+});
+
+test('월 전체를 가로지르는 미완료 작업은 주별로 연결하고 완료 작업은 양 끝 날짜에만 표시한다', async ({ page }) => {
+  await seed(page, 'calendar', '', (state) => {
+    const tasks = state.teams[1].tasks;
+    state.teams[1].tasks = [tasks[1], tasks[0]].map((task) => ({ ...task, startAt: '2026-10-01T09:00:00', dueAt: '2026-12-01T18:00:00' }));
+  });
+  await expect(page.locator('.list-summary')).toContainText('현재 기간 1개');
+  const bars = page.getByRole('button', { name: '설문 결과 분석 · 작업 기간 · 진행 중', exact: true });
+  await expect(bars).toHaveCount(5);
+  await expect(bars.first()).toHaveClass(/continues-before/);
+  await expect(bars.last()).toHaveClass(/continues-after/);
+  await expect(bars.locator('.calendar-period-endpoint')).toHaveCount(0);
+  await expect(page.locator('.calendar-date-marker')).toHaveCount(0);
+  await page.getByRole('button', { name: '2026-11-15 작업 1개 보기', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '2026-11-15 작업 일정', exact: true });
+  await expect(dialog.locator('.schedule-task')).toHaveCount(1);
+  await expect(dialog).toContainText('설문 결과 분석');
+  await page.getByRole('button', { name: '닫기', exact: true }).click();
+  await bars.first().click();
+  await expect(page.getByRole('heading', { name: '설문 결과 분석', exact: true })).toBeVisible();
 });
 
 test('3개월 타임라인은 시작일 순서·오늘·지연 구간을 표시하고 완료 작업을 제외한다', async ({

@@ -40,6 +40,33 @@
 .task-schedule-controls .task-month-navigation {
   gap: 8px 12px;
 }
+.task-schedule-controls .task-month-navigation .heading-actions {
+  align-items: center;
+}
+.task-schedule-controls .task-month-navigation h2 {
+  margin: 0;
+  line-height: 1.25;
+}
+.task-board-page[data-task-view='calendar'] {
+  gap: 12px;
+}
+.task-board-page .calendar-overview {
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.task-board-page .calendar-overview .list-summary {
+  flex: 1 1 300px;
+  min-height: 0;
+  gap: 8px;
+}
+.calendar-legends {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px 20px;
+  margin-left: auto;
+}
 .task-schedule-controls .secondary-button {
   min-height: 34px;
   padding: 5px 9px;
