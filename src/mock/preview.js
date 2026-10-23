@@ -1,3 +1,4 @@
+import { previewRag } from './rag.js';
 import { previewTeamHome } from './teamHome.js';
 import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
 import { isMutable } from '../lib/domain.js';
@@ -59,6 +60,22 @@ export function previewContext() {
       { team: previewTeams[1], members: secondMembers },
     ],
   };
+}
+export function setRagPreviewScenario(scenario) {
+  if (
+    !['ready', 'no-evidence', 'preparing', 'failed', 'disabled'].includes(
+      scenario,
+    )
+  )
+    return;
+  const context = previewContext(),
+    state = getMockState(context);
+  state.ragScenario = scenario;
+  state.ragIndexOverrides = {};
+  saveMockState(context, state);
+}
+export function getRagPreviewScenario() {
+  return getMockState(previewContext()).ragScenario || 'ready';
 }
 export function resetPreview(scenario) {
   resetMockState(previewContext(), scenario);
@@ -139,6 +156,11 @@ export async function previewRequest(
   const url = new URL(path, 'https://preview.local');
   const parts = url.pathname.split('/').filter(Boolean);
   const id = Number(parts[2]);
+  if (parts[1] === 'teams' && parts[3] === 'rag') {
+    const result = previewRag(context, state, parts, url, method, body);
+    if (method !== 'GET') saveMockState(context, state);
+    return structuredClone(result);
+  }
   if (
     (parts[1] === 'teams' &&
       ['calendar-events', 'home-preferences'].includes(parts[3])) ||

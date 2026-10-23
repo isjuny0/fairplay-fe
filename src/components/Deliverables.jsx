@@ -1,10 +1,11 @@
+import useAppNavigate from "../hooks/useAppNavigate.js";
 import Icon from "./Icon.jsx";
 import DeliverableTable from "./DeliverableTable.jsx";
 import DeliverableContent from "./DeliverableContent.jsx";
 import MarkdownEditor from "./MarkdownEditor.jsx";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
-import { parseRouteId } from "../lib/routes.js";
+import { parseRouteId, teamMenuPath } from "../lib/routes.js";
 import {
   createDeliverable,
   deleteDeliverable,
@@ -436,6 +437,7 @@ export default function Deliverables({
     (tasksResource.data != null &&
       !tasksResource.loading &&
       !tasksResource.error);
+  const navigateToMaterials = useAppNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedPage = Number(searchParams.get("page") || 0);
   const page =
@@ -674,6 +676,14 @@ export default function Deliverables({
           <h2>연결 산출물</h2>
         )}
         <div className="heading-actions">
+          {isCollection && isApprovedMember(team) && (
+            <button
+              className="secondary-button"
+              onClick={() => navigateToMaterials(teamMenuPath(team.spaceId, team.id, "팀 자료 검색"))}
+            >
+              <Icon name="search" />자료에 질문하기
+            </button>
+          )}
           {isCollection && (
             <button
               className="secondary-button"

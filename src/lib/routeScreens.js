@@ -8,6 +8,7 @@ const imports = {
   ReportReview: () => import('../components/ReportReview.jsx'),
   MemberContributions: () => import('../components/MemberContributions.jsx'),
   TeamHome: () => import('../components/TeamHome.jsx'),
+  TeamRagSearch: () => import('../components/TeamRagSearch.jsx'),
   TaskBoard: () => import('../components/TaskBoard.jsx'),
   TaskDetail: () => import('../components/TaskDetail.jsx'),
   TaskForm: () => import('../components/TaskForm.jsx'),
@@ -41,6 +42,7 @@ export function preloadRoute(pathname) {
     loaders.push(screenLoaders.TeamWorkspace);
     const menu = path.split('/')[5] || '';
     const screen = {
+      'materials-search': 'TeamRagSearch',
       '': 'TeamHome', tasks: 'TaskBoard', deliverables: 'Deliverables',
       members: 'TeamMembers', settings: 'TeamSettings',
       'peer-evaluations': 'PeerEvaluation', 'mid-feedback': 'MidFeedback',
