@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  ArrowRight,
+  ArrowUp,
   ArrowUpRight,
   FileSearch,
   FileText,
   RefreshCw,
-  Search,
 } from 'lucide-react';
 import { askTeamMaterials, getRagIndexStatus } from '../api/rag.js';
 import useResource from '../hooks/useResource.js';
@@ -37,13 +36,13 @@ function TeamMaterialSearch({ context }) {
   const [error, setError] = useState(null);
   const [inputError, setInputError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [isQuestionInputOpen, setQuestionInputOpen] = useState(true);
   const busyRef = useRef(false);
   const active = useRef(true);
   const [reference, setReference] = useState(null);
   const [statusOpen, setStatusOpen] = useState(false);
   const [statusPage, setStatusPage] = useState(0);
   const input = useRef(null);
+  const conversation = useRef(null);
   const status = useResource(
     () => getRagIndexStatus(team.id, statusPage, 20),
     [team.id, statusPage],
@@ -74,6 +73,9 @@ function TeamMaterialSearch({ context }) {
     status.error,
     status.reload,
   ]);
+  useEffect(() => {
+    conversation.current?.scrollTo({ top: 0 });
+  }, [submittedQuestion]);
   const openMaterials = (title = '') =>
     navigate(
       `${teamMenuPath(space.id, team.id, '산출물')}${title ? `?${new URLSearchParams({ q: title })}` : ''}`,
@@ -99,12 +101,12 @@ function TeamMaterialSearch({ context }) {
     }
     busyRef.current = true;
     setBusy(true);
-    setQuestionInputOpen(false);
     setError(null);
     setResult(null);
     setReference(null);
     const submitted = question.trim();
     setSubmittedQuestion(submitted);
+    setQuestion('');
     try {
       const answer = await askTeamMaterials(team.id, submitted);
       if (!active.current) return;
@@ -114,7 +116,7 @@ function TeamMaterialSearch({ context }) {
     } catch (failure) {
       if (!active.current) return;
       setError(failure);
-      setQuestionInputOpen(true);
+      setQuestion(submitted);
       if (failure.code === 'RAG_SOURCE_CHANGED') status.reload();
     } finally {
       if (active.current) {
@@ -130,7 +132,6 @@ function TeamMaterialSearch({ context }) {
     setReference(null);
     setResult(null);
     setError(null);
-    setQuestionInputOpen(true);
     requestAnimationFrame(() => input.current?.focus());
   };
   return (
@@ -195,183 +196,194 @@ function TeamMaterialSearch({ context }) {
       )}
       <div className={`rag-workspace ${reference ? 'has-source' : ''}`}>
         <div className="rag-main">
-          {isQuestionInputOpen ? (
-            <form className="rag-question-form" onSubmit={ask}>
-              <label htmlFor="rag-question">
-                <Search size={17} />팀 자료에서 어떤 내용을 찾고 있나요?
-              </label>
-              <textarea
-                id="rag-question"
-                ref={input}
-                rows={2}
-                maxLength={1000}
-                value={question}
-                disabled={busy || permissionError}
-                placeholder="기능 정책, 회의에서 정한 내용, 조사 결과를 질문해 보세요."
-                aria-invalid={Boolean(inputError)}
-                aria-describedby={
-                  inputError ? 'rag-input-error' : 'rag-input-help'
-                }
-                onChange={(event) => {
-                  setQuestion(event.target.value);
-                  setInputError('');
-                }}
-              />
-              {inputError && (
-                <p id="rag-input-error" className="field-error" role="alert">
-                  {inputError}
-                </p>
-              )}
-              <div className="rag-question-footer">
-                <span id="rag-input-help">
-                  {question.length.toLocaleString()} / 1,000
-                </span>
-                <button
-                  className="primary-button"
-                  type="submit"
-                  disabled={
-                    busy ||
-                    permissionError ||
-                    !data?.enabled ||
-                    !data.readyCount ||
-                    Boolean(status.error) ||
-                    !question.trim()
-                  }
-                >
-                  질문하기
-                  <ArrowRight size={16} />
-                </button>
+          <div
+            className="rag-conversation"
+            ref={conversation}
+            role="region"
+            aria-label="질문과 답변"
+            tabIndex={0}
+          >
+            {!submittedQuestion && !error && (
+              <div className="rag-welcome">
+                <h2>팀 자료에서 어떤 내용을 찾고 있나요?</h2>
+                <div className="rag-examples">
+                  {ragExamples.slice(0, 2).map((example) => (
+                    <button
+                      key={example}
+                      disabled={busy || permissionError}
+                      onClick={() => {
+                        setQuestion(example);
+                        setInputError('');
+                        input.current?.focus();
+                      }}
+                    >
+                      {example}<ArrowUpRight size={14} />
+                    </button>
+                  ))}
+                </div>
               </div>
-            </form>
-          ) : (
-            <header className="rag-submitted-question">
-              <div>
-                <span className="rag-section-label">질문</span>
-                <h2>{submittedQuestion}</h2>
-              </div>
-              {!busy && (
-                <div className="rag-question-actions">
+            )}
+            {submittedQuestion && !error && !permissionError && (
+              <div className="rag-submitted-question">
+                <div className="rag-question-message">
+                  <span className="sr-only">내 질문</span>
+                  <h2>{submittedQuestion}</h2>
+                </div>
+                {!busy && (
                   <button
-                    className="secondary-button"
+                    className="rag-message-edit"
                     onClick={() => startQuestion(submittedQuestion)}
                   >
                     질문 수정
                   </button>
-                  <button
-                    className="rag-inline-link"
-                    onClick={() => startQuestion()}
-                  >
-                    새 질문 <ArrowRight size={14} />
-                  </button>
-                </div>
-              )}
-            </header>
-          )}
-          {isQuestionInputOpen && !submittedQuestion && !question && (
-            <div className="rag-examples">
-              <span className="rag-section-label">이렇게 질문해 보세요</span>
-              {ragExamples.slice(0, 2).map((example) => (
-                <button
-                  key={example}
-                  disabled={busy || permissionError}
-                  onClick={() => {
-                    setQuestion(example);
-                    setInputError('');
-                    input.current?.focus();
-                  }}
-                >
-                  {example}
-                  <ArrowUpRight size={14} />
-                </button>
-              ))}
-            </div>
-          )}
-          {busy && (
-            <div className="rag-loading" role="status">
-              <span className="rag-loading-dot" />
-              관련 자료를 찾아 답변을 작성하고 있습니다. 잠시만 기다려 주세요.
-            </div>
-          )}
-          {error && (
-            <div className="rag-question-error" role="alert">
-              <strong>답변을 확인하지 못했습니다.</strong>
-              <p>{ragErrorGuidance(error)}</p>
-              <small>
-                입력한 질문은 유지됩니다.{' '}
-                {permissionError
-                  ? '팀 참여 상태와 접근 권한을 확인해 주세요.'
-                  : '질문을 수정하거나 질문하기를 눌러 다시 요청할 수 있습니다.'}
-              </small>
-            </div>
-          )}
-          {result && !permissionError && (
-            <article
-              className="rag-answer"
-              aria-label="자료 검색 답변"
-              aria-live="polite"
-            >
-              {result.answerable ? (
-                <>
-                  <section className="rag-answer-body">
-                    <h3>답변</h3>
-                    <MarkdownBody>{result.answer}</MarkdownBody>
-                  </section>
-                  {result.limitations.length > 0 && (
-                    <section className="rag-limitations">
-                      <h3>확인이 필요한 내용</h3>
-                      <ul>
-                        {result.limitations.map((limitation, index) => (
-                          <li key={index}>{limitation}</li>
-                        ))}
-                      </ul>
+                )}
+              </div>
+            )}
+            {busy && (
+              <div className="rag-loading" role="status">
+                <span className="rag-loading-dot" />
+                관련 자료를 찾아 답변을 작성하고 있습니다. 잠시만 기다려 주세요.
+              </div>
+            )}
+            {error && (
+              <div className="rag-question-error" role="alert">
+                <strong>답변을 확인하지 못했습니다.</strong>
+                <p>{ragErrorGuidance(error)}</p>
+                <small>
+                  입력한 질문은 유지됩니다.{' '}
+                  {permissionError
+                    ? '팀 참여 상태와 접근 권한을 확인해 주세요.'
+                    : '질문을 수정한 뒤 다시 보내주세요.'}
+                </small>
+              </div>
+            )}
+            {result && !permissionError && (
+              <article
+                className="rag-answer"
+                aria-label="자료 검색 답변"
+                aria-live="polite"
+              >
+                {result.answerable ? (
+                  <>
+                    <section className="rag-answer-body">
+                      <h3>답변</h3>
+                      <MarkdownBody>{result.answer}</MarkdownBody>
                     </section>
-                  )}
-                  <section className="rag-references">
-                    <h3>
-                      근거 자료 <span>{result.references.length}</span>
-                    </h3>
-                    <ol>
-                      {result.references.map((item, index) => (
-                        <li key={`${item.sourceId}:${index}`}>
-                          <button
-                            className={`rag-reference ${reference === item ? 'is-selected' : ''}`}
-                            aria-pressed={reference === item}
-                            aria-label={`${item.title} 원문 확인`}
-                            onClick={() => setReference(item)}
-                          >
-                            <span className="rag-reference-number">
-                              {index + 1}
-                            </span>
-                            <span className="rag-reference-body">
-                              <strong>{item.title}</strong>
-                              <small>{sourceLocation(item)}</small>
-                              <q>{item.quote}</q>
-                              <span className="rag-reference-action">
-                                원문 확인
-                                <ArrowUpRight size={14} />
+                    {result.limitations.length > 0 && (
+                      <section className="rag-limitations">
+                        <h3>확인이 필요한 내용</h3>
+                        <ul>
+                          {result.limitations.map((limitation, index) => (
+                            <li key={index}>{limitation}</li>
+                          ))}
+                        </ul>
+                      </section>
+                    )}
+                    <section className="rag-references">
+                      <h3>
+                        근거 자료 <span>{result.references.length}</span>
+                      </h3>
+                      <ol>
+                        {result.references.map((item, index) => (
+                          <li key={`${item.sourceId}:${index}`}>
+                            <button
+                              className={`rag-reference ${reference === item ? 'is-selected' : ''}`}
+                              aria-pressed={reference === item}
+                              aria-label={`${item.title} 원문 확인`}
+                              onClick={() => setReference(item)}
+                            >
+                              <span className="rag-reference-number">
+                                {index + 1}
                               </span>
-                            </span>
-                          </button>
-                        </li>
-                      ))}
-                    </ol>
+                              <span className="rag-reference-body">
+                                <strong>{item.title}</strong>
+                                <small>{sourceLocation(item)}</small>
+                                <q>{item.quote}</q>
+                                <span className="rag-reference-action">
+                                  원문 확인
+                                  <ArrowUpRight size={14} />
+                                </span>
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ol>
+                    </section>
+                  </>
+                ) : (
+                  <section className="rag-no-evidence">
+                    <FileSearch size={24} />
+                    <h3>등록된 자료에서 확인할 수 없습니다.</h3>
+                    <p>{noEvidenceMessage(result.reason)}</p>
+                    <button
+                      className="secondary-button"
+                      onClick={() => setStatusOpen(true)}
+                    >
+                      자료 준비 현황 확인
+                    </button>
                   </section>
-                </>
-              ) : (
-                <section className="rag-no-evidence">
-                  <FileSearch size={24} />
-                  <h3>등록된 자료에서 확인할 수 없습니다.</h3>
-                  <p>{noEvidenceMessage(result.reason)}</p>
-                  <button
-                    className="secondary-button"
-                    onClick={() => setStatusOpen(true)}
-                  >
-                    자료 준비 현황 확인
-                  </button>
-                </section>
-              )}
-            </article>
-          )}
+                )}
+              </article>
+            )}
+          </div>
+          <form className="rag-question-form" onSubmit={ask}>
+            <label className="sr-only" htmlFor="rag-question">
+              팀 자료에서 어떤 내용을 찾고 있나요?
+            </label>
+            <textarea
+              id="rag-question"
+              ref={input}
+              rows={2}
+              maxLength={1000}
+              value={question}
+              disabled={busy || permissionError}
+              placeholder={busy
+                ? '자료에서 답변을 찾고 있습니다…'
+                : '팀 자료에 관해 질문해 주세요.'}
+              aria-invalid={Boolean(inputError)}
+              aria-describedby={inputError
+                ? 'rag-input-error rag-input-help'
+                : 'rag-input-help'}
+              onChange={(event) => {
+                setQuestion(event.target.value);
+                setInputError('');
+              }}
+              onKeyDown={(event) => {
+                if (
+                  event.key === 'Enter' && !event.shiftKey &&
+                  !event.nativeEvent.isComposing && event.keyCode !== 229
+                ) {
+                  event.preventDefault();
+                  event.currentTarget.form.requestSubmit();
+                }
+              }}
+            />
+            {inputError && (
+              <p id="rag-input-error" className="field-error" role="alert">{inputError}</p>
+            )}
+            <div className="rag-question-footer">
+              <span id="rag-input-help">질문마다 팀 자료를 새로 검색합니다.</span>
+              <div className="rag-send-actions">
+                <span className="rag-character-count" aria-label="질문 글자 수">{question.length.toLocaleString()} / 1,000</span>
+                <button
+                  className="primary-button rag-send-button"
+                  type="submit"
+                  aria-label={busy ? '답변 작성 중' : '질문 보내기'}
+                  disabled={
+                    busy || permissionError || !data?.enabled || !data.readyCount ||
+                    Boolean(status.error) || !question.trim()
+                  }
+                >
+                  <ArrowUp size={18} />
+                </button>
+              </div>
+            </div>
+            {submittedQuestion && !busy && !permissionError && (
+              <button type="button" className="rag-reset-question" onClick={() => startQuestion()}>
+                새 질문으로 시작
+              </button>
+            )}
+          </form>
         </div>
         {reference && !permissionError && (
           <RagSourcePanel
@@ -382,7 +394,7 @@ function TeamMaterialSearch({ context }) {
               setError(failure);
               setResult(null);
               setReference(null);
-              setQuestionInputOpen(true);
+              setQuestion((current) => current || submittedQuestion);
             }}
             onClose={() => setReference(null)}
             onOpenMaterials={() => openMaterials(reference.title)}
