@@ -31,6 +31,7 @@ for (const [path, heading, role] of [
   ['/spaces/1/teams/1/tasks', '작업', 'leader'],
   ['/spaces/1/teams/1/tasks/101', '사용자 인터뷰 계획', 'leader'],
   ['/spaces/1/teams/1/deliverables', '산출물 관리', 'leader'],
+  ['/spaces/1/teams/1/materials-search', '팀 자료 검색', 'leader'],
   ['/spaces/1/teams/1/members', '팀원 관리', 'leader'],
   ['/spaces/1/teams/1/settings', '팀 설정', 'leader'],
   ['/spaces/1/teams/1/peer-evaluations', '동료 평가', 'leader'],
