@@ -525,3 +525,44 @@ test('팀 홈 API는 표시 구간·개인 부분 수정과 일정 version·CSRF
       .every((call) => call.headers['X-CSRF-TOKEN'] === 'token'),
   );
 });
+
+test('팀 자료 질문·준비 현황은 현재 API 계약과 세션·CSRF를 사용한다', async () => {
+  const { askTeamMaterials, getRagIndexStatus } = await import('../src/api/rag.js');
+  await getRagIndexStatus(3, 2, 20);
+  await askTeamMaterials(3, '게시글 처리 정책은?');
+  const actual = calls.filter((call) => !call.url.endsWith('/csrf'));
+  assert.equal(actual[0].url, '/api/teams/3/rag/index-status?page=2&size=20');
+  assert.equal(actual[0].method, 'GET');
+  assert.equal(actual[1].url, '/api/teams/3/rag/questions');
+  assert.equal(actual[1].method, 'POST');
+  assert.deepEqual(JSON.parse(actual[1].body), { question: '게시글 처리 정책은?' });
+  assert.equal(actual[1].headers['X-CSRF-TOKEN'], 'token');
+  assert.ok(actual.every((call) => call.credentials === 'include'));
+});
+test('원문 조회는 현재 자료 버전을 쿼리에 보내고 세션을 포함한 GET을 사용한다', async () => {
+  const { getRagSource } = await import('../src/api/rag.js');
+  const source = {
+    teamId: 3, deliverableId: 2, deliverableVersion: 0,
+    title: '회원 정책', type: 'TEXT', content: '# 정책\n게시글 유지',
+  };
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, ...options });
+    return jsonResponse(source);
+  };
+  assert.deepEqual(await getRagSource(3, 2, 0), source);
+  assert.equal(calls[0].url, '/api/teams/3/rag/sources/2?expectedVersion=0');
+  assert.equal(calls[0].method, 'GET');
+  assert.equal(calls[0].credentials, 'include');
+  assert.equal(calls[0].body, undefined);
+});
+test('원문 변경·권한·읽기 실패는 목업이나 이전 버전으로 대체하지 않는다', async () => {
+  const { getRagSource } = await import('../src/api/rag.js');
+  for (const [status, code] of [
+    [401, 'UNAUTHORIZED'], [403, 'FORBIDDEN'], [404, 'DELIVERABLE_NOT_FOUND'],
+    [409, 'RAG_SOURCE_CHANGED'], [413, 'RAG_SOURCE_TOO_LARGE'],
+    [415, 'RAG_SOURCE_UNSUPPORTED'], [422, 'RAG_SOURCE_UNREADABLE'],
+  ]) {
+    globalThis.fetch = async () => jsonResponse({ code, message: code }, status);
+    await assert.rejects(getRagSource(3, 2, 0), { status, code });
+  }
+});

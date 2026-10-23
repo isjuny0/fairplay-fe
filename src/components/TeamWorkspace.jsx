@@ -18,6 +18,7 @@ const TaskBoard = deferScreen(screenLoaders.TaskBoard, '작업');
 const TeamMembers = deferScreen(screenLoaders.TeamMembers, '팀원 관리');
 const TeamSettings = deferScreen(screenLoaders.TeamSettings, '팀 설정');
 const TeamHome = deferScreen(screenLoaders.TeamHome, '팀 홈');
+const TeamRagSearch = deferScreen(screenLoaders.TeamRagSearch, '팀 자료 검색');
 const PeerEvaluation = deferScreen(screenLoaders.PeerEvaluation, '동료 평가');
 const MidFeedback = deferScreen(screenLoaders.MidFeedback, '중간 피드백');
 const ContributionReport = deferScreen(
@@ -209,6 +210,9 @@ export default function TeamWorkspace({
               title="이 팀 화면에 접근할 수 없습니다."
               description="승인된 팀원만 작업과 팀 설정을 사용할 수 있습니다. 조회 가능한 팀 메뉴를 선택해 주세요."
             />
+          )}
+          {currentMenu === '팀 자료 검색' && approved && (
+            <TeamRagSearch context={context} />
           )}
           {currentMenu === '팀 홈' && approved && (
             <TeamHome context={context} onNavigate={navigateToMenu} />

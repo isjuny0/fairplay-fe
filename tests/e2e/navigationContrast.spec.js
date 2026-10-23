@@ -29,11 +29,12 @@ test('사이드바는 세 그룹의 모든 메뉴를 한 번에 표시하고 현
     '평가·리포트',
     '팀 관리',
   ]);
-  await expect(menus.getByRole('button')).toHaveCount(8);
+  await expect(menus.getByRole('button')).toHaveCount(9);
   for (const label of [
     '팀 홈',
     '작업',
     '산출물',
+    '팀 자료 검색',
     '동료 평가',
     '중간 피드백',
     '기여도 리포트',
@@ -343,7 +344,7 @@ for (const role of ['member', 'manager', 'participant']) {
         sidebar
           .getByRole('navigation', { name: '팀 메뉴', exact: true })
           .getByRole('button'),
-      ).toHaveCount(8);
+      ).toHaveCount(9);
   });
 }
 

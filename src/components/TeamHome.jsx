@@ -551,6 +551,12 @@ function TeamDashboard({
         </div>
         <div className="dashboard-heading-actions">
           <button
+            className="secondary-button"
+            onClick={() => onNavigate('팀 자료 검색')}
+          >
+            <Icon name="search" />자료에 질문하기
+          </button>
+          <button
             className={`secondary-button ${editing ? 'is-active' : ''}`}
             onClick={() => setEditing(!editing)}
             aria-pressed={editing}
