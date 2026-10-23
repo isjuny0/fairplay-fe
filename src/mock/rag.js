@@ -114,7 +114,7 @@ export function previewRag(context, state, parts, url, method, body) {
           quote,
         },
       ],
-      limitations: ['미리보기 응답 예시이며 실제 AI가 생성한 답변이 아닙니다.'],
+      limitations: [],
     };
   }
   if (parts[4] === 'sources' && method === 'GET' && parts.length === 6) {

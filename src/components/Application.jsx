@@ -10,7 +10,10 @@ import { invalidateSharedReads } from '../api/sharedReads.js';
 import googleLogo from '../assets/google-g.svg';
 
 export default function Application({ previewRuntime }) {
-  const { getMockState, getPreviewUser, previewRole, setPreviewRole, resetPreview, previewContext } = previewRuntime || {};
+  const {
+    getMockState, getPreviewUser, previewRole, setPreviewRole,
+    resetPreview, previewContext, getRagPreviewScenario, setRagPreviewScenario,
+  } = previewRuntime || {};
   const navigate = useNavigate();
   const location = useLocation();
   const preview = Boolean(previewRuntime);
@@ -272,6 +275,27 @@ export default function Application({ previewRuntime }) {
                     <option value="published">리포트 공개 완료</option>
                   </select>
                 </label>
+                {location.pathname.endsWith('/materials-search') && (
+                  <label>
+                    자료 검색
+                    <select
+                      aria-label="자료 검색 미리보기 상황"
+                      value={getRagPreviewScenario()}
+                      onChange={async (event) => {
+                        const nextScenario = event.target.value;
+                        if (!(await confirmDiscard())) return;
+                        setRagPreviewScenario(nextScenario);
+                        setPreviewRevision((value) => value + 1);
+                      }}
+                    >
+                      <option value="ready">검색 가능</option>
+                      <option value="no-evidence">관련 근거 없음</option>
+                      <option value="preparing">자료 준비 중</option>
+                      <option value="failed">준비 실패</option>
+                      <option value="disabled">기능 비활성화</option>
+                    </select>
+                  </label>
+                )}
                 <button
                   className="secondary-button"
                   onClick={async () => {

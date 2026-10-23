@@ -539,11 +539,30 @@ test('팀 자료 질문·준비 현황은 현재 API 계약과 세션·CSRF를 �
   assert.equal(actual[1].headers['X-CSRF-TOKEN'], 'token');
   assert.ok(actual.every((call) => call.credentials === 'include'));
 });
-test('미구현 원문 API는 실제 화면에서 서버 요청이나 목업 성공으로 대체하지 않는다', async () => {
-  const { getRagSource } = await import('../src/api/ragPlanned.js');
-  assert.throws(() => getRagSource(1, 2, 3), {
-    status: 501,
-    code: 'RAG_API_NOT_IMPLEMENTED',
-  });
-  assert.deepEqual(calls, []);
+test('원문 조회는 현재 자료 버전을 쿼리에 보내고 세션을 포함한 GET을 사용한다', async () => {
+  const { getRagSource } = await import('../src/api/rag.js');
+  const source = {
+    teamId: 3, deliverableId: 2, deliverableVersion: 0,
+    title: '회원 정책', type: 'TEXT', content: '# 정책\n게시글 유지',
+  };
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, ...options });
+    return jsonResponse(source);
+  };
+  assert.deepEqual(await getRagSource(3, 2, 0), source);
+  assert.equal(calls[0].url, '/api/teams/3/rag/sources/2?expectedVersion=0');
+  assert.equal(calls[0].method, 'GET');
+  assert.equal(calls[0].credentials, 'include');
+  assert.equal(calls[0].body, undefined);
+});
+test('원문 변경·권한·읽기 실패는 목업이나 이전 버전으로 대체하지 않는다', async () => {
+  const { getRagSource } = await import('../src/api/rag.js');
+  for (const [status, code] of [
+    [401, 'UNAUTHORIZED'], [403, 'FORBIDDEN'], [404, 'DELIVERABLE_NOT_FOUND'],
+    [409, 'RAG_SOURCE_CHANGED'], [413, 'RAG_SOURCE_TOO_LARGE'],
+    [415, 'RAG_SOURCE_UNSUPPORTED'], [422, 'RAG_SOURCE_UNREADABLE'],
+  ]) {
+    globalThis.fetch = async () => jsonResponse({ code, message: code }, status);
+    await assert.rejects(getRagSource(3, 2, 0), { status, code });
+  }
 });

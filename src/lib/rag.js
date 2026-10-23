@@ -57,3 +57,13 @@ export const noEvidenceMessage = (reason) =>
 export function sourceLocation(reference) {
   return `${reference.headingPath?.join(' › ') || '본문'} · ${reference.startLine}–${reference.endLine}행`;
 }
+export function ragSourceErrorGuidance(error) {
+  return (
+    {
+      RAG_SOURCE_CHANGED: '자료가 변경되었습니다. 최신 자료를 기준으로 다시 질문해 주세요.',
+      RAG_SOURCE_UNSUPPORTED: '이 형식의 원문은 지원하지 않습니다. 산출물에서 파일을 확인해 주세요.',
+      RAG_SOURCE_TOO_LARGE: '원문 조회 한도를 넘는 자료입니다. 산출물에서 내용을 확인해 주세요.',
+      RAG_SOURCE_UNREADABLE: '자료의 텍스트를 읽을 수 없습니다. 산출물에서 내용을 확인해 주세요.',
+    }[error?.code] || error?.message || '원문을 불러오지 못했습니다.'
+  );
+}

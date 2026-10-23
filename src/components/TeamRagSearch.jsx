@@ -8,7 +8,6 @@ import {
   Search,
 } from 'lucide-react';
 import { askTeamMaterials, getRagIndexStatus } from '../api/rag.js';
-import { canUseRagMockApis } from '../api/ragPlanned.js';
 import useResource from '../hooks/useResource.js';
 import useAppNavigate from '../hooks/useAppNavigate.js';
 import { teamMenuPath } from '../lib/routes.js';
@@ -38,29 +37,18 @@ function TeamMaterialSearch({ context }) {
   const [error, setError] = useState(null);
   const [inputError, setInputError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [isQuestionInputOpen, setQuestionInputOpen] = useState(true);
   const busyRef = useRef(false);
   const active = useRef(true);
   const [reference, setReference] = useState(null);
   const [statusOpen, setStatusOpen] = useState(false);
   const [statusPage, setStatusPage] = useState(0);
-  const [scenario, setScenario] = useState('ready');
   const input = useRef(null);
-  const mockAvailable = canUseRagMockApis();
   const status = useResource(
     () => getRagIndexStatus(team.id, statusPage, 20),
-    [team.id, statusPage, scenario],
+    [team.id, statusPage],
   );
   const data = status.data;
-  useEffect(() => {
-    let mounted = true;
-    if (mockAvailable)
-      import('../mock/preview.js').then(({ getRagPreviewScenario }) => {
-        if (mounted) setScenario(getRagPreviewScenario());
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [mockAvailable]);
   useEffect(() => {
     active.current = true;
     return () => {
@@ -111,6 +99,7 @@ function TeamMaterialSearch({ context }) {
     }
     busyRef.current = true;
     setBusy(true);
+    setQuestionInputOpen(false);
     setError(null);
     setResult(null);
     setReference(null);
@@ -125,6 +114,7 @@ function TeamMaterialSearch({ context }) {
     } catch (failure) {
       if (!active.current) return;
       setError(failure);
+      setQuestionInputOpen(true);
       if (failure.code === 'RAG_SOURCE_CHANGED') status.reload();
     } finally {
       if (active.current) {
@@ -133,44 +123,28 @@ function TeamMaterialSearch({ context }) {
       }
     }
   };
-  const changeScenario = async (value) => {
-    const { setRagPreviewScenario } = await import('../mock/preview.js');
-    setRagPreviewScenario(value);
-    setScenario(value);
-    setStatusPage(0);
+  const startQuestion = (previousQuestion = '') => {
+    setQuestion(previousQuestion);
+    setSubmittedQuestion('');
+    setInputError('');
     setReference(null);
     setResult(null);
     setError(null);
+    setQuestionInputOpen(true);
+    requestAnimationFrame(() => input.current?.focus());
   };
   return (
     <section className="rag-page stack">
       <header className="page-heading page-heading--compact rag-page-heading">
         <div>
           <h1>팀 자료 검색</h1>
-          <p>팀에 등록된 자료를 바탕으로 답변과 근거를 확인합니다.</p>
+          <p>팀 자료에 질문하고 답변의 근거를 확인합니다.</p>
         </div>
         <button className="secondary-button" onClick={() => openMaterials()}>
           <FileText size={16} />
           산출물 보기
         </button>
       </header>
-      {mockAvailable && (
-        <label className="rag-preview-options">
-          자료 검색 미리보기 상황
-          <select
-            value={scenario}
-            disabled={busy}
-            onChange={(event) => changeScenario(event.target.value)}
-          >
-            <option value="ready">검색 가능</option>
-            <option value="no-evidence">관련 근거 없음</option>
-            <option value="preparing">자료 준비 중</option>
-            <option value="failed">준비 실패</option>
-            <option value="disabled">기능 비활성화</option>
-          </select>
-          <span>답변·추가 API는 예시입니다.</span>
-        </label>
-      )}
       <div className="rag-availability" aria-label="검색 자료 현황">
         <div>
           {status.loading && !data ? (
@@ -179,20 +153,12 @@ function TeamMaterialSearch({ context }) {
             <>
               <span className="rag-availability-item">
                 <i />
-                검색 가능한 자료{' '}
+                검색 가능{' '}
                 <strong>{data.readyCount.toLocaleString()}</strong>개
               </span>
-              {data.preparingCount > 0 && (
-                <span>준비 중 {data.preparingCount.toLocaleString()}개</span>
-              )}
-              {data.failedCount > 0 && (
+              {data.enabled && data.failedCount > 0 && (
                 <span className="rag-status-warning">
                   준비 실패 {data.failedCount.toLocaleString()}개
-                </span>
-              )}
-              {data.unsupportedCount > 0 && (
-                <span>
-                  지원하지 않는 형식 {data.unsupportedCount.toLocaleString()}개
                 </span>
               )}
             </>
@@ -201,7 +167,7 @@ function TeamMaterialSearch({ context }) {
           )}
         </div>
         <button className="rag-inline-link" onClick={() => setStatusOpen(true)}>
-          자료 현황 보기
+          자료 현황
           <ArrowUpRight size={14} />
         </button>
       </div>
@@ -229,58 +195,82 @@ function TeamMaterialSearch({ context }) {
       )}
       <div className={`rag-workspace ${reference ? 'has-source' : ''}`}>
         <div className="rag-main">
-          <form className="rag-question-form" onSubmit={ask}>
-            <label htmlFor="rag-question">
-              <Search size={17} />팀 자료에서 어떤 내용을 찾고 있나요?
-            </label>
-            <textarea
-              id="rag-question"
-              ref={input}
-              rows={3}
-              maxLength={1000}
-              value={question}
-              disabled={busy || permissionError}
-              placeholder="기능 정책, 회의에서 정한 내용, 조사 결과를 질문해 보세요."
-              aria-invalid={Boolean(inputError)}
-              aria-describedby={
-                inputError ? 'rag-input-error' : 'rag-input-help'
-              }
-              onChange={(event) => {
-                setQuestion(event.target.value);
-                setInputError('');
-              }}
-            />
-            {inputError && (
-              <p id="rag-input-error" className="field-error" role="alert">
-                {inputError}
-              </p>
-            )}
-            <div className="rag-question-footer">
-              <span id="rag-input-help">
-                팀에 등록된 자료만 검색합니다.{' '}
-                <small>{question.length.toLocaleString()} / 1,000</small>
-              </span>
-              <button
-                className="primary-button"
-                type="submit"
-                disabled={
-                  busy ||
-                  permissionError ||
-                  !data?.enabled ||
-                  !data.readyCount ||
-                  Boolean(status.error) ||
-                  !question.trim()
+          {isQuestionInputOpen ? (
+            <form className="rag-question-form" onSubmit={ask}>
+              <label htmlFor="rag-question">
+                <Search size={17} />팀 자료에서 어떤 내용을 찾고 있나요?
+              </label>
+              <textarea
+                id="rag-question"
+                ref={input}
+                rows={2}
+                maxLength={1000}
+                value={question}
+                disabled={busy || permissionError}
+                placeholder="기능 정책, 회의에서 정한 내용, 조사 결과를 질문해 보세요."
+                aria-invalid={Boolean(inputError)}
+                aria-describedby={
+                  inputError ? 'rag-input-error' : 'rag-input-help'
                 }
-              >
-                {busy ? '답변 작성 중…' : '질문하기'}
-                <ArrowRight size={16} />
-              </button>
-            </div>
-          </form>
-          {!submittedQuestion && (
+                onChange={(event) => {
+                  setQuestion(event.target.value);
+                  setInputError('');
+                }}
+              />
+              {inputError && (
+                <p id="rag-input-error" className="field-error" role="alert">
+                  {inputError}
+                </p>
+              )}
+              <div className="rag-question-footer">
+                <span id="rag-input-help">
+                  {question.length.toLocaleString()} / 1,000
+                </span>
+                <button
+                  className="primary-button"
+                  type="submit"
+                  disabled={
+                    busy ||
+                    permissionError ||
+                    !data?.enabled ||
+                    !data.readyCount ||
+                    Boolean(status.error) ||
+                    !question.trim()
+                  }
+                >
+                  질문하기
+                  <ArrowRight size={16} />
+                </button>
+              </div>
+            </form>
+          ) : (
+            <header className="rag-submitted-question">
+              <div>
+                <span className="rag-section-label">질문</span>
+                <h2>{submittedQuestion}</h2>
+              </div>
+              {!busy && (
+                <div className="rag-question-actions">
+                  <button
+                    className="secondary-button"
+                    onClick={() => startQuestion(submittedQuestion)}
+                  >
+                    질문 수정
+                  </button>
+                  <button
+                    className="rag-inline-link"
+                    onClick={() => startQuestion()}
+                  >
+                    새 질문 <ArrowRight size={14} />
+                  </button>
+                </div>
+              )}
+            </header>
+          )}
+          {isQuestionInputOpen && !submittedQuestion && !question && (
             <div className="rag-examples">
               <span className="rag-section-label">이렇게 질문해 보세요</span>
-              {ragExamples.map((example) => (
+              {ragExamples.slice(0, 2).map((example) => (
                 <button
                   key={example}
                   disabled={busy || permissionError}
@@ -320,10 +310,6 @@ function TeamMaterialSearch({ context }) {
               aria-label="자료 검색 답변"
               aria-live="polite"
             >
-              <header>
-                <span className="rag-section-label">질문</span>
-                <h2>{submittedQuestion}</h2>
-              </header>
               {result.answerable ? (
                 <>
                   <section className="rag-answer-body">
@@ -384,29 +370,20 @@ function TeamMaterialSearch({ context }) {
                   </button>
                 </section>
               )}
-              <footer className="rag-answer-note">
-                답변은 등록된 자료를 바탕으로 작성됩니다. 중요한 결정은 근거
-                원문을 함께 확인해 주세요.
-              </footer>
             </article>
-          )}
-          {!result && !error && !busy && (
-            <div className="rag-search-help">
-              <FileSearch size={24} />
-              <h2>흩어진 팀 자료에서 근거를 찾아보세요.</h2>
-              <p>
-                기획서·회의 기록·조사 결과에 담긴 내용을 확인할 수 있습니다.
-              </p>
-              <span>현재 지원: 작성한 문서, UTF-8 TXT·MD 파일</span>
-            </div>
           )}
         </div>
         {reference && !permissionError && (
           <RagSourcePanel
-            key={`${reference.sourceId}:${reference.deliverableId}`}
+            key={`${reference.sourceId}:${reference.deliverableId}:${reference.deliverableVersion}:${reference.startLine}:${reference.endLine}`}
             teamId={team.id}
             reference={reference}
-            mockAvailable={mockAvailable}
+            onAccessError={(failure) => {
+              setError(failure);
+              setResult(null);
+              setReference(null);
+              setQuestionInputOpen(true);
+            }}
             onClose={() => setReference(null)}
             onOpenMaterials={() => openMaterials(reference.title)}
           />
