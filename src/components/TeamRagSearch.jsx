@@ -165,7 +165,7 @@ function TeamMaterialSearch({ context }) {
             <option value="ready">검색 가능</option>
             <option value="no-evidence">관련 근거 없음</option>
             <option value="preparing">자료 준비 중</option>
-            <option value="failed">준비 실패·재시도</option>
+            <option value="failed">준비 실패</option>
             <option value="disabled">기능 비활성화</option>
           </select>
           <span>답변·추가 API는 예시입니다.</span>
@@ -417,8 +417,6 @@ function TeamMaterialSearch({ context }) {
           resource={status}
           page={statusPage}
           setPage={setStatusPage}
-          teamId={team.id}
-          mockAvailable={mockAvailable}
           onClose={() => setStatusOpen(false)}
           onOpenMaterials={openMaterials}
         />

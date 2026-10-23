@@ -71,7 +71,6 @@ export function setRagPreviewScenario(scenario) {
   const context = previewContext(),
     state = getMockState(context);
   state.ragScenario = scenario;
-  state.ragIndexOverrides = {};
   saveMockState(context, state);
 }
 export function getRagPreviewScenario() {

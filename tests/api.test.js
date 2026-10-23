@@ -539,9 +539,11 @@ test('팀 자료 질문·준비 현황은 현재 API 계약과 세션·CSRF를 �
   assert.equal(actual[1].headers['X-CSRF-TOKEN'], 'token');
   assert.ok(actual.every((call) => call.credentials === 'include'));
 });
-test('미구현 원문·재처리 API는 실제 화면에서 서버 요청이나 목업 성공으로 대체하지 않는다', async () => {
-  const { getRagSource, retryRagSource } = await import('../src/api/ragPlanned.js');
-  for (const invoke of [() => getRagSource(1, 2, 3), () => retryRagSource(1, 2, 3)])
-    assert.throws(invoke, { status: 501, code: 'RAG_API_NOT_IMPLEMENTED' });
+test('미구현 원문 API는 실제 화면에서 서버 요청이나 목업 성공으로 대체하지 않는다', async () => {
+  const { getRagSource } = await import('../src/api/ragPlanned.js');
+  assert.throws(() => getRagSource(1, 2, 3), {
+    status: 501,
+    code: 'RAG_API_NOT_IMPLEMENTED',
+  });
   assert.deepEqual(calls, []);
 });

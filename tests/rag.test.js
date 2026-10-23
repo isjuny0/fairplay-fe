@@ -43,34 +43,20 @@ test('질문 결과의 근거는 현재 팀 자료·버전·실제 본문과 일
     assert.equal(ref.startLine, 1);
   }
 });
-test('미가입자·관리자는 자료 질문·준비 현황·원문·재처리에 접근할 수 없다', async () => {
+test('미가입자·관리자는 자료 질문·준비 현황·원문에 접근할 수 없다', async () => {
   for (const role of ['manager', 'participant']) {
     setPreviewRole(role);
     for (const [suffix, method, body] of [
       ['/questions', 'POST', { question: '범위?' }],
       ['/index-status', 'GET'],
       ['/sources/1001?expectedVersion=1', 'GET'],
-      ['/sources/1002/reindex', 'POST', { expectedVersion: 1 }],
     ])
       await assert.rejects(previewRequest(base + suffix, { method, body }), {
         status: 403,
       });
   }
 });
-test('자료 변경·삭제 후 이전 원문을 표시하지 않으며 현재 버전 실패만 재처리한다', async () => {
-  setRagPreviewScenario('failed');
-  const retry = await previewRequest(`${base}/sources/1002/reindex`, {
-    method: 'POST',
-    body: { expectedVersion: 1 },
-  });
-  assert.equal(retry.status, 'PREPARING');
-  await assert.rejects(
-    previewRequest(`${base}/sources/1002/reindex`, {
-      method: 'POST',
-      body: { expectedVersion: 1 },
-    }),
-    { code: 'RAG_REINDEX_NOT_ALLOWED' },
-  );
+test('자료 변경·삭제 후 이전 원문을 표시하지 않는다', async () => {
   const context = previewContext(),
     state = getMockState(context);
   state.teams[1].deliverables[0].version++;
@@ -111,4 +97,19 @@ test('준비 중·근거 없음·기능 중지는 성공 답변으로 대체하�
     }),
     { code: 'RAG_UNAVAILABLE', status: 503 },
   );
+});
+test('실패 자료의 준비 현황은 조회만 제공하고 사용자 재처리 요청은 받지 않는다', async () => {
+  setRagPreviewScenario('failed');
+  const before = await previewRequest(`${base}/index-status`);
+  const failed = before.items.find((item) => item.status === 'FAILED');
+  assert.ok(failed);
+  assert.equal(failed.failureCode, 'UPSTREAM_UNAVAILABLE');
+  await assert.rejects(
+    previewRequest(`${base}/sources/${failed.deliverableId}/reindex`, {
+      method: 'POST',
+      body: { expectedVersion: failed.deliverableVersion },
+    }),
+    { code: 'NOT_FOUND', status: 404 },
+  );
+  assert.deepEqual(await previewRequest(`${base}/index-status`), before);
 });

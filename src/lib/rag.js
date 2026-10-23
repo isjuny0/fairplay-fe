@@ -13,15 +13,6 @@ export const ragFailureLabels = {
   INDEX_INTERRUPTED: '자료 준비가 중단되었습니다.',
   INVALID_EMBEDDING_RESPONSE: '자료 준비 결과를 확인하지 못했습니다.',
 };
-export const retryableRagFailures = new Set([
-  'UPSTREAM_UNAVAILABLE',
-  'INDEX_TIMEOUT',
-  'INDEX_INTERRUPTED',
-  'INVALID_EMBEDDING_RESPONSE',
-]);
-export function canRetryRagSource(item) {
-  return item.status === 'FAILED' && retryableRagFailures.has(item.failureCode);
-}
 export const ragExamples = [
   '회원 탈퇴 시 작성한 게시글은 어떻게 처리하기로 했지?',
   '사용자 테스트에서 확인한 주요 개선점은 무엇이야?',

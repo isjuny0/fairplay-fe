@@ -404,8 +404,7 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.rag-mock-note,
-.rag-planned-caption {
+.rag-mock-note {
   font-size: 12px;
   color: #826025;
   background: #fffaf0;
@@ -533,10 +532,6 @@
 }
 .rag-index-table button {
   font-size: 12px;
-}
-.rag-index-table button small {
-  font-size: 10px;
-  color: #86652e;
 }
 .rag-state {
   white-space: nowrap;

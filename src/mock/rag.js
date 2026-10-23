@@ -1,5 +1,4 @@
 import { MockError } from './planned.js';
-import { canRetryRagSource } from '../lib/rag.js';
 
 const fail = (code, message, status = 409) => {
   throw new MockError(code, message, status);
@@ -9,28 +8,21 @@ function materialItems(entry, state) {
     const supported =
       item.type === 'TEXT' ||
       /\.(txt|md)$/i.test(item.file?.originalFilename || '');
-    const override = state.ragIndexOverrides?.[item.id];
-    const currentOverride =
-      override?.deliverableVersion === item.version ? override : null;
     return {
       deliverableId: item.id,
       deliverableVersion: item.version,
       title: item.title,
       status: !supported
         ? 'UNSUPPORTED'
-        : currentOverride?.status ||
-          (state.ragScenario === 'preparing'
-            ? 'PREPARING'
-            : state.ragScenario === 'failed' && index === 1
-              ? 'FAILED'
-              : item.type === 'FILE'
-                ? 'PREPARING'
-                : 'READY'),
+        : state.ragScenario === 'preparing'
+          ? 'PREPARING'
+          : state.ragScenario === 'failed' && index === 1
+            ? 'FAILED'
+            : item.type === 'FILE'
+              ? 'PREPARING'
+              : 'READY',
       failureCode:
-        supported &&
-        !currentOverride &&
-        state.ragScenario === 'failed' &&
-        index === 1
+        supported && state.ragScenario === 'failed' && index === 1
           ? 'UPSTREAM_UNAVAILABLE'
           : null,
     };
@@ -125,50 +117,28 @@ export function previewRag(context, state, parts, url, method, body) {
       limitations: ['미리보기 응답 예시이며 실제 AI가 생성한 답변이 아닙니다.'],
     };
   }
-  if (parts[4] === 'sources') {
+  if (parts[4] === 'sources' && method === 'GET' && parts.length === 6) {
     const deliverableId = Number(parts[5]),
       document = entry.deliverables.find((item) => item.id === deliverableId);
     if (!document)
       fail('DELIVERABLE_NOT_FOUND', '자료를 찾을 수 없습니다.', 404);
-    const version =
-      method === 'GET'
-        ? Number(url.searchParams.get('expectedVersion'))
-        : body.expectedVersion;
+    const version = Number(url.searchParams.get('expectedVersion'));
     if (version !== document.version)
       fail('RAG_SOURCE_CHANGED', '자료가 변경되었습니다. 다시 질문해주세요.');
-    if (method === 'POST' && parts[6] === 'reindex') {
-      if (!enabled)
-        fail(
-          'RAG_UNAVAILABLE',
-          '자료 질문 기능을 현재 사용할 수 없습니다.',
-          503,
-        );
-      const item = items.find((item) => item.deliverableId === deliverableId);
-      if (!canRetryRagSource(item))
-        fail('RAG_REINDEX_NOT_ALLOWED', '재시도 가능한 실패 상태가 아닙니다.');
-      state.ragIndexOverrides ||= {};
-      state.ragIndexOverrides[deliverableId] = {
-        deliverableVersion: version,
-        status: 'PREPARING',
-      };
-      return { ...item, status: 'PREPARING', failureCode: null };
-    }
-    if (method === 'GET' && parts.length === 6) {
-      if (document.type !== 'TEXT')
-        fail(
-          'RAG_SOURCE_UNSUPPORTED',
-          '이 예시 자료의 원문은 파일 다운로드로 확인해 주세요.',
-          415,
-        );
-      return {
-        teamId,
-        deliverableId,
-        deliverableVersion: version,
-        title: document.title,
-        type: document.type,
-        content: document.text,
-      };
-    }
+    if (document.type !== 'TEXT')
+      fail(
+        'RAG_SOURCE_UNSUPPORTED',
+        '이 예시 자료의 원문은 파일 다운로드로 확인해 주세요.',
+        415,
+      );
+    return {
+      teamId,
+      deliverableId,
+      deliverableVersion: version,
+      title: document.title,
+      type: document.type,
+      content: document.text,
+    };
   }
   fail('NOT_FOUND', '지원하지 않는 자료 검색 API입니다.', 404);
 }

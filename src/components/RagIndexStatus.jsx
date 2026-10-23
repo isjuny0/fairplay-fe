@@ -1,43 +1,15 @@
-import { useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { retryRagSource } from '../api/ragPlanned.js';
-import {
-  ragStatusLabels,
-  ragFailureLabels,
-  canRetryRagSource,
-} from '../lib/rag.js';
-import { ErrorNotice, Modal, ResourceState } from './ui.jsx';
+import { ragStatusLabels, ragFailureLabels } from '../lib/rag.js';
+import { Modal, ResourceState } from './ui.jsx';
 
 export default function RagIndexStatus({
   resource,
   page,
   setPage,
-  teamId,
-  mockAvailable,
   onClose,
   onOpenMaterials,
 }) {
-  const [retryingId, setRetryingId] = useState(null);
-  const [error, setError] = useState(null);
-  const [notice, setNotice] = useState('');
   const data = resource.data;
-  const retry = async (item) => {
-    if (retryingId != null) return;
-    setError(null);
-    setNotice('');
-    setRetryingId(item.deliverableId);
-    try {
-      await retryRagSource(teamId, item.deliverableId, item.deliverableVersion);
-      setNotice(
-        '목업에서 검색 준비를 예약했습니다. 실제 서버에는 요청하지 않았습니다.',
-      );
-      resource.reload();
-    } catch (failure) {
-      setError(failure);
-    } finally {
-      setRetryingId(null);
-    }
-  };
   return (
     <Modal title="자료 준비 현황" onClose={onClose} wide>
       <div className="rag-index-intro">
@@ -54,18 +26,6 @@ export default function RagIndexStatus({
           새로고침
         </button>
       </div>
-      <p className="rag-planned-caption">
-        실패 자료의 준비 재시도는 추가 API 목업입니다.{' '}
-        {mockAvailable
-          ? '미리보기에서 동작을 확인할 수 있습니다.'
-          : '백엔드 연동 후 사용할 수 있습니다.'}
-      </p>
-      <ErrorNotice error={error} />
-      {notice && (
-        <p className="notice" role="status">
-          {notice}
-        </p>
-      )}
       <ResourceState resource={resource} label="자료 준비 현황">
         {data && (
           <>
@@ -82,9 +42,6 @@ export default function RagIndexStatus({
                       <th scope="col">자료</th>
                       <th scope="col">준비 상태</th>
                       <th scope="col">안내</th>
-                      <th scope="col">
-                        <span className="sr-only">동작</span>
-                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -113,29 +70,6 @@ export default function RagIndexStatus({
                                 ? '준비가 완료되면 질문에 반영됩니다.'
                                 : '현재 버전 기준')}
                         </td>
-                        <td>
-                          {canRetryRagSource(item) && (
-                            <button
-                              className="secondary-button"
-                              disabled={
-                                !mockAvailable ||
-                                !data.enabled ||
-                                retryingId != null
-                              }
-                              title={
-                                !mockAvailable
-                                  ? '준비 재시도 API 연동 예정'
-                                  : undefined
-                              }
-                              onClick={() => retry(item)}
-                            >
-                              {retryingId === item.deliverableId
-                                ? '예약 중…'
-                                : '준비 재시도'}
-                              {mockAvailable && <small>목업</small>}
-                            </button>
-                          )}
-                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -157,9 +91,7 @@ export default function RagIndexStatus({
               <div>
                 <button
                   className="secondary-button"
-                  disabled={
-                    page === 0 || resource.loading || retryingId != null
-                  }
+                  disabled={page === 0 || resource.loading}
                   onClick={() => setPage(page - 1)}
                 >
                   이전
@@ -168,8 +100,7 @@ export default function RagIndexStatus({
                   className="secondary-button"
                   disabled={
                     (data.page + 1) * data.size >= data.totalElements ||
-                    resource.loading ||
-                    retryingId != null
+                    resource.loading
                   }
                   onClick={() => setPage(page + 1)}
                 >

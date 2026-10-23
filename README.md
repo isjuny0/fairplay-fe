@@ -48,4 +48,4 @@ Fairplay는 팀 프로젝트의 작업·산출물·완료 후 수정과 협업 �
 
 POST `/api/teams/{teamId}/rag/questions`, GET `/api/teams/{teamId}/rag/index-status`는 실제 백엔드에 연결합니다. 서버의 `enabled`와 준비 상태에 따라 질문 가능 여부를 표시하며, 오류를 예시 답변으로 대체하거나 질문을 자동 재전송하지 않습니다. 자료 현황을 연 동안 준비 중 자료가 있으면 5초 간격으로 조회합니다.
 
-원문 전체 조회와 실패 자료 재처리는 추가 API 제안이며 [ragPlanned.js](src/api/ragPlanned.js)에 분리했습니다. `/preview/.../materials-search`에서 목업 동작을 확인할 수 있고 실제 팀 화면은 미구현 요청을 보내지 않습니다. 실제 답변의 인용문은 표시하되 전체 원문은 연동 예정으로 안내합니다. 미리보기 답변은 AI 생성 결과가 아닌 예시 자료를 이용한 화면 검증용입니다.
+원문 전체 조회는 추가 API 제안이며 [ragPlanned.js](src/api/ragPlanned.js)에 분리했습니다. `/preview/.../materials-search`에서 목업 동작을 확인할 수 있고 실제 팀 화면은 미구현 요청을 보내지 않습니다. 실제 답변의 인용문은 표시하되 전체 원문은 연동 예정으로 안내합니다. 미리보기 답변은 AI 생성 결과가 아닌 예시 자료를 이용한 화면 검증용입니다.
