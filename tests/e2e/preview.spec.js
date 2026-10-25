@@ -224,14 +224,11 @@ test('미리보기 업로드는 새 파일 형식을 지원하고 URL 새 등록
 }) => {
   const calls = await preview(page, { path: '/spaces/1/teams/1/deliverables' });
   await page.getByRole('button', { name: '산출물 등록', exact: true }).click();
+  await page.getByRole('dialog', { name: '산출물 등록', exact: true }).getByRole('button', { name: '파일 업로드', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('제목', { exact: true }).fill('발표 자료');
   await dialog.getByLabel('분류', { exact: true }).selectOption('OTHER');
-  await expect(dialog.getByLabel('자료 유형').locator('option')).toHaveText([
-    '문서 작성',
-    '파일 업로드',
-  ]);
-  await dialog.getByLabel('자료 유형').selectOption('FILE');
+  await expect(dialog.getByLabel('자료 유형')).toHaveCount(0);
   await dialog.getByLabel('파일', { exact: true }).setInputFiles({
     name: '발표.pptx',
     mimeType:

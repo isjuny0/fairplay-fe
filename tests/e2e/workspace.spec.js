@@ -584,9 +584,9 @@ test('파일 산출물을 multipart로 업로드하고 인증을 유지해 다�
   const { requests } = await workspace(page);
   await page.getByRole('button', { name: '산출물', exact: true }).click();
   await page.getByRole('button', { name: '산출물 등록', exact: true }).click();
+  await page.getByRole('dialog', { name: '산출물 등록', exact: true }).getByRole('button', { name: '파일 업로드', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('제목', { exact: true }).fill('설계 원본');
-  await dialog.getByLabel('자료 유형').selectOption('FILE');
   await dialog.getByLabel('파일', { exact: true }).setInputFiles({
     name: 'design.md',
     mimeType: 'text/markdown',

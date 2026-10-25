@@ -161,6 +161,7 @@ export function Modal({
   wide = false,
   editor = false,
   fullscreen = false,
+  className = '',
   dirty = false,
 }) {
   const dialog = useRef(null);
@@ -235,7 +236,7 @@ export function Modal({
     <div className="modal-backdrop">
       <section
         ref={dialog}
-        className={`modal real-modal ${wide ? 'modal-wide' : ''} ${editor ? 'modal-editor' : ''} ${fullscreen ? 'modal-fullscreen' : ''}`}
+        className={`modal real-modal ${wide ? 'modal-wide' : ''} ${editor ? 'modal-editor' : ''} ${fullscreen ? 'modal-fullscreen' : ''} ${className}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -266,6 +267,7 @@ export function FormActions({
   onCancel,
   label = '저장',
   onBack,
+  hideSubmit = false,
 }) {
   const closeModal = useContext(ModalCloseContext);
   return (
@@ -290,13 +292,15 @@ export function FormActions({
           취소
         </button>
       )}
-      <button
-        type="submit"
-        className="primary-button"
-        disabled={busy || disabled}
-      >
-        {busy ? '처리 중…' : label}
-      </button>
+      {!hideSubmit && (
+        <button
+          type="submit"
+          className="primary-button"
+          disabled={busy || disabled}
+        >
+          {busy ? '처리 중…' : label}
+        </button>
+      )}
     </div>
   );
 }
