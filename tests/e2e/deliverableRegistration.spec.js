@@ -18,6 +18,10 @@ async function openRegistration(
   await expect(dialog).not.toContainText(
     '직접 문서를 작성하거나 준비한 파일을 업로드하세요.',
   );
+  await expect(dialog).not.toContainText('어떤 방식으로 등록할까요?');
+  await expect(
+    dialog.getByRole('button', { name: '취소', exact: true }),
+  ).toHaveCount(0);
   return dialog;
 }
 
@@ -59,6 +63,22 @@ for (const viewport of [
     expect(initial.height).toBeLessThanOrEqual(640);
     expect(initial.x).toBeGreaterThanOrEqual(0);
     expect(initial.y).toBeGreaterThanOrEqual(0);
+    const cardBoxes = await dialog
+      .locator('.deliverable-type-option')
+      .evaluateAll((cards) =>
+        cards.map((card) => {
+          const { x, y, width, height } = card.getBoundingClientRect();
+          return { x, y, width, height };
+        }),
+      );
+    expect(cardBoxes).toHaveLength(2);
+    expect(Math.abs(cardBoxes[0].y - cardBoxes[1].y)).toBeLessThan(1);
+    expect(Math.abs(cardBoxes[0].height - cardBoxes[1].height)).toBeLessThan(1);
+    expect(cardBoxes[0].height).toBeGreaterThan(initial.height - 48);
+    expect(cardBoxes[0].x - initial.x).toBeLessThanOrEqual(24);
+    expect(
+      initial.x + initial.width - cardBoxes[1].x - cardBoxes[1].width,
+    ).toBeLessThanOrEqual(24);
     await expect(
       dialog.getByRole('button', { name: '문서 작성', exact: true }),
     ).toBeInViewport();
@@ -117,7 +137,7 @@ for (const viewport of [
         await dialog.screenshot({ path: testInfo.outputPath(`${type}.png`) });
       await dialog.getByRole('button', { name: '이전', exact: true }).click();
     }
-    await dialog.getByRole('button', { name: '취소', exact: true }).click();
+    await dialog.getByRole('button', { name: '닫기', exact: true }).click();
     await expect(dialog).toHaveCount(0);
     expect(requests).toEqual([]);
   });
@@ -194,7 +214,7 @@ test('유형 선택 화면으로 돌아가 취소해도 미저장 보호와 문�
     .getByLabel('본문', { exact: true })
     .fill('보존할 문서 내용입니다.');
   await dialog.getByRole('button', { name: '이전', exact: true }).click();
-  await dialog.getByRole('button', { name: '취소', exact: true }).click();
+  await dialog.getByRole('button', { name: '닫기', exact: true }).click();
   const confirmation = page.getByRole('dialog', {
     name: '입력 내용 버리기',
     exact: true,
