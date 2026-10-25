@@ -165,7 +165,7 @@ function DeliverableForm({
       onClose={onClose}
       wide
       editor={canEditContent}
-      className="deliverable-registration-modal"
+      className={`deliverable-registration-modal${step === "choose" ? " deliverable-choice-modal" : ""}`}
       dirty={dirty}
     >
       <form
@@ -180,10 +180,6 @@ function DeliverableForm({
               disabled={busy || recovery.loading || blocked}
               className="form-fields deliverable-type-picker"
             >
-              <div className="deliverable-type-intro">
-                <span className="eyebrow">산출물 등록</span>
-                <h3>어떤 방식으로 등록할까요?</h3>
-              </div>
               <div className="deliverable-type-options">
                 {[
                   [
@@ -468,27 +464,28 @@ function DeliverableForm({
             }
           />
         </div>
-        <FormActions
-          busy={busy || recovery.loading}
-          disabled={blocked || (conflict && !recovery.latest) || !canReapply}
-          onCancel={onClose}
-          hideSubmit={step === "choose"}
-          onBack={
-            !initial && step === "editor"
-              ? () => {
-                  setFieldErrors({});
-                  setStep("choose");
-                }
-              : undefined
-          }
-          label={
-            recovery.latest
-              ? "내 입력으로 다시 저장"
-              : error
-                ? "다시 저장"
-                : "저장"
-          }
-        />
+        {step === "editor" && (
+          <FormActions
+            busy={busy || recovery.loading}
+            disabled={blocked || (conflict && !recovery.latest) || !canReapply}
+            onCancel={onClose}
+            onBack={
+              !initial
+                ? () => {
+                    setFieldErrors({});
+                    setStep("choose");
+                  }
+                : undefined
+            }
+            label={
+              recovery.latest
+                ? "내 입력으로 다시 저장"
+                : error
+                  ? "다시 저장"
+                  : "저장"
+            }
+          />
+        )}
       </form>
     </Modal>
   );
