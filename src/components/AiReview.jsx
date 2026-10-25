@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Sparkles } from 'lucide-react';
 import { getAiReview, requestAiReview } from '../api/aiReviews.js';
 import useResource from '../hooks/useResource.js';
 import { canModifyTeamWork, isAssignee, isMutable } from '../lib/domain.js';
@@ -111,7 +112,10 @@ export default function AiReview({ context }) {
     <section className="panel stack ai-review-panel" aria-label="AI 검토">
       <div className="ai-review-heading">
         <div>
-          <span className="eyebrow">완료 전 선택 사항</span>
+          <span className="eyebrow">
+            <Sparkles size={14} aria-hidden="true" />
+            산출물 피드백 · 선택 사항
+          </span>
           <h2>AI 검토</h2>
         </div>
         <div className="ai-review-actions">
@@ -150,14 +154,17 @@ export default function AiReview({ context }) {
       </div>
       <div className="ai-review-introduction">
         <p>
-          작업 설명과 제출 자료를 바탕으로 잘된 점과 보완할 내용을 안내합니다.
-          AI 제안과 근거를 확인하고 필요한 내용을 수정해 주세요.
+          연결된 산출물과 작업 설명을 함께 검토해 잘된 점과 보완할 내용을
+          안내합니다.
         </p>
-        <p className="field-help">
-          검토 실행과 결과는 완료의 필수 조건이 아닙니다. 담당자가 결과를
-          확인하고 직접 완료합니다. 저장 가능한 파일도 AI 검토에서는
-          지원하지 않을 수 있습니다.
-        </p>
+        <details className="ai-review-guide">
+          <summary>검토 범위와 이용 안내</summary>
+          <p className="field-help">
+            검토 실행과 결과는 완료의 필수 조건이 아닙니다. 담당자가 결과를
+            확인하고 직접 완료합니다. 저장 가능한 파일도 AI 검토에서는 지원하지
+            않을 수 있습니다.
+          </p>
+        </details>
       </div>
       {(context.task.completionBlockReason === 'WORK_PERIOD_CLOSED' ||
         error?.code === 'TASK_WORK_CLOSED') && (
@@ -174,8 +181,7 @@ export default function AiReview({ context }) {
       )}
       {resource.error?.code === 'AI_REVIEW_NOT_FOUND' ? (
         <EmptyState>
-          아직 요청한 AI 검토가 없습니다. 담당자가 완료 전에 선택적으로
-          요청할 수 있습니다.
+          아직 요청한 AI 검토가 없습니다. 필요할 때 직접 요청해 주세요.
         </EmptyState>
       ) : (
         <ResourceState resource={resource}>

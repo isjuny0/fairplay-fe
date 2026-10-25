@@ -144,6 +144,7 @@ async function backend(
     return reply({ code: 'NOT_FOUND', message: path }, 404);
   });
   await page.goto('/spaces/1/teams/1/tasks/10');
+  await page.getByRole('tab', { name: '댓글', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: '댓글 연결 작업', exact: true }),
   ).toBeVisible();
@@ -168,11 +169,18 @@ test('실제 로그인 경로에서 댓글 CRUD·CSRF·일반 텍스트와 작�
 }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   const { requests } = await backend(page);
-  const navigation = page.getByRole('navigation', { name: '작업 상세 항목', exact: true });
-  await expect(navigation.getByRole('button')).toHaveCount(3);
-  await expect(navigation.getByRole('button', { name: '댓글 영역으로 이동', exact: true })).toHaveCount(0);
-  await expect(navigation.getByRole('button', { name: '담당·배분 영역으로 이동', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('region', { name: '담당자와 배분', exact: true })).toHaveCount(1);
+  const navigation = page.getByRole('tablist', {
+    name: '작업 상세 항목',
+    exact: true,
+  });
+  await expect(navigation.getByRole('tab')).toHaveCount(4);
+  await expect(
+    navigation.getByRole('tab', { name: '댓글', exact: true }),
+  ).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tabpanel')).toHaveCount(1);
+  await expect(
+    page.getByRole('region', { name: '담당자와 배분', exact: true }),
+  ).toHaveCount(1);
   const panel = page.getByRole('region', { name: '작업 댓글', exact: true });
   await expect(panel.getByText('아직 댓글이 없습니다.')).toBeVisible();
   await panel
@@ -307,6 +315,7 @@ for (const width of [390, 1440])
     }, state);
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('/preview/spaces/1/teams/1/tasks/101');
+    await page.getByRole('tab', { name: '댓글', exact: true }).click();
     const panel = page.getByRole('region', { name: '작업 댓글', exact: true });
     await panel
       .getByLabel('댓글 내용', { exact: true })
@@ -320,9 +329,8 @@ for (const width of [390, 1440])
       name: '담당자와 배분',
       exact: true,
     });
-    expect((await panel.boundingBox()).y).toBeGreaterThan(
-      (await assignment.boundingBox()).y,
-    );
+    await expect(panel).toBeVisible();
+    await expect(assignment).toBeVisible();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -339,6 +347,7 @@ for (const width of [390, 1440])
       path: testInfo.outputPath(`comment-panel-${width}.png`),
     });
     await page.reload();
+    await page.getByRole('tab', { name: '댓글', exact: true }).click();
     await expect(
       panel.getByText('최종 마감 후에도 의견을 남깁니다.', { exact: true }),
     ).toBeVisible();

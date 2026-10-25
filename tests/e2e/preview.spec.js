@@ -188,6 +188,7 @@ test('AI 검토는 담당자만 조회하고 비담당 팀원에게 표시하지
   page,
 }) => {
   await preview(page, { role: 'leader', path: '/spaces/1/teams/1/tasks/102' });
+  await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
   await page.getByRole('button', { name: 'AI 검토 요청', exact: true }).click();
   await expect(page.getByText('검토 대기', { exact: true })).toBeVisible();
   await page.getByLabel('미리보기 역할').selectOption('teammate');
@@ -317,6 +318,7 @@ test('미리보기 AI 검토는 피드백과 근거를 제공하고 작업 완�
     role: 'leader',
     path: '/spaces/1/teams/1/tasks/102',
   });
+  await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
   await page.getByRole('button', { name: 'AI 검토 요청', exact: true }).click();
   await expect(page.getByText('검토 대기', { exact: true })).toBeVisible();
   await page.waitForTimeout(2100);
@@ -330,6 +332,7 @@ test('미리보기 AI 검토는 피드백과 근거를 제공하고 작업 완�
     page.getByRole('heading', { name: '검토 한계', exact: true }),
   ).toBeVisible();
   await page.goto('/preview/spaces/1/teams/1/tasks/101');
+  await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
   await expect(
     page.getByRole('button', { name: 'AI 검토 요청', exact: true }),
   ).toHaveCount(0);
