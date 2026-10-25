@@ -628,9 +628,9 @@ test('산출물 파일 형식 오류는 파일 항목에 표시하고 교체 선
   });
   await openPreview(page, '/spaces/1/teams/1/deliverables');
   await page.getByRole('button', { name: '산출물 등록', exact: true }).click();
+  await page.getByRole('dialog', { name: '산출물 등록', exact: true }).getByRole('button', { name: '파일 업로드', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('제목', { exact: true }).fill('현장 조사 기록');
-  await dialog.getByLabel('자료 유형').selectOption('FILE');
   await dialog.getByLabel('파일', { exact: true }).setInputFiles({
     name: 'record.exe',
     mimeType: 'application/octet-stream',
@@ -791,6 +791,7 @@ test('두 창에서 수정한 산출물은 최신 내용을 비교하고 본문 
 }) => {
   await openPreview(page, '/spaces/1/teams/1/deliverables');
   await page.getByRole('button', { name: '산출물 등록', exact: true }).click();
+  await page.getByRole('dialog', { name: '산출물 등록', exact: true }).getByRole('button', { name: '문서 작성', exact: true }).click();
   let dialog = page.getByRole('dialog');
   await dialog.getByLabel('제목', { exact: true }).fill('동시 수정 자료');
   await dialog
