@@ -4,7 +4,7 @@ import {
   ArrowUpRight,
   FileSearch,
   FileText,
-  RefreshCw,
+  PanelRightOpen,
 } from 'lucide-react';
 import { askTeamMaterials, getRagIndexStatus } from '../api/rag.js';
 import useResource from '../hooks/useResource.js';
@@ -20,7 +20,7 @@ import {
 import { ErrorNotice } from './ui.jsx';
 import MarkdownBody from './MarkdownBody.jsx';
 import RagSourcePanel from './RagSourcePanel.jsx';
-import RagIndexStatus from './RagIndexStatus.jsx';
+import RagMaterialList from './RagMaterialList.jsx';
 import '../team-rag.css';
 
 export default function TeamRagSearch({ context }) {
@@ -39,15 +39,29 @@ function TeamMaterialSearch({ context }) {
   const busyRef = useRef(false);
   const active = useRef(true);
   const [reference, setReference] = useState(null);
-  const [statusOpen, setStatusOpen] = useState(false);
+  const [isMaterialsOpen, setMaterialsOpen] = useState(false);
+  const [isDesktop, setDesktop] = useState(
+    () => window.matchMedia('(min-width: 1200px)').matches,
+  );
   const [statusPage, setStatusPage] = useState(0);
   const input = useRef(null);
   const conversation = useRef(null);
+  const sidePanel = useRef(null);
+  const materialsToggle = useRef(null);
   const status = useResource(
     () => getRagIndexStatus(team.id, statusPage, 20),
     [team.id, statusPage],
   );
   const data = status.data;
+  const permissionError =
+    [401, 403, 404].includes(error?.status) ||
+    [401, 403, 404].includes(status.error?.status);
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1200px)');
+    const update = () => setDesktop(media.matches);
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
   useEffect(() => {
     active.current = true;
     return () => {
@@ -60,14 +74,19 @@ function TeamMaterialSearch({ context }) {
     return () => window.removeEventListener('focus', refresh);
   }, [status.reload]);
   useEffect(() => {
-    if (!statusOpen || !data?.enabled || !data.preparingCount || status.error)
-      return;
+    if (
+      permissionError || !(isDesktop || isMaterialsOpen) || reference ||
+      !data?.enabled || !data.preparingCount || status.error
+    ) return;
     const timer = window.setInterval(() => {
       if (document.visibilityState === 'visible') status.reload();
     }, 5000);
     return () => window.clearInterval(timer);
   }, [
-    statusOpen,
+    permissionError,
+    isDesktop,
+    isMaterialsOpen,
+    reference,
     data?.enabled,
     data?.preparingCount,
     status.error,
@@ -80,9 +99,18 @@ function TeamMaterialSearch({ context }) {
     navigate(
       `${teamMenuPath(space.id, team.id, '산출물')}${title ? `?${new URLSearchParams({ q: title })}` : ''}`,
     );
-  const permissionError =
-    [401, 403, 404].includes(error?.status) ||
-    [401, 403, 404].includes(status.error?.status);
+  const showMaterials = () => {
+    setReference(null);
+    setMaterialsOpen(true);
+    requestAnimationFrame(() => {
+      sidePanel.current?.querySelector('[data-materials-list]')?.focus({ preventScroll: true });
+    });
+  };
+  const closeMaterials = () => {
+    setReference(null);
+    setMaterialsOpen(false);
+    requestAnimationFrame(() => materialsToggle.current?.focus());
+  };
   const ask = async (event) => {
     event.preventDefault();
     if (
@@ -141,38 +169,28 @@ function TeamMaterialSearch({ context }) {
           <h1>팀 자료 검색</h1>
           <p>팀 자료에 질문하고 답변의 근거를 확인합니다.</p>
         </div>
-        <button className="secondary-button" onClick={() => openMaterials()}>
-          <FileText size={16} />
-          산출물 보기
-        </button>
-      </header>
-      <div className="rag-availability" aria-label="검색 자료 현황">
-        <div>
-          {status.loading && !data ? (
-            <span role="status">자료 준비 현황을 확인하는 중…</span>
-          ) : data ? (
-            <>
-              <span className="rag-availability-item">
-                <i />
-                검색 가능{' '}
-                <strong>{data.readyCount.toLocaleString()}</strong>개
-              </span>
-              {data.enabled && data.failedCount > 0 && (
-                <span className="rag-status-warning">
-                  준비 실패 {data.failedCount.toLocaleString()}개
-                </span>
-              )}
-            </>
-          ) : (
-            <span>자료 준비 상태를 확인하지 못했습니다.</span>
-          )}
+        <div className="rag-page-actions">
+          <button
+            className="secondary-button rag-mobile-materials-toggle"
+            onClick={showMaterials}
+            ref={materialsToggle}
+            aria-expanded={isMaterialsOpen}
+            aria-controls="rag-materials-panel"
+          >
+            <PanelRightOpen size={16} />
+            팀 자료
+          </button>
+          <button className="secondary-button" aria-label="산출물 보기" title="산출물 보기" onClick={() => openMaterials()}>
+            <FileText size={16} />
+            산출물 보기
+          </button>
         </div>
-        <button className="rag-inline-link" onClick={() => setStatusOpen(true)}>
-          자료 현황
-          <ArrowUpRight size={14} />
-        </button>
-      </div>
-      <ErrorNotice error={status.error} onRetry={status.reload} />
+      </header>
+      {status.error && !isMaterialsOpen && (
+        <div className="rag-mobile-status-error">
+          <ErrorNotice error={status.error} onRetry={status.reload} />
+        </div>
+      )}
       {data && !data.enabled && (
         <p className="notice" role="status">
           현재 자료 질문 기능이 비활성화되어 있습니다. 등록된 자료는 산출물에서
@@ -184,17 +202,12 @@ function TeamMaterialSearch({ context }) {
           {data.preparingCount
             ? '자료를 검색할 수 있도록 준비하고 있습니다. 준비가 완료되면 질문할 수 있습니다.'
             : '검색 가능한 자료가 없습니다. 산출물에 문서를 작성하거나 UTF-8 TXT·MD 파일을 등록해 주세요.'}
-          <button
-            className="rag-inline-link"
-            disabled={status.loading}
-            onClick={status.reload}
-          >
-            <RefreshCw size={14} />
-            준비 상태 확인
+          <button className="rag-inline-link" onClick={showMaterials}>
+            팀 자료 확인
           </button>
         </p>
       )}
-      <div className={`rag-workspace ${reference ? 'has-source' : ''}`}>
+      <div className={`rag-workspace ${isMaterialsOpen ? 'is-materials-open' : ''}`}>
         <div className="rag-main">
           <div
             className="rag-conversation"
@@ -290,7 +303,7 @@ function TeamMaterialSearch({ context }) {
                               className={`rag-reference ${reference === item ? 'is-selected' : ''}`}
                               aria-pressed={reference === item}
                               aria-label={`${item.title} 원문 확인`}
-                              onClick={() => setReference(item)}
+                              onClick={() => { setReference(item); setMaterialsOpen(true); }}
                             >
                               <span className="rag-reference-number">
                                 {index + 1}
@@ -317,9 +330,9 @@ function TeamMaterialSearch({ context }) {
                     <p>{noEvidenceMessage(result.reason)}</p>
                     <button
                       className="secondary-button"
-                      onClick={() => setStatusOpen(true)}
+                      onClick={showMaterials}
                     >
-                      자료 준비 현황 확인
+                      팀 자료 확인
                     </button>
                   </section>
                 )}
@@ -385,31 +398,38 @@ function TeamMaterialSearch({ context }) {
             )}
           </form>
         </div>
-        {reference && !permissionError && (
-          <RagSourcePanel
-            key={`${reference.sourceId}:${reference.deliverableId}:${reference.deliverableVersion}:${reference.startLine}:${reference.endLine}`}
-            teamId={team.id}
-            reference={reference}
-            onAccessError={(failure) => {
-              setError(failure);
-              setResult(null);
-              setReference(null);
-              setQuestion((current) => current || submittedQuestion);
-            }}
-            onClose={() => setReference(null)}
-            onOpenMaterials={() => openMaterials(reference.title)}
-          />
-        )}
+        <div className="rag-side-panel" id="rag-materials-panel" ref={sidePanel}>
+          <div className="rag-list-view" hidden={Boolean(reference) && !permissionError}>
+            <RagMaterialList
+              resource={permissionError
+                ? { ...status, data: null, error: error || status.error }
+                : status}
+              page={statusPage}
+              setPage={setStatusPage}
+              onSelect={(item) => setReference(item)}
+              onDismiss={closeMaterials}
+              active={!reference}
+            />
+          </div>
+          {reference && !permissionError && (
+            <RagSourcePanel
+              key={`${reference.sourceId || 'material'}:${reference.deliverableId}:${reference.deliverableVersion}:${reference.startLine}:${reference.endLine}`}
+              teamId={team.id}
+              reference={reference}
+              onAccessError={(failure) => {
+                setError(failure);
+                setResult(null);
+                setReference(null);
+                setMaterialsOpen(false);
+                setQuestion((current) => current || submittedQuestion);
+              }}
+              onBack={() => setReference(null)}
+              onDismiss={closeMaterials}
+              onOpenMaterials={() => openMaterials(reference.title)}
+            />
+          )}
+        </div>
       </div>
-      {statusOpen && (
-        <RagIndexStatus
-          resource={status}
-          page={statusPage}
-          setPage={setStatusPage}
-          onClose={() => setStatusOpen(false)}
-          onOpenMaterials={openMaterials}
-        />
-      )}
     </section>
   );
 }
