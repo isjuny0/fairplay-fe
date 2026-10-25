@@ -594,7 +594,7 @@ test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이
 }) => {
   const { requests, setReview } = await backend(page);
   await page.goto('/spaces/1/teams/1/tasks/10');
-  await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
+  await page.getByRole('tab', { name: 'AI피드백', exact: true }).click();
   await expect(
     page.getByText('아직 요청한 AI 검토가 없습니다.', { exact: false }),
   ).toBeVisible();
@@ -674,7 +674,7 @@ test('AI 검토는 진행 중에만 조회하고 실패 결과 이후 반복 조
   await page.clock.install();
   const { requests, setReview } = await backend(page);
   await page.goto('/spaces/1/teams/1/tasks/10');
-  await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
+  await page.getByRole('tab', { name: 'AI피드백', exact: true }).click();
   await expect(
     page.getByRole('button', { name: 'AI 검토 요청', exact: true }),
   ).toBeEnabled();
@@ -724,7 +724,7 @@ test('AI 상태 자동 재조회는 스페이스 목록을 유지하고 수동 �
     (response) => new URL(response.url()).pathname === '/api/spaces',
   );
   await page.goto('/spaces/1/teams/1/tasks/10');
-  await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
+  await page.getByRole('tab', { name: 'AI피드백', exact: true }).click();
   await initialSpaceRead;
   await expect(page.getByText('검토 대기', { exact: true })).toBeVisible();
   const initialReviewReads = requests.filter((request) =>
@@ -777,7 +777,7 @@ test('AI 비활성화·요청 제한 오류는 화면에 유지하고 자동으�
     });
   });
   await page.goto('/spaces/1/teams/1/tasks/10');
-  await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
+  await page.getByRole('tab', { name: 'AI피드백', exact: true }).click();
   await page.getByRole('button', { name: 'AI 검토 요청', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText(
     'AI 검토를 사용할 수 없습니다.',
@@ -850,7 +850,7 @@ test('FINAL 마감 후 새 AI 검토 버튼을 숨기고 기존 피드백은 읽
     failureDeliverableId: null,
   });
   await page.goto('/spaces/1/teams/1/tasks/10');
-  await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
+  await page.getByRole('tab', { name: 'AI피드백', exact: true }).click();
   await expect(page.getByText('마감 후에도 확인할 기존 피드백')).toBeVisible();
   await expect(
     page.getByText(/최종 평가 마감 이후에는 새 검토를 요청할 수 없습니다/),
@@ -880,7 +880,7 @@ test('AI 조회의 권한 오류에서는 폴링과 새 검토 요청을 제공�
     });
   });
   await page.goto('/spaces/1/teams/1/tasks/10');
-  await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
+  await page.getByRole('tab', { name: 'AI피드백', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText(
     '검토 조회 권한이 없습니다.',
   );
