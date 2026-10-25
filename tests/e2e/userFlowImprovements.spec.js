@@ -86,7 +86,7 @@ test('완료 준비 상태는 미작성 담당자를 표시하고 전원 작성 
     page.getByRole('button', { name: '완료 처리', exact: true }),
   ).toBeDisabled();
   await preview(page, '/spaces/1/teams/1/tasks/102', 'member');
-  await page.getByRole('tab', { name: '수행 설명', exact: true }).click();
+  await page.getByRole('tab', { name: '수행설명', exact: true }).click();
   await page
     .getByLabel('내 수행 설명', { exact: true })
     .fill('설문 응답을 분류하고 검증 근거와 한계를 작성했습니다.');
@@ -239,7 +239,7 @@ test('완료 준비 목록에서 내 수행 설명으로 이동하고 변경된 
     .getByRole('button', { name: '내 수행 설명 작성', exact: true })
     .click();
   await expect(
-    page.getByRole('tab', { name: '수행 설명', exact: true }),
+    page.getByRole('tab', { name: '수행설명', exact: true }),
   ).toHaveAttribute('aria-selected', 'true');
   await expect(save).toBeDisabled();
   await expect(description).toBeFocused();

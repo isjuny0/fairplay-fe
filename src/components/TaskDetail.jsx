@@ -167,11 +167,10 @@ export default function TaskDetail({
   const task = resource.data?.task;
   const canViewAi = Boolean(task && isAssignee(task, user.id));
   const tabs = [
-    ['task-description-section', '작업 설명'],
+    ['task-description-section', '작업내용'],
+    ['task-contributions-section', '수행설명'],
     ['task-deliverables-section', '산출물'],
-    ['task-contributions-section', '수행 설명'],
-    ...(canViewAi ? [['task-ai-review-section', 'AI 피드백']] : []),
-    ['task-comments-tabpanel', '댓글'],
+    ...(canViewAi ? [['task-ai-review-section', 'AI피드백']] : []),
   ];
   const visibleTab =
     activeTab === 'task-ai-review-section' && !canViewAi
@@ -249,53 +248,58 @@ export default function TaskDetail({
     hidden: visibleTab !== id,
   });
 
+  const navigation = (
+    <div className="task-detail-navigation">
+      {task && (
+        <div
+          className="task-section-navigation"
+          role="tablist"
+          aria-label="작업 상세 항목"
+        >
+          {tabs.map(([id, label], index) => (
+            <button
+              key={id}
+              id={`${id}-tab`}
+              type="button"
+              role="tab"
+              aria-selected={visibleTab === id}
+              aria-controls={id}
+              tabIndex={visibleTab === id ? 0 : -1}
+              className="text-button"
+              data-ai={id === 'task-ai-review-section' || undefined}
+              onClick={() => setActiveTab(id)}
+              onKeyDown={(event) => {
+                let nextIndex;
+                if (event.key === 'ArrowRight')
+                  nextIndex = (index + 1) % tabs.length;
+                if (event.key === 'ArrowLeft')
+                  nextIndex = (index - 1 + tabs.length) % tabs.length;
+                if (event.key === 'Home') nextIndex = 0;
+                if (event.key === 'End') nextIndex = tabs.length - 1;
+                if (nextIndex === undefined) return;
+                event.preventDefault();
+                const nextId = tabs[nextIndex][0];
+                setActiveTab(nextId);
+                document.getElementById(`${nextId}-tab`)?.focus();
+              }}
+            >
+              {id === 'task-ai-review-section' && (
+                <Sparkles size={14} aria-hidden="true" />
+              )}
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <section className="stack task-detail-page">
-      <div className="task-detail-navigation">
+      <div className="task-detail-back">
         <button className="secondary-button back-button" onClick={onBack}>
           ← 목록으로
         </button>
-        {task && (
-          <div
-            className="task-section-navigation"
-            role="tablist"
-            aria-label="작업 상세 항목"
-          >
-            {tabs.map(([id, label], index) => (
-              <button
-                key={id}
-                id={`${id}-tab`}
-                type="button"
-                role="tab"
-                aria-selected={visibleTab === id}
-                aria-controls={id}
-                tabIndex={visibleTab === id ? 0 : -1}
-                className="text-button"
-                data-ai={id === 'task-ai-review-section' || undefined}
-                onClick={() => setActiveTab(id)}
-                onKeyDown={(event) => {
-                  let nextIndex;
-                  if (event.key === 'ArrowRight')
-                    nextIndex = (index + 1) % tabs.length;
-                  if (event.key === 'ArrowLeft')
-                    nextIndex = (index - 1 + tabs.length) % tabs.length;
-                  if (event.key === 'Home') nextIndex = 0;
-                  if (event.key === 'End') nextIndex = tabs.length - 1;
-                  if (nextIndex === undefined) return;
-                  event.preventDefault();
-                  const nextId = tabs[nextIndex][0];
-                  setActiveTab(nextId);
-                  document.getElementById(`${nextId}-tab`)?.focus();
-                }}
-              >
-                {id === 'task-ai-review-section' && (
-                  <Sparkles size={14} aria-hidden="true" />
-                )}
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
       <ErrorNotice error={error} onRetry={reload} />
       <ResourceState resource={resource} label="작업 상세">
@@ -371,6 +375,7 @@ export default function TaskDetail({
                 </div>
               </dl>
             </header>
+            {navigation}
             <div className="task-detail-layout">
               <div className="stack task-detail-main">
                 <section
@@ -484,19 +489,6 @@ export default function TaskDetail({
                       </div>
                     ))}
                 </section>
-                <div
-                  id="task-comments-tabpanel"
-                  {...panelProps('task-comments-tabpanel')}
-                  className="task-section-anchor task-comments-tabpanel"
-                  tabIndex={0}
-                >
-                  <TaskComments
-                    key={`${team.id}-${task.id}-${user.id}`}
-                    taskId={task.id}
-                    team={team}
-                    user={user}
-                  />
-                </div>
               </div>
               <aside
                 className="stack task-progress-sidebar"
@@ -690,6 +682,12 @@ export default function TaskDetail({
                     ))}
                   </ul>
                 </section>
+                <TaskComments
+                  key={`${team.id}-${task.id}-${user.id}`}
+                  taskId={task.id}
+                  team={team}
+                  user={user}
+                />
               </aside>
             </div>
             {isMutable(task) && isTeamEditor(team, user.id) && (
