@@ -3,6 +3,7 @@ import Icon from "./Icon.jsx";
 import DeliverableTable from "./DeliverableTable.jsx";
 import DeliverableContent from "./DeliverableContent.jsx";
 import MarkdownEditor from "./MarkdownEditor.jsx";
+import { FileText, Upload, ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { parseRouteId, teamMenuPath } from "../lib/routes.js";
@@ -71,11 +72,30 @@ function DeliverableForm({
     taskId: taskId ?? "",
   });
   const [form, setForm] = useState(initialForm);
+  const [step, setStep] = useState(initial ? "editor" : "choose");
+  const formElement = useRef(null);
   const fileExtensions = /\.(txt|md|pdf|doc|docx|ppt|pptx|xls|xlsx)$/i;
   const fileHelp = "TXT, MD, PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX";
   const [file, setFile] = useState(null);
+  const dirty =
+    Boolean(file) ||
+    ["title", "description", "category", "text", "taskId"].some(
+      (name) => form[name] !== initialForm[name],
+    );
   const fileInput = useRef(null);
   const [fieldErrors, setFieldErrors] = useState({});
+  useEffect(() => {
+    formElement.current
+      ?.querySelector(".deliverable-editor-scroll")
+      ?.scrollTo(0, 0);
+    const target =
+      step === "choose"
+        ? formElement.current?.querySelector(
+            `[data-deliverable-type="${form.type === "FILE" ? "FILE" : "TEXT"}"]`,
+          )
+        : formElement.current?.querySelector('input[name="title"]');
+    target?.focus({ preventScroll: true });
+  }, [step]);
   const canEditContent = !initial || permissions.content;
   const linkedTaskId = initial ? initial.taskId : taskId;
   const linkedTaskName =
@@ -98,9 +118,10 @@ function DeliverableForm({
   };
   const submit = async (event) => {
     event.preventDefault();
-    if (busy || recovery.loading || blocked) return;
+    if (step !== "editor" || busy || recovery.loading || blocked) return;
     const errors = collectFieldErrors(event.currentTarget, {
-      ...(file &&
+      ...(form.type === "FILE" &&
+      file &&
       (file.size > 10 * 1024 * 1024 || !fileExtensions.test(file.name))
         ? { file: `${fileHelp} 형식의 10MiB 이하 파일을 선택해 주세요.` }
         : {}),
@@ -135,7 +156,7 @@ function DeliverableForm({
         input.text = form.text.trim();
       }
     }
-    onSave(input, file, form.type);
+    onSave(input, form.type === "FILE" ? file : null, form.type);
   };
   return (
     <Modal
@@ -144,271 +165,322 @@ function DeliverableForm({
       onClose={onClose}
       wide
       editor={canEditContent}
-      dirty={
-        Boolean(file) || JSON.stringify(form) !== JSON.stringify(initialForm)
-      }
+      className="deliverable-registration-modal"
+      dirty={dirty}
     >
-      <form className="deliverable-editor-form" onSubmit={submit} noValidate>
-        <fieldset
-          disabled={busy || recovery.loading || blocked}
-          className={`form-fields deliverable-form-layout${canEditContent ? "" : " deliverable-metadata-only"}`}
-        >
-          <section
-            className="deliverable-form-section"
-            aria-label="산출물 기본 정보 입력"
-          >
-            <h3 className="form-section-title">기본 정보</h3>
-            <Field label="제목" error={fieldErrors.title}>
-              <input
-                name="title"
-                required
-                maxLength={100}
-                value={form.title}
-                onChange={(event) => update("title", event.target.value)}
-              />
-            </Field>
-            <Field label="분류">
-              <select
-                value={form.category}
-                onChange={(event) => update("category", event.target.value)}
-              >
-                {Object.entries(categoryLabels).map(([category, label]) => (
-                  <option key={category} value={category}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            {canEditContent && (
-              <Field
-                label="설명"
-                help="선택 사항입니다. 자료의 목적이나 확인할 내용을 적어주세요."
-              >
-                <textarea
-                  maxLength={2000}
-                  value={form.description}
-                  onChange={(event) =>
-                    update("description", event.target.value)
-                  }
-                />
-              </Field>
-            )}
-            {!initial && (
-              <>
-                <Field label="자료 유형">
-                  <select
-                    value={form.type}
-                    onChange={(event) => {
-                      update("type", event.target.value);
-                      clearSelectedFile();
+      <form
+        ref={formElement}
+        className="deliverable-editor-form"
+        onSubmit={submit}
+        noValidate
+      >
+        <div className="deliverable-editor-scroll">
+          {step === "choose" ? (
+            <fieldset
+              disabled={busy || recovery.loading || blocked}
+              className="form-fields deliverable-type-picker"
+            >
+              <div className="deliverable-type-intro">
+                <span className="eyebrow">산출물 등록</span>
+                <h3>어떤 방식으로 등록할까요?</h3>
+              </div>
+              <div className="deliverable-type-options">
+                {[
+                  [
+                    "TEXT",
+                    "문서 작성",
+                    "내용을 직접 작성하고 마크다운으로 정리해요.",
+                    FileText,
+                  ],
+                  [
+                    "FILE",
+                    "파일 업로드",
+                    "문서·발표 자료 등 준비한 파일을 올려요.",
+                    Upload,
+                  ],
+                ].map(([type, label, description, TypeIcon]) => (
+                  <button
+                    key={type}
+                    type="button"
+                    className="deliverable-type-option"
+                    aria-label={label}
+                    data-deliverable-type={type}
+                    onClick={() => {
+                      update("type", type);
+                      setFieldErrors({});
+                      setStep("editor");
                     }}
                   >
-                    {["TEXT", "FILE"].map((type) => (
-                      <option key={type} value={type}>
-                        {
-                          {
-                            TEXT: "문서 작성",
-                            FILE: "파일 업로드",
-                          }[type]
-                        }
+                    <TypeIcon
+                      className="deliverable-type-icon"
+                      aria-hidden="true"
+                    />
+                    <strong>{label}</strong>
+                    <span>{description}</span>
+                    <ArrowRight
+                      className="deliverable-type-arrow"
+                      aria-hidden="true"
+                    />
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          ) : (
+            <fieldset
+              disabled={busy || recovery.loading || blocked}
+              className={`form-fields deliverable-form-layout${canEditContent ? "" : " deliverable-metadata-only"}`}
+            >
+              <section
+                className="deliverable-form-section"
+                aria-label="산출물 기본 정보 입력"
+              >
+                <h3 className="form-section-title">기본 정보</h3>
+                <Field label="제목" error={fieldErrors.title}>
+                  <input
+                    name="title"
+                    required
+                    maxLength={100}
+                    value={form.title}
+                    onChange={(event) => update("title", event.target.value)}
+                  />
+                </Field>
+                <Field label="분류">
+                  <select
+                    value={form.category}
+                    onChange={(event) => update("category", event.target.value)}
+                  >
+                    {Object.entries(categoryLabels).map(([category, label]) => (
+                      <option key={category} value={category}>
+                        {label}
                       </option>
                     ))}
                   </select>
                 </Field>
-                {taskId == null && (
-                  <Field label="작업 연결">
-                    <select
-                      value={form.taskId}
-                      onChange={(event) => update("taskId", event.target.value)}
-                    >
-                      <option value="">팀 공용 산출물</option>
-                      {tasks.map((task) => (
-                        <option key={task.id} value={task.id}>
-                          {task.title}
-                        </option>
-                      ))}
-                    </select>
+                {canEditContent && (
+                  <Field
+                    label="설명"
+                    help="선택 사항입니다. 자료의 목적이나 확인할 내용을 적어주세요."
+                  >
+                    <textarea
+                      maxLength={2000}
+                      value={form.description}
+                      onChange={(event) =>
+                        update("description", event.target.value)
+                      }
+                    />
                   </Field>
                 )}
-              </>
-            )}
-            {(initial || taskId != null) && (
-              <dl className="deliverable-edit-context">
-                {initial && (
-                  <div>
-                    <dt>자료 유형</dt>
-                    <dd>{form.type === "FILE" ? "파일" : "문서"}</dd>
-                  </div>
+                {!initial && (
+                  <>
+                    {taskId == null && (
+                      <Field label="작업 연결">
+                        <select
+                          value={form.taskId}
+                          onChange={(event) =>
+                            update("taskId", event.target.value)
+                          }
+                        >
+                          <option value="">팀 공용 산출물</option>
+                          {tasks.map((task) => (
+                            <option key={task.id} value={task.id}>
+                              {task.title}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                    )}
+                  </>
                 )}
-                <div>
-                  <dt>연결 작업</dt>
-                  <dd>{linkedTaskName}</dd>
-                </div>
-              </dl>
-            )}
-            {initial && (
-              <p className="field-help">
-                등록 후 자료 유형과 작업 연결은 변경하지 않습니다.
-              </p>
-            )}
-            {initial && !permissions.content && (
-              <p className="notice">
-                팀 공용 자료의 제목과 분류만 정리할 수 있습니다.
-              </p>
-            )}
-          </section>
-          {canEditContent && (
-            <section
-              className="deliverable-form-section deliverable-content-section"
-              aria-label="산출물 내용 입력"
-            >
-              <h3 className="form-section-title">
-                {form.type === "FILE" ? "파일" : "문서 본문"}
-              </h3>
-              {initial?.type === "FILE" && (
-                <div
-                  className="deliverable-current-file"
-                  role="group"
-                  aria-label="현재 원본 파일"
-                >
-                  <span className="eyebrow">현재 원본</span>
-                  <strong>{initial.file.originalFilename}</strong>
-                  <span className="field-help">
-                    {(initial.file.sizeBytes / 1024).toFixed(1)}KiB
-                  </span>
+                {(initial || taskId != null) && (
+                  <dl className="deliverable-edit-context">
+                    {initial && (
+                      <div>
+                        <dt>자료 유형</dt>
+                        <dd>{form.type === "FILE" ? "파일" : "문서"}</dd>
+                      </div>
+                    )}
+                    <div>
+                      <dt>연결 작업</dt>
+                      <dd>{linkedTaskName}</dd>
+                    </div>
+                  </dl>
+                )}
+                {initial && (
                   <p className="field-help">
-                    교체할 파일을 선택하지 않으면 현재 원본을 유지합니다. 파일을
-                    교체하면 이전 원본은 삭제됩니다.
+                    등록 후 자료 유형과 작업 연결은 변경하지 않습니다.
                   </p>
-                </div>
-              )}
-              {form.type === "FILE" ? (
-                <Field
-                  label={initial ? "교체할 파일 (선택)" : "파일"}
-                  error={fieldErrors.file}
-                  help={`${fileHelp} / 파일당 10MiB / 팀 전체 파일 1GiB`}
-                >
-                  <input
-                    ref={fileInput}
-                    name="file"
-                    type="file"
-                    required={!initial}
-                    accept=".txt,.md,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
-                    onChange={(event) => {
-                      setFile(event.target.files[0] || null);
-                      setFieldErrors((current) => ({
-                        ...current,
-                        file: undefined,
-                      }));
-                    }}
-                  />
-                </Field>
-              ) : (
-                <Field
-                  label="본문"
-                  error={fieldErrors.text}
-                  help="작업 결과와 확인할 내용을 기록하세요. 제목·목록·표 등의 마크다운 서식을 사용할 수 있습니다."
-                >
-                  <MarkdownEditor
-                    name="text"
-                    required
-                    maxLength={20000}
-                    rows={14}
-                    value={form.text}
-                    onChange={(event) => update("text", event.target.value)}
-                    onValueChange={(value) => update("text", value)}
-                  />
-                </Field>
-              )}
-              {form.type === "TEXT" && (
-                <p className="character-count">
-                  {form.text.length.toLocaleString()} / 20,000자
-                </p>
-              )}
-              {file && (
-                <div className="file-selection" role="status">
-                  <span className="eyebrow">
-                    {initial ? "교체할 파일" : "선택한 파일"}
-                  </span>
-                  <strong>{file.name}</strong>
-                  <p>
-                    {(file.size / 1024).toFixed(1)}KiB ·{" "}
-                    {initial
-                      ? "저장하면 기존 파일이 삭제되고 이 파일로 교체됩니다."
-                      : "저장하면 업로드됩니다."}
+                )}
+                {initial && !permissions.content && (
+                  <p className="notice">
+                    팀 공용 자료의 제목과 분류만 정리할 수 있습니다.
                   </p>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={clearSelectedFile}
-                  >
-                    파일 선택 해제
-                  </button>
-                </div>
+                )}
+              </section>
+              {canEditContent && (
+                <section
+                  className="deliverable-form-section deliverable-content-section"
+                  aria-label="산출물 내용 입력"
+                >
+                  <h3 className="form-section-title">
+                    {form.type === "FILE" ? "파일 업로드" : "문서 작성"}
+                  </h3>
+                  {initial?.type === "FILE" && (
+                    <div
+                      className="deliverable-current-file"
+                      role="group"
+                      aria-label="현재 원본 파일"
+                    >
+                      <span className="eyebrow">현재 원본</span>
+                      <strong>{initial.file.originalFilename}</strong>
+                      <span className="field-help">
+                        {(initial.file.sizeBytes / 1024).toFixed(1)}KiB
+                      </span>
+                      <p className="field-help">
+                        교체할 파일을 선택하지 않으면 현재 원본을 유지합니다.
+                        파일을 교체하면 이전 원본은 삭제됩니다.
+                      </p>
+                    </div>
+                  )}
+                  {form.type === "FILE" ? (
+                    <Field
+                      label={initial ? "교체할 파일 (선택)" : "파일"}
+                      error={fieldErrors.file}
+                      help={`${fileHelp} / 파일당 10MiB / 팀 전체 파일 1GiB`}
+                    >
+                      <input
+                        ref={fileInput}
+                        name="file"
+                        type="file"
+                        className="deliverable-file-input"
+                        required={!initial && !file}
+                        accept=".txt,.md,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
+                        onChange={(event) => {
+                          setFile(event.target.files[0] || null);
+                          setFieldErrors((current) => ({
+                            ...current,
+                            file: undefined,
+                          }));
+                        }}
+                      />
+                    </Field>
+                  ) : (
+                    <Field
+                      label="본문"
+                      error={fieldErrors.text}
+                      help="작업 결과와 확인할 내용을 기록하세요. 제목·목록·표 등의 마크다운 서식을 사용할 수 있습니다."
+                    >
+                      <MarkdownEditor
+                        name="text"
+                        required
+                        maxLength={20000}
+                        rows={14}
+                        value={form.text}
+                        onChange={(event) => update("text", event.target.value)}
+                        onValueChange={(value) => update("text", value)}
+                      />
+                    </Field>
+                  )}
+                  {form.type === "TEXT" && (
+                    <p className="character-count">
+                      {form.text.length.toLocaleString()} / 20,000자
+                    </p>
+                  )}
+                  {form.type === "FILE" && file && (
+                    <div className="file-selection" role="status">
+                      <span className="eyebrow">
+                        {initial ? "교체할 파일" : "선택한 파일"}
+                      </span>
+                      <strong>{file.name}</strong>
+                      <p>
+                        {(file.size / 1024).toFixed(1)}KiB ·{" "}
+                        {initial
+                          ? "저장하면 기존 파일이 삭제되고 이 파일로 교체됩니다."
+                          : "저장하면 업로드됩니다."}
+                      </p>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={clearSelectedFile}
+                      >
+                        파일 선택 해제
+                      </button>
+                    </div>
+                  )}
+                </section>
               )}
-            </section>
+            </fieldset>
           )}
-        </fieldset>
-        {blocked && (
-          <p className="notice">
-            현재 팀 상태로는 산출물을 저장할 수 없습니다. 창을 닫고 팀 상태를
-            확인해 주세요.
-          </p>
-        )}
-        <ErrorNotice error={error} />
-        <SaveRecovery
-          error={error}
-          recovery={recovery}
-          onLoadLatest={
-            onLoadLatest ? () => recovery.refresh(onLoadLatest) : undefined
-          }
-          canReapply={canReapply}
-          rows={
-            recovery.latest
-              ? [
-                  {
-                    label: "제목",
-                    latest: recovery.latest.deliverable.title,
-                    input: form.title.trim(),
-                  },
-                  {
-                    label: "분류",
-                    latest:
-                      categoryLabels[recovery.latest.deliverable.category],
-                    input: categoryLabels[form.category],
-                  },
-                  ...(!permissions.content
-                    ? []
-                    : [
-                        {
-                          label: "설명",
-                          latest: recovery.latest.deliverable.description || "",
-                          input: form.description.trim(),
-                        },
-                        form.type === "FILE"
-                          ? {
-                              label: "원본 파일",
-                              latest:
-                                recovery.latest.deliverable.file
-                                  ?.originalFilename,
-                              input:
-                                file?.name ||
-                                "선택한 새 파일 없음 · 최신 원본 유지",
-                            }
-                          : {
-                              label: "본문",
-                              latest: recovery.latest.deliverable.text,
-                              input: form.text.trim(),
-                            },
-                      ]),
-                ]
-              : []
-          }
-        />
+          {blocked && (
+            <p className="notice">
+              현재 팀 상태로는 산출물을 저장할 수 없습니다. 창을 닫고 팀 상태를
+              확인해 주세요.
+            </p>
+          )}
+          <ErrorNotice error={error} />
+          <SaveRecovery
+            error={error}
+            recovery={recovery}
+            onLoadLatest={
+              onLoadLatest ? () => recovery.refresh(onLoadLatest) : undefined
+            }
+            canReapply={canReapply}
+            rows={
+              recovery.latest
+                ? [
+                    {
+                      label: "제목",
+                      latest: recovery.latest.deliverable.title,
+                      input: form.title.trim(),
+                    },
+                    {
+                      label: "분류",
+                      latest:
+                        categoryLabels[recovery.latest.deliverable.category],
+                      input: categoryLabels[form.category],
+                    },
+                    ...(!permissions.content
+                      ? []
+                      : [
+                          {
+                            label: "설명",
+                            latest:
+                              recovery.latest.deliverable.description || "",
+                            input: form.description.trim(),
+                          },
+                          form.type === "FILE"
+                            ? {
+                                label: "원본 파일",
+                                latest:
+                                  recovery.latest.deliverable.file
+                                    ?.originalFilename,
+                                input:
+                                  file?.name ||
+                                  "선택한 새 파일 없음 · 최신 원본 유지",
+                              }
+                            : {
+                                label: "본문",
+                                latest: recovery.latest.deliverable.text,
+                                input: form.text.trim(),
+                              },
+                        ]),
+                  ]
+                : []
+            }
+          />
+        </div>
         <FormActions
           busy={busy || recovery.loading}
           disabled={blocked || (conflict && !recovery.latest) || !canReapply}
           onCancel={onClose}
+          hideSubmit={step === "choose"}
+          onBack={
+            !initial && step === "editor"
+              ? () => {
+                  setFieldErrors({});
+                  setStep("choose");
+                }
+              : undefined
+          }
           label={
             recovery.latest
               ? "내 입력으로 다시 저장"
@@ -679,9 +751,14 @@ export default function Deliverables({
           {isCollection && isApprovedMember(team) && (
             <button
               className="secondary-button"
-              onClick={() => navigateToMaterials(teamMenuPath(team.spaceId, team.id, "팀 자료 검색"))}
+              onClick={() =>
+                navigateToMaterials(
+                  teamMenuPath(team.spaceId, team.id, "팀 자료 검색"),
+                )
+              }
             >
-              <Icon name="search" />자료에 질문하기
+              <Icon name="search" />
+              자료에 질문하기
             </button>
           )}
           {isCollection && (

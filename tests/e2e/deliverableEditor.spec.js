@@ -23,6 +23,7 @@ test('산출물 등록·수정·검색은 서버에서 허용하는 여섯 분�
   const filterOptions = page.getByLabel('산출물 분류', { exact: true }).locator('option');
   await expect(filterOptions).toHaveText(['전체 분류', ...categories.map(([, label]) => label)]);
   await page.getByRole('button', { name: '산출물 등록', exact: true }).click();
+  await page.getByRole('dialog', { name: '산출물 등록', exact: true }).getByRole('button', { name: '문서 작성', exact: true }).click();
   let dialog = page.getByRole('dialog', { name: '산출물 등록', exact: true });
   const options = dialog.getByLabel('분류', { exact: true }).locator('option');
   await expect(options).toHaveText(categories.map(([, label]) => label));
@@ -48,9 +49,9 @@ test('파일 선택을 해제하면 필수 파일 검증을 유지하고 수정�
 }) => {
   await openDeliverables(page);
   await page.getByRole('button', { name: '산출물 등록', exact: true }).click();
+  await page.getByRole('dialog', { name: '산출물 등록', exact: true }).getByRole('button', { name: '파일 업로드', exact: true }).click();
   let dialog = page.getByRole('dialog', { name: '산출물 등록' });
   await dialog.getByLabel('제목', { exact: true }).fill('공용 설계 파일');
-  await dialog.getByLabel('자료 유형', { exact: true }).selectOption('FILE');
   const original = {
     name: 'design.md',
     mimeType: 'text/markdown',
