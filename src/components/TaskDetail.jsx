@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  CalendarDays,
+  Clock3,
+  FileText,
+  Sparkles,
+  UsersRound,
+} from 'lucide-react';
+import {
   deleteTask,
   getTask,
   updateContribution,
@@ -131,6 +138,12 @@ export default function TaskDetail({
     setError(null);
   }, [resource.data]);
   const [editing, setEditing] = useState(false);
+  const [activeTab, setActiveTab] = useState('task-description-section');
+  const [sectionToFocus, setSectionToFocus] = useState(null);
+  useEffect(() => {
+    setActiveTab('task-description-section');
+    setSectionToFocus(null);
+  }, [taskId]);
   const { confirm, confirmDiscard, notify } = useInteractions();
   const mutate = async (
     action,
@@ -152,6 +165,25 @@ export default function TaskDetail({
   };
   const reload = resource.reload;
   const task = resource.data?.task;
+  const canViewAi = Boolean(task && isAssignee(task, user.id));
+  const tabs = [
+    ['task-description-section', '작업 설명'],
+    ['task-deliverables-section', '산출물'],
+    ['task-contributions-section', '수행 설명'],
+    ...(canViewAi ? [['task-ai-review-section', 'AI 피드백']] : []),
+    ['task-comments-tabpanel', '댓글'],
+  ];
+  const visibleTab =
+    activeTab === 'task-ai-review-section' && !canViewAi
+      ? 'task-description-section'
+      : activeTab;
+  useEffect(() => {
+    if (!sectionToFocus) return;
+    const target = document.getElementById(sectionToFocus);
+    target?.focus({ preventScroll: true });
+    target?.scrollIntoView({ block: 'start' });
+    setSectionToFocus(null);
+  }, [sectionToFocus, visibleTab]);
   const missingContributions =
     task?.assignees.filter(
       (assignment) =>
@@ -160,6 +192,12 @@ export default function TaskDetail({
           ?.contributionDescription?.trim(),
     ) || [];
   const hasDeliverables = Boolean(resource.data?.deliverableSummary?.length);
+  const preparedItems =
+    Number(['IN_PROGRESS', 'REVISING'].includes(task?.status)) +
+    Number(hasDeliverables) +
+    (task?.assignees.length || 0) -
+    missingContributions.length;
+  const preparationItems = 2 + (task?.assignees.length || 0);
   const completionReady =
     ['IN_PROGRESS', 'REVISING'].includes(task?.status) &&
     !missingContributions.length &&
@@ -200,11 +238,16 @@ export default function TaskDetail({
   };
 
   const focusTaskSection = (id) => {
-    const target = document.getElementById(id);
-    if (target?.tagName === 'DETAILS') target.open = true;
-    target?.focus({ preventScroll: true });
-    target?.scrollIntoView({ block: 'start' });
+    setActiveTab(
+      id === 'own-contribution-description' ? 'task-contributions-section' : id,
+    );
+    setSectionToFocus(id);
   };
+  const panelProps = (id) => ({
+    role: 'tabpanel',
+    'aria-labelledby': `${id}-tab`,
+    hidden: visibleTab !== id,
+  });
 
   return (
     <section className="stack task-detail-page">
@@ -213,133 +256,146 @@ export default function TaskDetail({
           ← 목록으로
         </button>
         {task && (
-          <nav className="task-section-navigation" aria-label="작업 상세 항목">
-            {[
-              ['task-description-section', '작업 설명'],
-              ['task-contributions-section', '수행 설명'],
-              ['task-deliverables-section', '산출물'],
-            ].map(([id, label]) => (
+          <div
+            className="task-section-navigation"
+            role="tablist"
+            aria-label="작업 상세 항목"
+          >
+            {tabs.map(([id, label], index) => (
               <button
                 key={id}
+                id={`${id}-tab`}
+                type="button"
+                role="tab"
+                aria-selected={visibleTab === id}
+                aria-controls={id}
+                tabIndex={visibleTab === id ? 0 : -1}
                 className="text-button"
-                aria-label={`${label} 영역으로 이동`}
-                onClick={() => focusTaskSection(id)}
+                data-ai={id === 'task-ai-review-section' || undefined}
+                onClick={() => setActiveTab(id)}
+                onKeyDown={(event) => {
+                  let nextIndex;
+                  if (event.key === 'ArrowRight')
+                    nextIndex = (index + 1) % tabs.length;
+                  if (event.key === 'ArrowLeft')
+                    nextIndex = (index - 1 + tabs.length) % tabs.length;
+                  if (event.key === 'Home') nextIndex = 0;
+                  if (event.key === 'End') nextIndex = tabs.length - 1;
+                  if (nextIndex === undefined) return;
+                  event.preventDefault();
+                  const nextId = tabs[nextIndex][0];
+                  setActiveTab(nextId);
+                  document.getElementById(`${nextId}-tab`)?.focus();
+                }}
               >
+                {id === 'task-ai-review-section' && (
+                  <Sparkles size={14} aria-hidden="true" />
+                )}
                 {label}
               </button>
             ))}
-          </nav>
+          </div>
         )}
       </div>
       <ErrorNotice error={error} onRetry={reload} />
       <ResourceState resource={resource} label="작업 상세">
         {task && (
           <>
-            <div className="page-heading">
-              <div>
-                <span
-                  className={`status-badge task-state-${task.status.toLowerCase()}`}
-                >
-                  {statusLabels[task.status]}
-                </span>
-                <h1>{task.title}</h1>
+            <header className="task-detail-header">
+              <div className="page-heading task-detail-title-row">
+                <div>
+                  <div className="task-title-context">
+                    <span className="task-detail-number">작업 #{task.id}</span>
+                    <span
+                      className={`status-badge task-state-${task.status.toLowerCase()}`}
+                    >
+                      {statusLabels[task.status]}
+                    </span>
+                  </div>
+                  <h1>{task.title}</h1>
+                </div>
+                <div className="task-detail-actions">
+                  {isAssignee(task, user.id) && (
+                    <button
+                      className="secondary-button task-ai-shortcut"
+                      onClick={() => focusTaskSection('task-ai-review-section')}
+                    >
+                      <Sparkles size={16} aria-hidden="true" />
+                      AI 피드백 보기
+                    </button>
+                  )}
+                  {canEditTask(task, team, user.id) && (
+                    <button
+                      className="secondary-button"
+                      disabled={busy}
+                      onClick={() => {
+                        setError(null);
+                        setEditing(true);
+                      }}
+                    >
+                      작업 수정
+                    </button>
+                  )}
+                </div>
               </div>
-              {canEditTask(task, team, user.id) && (
-                <button
-                  className="secondary-button"
-                  disabled={busy}
-                  onClick={() => {
-                    setError(null);
-                    setEditing(true);
-                  }}
-                >
-                  작업 수정
-                </button>
-              )}
-            </div>
-            <dl className="task-overview-facts" aria-label="작업 기본 정보">
-              <div>
-                <dt>예상 작업량</dt>
-                <dd>{formatExpectedWorkload(task.weight)}</dd>
-              </div>
-              <div>
-                <dt>시작일</dt>
-                <dd>{formatDate(task.startAt)}</dd>
-              </div>
-              <div>
-                <dt>마감</dt>
-                <dd>{formatDate(task.dueAt)}</dd>
-              </div>
-              <div>
-                <dt>완료일</dt>
-                <dd>
-                  {task.completedAt ? formatDate(task.completedAt) : '미완료'}
-                </dd>
-              </div>
-            </dl>
+              <dl className="task-overview-facts" aria-label="작업 기본 정보">
+                <div>
+                  <dt>
+                    <Clock3 size={14} aria-hidden="true" />
+                    예상 작업량
+                  </dt>
+                  <dd>{formatExpectedWorkload(task.weight)}</dd>
+                </div>
+                <div>
+                  <dt>
+                    <CalendarDays size={14} aria-hidden="true" />
+                    시작일
+                  </dt>
+                  <dd>{formatDate(task.startAt)}</dd>
+                </div>
+                <div>
+                  <dt>
+                    <CalendarDays size={14} aria-hidden="true" />
+                    마감
+                  </dt>
+                  <dd>{formatDate(task.dueAt)}</dd>
+                </div>
+                <div>
+                  <dt>
+                    <CalendarDays size={14} aria-hidden="true" />
+                    완료일
+                  </dt>
+                  <dd>
+                    {task.completedAt ? formatDate(task.completedAt) : '미완료'}
+                  </dd>
+                </div>
+              </dl>
+            </header>
             <div className="task-detail-layout">
-              <div className="stack">
+              <div className="stack task-detail-main">
                 <section
                   id="task-description-section"
-                  tabIndex={-1}
-                  className="panel task-section-anchor"
+                  {...panelProps('task-description-section')}
+                  tabIndex={0}
+                  className="panel task-section-anchor task-description-card"
                 >
-                  <h2>작업 설명</h2>
+                  <h2>
+                    <FileText size={18} aria-hidden="true" />
+                    작업 설명
+                  </h2>
                   <p className="preserve-lines">{task.description}</p>
-                </section>
-                <section
-                  id="task-contributions-section"
-                  tabIndex={-1}
-                  className="panel task-section-anchor"
-                >
-                  <h2>담당자 수행 설명</h2>
-                  {resource.data.contributions.map((contribution) => (
-                    <div
-                      className="contribution-entry"
-                      key={contribution.userId}
-                    >
-                      <div className="contribution-entry-heading">
-                        <h3>
-                          {memberName(members, contribution.userId)}
-                          {contribution.userId === user.id && ' · 나'}
-                        </h3>
-                        <span
-                          className={`contribution-description-state ${contribution.contributionDescription?.trim() ? 'is-written' : ''}`}
-                        >
-                          {contribution.contributionDescription?.trim()
-                            ? '작성 완료'
-                            : '미작성'}
-                        </span>
-                      </div>
-                      {contribution.userId === user.id ? (
-                        <OwnContribution
-                          key={`${task.id}-${contribution.contributionDescription || ''}`}
-                          task={task}
-                          contribution={contribution.contributionDescription}
-                          busy={busy}
-                          blocked={!canModifyTeamWork(team) || workClosed}
-                          onSave={(contributionDescription) =>
-                            mutate(() =>
-                              updateContribution(task.id, {
-                                expectedVersion: task.version,
-                                contributionDescription,
-                              }),
-                            )
-                          }
-                        />
-                      ) : (
-                        <p className="preserve-lines">
-                          {contribution.contributionDescription ||
-                            '아직 작성하지 않았습니다.'}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                  {!canViewAi && (
+                    <p className="task-ai-access-note">
+                      <Sparkles size={16} aria-hidden="true" />
+                      AI 피드백은 이 작업의 담당자에게만 제공됩니다.
+                    </p>
+                  )}
                 </section>
                 <div
                   id="task-deliverables-section"
+                  {...panelProps('task-deliverables-section')}
                   className="task-section-anchor"
-                  tabIndex={-1}
+                  tabIndex={0}
                 >
                   <Deliverables
                     team={team}
@@ -350,18 +406,97 @@ export default function TaskDetail({
                     onChanged={reload}
                   />
                 </div>
-                {isAssignee(task, user.id) && (
-                  <AiReview
-                    context={{
-                      task,
-                      team,
-                      space,
-                      user,
-                      members,
-                      manager: false,
-                    }}
+                {isAssignee(task, user.id) ? (
+                  <div
+                    id="task-ai-review-section"
+                    {...panelProps('task-ai-review-section')}
+                    className="task-section-anchor task-ai-section"
+                    tabIndex={0}
+                  >
+                    <AiReview
+                      context={{
+                        task,
+                        team,
+                        space,
+                        user,
+                        members,
+                        manager: false,
+                      }}
+                    />
+                  </div>
+                ) : null}
+                <section
+                  id="task-contributions-section"
+                  {...panelProps('task-contributions-section')}
+                  tabIndex={0}
+                  className="panel task-section-anchor"
+                >
+                  <h2>
+                    <UsersRound size={18} aria-hidden="true" />
+                    담당자 수행 설명
+                  </h2>
+                  {[...resource.data.contributions]
+                    .sort(
+                      (a, b) =>
+                        Number(b.userId === user.id) -
+                        Number(a.userId === user.id),
+                    )
+                    .map((contribution) => (
+                      <div
+                        className="contribution-entry"
+                        key={contribution.userId}
+                      >
+                        <div className="contribution-entry-heading">
+                          <h3>
+                            {memberName(members, contribution.userId)}
+                            {contribution.userId === user.id && ' · 나'}
+                          </h3>
+                          <span
+                            className={`contribution-description-state ${contribution.contributionDescription?.trim() ? 'is-written' : ''}`}
+                          >
+                            {contribution.contributionDescription?.trim()
+                              ? '작성 완료'
+                              : '미작성'}
+                          </span>
+                        </div>
+                        {contribution.userId === user.id ? (
+                          <OwnContribution
+                            key={`${task.id}-${contribution.contributionDescription || ''}`}
+                            task={task}
+                            contribution={contribution.contributionDescription}
+                            busy={busy}
+                            blocked={!canModifyTeamWork(team) || workClosed}
+                            onSave={(contributionDescription) =>
+                              mutate(() =>
+                                updateContribution(task.id, {
+                                  expectedVersion: task.version,
+                                  contributionDescription,
+                                }),
+                              )
+                            }
+                          />
+                        ) : (
+                          <p className="preserve-lines">
+                            {contribution.contributionDescription ||
+                              '아직 작성하지 않았습니다.'}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                </section>
+                <div
+                  id="task-comments-tabpanel"
+                  {...panelProps('task-comments-tabpanel')}
+                  className="task-section-anchor task-comments-tabpanel"
+                  tabIndex={0}
+                >
+                  <TaskComments
+                    key={`${team.id}-${task.id}-${user.id}`}
+                    taskId={task.id}
+                    team={team}
+                    user={user}
                   />
-                )}
+                </div>
               </div>
               <aside
                 className="stack task-progress-sidebar"
@@ -390,6 +525,26 @@ export default function TaskDetail({
                       </>
                     ) : (
                       <>
+                        <div
+                          className="task-preparation-summary"
+                          aria-label="완료 준비 항목"
+                        >
+                          <span>준비 항목</span>
+                          <strong>
+                            {preparedItems}
+                            <span> / {preparationItems}</span>
+                          </strong>
+                          <div
+                            className="task-preparation-track"
+                            aria-hidden="true"
+                          >
+                            <span
+                              style={{
+                                width: `${(preparedItems / preparationItems) * 100}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
                         <ul
                           className="completion-readiness"
                           aria-label="완료 준비 상태"
@@ -498,60 +653,77 @@ export default function TaskDetail({
                   className="panel task-assignment-panel task-section-anchor"
                   aria-label="담당자와 배분"
                 >
-                  <h2>담당자와 배분</h2>
+                  <h2>
+                    <UsersRound size={18} aria-hidden="true" />
+                    담당자와 배분
+                  </h2>
                   <p className="field-help">예상 작업량을 나누는 비율입니다.</p>
                   <ul className="clean-list">
                     {task.assignees.map((assignment) => (
                       <li className="row-item" key={assignment.userId}>
-                        <span>
-                          {memberName(members, assignment.userId)}
-                          {assignment.userId === user.id && (
-                            <small> · 나</small>
-                          )}
+                        <span className="task-assignee-identity">
+                          <span
+                            className="task-assignee-avatar"
+                            aria-hidden="true"
+                          >
+                            {memberName(members, assignment.userId).slice(0, 1)}
+                          </span>
+                          <span>
+                            {memberName(members, assignment.userId)}
+                            {assignment.userId === user.id && (
+                              <small> · 나</small>
+                            )}
+                          </span>
                         </span>
                         <strong>{assignment.allocationPercent}%</strong>
+                        <div
+                          className="task-allocation-track"
+                          aria-hidden="true"
+                        >
+                          <span
+                            style={{
+                              width: `${Math.max(0, Math.min(100, assignment.allocationPercent))}%`,
+                            }}
+                          />
+                        </div>
                       </li>
                     ))}
                   </ul>
                 </section>
-                <TaskComments
-                  key={`${team.id}-${task.id}-${user.id}`}
-                  taskId={task.id}
-                  team={team}
-                  user={user}
-                />
               </aside>
             </div>
             {isMutable(task) && isTeamEditor(team, user.id) && (
-              <button
-                className="secondary-button danger"
-                disabled={busy || teamWorkBlocked(team)}
-                onClick={async () => {
-                  if (
-                    !(await confirm({
-                      title: '작업 삭제',
-                      message:
-                        '작업과 연결된 산출물을 완전히 삭제합니다. 삭제한 자료는 복구할 수 없습니다.',
-                      label: '작업 삭제',
-                      danger: true,
-                    }))
-                  )
-                    return;
-                  setBusy(true);
-                  setError(null);
-                  try {
-                    await deleteTask(task.id, task.version);
-                    notify('작업을 삭제했습니다.');
-                    onBack();
-                  } catch (requestError) {
-                    setError(requestError);
-                  } finally {
-                    setBusy(false);
-                  }
-                }}
-              >
-                작업 삭제
-              </button>
+              <div className="task-detail-footer">
+                <button
+                  className="secondary-button danger"
+                  disabled={busy || teamWorkBlocked(team)}
+                  onClick={async () => {
+                    if (
+                      !(await confirm({
+                        title: '작업 삭제',
+                        message:
+                          '작업과 연결된 산출물을 완전히 삭제합니다. 삭제한 자료는 복구할 수 없습니다.',
+                        label: '작업 삭제',
+                        danger: true,
+                      }))
+                    )
+                      return;
+                    setBusy(true);
+                    setError(null);
+                    try {
+                      await deleteTask(task.id, task.version);
+                      notify('작업을 삭제했습니다.');
+                      onBack();
+                    } catch (requestError) {
+                      setError(requestError);
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  작업 삭제
+                </button>
+              </div>
             )}
           </>
         )}

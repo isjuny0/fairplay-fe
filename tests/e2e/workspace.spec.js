@@ -1050,6 +1050,7 @@ test('삭제 동의 중에는 작업·수행 설명·자료를 변경할 수 없
   await page
     .getByRole('button', { name: '회원 탈퇴 구현', exact: true })
     .click();
+  await page.getByRole('tab', { name: '수행 설명', exact: true }).click();
   await expect(page.getByLabel('내 수행 설명')).toBeDisabled();
   await expect(
     page.getByRole('button', { name: '수행 설명 저장' }),
@@ -1375,6 +1376,7 @@ test('다른 작업 정보를 저장해도 미저장 수행 설명을 보존한�
   const state = await workspace(page);
   await page.getByRole('button', { name: '작업', exact: true }).click();
   await page.getByRole('button', { name: '회원 탈퇴 구현', exact: true }).click();
+  await page.getByRole('tab', { name: '수행 설명', exact: true }).click();
   await page.getByLabel('내 수행 설명', { exact: true }).fill('아직 저장하지 않은 개인 수행 기록입니다.');
   await page.getByRole('button', { name: '작업 수정', exact: true }).click();
   const dialog = page.getByRole('dialog');
