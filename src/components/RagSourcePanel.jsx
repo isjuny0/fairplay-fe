@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { ArrowUpRight, FileText, X } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, X } from 'lucide-react';
 import useResource from '../hooks/useResource.js';
 import { getRagSource } from '../api/rag.js';
 import { sourceLocation, ragSourceErrorGuidance } from '../lib/rag.js';
@@ -9,10 +9,14 @@ export default function RagSourcePanel({
   teamId,
   reference,
   onAccessError,
-  onClose,
+  onBack,
+  onDismiss,
   onOpenMaterials,
 }) {
   const panel = useRef(null);
+  const hasCitation = Number.isInteger(reference.startLine) &&
+    Number.isInteger(reference.endLine) && reference.startLine >= 1 &&
+    reference.endLine >= reference.startLine;
   const originalFocus = useRef(document.activeElement);
   const original = useRef(null);
   const resource = useResource(
@@ -26,8 +30,6 @@ export default function RagSourcePanel({
   }, [resource.error, onAccessError]);
   useEffect(() => {
     panel.current?.focus({ preventScroll: true });
-    if (window.matchMedia('(max-width: 1199px)').matches)
-      panel.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
     return () => originalFocus.current?.focus({ preventScroll: true });
   }, []);
   useEffect(() => {
@@ -45,40 +47,41 @@ export default function RagSourcePanel({
     content?.teamId === teamId &&
     content?.deliverableId === reference.deliverableId &&
     content?.deliverableVersion === reference.deliverableVersion &&
-    content?.type === reference.type &&
+    ['TEXT', 'FILE'].includes(content?.type) &&
+    (reference.type == null || content?.type === reference.type) &&
     typeof content?.title === 'string' &&
     typeof content?.content === 'string';
   return (
     <aside
       className="rag-source-panel"
       role="region"
-      aria-label="근거 원문"
+      aria-label={hasCitation ? '근거 원문' : '자료 원문'}
       ref={panel}
       tabIndex={-1}
       onKeyDown={(event) => {
         if (event.key === 'Escape') {
           event.stopPropagation();
-          onClose();
+          onBack();
         }
       }}
     >
       <header className="rag-panel-heading">
-        <span>
-          <FileText size={16} />
-          근거 원문
-        </span>
+        <button className="rag-inline-link rag-back-to-list" type="button" onClick={onBack}>
+          <ArrowLeft size={16} />
+          자료 목록
+        </button>
         <button
           type="button"
-          className="icon-button"
-          aria-label="근거 원문 닫기"
-          onClick={onClose}
+          className="icon-button rag-mobile-panel-close"
+          aria-label="자료 패널 닫기"
+          onClick={onDismiss}
         >
           <X size={18} />
         </button>
       </header>
       <div className="rag-source-meta">
         <h2>{reference.title}</h2>
-        <p>{sourceLocation(reference)}</p>
+        <p>{hasCitation ? sourceLocation(reference) : '전체 원문'}</p>
       </div>
       {resource.loading ? (
         <p className="rag-source-message" role="status">
@@ -115,7 +118,7 @@ export default function RagSourcePanel({
               className="rag-original-line"
               key={index}
               data-source-highlight={
-                index + 1 >= reference.startLine && index + 1 <= reference.endLine
+                hasCitation && index + 1 >= reference.startLine && index + 1 <= reference.endLine
               }
             >
               <span aria-hidden="true">{index + 1}</span>
