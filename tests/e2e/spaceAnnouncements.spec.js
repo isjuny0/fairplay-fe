@@ -403,6 +403,10 @@ for (const width of [1440, 320]) {
     await expect(page.locator(".announcement-content")).toHaveText(
       "공지 1 본문\n두 번째 줄",
     );
+    const primaryTextColor = await page.locator(".announcements-page h1").evaluate(
+      (element) => getComputedStyle(element).color,
+    );
+    await expect(page.locator(".announcement-content")).toHaveCSS("color", primaryTextColor);
     const breadcrumb = page.getByRole("navigation", {
       name: "현재 위치",
       exact: true,

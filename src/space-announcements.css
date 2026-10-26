@@ -191,6 +191,7 @@
   gap: 8px 16px;
 }
 .announcement-content {
+  color: var(--text-primary);
   margin: 0;
   padding: 28px 0;
   white-space: pre-wrap;
