@@ -1,5 +1,6 @@
 import useAppNavigate from "../hooks/useAppNavigate.js";
 import Icon from "./Icon.jsx";
+import RefreshButton from "./RefreshButton.jsx";
 import DeliverableTable from "./DeliverableTable.jsx";
 import DeliverableContent from "./DeliverableContent.jsx";
 import MarkdownEditor from "./MarkdownEditor.jsx";
@@ -759,14 +760,10 @@ export default function Deliverables({
             </button>
           )}
           {isCollection && (
-            <button
-              className="secondary-button"
+            <RefreshButton
               disabled={resource.loading}
               onClick={resource.reload}
-            >
-              <Icon name="refresh" />
-              새로고침
-            </button>
+            />
           )}
           {canCreate && (
             <button
@@ -962,14 +959,10 @@ export default function Deliverables({
               !resource.error &&
               `현재 페이지 ${resource.data?.length || 0}건`}
           </span>
-          <button
-            className="secondary-button"
+          <RefreshButton
             disabled={resource.loading}
             onClick={resource.reload}
-          >
-            <Icon name="refresh" />
-            새로고침
-          </button>
+          />
         </div>
       )}
       {isCollection && (

@@ -2713,14 +2713,6 @@ details > summary {
   }
 }
 
-.feedback-layout {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-.feedback-layout .guidance-panel {
-  order: -1;
-}
 .composition-legend {
   display: grid;
   gap: 8px;

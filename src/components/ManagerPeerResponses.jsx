@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import RefreshButton from './RefreshButton.jsx';
 import { useSearchParams } from 'react-router';
 import {
   getManagerPeerResponses,
@@ -33,13 +34,11 @@ function SubmittedResponses({ roundId, teamId }) {
     <div className="stack manager-peer-results">
       <div className="manager-peer-results-heading">
         <h3>최종 제출 현황</h3>
-        <button
-          className="secondary-button"
+        <RefreshButton
+          label="평가 원문 새로고침"
           disabled={resource.loading}
           onClick={resource.reload}
-        >
-          평가 원문 새로고침
-        </button>
+        />
       </div>
       {resource.error?.code === 'ROUND_NOT_CLOSED' ? (
         <p className="notice">
@@ -169,20 +168,17 @@ function PeerResponseContent({ context, teamId }) {
     <div className="stack peer-response-content">
       <div className="manager-peer-heading">
         <div>
-          <span className="eyebrow">관리자 전용 · 읽기 전용</span>
           <h2>동료 평가 원문</h2>
           <p>
             마감된 회차의 최종 제출 점수와 사유입니다. 임시 저장 응답은 표시하지
             않습니다.
           </p>
         </div>
-        <button
-          className="secondary-button"
+        <RefreshButton
+          label="원문 조회 회차 새로고침"
           disabled={rounds.loading}
           onClick={rounds.reload}
-        >
-          원문 조회 회차 새로고침
-        </button>
+        />
       </div>
       <ResourceState resource={rounds} label="평가 회차">
         <div className="manager-peer-scope" aria-label="원문 조회 범위">

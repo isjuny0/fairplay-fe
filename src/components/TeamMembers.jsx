@@ -1,4 +1,4 @@
-import Icon from './Icon.jsx';
+import RefreshButton from './RefreshButton.jsx';
 import { useEffect, useState } from 'react';
 import {
   getTeamApplications,
@@ -73,14 +73,10 @@ export default function TeamMembers({
         <div>
           <h1>팀원 관리</h1>
         </div>
-        <button
-          className="secondary-button"
+        <RefreshButton
           onClick={reload}
           disabled={busy || resource.loading || membersResource.loading}
-        >
-          <Icon name="refresh" />
-          새로고침
-        </button>
+        />
       </div>
       {pendingAction && (
         <p className="field-help" role="status">

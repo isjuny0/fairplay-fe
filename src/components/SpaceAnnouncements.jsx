@@ -17,6 +17,7 @@ import {
 import { formatDate } from "../lib/domain.js";
 import AnnouncementList from "./AnnouncementList.jsx";
 import AnnouncementEditor from "./AnnouncementEditor.jsx";
+import RefreshButton from "./RefreshButton.jsx";
 import { ErrorNotice, ResourceState } from "./ui.jsx";
 import "../space-announcements.css";
 
@@ -169,16 +170,13 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
               )}
           </div>
           <div className="heading-actions">
-            <button
-              className="secondary-button"
+            <RefreshButton
               disabled={resource.loading || busy}
               onClick={() => {
                 setError(null);
                 resource.reload();
               }}
-            >
-              새로고침
-            </button>
+            />
             {canManage && announcementId == null && (
               <button
                 className="primary-button"

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Sparkles } from 'lucide-react';
 import { getAiReview, requestAiReview } from '../api/aiReviews.js';
 import useResource from '../hooks/useResource.js';
 import { canModifyTeamWork, isAssignee, isMutable } from '../lib/domain.js';
@@ -112,10 +111,6 @@ export default function AiReview({ context }) {
     <section className="panel stack ai-review-panel" aria-label="AI 검토">
       <div className="ai-review-heading">
         <div>
-          <span className="eyebrow">
-            <Sparkles size={14} aria-hidden="true" />
-            산출물 피드백 · 선택 사항
-          </span>
           <h2>AI 검토</h2>
         </div>
         <div className="ai-review-actions">

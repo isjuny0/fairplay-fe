@@ -478,10 +478,6 @@
 }
 .directory-refresh {
   margin-left: auto;
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  padding: 8px;
 }
 .space-directory-columns,
 .space-directory .space-list button {

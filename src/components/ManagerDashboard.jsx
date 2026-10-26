@@ -1,4 +1,5 @@
 import ManagerPeerResponses from './ManagerPeerResponses.jsx';
+import RefreshButton from './RefreshButton.jsx';
 import { useSearchParams } from 'react-router';
 import { getManagerDashboard } from '../api/dashboard.js';
 import useResource from '../hooks/useResource.js';
@@ -126,16 +127,13 @@ export default function ManagerDashboard({ context }) {
     <section className="stack manager-dashboard">
       <div className="page-heading page-heading--compact">
         <div>
-          <span className="eyebrow">스페이스 관리자</span>
           <h1>관리자 대시보드</h1>
         </div>
-        <button
-          className="secondary-button"
+        <RefreshButton
+          label="현황 새로고침"
           disabled={resource.loading}
           onClick={resource.reload}
-        >
-          현황 새로고침
-        </button>
+        />
       </div>
       <div className="dashboard-toolbar">
         <Field label="조회할 팀">

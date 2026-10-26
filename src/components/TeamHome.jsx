@@ -1,4 +1,5 @@
 import { koreanDateTime } from '../lib/koreanTime.js';
+import RefreshButton from './RefreshButton.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router';
 import {
@@ -273,10 +274,9 @@ function TeamDashboard({
               <h2>팀 전체 진행률</h2>
               <DashboardMetricHelp title="팀 전체 진행률" />
             </div>
-            <button
+            <RefreshButton
               className="dashboard-icon-button"
-              aria-label="현황 새로고침"
-              title="현황 새로고침"
+              label="현황 새로고침"
               disabled={
                 summaryResource.loading || (needsTasks && taskResource.loading)
               }
@@ -285,9 +285,7 @@ function TeamDashboard({
                 if (needsTasks) taskResource.reload();
                 setNow(Date.now());
               }}
-            >
-              <Icon name="refresh" />
-            </button>
+            />
           </header>
           <ResourceState resource={summaryResource} label="팀 진행 현황">
             {summary && (

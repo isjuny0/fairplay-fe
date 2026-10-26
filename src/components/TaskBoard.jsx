@@ -2,6 +2,7 @@ import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import { screenLoaders } from '../lib/routeScreens.js';
 import { deferScreen } from './DeferredScreen.jsx';
 import Icon from './Icon.jsx';
+import RefreshButton from './RefreshButton.jsx';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { createTask, listTasks } from '../api/tasks.js';
@@ -20,17 +21,16 @@ import {
 import { isTaskExecutionOverdue } from '../lib/evaluation.js';
 
 import TaskTable from './TaskTable.jsx';
-import { MonthNavigation, TaskCalendar, TaskTimeline } from './TaskSchedule.jsx';
+import { TimelineNavigation, TaskTimeline } from './TaskSchedule.jsx';
 import {
   currentTaskMonth,
   isTaskMonth,
   nearestTaskMonth,
-  taskDate,
   timelineTaskPeriod,
   timelineWindow,
 } from '../lib/taskSchedule.js';
 import { EmptyState, Modal, ResourceState } from './ui.jsx';
-import { readTaskViewPreferences, saveTaskViewPreferences } from '../lib/taskViewPreferences.js';
+import { normalizeTaskView, readTaskViewPreferences, saveTaskViewPreferences } from '../lib/taskViewPreferences.js';
 
 const TaskForm = deferScreen(screenLoaders.TaskForm, '작업 입력');
 const TaskDetail = deferScreen(screenLoaders.TaskDetail, '작업 상세');
@@ -58,16 +58,11 @@ export default function TaskBoard({
   const onlyOverdue = onlyExecutionOverdue || searchParams.get('overdue') === '1';
   const [preferences, setPreferences] = useState(readTaskViewPreferences);
   const [expandedBoardTaskIds, setExpandedBoardTaskIds] = useState(() => new Set());
-  const view = searchParams.has('view')
-    ? ['board', 'list', 'calendar', 'timeline'].includes(searchParams.get('view'))
-      ? searchParams.get('view')
-      : 'board'
-    : preferences.view;
   const urlView = searchParams.get('view');
+  const view = urlView !== null ? normalizeTaskView(urlView) : preferences.view;
   useEffect(() => {
-    if (urlView !== null || taskId != null) return;
+    if (urlView === view || taskId != null) return;
     setSearchParams((current) => {
-      if (current.has('view')) return current;
       const next = new URLSearchParams(current);
       next.set('view', view);
       return next;
@@ -210,17 +205,11 @@ export default function TaskBoard({
           : (apiTimeToEpoch(left.dueAt) || Infinity) -
               (apiTimeToEpoch(right.dueAt) || Infinity) || right.id - left.id,
     );
-  const isSchedule = view === 'calendar' || view === 'timeline';
+  const isSchedule = view === 'timeline';
   const scheduleWindow = view === 'timeline' ? timelineWindow(month) : null;
   const periodTaskCount = view === 'timeline'
     ? tasks.filter((task) => timelineTaskPeriod(task, scheduleWindow, now)).length
-    : tasks.filter((task) =>
-        task.status === 'DONE'
-          ? taskDate(task.startAt).slice(0, 7) === month ||
-            taskDate(task.dueAt).slice(0, 7) === month
-          : taskDate(task.startAt).slice(0, 7) <= month &&
-            taskDate(task.dueAt).slice(0, 7) >= month,
-      ).length;
+    : 0;
   const nearestMonth = nearestTaskMonth(tasks, `${month}-01`);
   const hasSearchFilters = filter !== 'ALL' || onlyMine || onlyOverdue || Boolean(query.trim());
   const activeFilters = [
@@ -234,7 +223,7 @@ export default function TaskBoard({
     <div className="list-summary" aria-live="polite">
       <span>
         검색 결과 {tasks.length}개 · 전체 {resource.data?.length || 0}개
-        {isSchedule && ` · 현재 기간 ${periodTaskCount}개${view === 'timeline' ? ' (지연 포함)' : ''}`} ·{' '}
+        {isSchedule && ` · 현재 기간 ${periodTaskCount}개 (지연 포함)`} ·{' '}
         {view === 'board' ? '상태별 ' : ''}
         {sortLabel}
       </span>
@@ -257,7 +246,6 @@ export default function TaskBoard({
           {[
             ['board', '보드'],
             ['list', '목록'],
-            ['calendar', '캘린더'],
             ['timeline', '타임라인'],
           ].map(([mode, label]) => (
             <button
@@ -404,21 +392,15 @@ export default function TaskBoard({
             마감 지난 작업만
           </label>
         </div>
-        <button className="secondary-button" onClick={resource.reload}>
-          <Icon name="refresh" />
-          새로고침
-        </button>
+        <RefreshButton onClick={resource.reload} />
       </div>
       {isSchedule && (
         <div className="task-schedule-controls">
-          <MonthNavigation
+          <TimelineNavigation
             month={month}
-            span={view === 'timeline' ? 3 : 1}
             onMonthChange={(next) => setListOption('month', next)}
             tasks={tasks}
-            helpText={view === 'calendar'
-                ? '미완료 작업은 시작일부터 마감일까지 상태 색상의 막대로 표시합니다. 완료 작업은 날짜 옆에만 점을 표시하며, 빈 원은 시작일, 채운 원은 마감일입니다. 점이나 막대에 마우스를 올리거나 키보드로 초점을 맞추면 작업을 미리 볼 수 있습니다. 날짜나 완료 점을 선택하면 해당 날짜의 작업 목록을, 막대를 선택하면 작업 상세를 확인할 수 있습니다.'
-              : '막대의 위치와 겹침으로 일정의 순서와 병행 구간을 비교합니다. 막대는 계획 기간, 빨간 빗금은 마감 이후 오늘까지의 지연 구간입니다. 작업 제목이나 막대를 선택하면 상세를 확인할 수 있습니다.'}
+            helpText="막대의 위치와 겹침으로 일정의 순서와 병행 구간을 비교합니다. 막대는 계획 기간, 빨간 빗금은 마감 이후 오늘까지의 지연 구간입니다. 작업 제목이나 막대를 선택하면 상세를 확인할 수 있습니다."
           />
           <button
             ref={expandButton}
@@ -452,12 +434,10 @@ export default function TaskBoard({
         </div>
       )}
       <ResourceState resource={resource} label="작업 목록">
-        {(view !== 'calendar' || periodTaskCount === 0) && listSummary}
+        {listSummary}
         {isSchedule && periodTaskCount === 0 ? (
           <EmptyState>
-            <p>{view === 'calendar'
-              ? '이 달에 예정된 작업이 없습니다.'
-              : '이 기간에 예정되거나 지연 중인 작업이 없습니다.'}</p>
+            <p>이 기간에 예정되거나 지연 중인 작업이 없습니다.</p>
             <span>{tasks.length
               ? `검색 결과 ${tasks.length}개의 작업은 다른 기간에 있습니다.`
               : hasSearchFilters && resource.data?.length
@@ -474,15 +454,6 @@ export default function TaskBoard({
               )}
             </div>
           </EmptyState>
-        ) : view === 'calendar' ? (
-          <TaskCalendar
-            summary={listSummary}
-            now={now}
-            tasks={tasks}
-            month={month}
-            members={members}
-            onOpenTask={onOpenTask}
-          />
         ) : view === 'timeline' ? (
           <TaskTimeline
             now={now}

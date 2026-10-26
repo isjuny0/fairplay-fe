@@ -94,7 +94,7 @@ export default function WorkspaceNavigation({
           <strong>{space?.name || '스페이스'}</strong>
           {team && (
             <span>
-              {team.name} · {teamRole}
+              {teamRole === '리더' ? team.name : `${team.name} · ${teamRole}`}
             </span>
           )}
         </span>

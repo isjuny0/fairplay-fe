@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
-import { ChevronRight, FileText, RefreshCw, X } from 'lucide-react';
+import { ChevronRight, FileText, X } from 'lucide-react';
+import RefreshButton from './RefreshButton.jsx';
 import { ragStatusLabels, ragFailureLabels } from '../lib/rag.js';
 import { ResourceState } from './ui.jsx';
 
@@ -38,15 +39,11 @@ export default function RagMaterialList({
       <header className="rag-panel-heading">
         <h2>팀 자료 {data && <span>{data.totalElements.toLocaleString()}</span>}</h2>
         <div className="rag-panel-actions">
-          <button
-            type="button"
-            className="icon-button"
-            aria-label="팀 자료 새로고침"
+          <RefreshButton
+            label="팀 자료 새로고침"
             disabled={resource.loading}
             onClick={resource.reload}
-          >
-            <RefreshCw size={16} />
-          </button>
+          />
           <button
             type="button"
             className="icon-button rag-mobile-panel-close"

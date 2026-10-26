@@ -171,8 +171,8 @@ test('관리자가 리포트를 공개하면 팀원은 본인 계산 근거를 �
     .getByRole('button', { name: '공개 확정' })
     .click();
   await expect(
-    page.getByText('공개된 최종 결과', { exact: true }),
-  ).toBeVisible();
+    page.locator('.report-team-result > .section-heading > .status-badge'),
+  ).toHaveText('공개');
   await expect(
     page.getByRole('heading', { name: '나의 계산 근거' }),
   ).toHaveCount(0);

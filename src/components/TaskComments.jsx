@@ -1,4 +1,5 @@
 import { apiTimeToEpoch } from '../lib/koreanTime.js';
+import RefreshButton from './RefreshButton.jsx';
 import { useRef, useState } from 'react';
 import {
   createTaskComment,
@@ -141,17 +142,13 @@ export default function TaskComments({ taskId, team, user }) {
     >
       <div className="task-comments-heading">
         <h2>댓글</h2>
-        <button
-          type="button"
-          className="text-button"
+        <RefreshButton
           disabled={busy || resource.loading || editingId !== null}
           onClick={() => {
             setError(null);
             resource.reload();
           }}
-        >
-          새로고침
-        </button>
+        />
       </div>
       <ErrorNotice error={error} />
       {approved && (

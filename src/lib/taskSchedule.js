@@ -1,6 +1,5 @@
 import { apiTimeToEpoch, koreanDateTime } from './koreanTime.js';
 import {
-  calendarDays,
   dateKey,
   daysInMonth,
   isValidDate,
@@ -21,81 +20,6 @@ export function moveTaskMonth(month, offset) {
   return nextYear >= 1 && nextYear <= 9999
     ? dateKey(nextYear, index % 12, 1).slice(0, 7)
     : null;
-}
-
-export function taskMonthDays(month) {
-  const [year, number] = month.split('-').map(Number);
-  const days = calendarDays(year, number - 1).map((day) =>
-    day == null ? null : dateKey(year, number - 1, day),
-  );
-  while (days.length % 7) days.push(null);
-  return days;
-}
-
-export function tasksByDate(tasks, dates) {
-  return new Map(
-    dates
-      .filter(Boolean)
-      .map((date) => [
-        date,
-        tasks.filter(
-          (task) =>
-            taskDate(task.startAt) <= date && taskDate(task.dueAt) >= date,
-        ),
-      ]),
-  );
-}
-
-export function taskDateMarkers(tasks, dates) {
-  return new Map(
-    dates
-      .filter(Boolean)
-      .map((date) => [
-        date,
-        tasks.flatMap((task) => {
-          const markers = [];
-          if (taskDate(task.startAt) === date)
-            markers.push({ task, type: 'start' });
-          if (taskDate(task.dueAt) === date)
-            markers.push({ task, type: 'due' });
-          return markers;
-        }),
-      ]),
-  );
-}
-
-export function calendarWeekTasks(tasks, dates) {
-  const validDates = dates.filter(Boolean);
-  const first = validDates[0],
-    last = validDates.at(-1);
-  const segments = tasks
-    .filter(
-      (task) => taskDate(task.startAt) <= last && taskDate(task.dueAt) >= first,
-    )
-    .sort(
-      (a, b) =>
-        taskDate(a.startAt).localeCompare(taskDate(b.startAt)) ||
-        taskDate(b.dueAt).localeCompare(taskDate(a.dueAt)) ||
-        a.id - b.id,
-    );
-  const laneEnds = [];
-  return segments.map((task) => {
-    const start = taskDate(task.startAt),
-      end = taskDate(task.dueAt);
-    const startColumn = dates.indexOf(start < first ? first : start) + 1;
-    const endColumn = dates.indexOf(end > last ? last : end) + 1;
-    let lane = laneEnds.findIndex((previousEnd) => previousEnd < startColumn);
-    if (lane < 0) lane = laneEnds.length;
-    laneEnds[lane] = endColumn;
-    return {
-      task,
-      startColumn,
-      endColumn,
-      lane,
-      continuesBefore: start < first,
-      continuesAfter: end > last,
-    };
-  });
 }
 
 export function nearestTaskMonth(

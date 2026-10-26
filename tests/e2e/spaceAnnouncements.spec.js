@@ -346,8 +346,14 @@ for (const width of [1440, 320]) {
     const refreshBox = await heading
       .getByRole("button", { name: "새로고침", exact: true })
       .boundingBox();
-    expect(Math.abs(titleBox.y - refreshBox.y)).toBeLessThan(1);
-    expect(Math.abs(titleBox.height - refreshBox.height)).toBeLessThan(1);
+    expect(
+      Math.abs(titleBox.y + titleBox.height / 2 - refreshBox.y - refreshBox.height / 2),
+    ).toBeLessThan(1);
+    expect(refreshBox.width).toBe(40);
+    expect(refreshBox.height).toBe(40);
+    await expect(
+      heading.getByRole("button", { name: "새로고침", exact: true }),
+    ).toHaveText("");
     await heading.screenshot({
       path: testInfo.outputPath("aligned-heading.png"),
     });

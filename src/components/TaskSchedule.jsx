@@ -1,5 +1,6 @@
 import { koreanDateTime } from '../lib/koreanTime.js';
-import { Fragment, useRef, useState } from 'react';
+import { useRef } from 'react';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDate, memberName, statusLabels } from '../lib/domain.js';
 import {
   currentTaskMonth,
@@ -7,17 +8,11 @@ import {
   moveTaskMonth,
   nearestTaskMonth,
   taskDate,
-  taskMonthDays,
-  taskDateMarkers,
-  tasksByDate,
-  calendarWeekTasks,
   timelineTaskPeriod,
   timelineWindow,
 } from '../lib/taskSchedule.js';
-import { Modal } from './ui.jsx';
 import TaskSchedulePreview, { useTaskSchedulePreview } from './TaskSchedulePreview.jsx';
 
-const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
 const monthLabel = (month) =>
   `${Number(month.slice(0, 4))}년 ${Number(month.slice(5))}월`;
 const shortDate = (date) =>
@@ -56,41 +51,57 @@ function ScheduleStatusLegend({ label }) {
   );
 }
 
-export function MonthNavigation({
+export function TimelineNavigation({
   month,
   onMonthChange,
   tasks,
-  span = 1,
   helpText,
 }) {
-  const previous = moveTaskMonth(month, -span),
-    next = moveTaskMonth(month, span);
+  const previous = moveTaskMonth(month, -3),
+    next = moveTaskMonth(month, 3);
   const nearest = nearestTaskMonth(tasks);
-  const lastMonth = span === 3 ? timelineWindow(month).months.at(-1) : month;
+  const lastMonth = timelineWindow(month).months.at(-1);
   return (
     <div className="task-month-navigation">
       <div className="heading-actions">
         <button
           className="secondary-button"
-          aria-label={span === 3 ? '이전 3개월' : '이전 달'}
+          aria-label="이전 3개월"
           disabled={!previous}
           onClick={() => onMonthChange(previous)}
         >
-          ←
+          <ChevronLeft size={16} aria-hidden="true" />
         </button>
-        <h2>
-          {monthLabel(month)}
-          {span === 3 && lastMonth !== month
-            ? ` – ${monthLabel(lastMonth)}`
-            : ''}
-        </h2>
+        <label className="task-month-select">
+          <span aria-hidden="true">
+            {monthLabel(month)}
+            {lastMonth !== month
+              ? ` – ${monthLabel(lastMonth)}`
+              : ''}
+            <ChevronDown size={14} aria-hidden="true" />
+          </span>
+          <input
+            aria-label="조회 시작 월"
+            type="month"
+            min="0001-01"
+            max="9999-12"
+            value={month}
+            onClick={(event) => {
+              try { event.currentTarget.showPicker?.(); } catch { /* Native keyboard editing remains available. */ }
+            }}
+            onChange={(event) => {
+              if (isTaskMonth(event.target.value))
+                onMonthChange(event.target.value);
+            }}
+          />
+        </label>
         <button
           className="secondary-button"
-          aria-label={span === 3 ? '다음 3개월' : '다음 달'}
+          aria-label="다음 3개월"
           disabled={!next}
           onClick={() => onMonthChange(next)}
         >
-          →
+          <ChevronRight size={16} aria-hidden="true" />
         </button>
         <button
           className="secondary-button"
@@ -99,272 +110,13 @@ export function MonthNavigation({
           오늘
         </button>
       </div>
-      <div className="task-month-picker">
-        <label>
-          <span className="sr-only">
-            {span === 3 ? '조회 시작 월' : '조회 월'}
-          </span>
-          <input
-            aria-label={span === 3 ? '조회 시작 월' : '조회 월'}
-            type="month"
-            min="0001-01"
-            max="9999-12"
-            value={month}
-            onChange={(event) => {
-              if (isTaskMonth(event.target.value))
-                onMonthChange(event.target.value);
-            }}
-          />
-        </label>
-        {helpText && <ScheduleHelp text={helpText} />}
-      </div>
+      {helpText && <ScheduleHelp text={helpText} />}
       {nearest && nearest !== month && (
         <button className="text-button" onClick={() => onMonthChange(nearest)}>
           가까운 마감으로
         </button>
       )}
     </div>
-  );
-}
-
-function ScheduleTask({ task, onOpenTask, members }) {
-  return (
-    <button
-      className={`schedule-task schedule-task-${task.status.toLowerCase()}`}
-      onClick={() => onOpenTask(task.id)}
-      title={scheduleLabel(task)}
-    >
-      <span className="status-dot" aria-hidden="true" />
-      <span className="schedule-task-title">{task.title}</span>
-      <span>
-        {statusLabels[task.status]} · 시작일 {formatDate(task.startAt)} · 마감{' '}
-        {formatDate(task.dueAt)}
-      </span>
-      <span>
-        담당{' '}
-        {task.assignees
-          .map((assignment) => memberName(members, assignment.userId))
-          .join(' · ')}
-      </span>
-    </button>
-  );
-}
-
-export function TaskCalendar({
-  summary,
-  now,
-  tasks,
-  month,
-  onOpenTask,
-  members,
-}) {
-  const [selectedDate, setSelectedDate] = useState(null);
-  const previewController = useTaskSchedulePreview(tasks, month);
-  const openDate = (date) => {
-    previewController.dismissPreview();
-    setSelectedDate(date);
-  };
-  const days = taskMonthDays(month);
-  const ongoingTasks = tasks.filter((task) => task.status !== 'DONE');
-  const markersByDate = taskDateMarkers(
-    tasks.filter((task) => task.status === 'DONE'),
-    days,
-  );
-  const ongoingByDate = tasksByDate(ongoingTasks, days);
-  const tasksOnDate = (date) => [
-    ...new Map([
-      ...(ongoingByDate.get(date) || []).map((task) => [task.id, task]),
-      ...(markersByDate.get(date) || []).map(({ task }) => [task.id, task]),
-    ]).values(),
-  ];
-  const today = taskDate(koreanDateTime(now));
-  return (
-    <section className="task-schedule" aria-label="작업 캘린더">
-      <div className="calendar-overview">
-        {summary}
-        <div className="calendar-legends">
-          <div
-            className="calendar-event-legend"
-            aria-label="캘린더 시작·마감 범례"
-          >
-            <span>
-              <span
-                className="calendar-event-symbol is-start"
-                aria-hidden="true"
-              />
-              완료 시작
-            </span>
-            <span>
-              <span
-                className="calendar-event-symbol is-due"
-                aria-hidden="true"
-              />
-              완료 마감
-            </span>
-          </div>
-          <ScheduleStatusLegend label="캘린더 상태 범례" />
-        </div>
-      </div>
-      <div
-        className="task-calendar-scroll"
-        role="region"
-        aria-label="월간 작업 일정"
-        tabIndex={0}
-      >
-        <table
-          className="task-calendar-table"
-          aria-label={`${monthLabel(month)} 작업 일정`}
-        >
-          <thead>
-            <tr>
-              {weekdays.map((day) => (
-                <th scope="col" key={day}>
-                  {day}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {Array.from({ length: days.length / 7 }, (_, week) => {
-              const dates = days.slice(week * 7, week * 7 + 7);
-              const segments = calendarWeekTasks(ongoingTasks, dates);
-              const lanes = Math.max(
-                2,
-                ...segments.map(({ lane }) => lane + 1),
-              );
-              return (
-                <Fragment key={week}>
-                  <tr className="calendar-dates">
-                    {dates.map((date, index) => {
-                      const markers = markersByDate.get(date) || [];
-                      const dateTasks = date ? tasksOnDate(date) : [];
-                      const dateLabel = date && (
-                        <time
-                          dateTime={date}
-                          aria-current={date === today ? 'date' : undefined}
-                        >
-                          {Number(date.slice(-2))}
-                        </time>
-                      );
-                      return (
-                        <td
-                          key={date || `empty-${index}`}
-                          className={date === today ? 'is-today' : ''}
-                          aria-label={date ? `${date} 작업 일정` : undefined}
-                        >
-                          {date && (
-                            <div className="calendar-date-header">
-                              {dateTasks.length ? (
-                                <button
-                                  className="calendar-date-open"
-                                  aria-label={`${date} 작업 ${dateTasks.length}개 보기`}
-                                  onClick={() => openDate(date)}
-                                >
-                                  {dateLabel}
-                                </button>
-                              ) : (
-                                dateLabel
-                              )}
-                              {!!markers.length && (
-                                <span
-                                  className="calendar-marker-list"
-                                  aria-label="완료 작업 시작·마감"
-                                >
-                                  {markers.map(({ task, type }) => (
-                                    <button
-                                      key={`${task.id}-${type}`}
-                                      className={`calendar-date-marker is-${type} schedule-task-done`}
-                                      aria-label={`${task.title} · ${type === 'start' ? '시작' : '마감'} · 완료`}
-                                      {...previewController.previewEvents(
-                                        task,
-                                        type,
-                                      )}
-                                      onClick={() => openDate(date)}
-                                    />
-                                  ))}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                  <tr className="calendar-period-row">
-                    <td colSpan={7}>
-                      <div
-                        className="calendar-week-periods"
-                        style={{ '--calendar-lanes': lanes }}
-                      >
-                        {dates.map((date, index) => (
-                          <span
-                            key={date || `empty-${index}`}
-                            className={`calendar-period-day${date === today ? ' is-today' : ''}`}
-                            style={{ gridColumn: index + 1, gridRow: '1 / -1' }}
-                            aria-hidden="true"
-                          />
-                        ))}
-                        {segments.map(
-                          ({
-                            task,
-                            startColumn,
-                            endColumn,
-                            lane,
-                            continuesBefore,
-                            continuesAfter,
-                          }) => (
-                            <button
-                              key={task.id}
-                              className={`calendar-period schedule-task-${task.status.toLowerCase()}${continuesBefore ? ' continues-before' : ''}${continuesAfter ? ' continues-after' : ''}`}
-                              style={{
-                                gridColumn: `${startColumn} / ${endColumn + 1}`,
-                                gridRow: lane + 1,
-                              }}
-                              aria-label={`${task.title} · 작업 기간 · ${statusLabels[task.status]}`}
-                              {...previewController.previewEvents(
-                                task,
-                                'period',
-                              )}
-                              onClick={() => {
-                                previewController.dismissPreview();
-                                onOpenTask(task.id);
-                              }}
-                            />
-                          ),
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                </Fragment>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      <TaskSchedulePreview
-        controller={previewController}
-        members={members}
-        now={now}
-        variant="calendar"
-      />
-      {selectedDate && (
-        <Modal
-          title={`${selectedDate} 작업 일정`}
-          onClose={() => setSelectedDate(null)}
-        >
-          <div className="stack">
-            {tasksOnDate(selectedDate).map((task) => (
-              <ScheduleTask
-                key={task.id}
-                task={task}
-                onOpenTask={onOpenTask}
-                members={members}
-              />
-            ))}
-          </div>
-        </Modal>
-      )}
-    </section>
   );
 }
 
@@ -654,7 +406,7 @@ export function TaskTimeline({
           })}
         </div>
       </div>
-      <TaskSchedulePreview controller={previewController} members={members} now={now} variant="timeline" />
+      <TaskSchedulePreview controller={previewController} members={members} now={now} />
     </section>
   );
 }

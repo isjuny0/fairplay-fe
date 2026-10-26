@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import RefreshButton from './RefreshButton.jsx';
 import { useSearchParams } from 'react-router';
 import { ErrorNotice } from './ui.jsx';
 import { getMemberContributions } from '../api/dashboard.js';
@@ -37,21 +38,18 @@ export default function MemberContributions({ context, targetUserId, onBack }) {
       </button>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">관리자 읽기 전용</span>
           <h1>{member?.name || '팀원'}님의 수행 상세</h1>
           <p>{context.team.name} · 현재 담당 작업과 최신 자료를 확인합니다.</p>
         </div>
-        <button
-          className="secondary-button"
+        <RefreshButton
+          label="수행 상세 새로고침"
           disabled={resource.loading}
           onClick={() => {
             resource.reload();
             members.reload();
             setEvaluationRevision((revision) => revision + 1);
           }}
-        >
-          수행 상세 새로고침
-        </button>
+        />
       </div>
       <ResourceState resource={members} label="팀원 정보" />
       {!resource.error && resource.data && (

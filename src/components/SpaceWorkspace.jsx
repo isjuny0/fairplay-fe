@@ -173,6 +173,12 @@ export default function SpaceWorkspace({
           : titles[view] || '스페이스 홈',
       detail: [space.name, team?.name].filter(Boolean).join(' / '),
       manager: managerView,
+      isTeamLeader:
+        view === 'team' &&
+        team?.id === teamId &&
+        !selectedTeamResource.error &&
+        isApprovedMember(team) &&
+        team.leaderId === user.id,
     });
   }, [
     setHeaderContext,
@@ -184,6 +190,9 @@ export default function SpaceWorkspace({
     taskId,
     announcementId,
     managerView,
+    teamId,
+    user.id,
+    selectedTeamResource.error,
   ]);
   const joinedTeam = teams.find(isApprovedMember);
   const pendingTeam = teams.find((item) => item.myMembershipStatus === 'PENDING');
@@ -372,7 +381,7 @@ export default function SpaceWorkspace({
                         contributions: '팀원 수행 상세',
                       }[view]}
                 </span>
-                {team && (
+                {team && teamRole !== '리더' && (
                   <span className="role-badge breadcrumb-role">{teamRole}</span>
                 )}
               </nav>}

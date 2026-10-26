@@ -1484,7 +1484,7 @@ test('충돌의 최신 조회가 실패하면 입력을 보존하고 확인 없�
 });
 
 
-for (const [view, label] of [['list', '목록'], ['calendar', '캘린더'], ['timeline', '타임라인']]) {
+for (const [view, label] of [['list', '목록'], ['timeline', '타임라인']]) {
   test(`실제 작업 목록 응답은 ${label} 보기에서도 상세로 연결된다`, async ({ page }) => {
     await workspace(page);
     await page.goto(`/spaces/1/teams/1/tasks?view=${view}&month=2030-12`);

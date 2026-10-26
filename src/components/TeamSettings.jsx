@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import RefreshButton from './RefreshButton.jsx';
 import {
   createTeamDeletionRequest,
   deleteTeam,
@@ -111,7 +112,6 @@ export default function TeamSettings({
     <section className="stack team-settings">
       <div className="page-heading page-heading--compact">
         <div>
-          <span className="eyebrow">팀 관리</span>
           <h1>팀 설정</h1>
         </div>
       </div>
@@ -154,13 +154,11 @@ export default function TeamSettings({
                 3. 리더 최종 삭제
               </li>
             </ol>
-            <button
-              className="secondary-button"
+            <RefreshButton
+              label="현황 새로고침"
               disabled={busy || deletionResource.loading}
               onClick={deletionResource.reload}
-            >
-              현황 새로고침
-            </button>
+            />
           </div>
 
           <ResourceState resource={deletionResource}>

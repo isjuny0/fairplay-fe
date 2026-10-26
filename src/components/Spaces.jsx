@@ -1,4 +1,5 @@
 import Icon from './Icon.jsx';
+import RefreshButton from './RefreshButton.jsx';
 import DateTimeInput from './DateTimeInput.jsx';
 import SpaceDirectorySidebar from './SpaceDirectorySidebar.jsx';
 import SpaceRoleBadge from './SpaceRoleBadge.jsx';
@@ -233,15 +234,11 @@ export default function Spaces({ onSelect, user }) {
                   <span className="directory-count" role="status">
                     {visibleSpaces.length} / {resource.data.length}개
                   </span>
-                  <button
-                    className="secondary-button directory-refresh"
-                    aria-label="새로고침"
-                    title="새로고침"
+                  <RefreshButton
+                    className="directory-refresh"
                     onClick={resource.reload}
                     disabled={resource.loading}
-                  >
-                    <Icon name="refresh" />
-                  </button>
+                  />
                 </div>
                 <div className="space-directory-columns" aria-hidden="true">
                   <span>스페이스</span>
