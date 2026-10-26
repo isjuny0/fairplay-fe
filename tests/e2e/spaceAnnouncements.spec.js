@@ -208,7 +208,7 @@ test("관리자는 홈 요약에서 공지를 작성하고 일반 텍스트로 �
   await expect(page.locator(".announcement-pin")).toHaveText("상단 고정");
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "새 운영 공지", exact: true }),
+    page.getByRole("heading", { name: "새 운영 공지", level: 1, exact: true }),
   ).toBeVisible();
   const editButton = page.getByRole("button", {
     name: "공지 수정",
@@ -405,6 +405,9 @@ for (const width of [1440, 320]) {
     await expect(breadcrumb.locator('[aria-current="page"]')).toHaveText(
       "프로젝트 공지 1",
     );
+    await expect(page.getByRole("heading", { name: "프로젝트 공지 1", level: 1, exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "공지 상세", exact: true })).toHaveCount(0);
+    await expect(page.locator(".announcement-detail h2")).toHaveCount(0);
     await expect(
       page.getByRole("button", { name: "공지 수정", exact: true }),
     ).toHaveCount(0);
