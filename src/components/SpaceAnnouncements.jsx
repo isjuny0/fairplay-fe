@@ -143,10 +143,10 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
       >
         {announcementId != null && (
           <button
-            className="secondary-button back-button"
+            className="secondary-button back-button announcement-back-button"
             onClick={() => navigate(`${base}${query}`)}
           >
-            ← 공지 목록으로
+            ← 목록으로
           </button>
         )}
         <div className="page-heading">
@@ -252,7 +252,7 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
                       공지 수정
                     </button>
                     <button
-                      className="danger-button"
+                      className="secondary-button danger"
                       disabled={busy || resource.loading}
                       onClick={remove}
                     >

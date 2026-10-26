@@ -110,6 +110,9 @@
 .announcements-page {
   min-width: 0;
 }
+.announcements-page > .announcement-back-button {
+  justify-self: end;
+}
 .main-content .announcement-breadcrumb {
   display: flex;
 }

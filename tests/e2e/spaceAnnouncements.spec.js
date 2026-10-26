@@ -206,6 +206,23 @@ test("관리자는 홈 요약에서 공지를 작성하고 일반 텍스트로 �
   await expect(
     page.getByRole("heading", { name: "새 운영 공지", exact: true }),
   ).toBeVisible();
+  const editButton = page.getByRole("button", { name: "공지 수정", exact: true });
+  const deleteButton = page.getByRole("button", { name: "공지 삭제", exact: true });
+  await expect(deleteButton).toHaveClass("secondary-button danger");
+  for (const width of [1440, 320]) {
+    await page.setViewportSize({ width, height: 1000 });
+    const backBox = await page.getByRole("button", { name: "← 목록으로", exact: true }).boundingBox();
+    const refreshBox = await page.getByRole("button", { name: "새로고침", exact: true }).boundingBox();
+    expect(Math.abs(backBox.x + backBox.width - refreshBox.x - refreshBox.width)).toBeLessThan(1);
+    expect(backBox.y + backBox.height).toBeLessThanOrEqual(refreshBox.y);
+    const editBox = await editButton.boundingBox();
+    const deleteBox = await deleteButton.boundingBox();
+    expect(Math.abs(editBox.height - deleteBox.height)).toBeLessThan(1);
+    expect(Math.abs(editBox.width - deleteBox.width)).toBeLessThan(1);
+    const radius = await editButton.evaluate((element) => getComputedStyle(element).borderRadius);
+    await expect(deleteButton).toHaveCSS("border-radius", radius);
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByRole("button", { name: "공지 수정", exact: true }).click();
   editor = await fillEditor(page, "변경된 운영 공지", "수정 본문");
   await editor.getByLabel("목록 상단에 고정").uncheck();
@@ -572,7 +589,7 @@ test("삭제된 공지·다른 스페이스 응답을 노출하지 않고 목록
   await page.goto(`${listPath}/99`);
   await expect(page.getByRole("alert")).toContainText("존재하지 않는");
   await expect(
-    page.getByRole("button", { name: "← 공지 목록으로", exact: true }),
+    page.getByRole("button", { name: "← 목록으로", exact: true }),
   ).toBeVisible();
   control.foreign = true;
   await page.goto(`${listPath}/1`);
