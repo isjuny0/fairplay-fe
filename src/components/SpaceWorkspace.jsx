@@ -31,6 +31,7 @@ import {
 } from './ui.jsx';
 
 const SpaceSettings = deferScreen(screenLoaders.SpaceSettings, '스페이스 관리');
+const SpaceParticipants = deferScreen(screenLoaders.SpaceParticipants, '참여자 관리');
 const SpaceAnnouncements = deferScreen(screenLoaders.SpaceAnnouncements, '공지사항');
 const TeamWorkspace = deferScreen(screenLoaders.TeamWorkspace, '팀 화면');
 const ManagerDashboard = deferScreen(
@@ -141,6 +142,7 @@ export default function SpaceWorkspace({
   const managerView = [
     'settings',
     'dashboard',
+    'participants',
     'rounds',
     'reports',
     'contributions',
@@ -151,6 +153,7 @@ export default function SpaceWorkspace({
     const titles = {
       settings: '스페이스 관리',
       dashboard: '스페이스 대시보드',
+      participants: '참여자 관리',
       rounds: '평가 회차 관리',
       reports: '리포트 검토·공개',
       contributions: '팀원 수행 상세',
@@ -320,6 +323,7 @@ export default function SpaceWorkspace({
                 >
                   {[
                     ['dashboard', '대시보드'],
+                    ['participants', '참여자'],
                     ['rounds', '평가'],
                     ['reports', '리포트'],
                     ['settings', '설정'],
@@ -375,6 +379,7 @@ export default function SpaceWorkspace({
                         teams: '스페이스 홈',
                         announcements: announcementId ? '공지 상세' : '공지사항',
                         dashboard: '관리자 대시보드',
+                        participants: '참여자 관리',
                         rounds: '평가 회차 관리',
                         reports: '리포트 검토·공개',
                         settings: '스페이스 관리',
@@ -392,6 +397,8 @@ export default function SpaceWorkspace({
                 />
               ) : view === 'announcements' ? (
                 <SpaceAnnouncements key={`${space.id}:${announcementId || 'list'}`} space={space} announcementId={announcementId} />
+              ) : view === 'participants' ? (
+                <SpaceParticipants key={space.id} space={space} user={user} onChanged={reloadWorkspace} />
               ) : view === 'dashboard' ? (
                 <ManagerDashboard context={managerContext} />
               ) : view === 'rounds' ? (

@@ -5,6 +5,7 @@ const imports = {
   SpaceSettings: () => import('../components/SpaceSettings.jsx'),
   SpaceAnnouncements: () => import('../components/SpaceAnnouncements.jsx'),
   ManagerDashboard: () => import('../components/ManagerDashboard.jsx'),
+  SpaceParticipants: () => import('../components/SpaceParticipants.jsx'),
   RoundManagement: () => import('../components/RoundManagement.jsx'),
   ReportReview: () => import('../components/ReportReview.jsx'),
   MemberContributions: () => import('../components/MemberContributions.jsx'),
@@ -53,7 +54,7 @@ export function preloadRoute(pathname) {
     if (/\/tasks\/\d+$/.test(path)) loaders.push(screenLoaders.TaskDetail);
   } else {
     const screen = path.includes('/manager/') ? 'MemberContributions' : {
-      dashboard: 'ManagerDashboard', rounds: 'RoundManagement',
+      dashboard: 'ManagerDashboard', participants: 'SpaceParticipants', rounds: 'RoundManagement',
       reports: 'ReportReview', settings: 'SpaceSettings',
       announcements: 'SpaceAnnouncements',
     }[path.split('/')[3]];

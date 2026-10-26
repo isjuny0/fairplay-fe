@@ -39,6 +39,7 @@ for (const [path, heading, role] of [
   ['/spaces/1/teams/1/mid-feedback', '중간 피드백', 'leader'],
   ['/spaces/1/teams/1/reports', '기여도 리포트', 'leader'],
   ['/spaces/1/dashboard', '관리자 대시보드', 'manager'],
+  ['/spaces/1/participants', '참여자 관리', 'manager'],
   ['/spaces/1/rounds', '평가 회차 관리', 'manager'],
   ['/spaces/1/reports', '리포트 검토·공개', 'manager'],
   ['/spaces/1/settings', '스페이스 관리', 'manager'],
@@ -69,6 +70,7 @@ test('팀 홈과 관리자 현황은 가중치 숫자 대신 비율과 계산 �
   await expect(
     page.getByText('작업 개수가 아닌 예상 작업량을 기준으로 계산해요.', { exact: false }),
   ).toBeVisible();
+  await page.getByRole('dialog').getByRole('button', { name: '닫기', exact: true }).click();
   await selectPreviewOption(page, '미리보기 역할', 'manager');
   await page.goto('/preview/spaces/1/dashboard');
   await expect(
