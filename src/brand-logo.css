@@ -1,0 +1,28 @@
+.brand-logo {
+  display: block;
+  width: 132px;
+  max-width: 100%;
+  height: auto;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+.brand-logo--symbol { width: 32px; }
+.brand-logo--inverse { filter: brightness(0) invert(1); }
+.topbar-brand .brand-logo { max-height: 38px; }
+.topbar-brand .brand-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  border-radius: 4px;
+}
+.topbar-brand .brand-button:focus-visible { outline: 2px solid var(--brand); outline-offset: 4px; }
+.login-introduction .login-brand { margin: 0 0 28px; }
+.login-brand .brand-logo { width: 228px; }
+.landing-brand .brand-logo { width: 150px; }
+.showcase-mini-brand .brand-logo { width: 112px; }
+.landing-footer > .brand-logo { width: 112px; }
+@media (max-width: 720px) {
+  .topbar-brand .brand-logo { width: 120px; }
+  .landing-brand .brand-logo { width: 120px; }
+  .login-brand .brand-logo { width: 192px; }
+}

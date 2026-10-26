@@ -10,6 +10,7 @@ import {
   ChartNoAxesCombined,
 } from 'lucide-react';
 import '../landing.css';
+import BrandLogo from './BrandLogo.jsx';
 
 const examples = [
   {
@@ -229,7 +230,7 @@ function ProductShowcase() {
         <div className="showcase-workspace">
           <aside className="showcase-sidebar" aria-hidden="true">
             <div className="showcase-mini-brand">
-              <span>F</span>Fairplay
+              <BrandLogo decorative />
             </div>
             <div className="showcase-project">
               <span>TEAM PROJECT</span>
@@ -303,7 +304,7 @@ export default function LandingPage() {
       </a>
       <header className="landing-header">
         <Link className="landing-brand" to="/" aria-label="Fairplay 홈">
-          <span>F</span>Fairplay
+          <BrandLogo decorative />
         </Link>
         <nav aria-label="소개 메뉴">
           <a href="#features">기능 살펴보기</a>
@@ -385,7 +386,7 @@ export default function LandingPage() {
         </section>
       </main>
       <footer className="landing-footer">
-        <span>Fairplay</span>
+        <BrandLogo />
         <p>팀의 과정에 기록을, 기여에 근거를.</p>
         <span>© {new Date().getFullYear()} Fairplay</span>
       </footer>

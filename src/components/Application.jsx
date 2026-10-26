@@ -9,6 +9,7 @@ import { useInteractions } from '../hooks/useInteractions.js';
 import { HeaderContext } from './HeaderContext.js';
 import { invalidateSharedReads } from '../api/sharedReads.js';
 import googleLogo from '../assets/google-g.svg';
+import BrandLogo from './BrandLogo.jsx';
 import '../preview-controls.css';
 import '../header-profile.css';
 
@@ -153,8 +154,7 @@ export default function Application({ previewRuntime }) {
         </button>
         <section className="login-card">
           <div className="login-introduction">
-            <span className="logo-mark">F</span>
-            <h1>Fairplay</h1>
+            <h1 className="login-brand"><BrandLogo /></h1>
             <p className="login-description">
               팀 프로젝트의 역할과 수행 과정을 기록하고,
               <br />
@@ -210,12 +210,12 @@ export default function Application({ previewRuntime }) {
       <div className="app-shell">
         <header className="topbar">
           <div className="topbar-brand">
-            <span className="logo-mark">F</span>
             <button
-              className="brand-button wordmark"
+              className="brand-button"
+              aria-label="Fairplay"
               onClick={() => navigate(`${prefix}/main`)}
             >
-              Fairplay
+              <BrandLogo decorative />
             </button>
           </div>
           <div className="context-info" aria-label="현재 화면 정보">
