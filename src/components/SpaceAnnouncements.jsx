@@ -123,32 +123,34 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
   return (
     <>
       {announcementId != null && (
-        <nav
-          className="workspace-breadcrumb announcement-breadcrumb"
-          aria-label="현재 위치"
-        >
-          <button onClick={() => navigate(`${base}${query}`)}>공지사항</button>
-          <span aria-hidden="true">/</span>
-          <span aria-current="page">
-            {!accessError && resource.data?.title
-              ? resource.data.title
-              : resource.loading
-                ? "불러오는 중…"
-                : "공지 상세"}
-          </span>
-        </nav>
-      )}
-      <section
-        className={`stack announcements-page${announcementId == null ? " is-list" : ""}`}
-      >
-        {announcementId != null && (
+        <div className="announcement-detail-toolbar">
+          <nav
+            className="workspace-breadcrumb announcement-breadcrumb"
+            aria-label="현재 위치"
+          >
+            <button onClick={() => navigate(`${base}${query}`)}>
+              공지사항
+            </button>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">
+              {!accessError && resource.data?.title
+                ? resource.data.title
+                : resource.loading
+                  ? "불러오는 중…"
+                  : "공지 상세"}
+            </span>
+          </nav>
           <button
-            className="secondary-button back-button announcement-back-button"
+            className="secondary-button announcement-back-button"
             onClick={() => navigate(`${base}${query}`)}
           >
             ← 목록으로
           </button>
-        )}
+        </div>
+      )}
+      <section
+        className={`stack announcements-page${announcementId == null ? " is-list" : ""}`}
+      >
         <div className="page-heading">
           <h1>{announcementId == null ? "공지사항" : "공지 상세"}</h1>
           <div className="heading-actions">

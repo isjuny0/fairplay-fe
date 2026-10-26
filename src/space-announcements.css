@@ -110,11 +110,24 @@
 .announcements-page {
   min-width: 0;
 }
-.announcements-page > .announcement-back-button {
-  justify-self: end;
+.announcement-detail-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  margin-bottom: 16px;
+}
+.announcement-detail-toolbar > .announcement-back-button {
+  flex-shrink: 0;
 }
 .main-content .announcement-breadcrumb {
   display: flex;
+  flex: 1;
+  flex-wrap: nowrap;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
 }
 .announcement-breadcrumb > button {
   flex-shrink: 0;

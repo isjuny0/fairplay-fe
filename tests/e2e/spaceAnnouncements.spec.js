@@ -174,8 +174,12 @@ test("관리자는 홈 요약에서 공지를 작성하고 일반 텍스트로 �
   ]);
   for (const width of [1440, 320]) {
     await page.setViewportSize({ width, height: 1000 });
-    const createBox = await summary.getByRole("button", { name: "공지 작성", exact: true }).boundingBox();
-    const allBox = await summary.getByRole("button", { name: "전체 보기", exact: true }).boundingBox();
+    const createBox = await summary
+      .getByRole("button", { name: "공지 작성", exact: true })
+      .boundingBox();
+    const allBox = await summary
+      .getByRole("button", { name: "전체 보기", exact: true })
+      .boundingBox();
     expect(createBox.x + createBox.width).toBeLessThanOrEqual(allBox.x);
     expect(createBox.height).toBeLessThanOrEqual(32);
   }
@@ -206,20 +210,54 @@ test("관리자는 홈 요약에서 공지를 작성하고 일반 텍스트로 �
   await expect(
     page.getByRole("heading", { name: "새 운영 공지", exact: true }),
   ).toBeVisible();
-  const editButton = page.getByRole("button", { name: "공지 수정", exact: true });
-  const deleteButton = page.getByRole("button", { name: "공지 삭제", exact: true });
+  const editButton = page.getByRole("button", {
+    name: "공지 수정",
+    exact: true,
+  });
+  const deleteButton = page.getByRole("button", {
+    name: "공지 삭제",
+    exact: true,
+  });
   await expect(deleteButton).toHaveClass("secondary-button danger");
   for (const width of [1440, 320]) {
     await page.setViewportSize({ width, height: 1000 });
-    const backBox = await page.getByRole("button", { name: "← 목록으로", exact: true }).boundingBox();
-    const refreshBox = await page.getByRole("button", { name: "새로고침", exact: true }).boundingBox();
-    expect(Math.abs(backBox.x + backBox.width - refreshBox.x - refreshBox.width)).toBeLessThan(1);
+    const backBox = await page
+      .getByRole("button", { name: "← 목록으로", exact: true })
+      .boundingBox();
+    const refreshBox = await page
+      .getByRole("button", { name: "새로고침", exact: true })
+      .boundingBox();
+    expect(
+      Math.abs(backBox.x + backBox.width - refreshBox.x - refreshBox.width),
+    ).toBeLessThan(1);
     expect(backBox.y + backBox.height).toBeLessThanOrEqual(refreshBox.y);
+    const breadcrumbBox = await page
+      .getByRole("navigation", { name: "현재 위치", exact: true })
+      .boundingBox();
+    expect(
+      Math.abs(
+        backBox.y +
+          backBox.height / 2 -
+          breadcrumbBox.y -
+          breadcrumbBox.height / 2,
+      ),
+    ).toBeLessThan(1);
+    const toolbarBox = await page
+      .locator(".announcement-detail-toolbar")
+      .boundingBox();
+    const headingBox = await page
+      .locator(".announcements-page > .page-heading")
+      .boundingBox();
+    expect(headingBox.y - toolbarBox.y - toolbarBox.height).toBeLessThanOrEqual(
+      17,
+    );
     const editBox = await editButton.boundingBox();
     const deleteBox = await deleteButton.boundingBox();
     expect(Math.abs(editBox.height - deleteBox.height)).toBeLessThan(1);
     expect(Math.abs(editBox.width - deleteBox.width)).toBeLessThan(1);
-    const radius = await editButton.evaluate((element) => getComputedStyle(element).borderRadius);
+    const radius = await editButton.evaluate(
+      (element) => getComputedStyle(element).borderRadius,
+    );
     await expect(deleteButton).toHaveCSS("border-radius", radius);
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -273,8 +311,14 @@ for (const width of [1440, 320]) {
     await page.goto("/spaces/1");
     const summary = page.locator(".space-announcement-summary");
     await expect(summary.locator(".announcement-row")).toHaveCount(2);
-    await expect(summary.locator(".announcement-title").first()).toHaveCSS("font-weight", "700");
-    await expect(summary.locator(".announcement-title").last()).not.toHaveCSS("font-weight", "700");
+    await expect(summary.locator(".announcement-title").first()).toHaveCSS(
+      "font-weight",
+      "700",
+    );
+    await expect(summary.locator(".announcement-title").last()).not.toHaveCSS(
+      "font-weight",
+      "700",
+    );
     const bottomGap = await summary.evaluate(
       (element) =>
         element.getBoundingClientRect().bottom -
@@ -303,8 +347,14 @@ for (const width of [1440, 320]) {
     });
     const list = page.locator(".announcements-page > .announcement-list");
     await expect(list.locator(".announcement-row")).toHaveCount(2);
-    await expect(list.locator(".announcement-title").first()).toHaveCSS("font-weight", "700");
-    await expect(list.locator(".announcement-title").last()).not.toHaveCSS("font-weight", "700");
+    await expect(list.locator(".announcement-title").first()).toHaveCSS(
+      "font-weight",
+      "700",
+    );
+    await expect(list.locator(".announcement-title").last()).not.toHaveCSS(
+      "font-weight",
+      "700",
+    );
     const listBox = await list.boundingBox();
     const headingBox = await heading.boundingBox();
     expect(listBox.y - headingBox.y - headingBox.height).toBeLessThanOrEqual(
