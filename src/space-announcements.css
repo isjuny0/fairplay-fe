@@ -73,6 +73,9 @@
 .announcement-title:hover {
   color: var(--brand);
 }
+.announcement-row.is-pinned .announcement-title {
+  font-weight: 700;
+}
 .announcement-pin {
   display: inline-block;
   flex: 0 0 auto;

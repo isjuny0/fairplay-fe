@@ -256,6 +256,8 @@ for (const width of [1440, 320]) {
     await page.goto("/spaces/1");
     const summary = page.locator(".space-announcement-summary");
     await expect(summary.locator(".announcement-row")).toHaveCount(2);
+    await expect(summary.locator(".announcement-title").first()).toHaveCSS("font-weight", "700");
+    await expect(summary.locator(".announcement-title").last()).not.toHaveCSS("font-weight", "700");
     const bottomGap = await summary.evaluate(
       (element) =>
         element.getBoundingClientRect().bottom -
@@ -284,6 +286,8 @@ for (const width of [1440, 320]) {
     });
     const list = page.locator(".announcements-page > .announcement-list");
     await expect(list.locator(".announcement-row")).toHaveCount(2);
+    await expect(list.locator(".announcement-title").first()).toHaveCSS("font-weight", "700");
+    await expect(list.locator(".announcement-title").last()).not.toHaveCSS("font-weight", "700");
     const listBox = await list.boundingBox();
     const headingBox = await heading.boundingBox();
     expect(listBox.y - headingBox.y - headingBox.height).toBeLessThanOrEqual(

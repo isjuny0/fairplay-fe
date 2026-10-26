@@ -2,7 +2,7 @@ export default function AnnouncementList({ items, onOpen, compact = false }) {
   return (
     <ul className={`announcement-list${compact ? " is-compact" : ""}`}>
       {items.map((item) => (
-        <li className="announcement-row" key={item.id}>
+        <li className={`announcement-row${item.pinned ? " is-pinned" : ""}`} key={item.id}>
           <div className="announcement-row-title">
             {item.pinned && <span className="announcement-pin">고정</span>}
             <button
