@@ -7,6 +7,7 @@ import { previewSpaceAnnouncements } from './spaceAnnouncements.js';
 import { isRemovedSpaceParticipant, previewSpaceParticipants } from './spaceParticipants.js';
 import { searchPreviewDeliverables } from './deliverableSearch.js';
 import { previewAiReview, invalidateReview } from './aiReviews.js';
+import { previewAssigneeRecommendations } from './taskAssigneeRecommendations.js';
 import {
   previewUsers,
   previewMembers,
@@ -386,6 +387,10 @@ export async function previewRequest(
       if (existing) Object.assign(existing, application);
       else state.applications.push(application);
       result = application;
+    } else if (parts[3] === 'task-assignee-recommendations' && method === 'GET') {
+      return previewAssigneeRecommendations(
+        context, state, entry, url.searchParams.get('count'),
+      );
     } else if (parts[3] === 'tasks') {
       if (method === 'GET')
         return entry.tasks.map((task) =>

@@ -1,5 +1,9 @@
 import { apiRequest } from './client.js';
 export const listTasks = (teamId) => apiRequest(`/api/teams/${teamId}/tasks`);
+export const recommendTaskAssignees = (teamId, count) =>
+  apiRequest(
+    `/api/teams/${teamId}/task-assignee-recommendations?count=${count}`,
+  );
 export const getTask = (taskId) => apiRequest(`/api/tasks/${taskId}`);
 export const createTask = (teamId, body) =>
   apiRequest(`/api/teams/${teamId}/tasks`, { method: 'POST', body });
