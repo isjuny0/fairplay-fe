@@ -11,9 +11,6 @@
   flex: 1;
   padding-left: 240px;
 }
-.app-shell:has(.space-directory-sidebar) > .preview-toolbar {
-  margin-left: 240px;
-}
 .space-directory-sidebar {
   position: fixed;
   inset: var(--header-height) auto 0 0;
@@ -32,12 +29,6 @@
   }
   .space-directory-layout:has(> .space-directory-sidebar.is-collapsed) {
     padding-left: 40px;
-  }
-  .app-shell:has(.space-directory-sidebar) > .preview-toolbar {
-    transition: margin-left 180ms ease;
-  }
-  .app-shell:has(.space-directory-sidebar.is-collapsed) > .preview-toolbar {
-    margin-left: 40px;
   }
   .space-directory-sidebar {
     transition: transform 180ms ease;
@@ -231,9 +222,6 @@
 @media (max-width: 720px) {
   .space-directory-layout {
     padding-left: 0;
-  }
-  .app-shell:has(.space-directory-sidebar) > .preview-toolbar {
-    margin-left: 0;
   }
   .space-directory-sidebar {
     position: static;

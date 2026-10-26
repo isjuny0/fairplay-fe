@@ -1,3 +1,4 @@
+import { selectPreviewOption } from './helpers/previewControls.js';
 import { koreanDateTime } from '../../src/lib/koreanTime.js';
 import { test, expect } from '@playwright/test';
 import { fillDateTime } from './helpers/dateTime.js';
@@ -15,10 +16,10 @@ async function preview(
   await page.goto('/preview/main');
   await page.locator('.preview-toolbar').waitFor({ state: 'visible' });
   if (!(await page.getByLabel('미리보기 역할').isVisible()))
-    await page.getByText('미리보기 설정', { exact: true }).click();
-  await page.getByLabel('미리보기 역할').selectOption(role);
+    await page.getByRole('button', { name: '미리보기 설정', exact: true }).click();
+  await selectPreviewOption(page, '미리보기 역할', role);
   if (scenario !== 'active')
-    await page.getByLabel('미리보기 상황').selectOption(scenario);
+    await selectPreviewOption(page, '미리보기 상황', scenario);
   await page.goto(`/preview${path}`);
   await expect(page.getByLabel('미리보기 역할')).toHaveValue(role);
   return apiCalls;
@@ -68,7 +69,7 @@ test('팀 홈과 관리자 현황은 가중치 숫자 대신 비율과 계산 �
   await expect(
     page.getByText('작업 개수가 아닌 예상 작업량을 기준으로 계산해요.', { exact: false }),
   ).toBeVisible();
-  await page.getByLabel('미리보기 역할').selectOption('manager');
+  await selectPreviewOption(page, '미리보기 역할', 'manager');
   await page.goto('/preview/spaces/1/dashboard');
   await expect(
     page.getByRole('columnheader', { name: '현재 팀원 완료 비중' }),
@@ -141,7 +142,7 @@ test('저점 사유 누락을 안내하고 공개 전 리포트는 팀원에게 
     .getByRole('button', { name: '이지원 평가 저장', exact: true })
     .click();
   await expect(page.getByRole('alert')).toContainText('10~500자');
-  await page.getByLabel('미리보기 상황').selectOption('review');
+  await selectPreviewOption(page, '미리보기 상황', 'review');
   await page
     .getByRole('dialog')
     .getByRole('button', { name: '변경 사항 버리기', exact: true })
@@ -175,7 +176,7 @@ test('관리자가 리포트를 공개하면 팀원은 본인 계산 근거를 �
   await expect(
     page.getByRole('heading', { name: '나의 계산 근거' }),
   ).toHaveCount(0);
-  await page.getByLabel('미리보기 역할').selectOption('member');
+  await selectPreviewOption(page, '미리보기 역할', 'member');
   await page.goto('/preview/spaces/1/teams/1/reports');
   await page.getByText('나의 계산 근거 보기', { exact: true }).click();
   await expect(
@@ -191,7 +192,7 @@ test('AI 검토는 담당자만 조회하고 비담당 팀원에게 표시하지
   await page.getByRole('tab', { name: 'AI피드백', exact: true }).click();
   await page.getByRole('button', { name: 'AI 검토 요청', exact: true }).click();
   await expect(page.getByText('검토 대기', { exact: true })).toBeVisible();
-  await page.getByLabel('미리보기 역할').selectOption('teammate');
+  await selectPreviewOption(page, '미리보기 역할', 'teammate');
   await page.goto('/preview/spaces/1/teams/1/tasks/102');
   await expect(
     page.getByRole('heading', { name: 'AI 검토', exact: true }),
@@ -207,7 +208,7 @@ test('팀원 직접 관리자 주소 접근은 차단하고 관리자는 수행 
   await expect(
     page.getByRole('heading', { name: '스페이스 관리 권한이 없습니다.' }),
   ).toBeVisible();
-  await page.getByLabel('미리보기 역할').selectOption('manager');
+  await selectPreviewOption(page, '미리보기 역할', 'manager');
   await page.goto('/preview/spaces/1/dashboard');
   await page.getByLabel('조회할 팀').selectOption('1');
   await page.getByRole('button', { name: '김하늘 수행 상세' }).click();
@@ -347,8 +348,8 @@ test('팀 빌딩 상황에서는 가입 승인 및 미가입 참여자의 팀 �
   await expect(
     page.getByRole('heading', { name: '승인된 팀원 · 4명' }),
   ).toBeVisible();
-  await page.getByLabel('미리보기 상황').selectOption('building');
-  await page.getByLabel('미리보기 역할').selectOption('participant');
+  await selectPreviewOption(page, '미리보기 상황', 'building');
+  await selectPreviewOption(page, '미리보기 역할', 'participant');
   await page.goto('/preview/spaces/1');
   await expect(page.getByRole('button', { name: '팀 만들기', exact: true })).toHaveCount(0);
   await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -381,7 +382,7 @@ for (const width of [320, 768, 1440])
       await page.goto(`/preview${path}`);
       await page.locator('.preview-toolbar').waitFor({ state: 'visible' });
       if (!(await page.getByLabel('미리보기 역할').isVisible()))
-        await page.getByText('미리보기 설정', { exact: true }).click();
+        await page.getByRole('button', { name: '미리보기 설정', exact: true }).click();
       await expect(page.locator('h1')).toBeVisible();
       expect(
         await page.evaluate(
@@ -389,7 +390,7 @@ for (const width of [320, 768, 1440])
         ),
       ).toBe(true);
     }
-    await page.getByLabel('미리보기 역할').selectOption('manager');
+    await selectPreviewOption(page, '미리보기 역할', 'manager');
     await page.goto('/preview/spaces/1/dashboard');
     await expect(
       page.getByRole('heading', { name: '관리자 대시보드', exact: true }),

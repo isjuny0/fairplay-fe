@@ -1,3 +1,4 @@
+import { selectPreviewOption } from './helpers/previewControls.js';
 import { test, expect } from '@playwright/test';
 import {
   addDashboardWidgets,
@@ -182,11 +183,11 @@ test('역할 변경 시 다른 사용자에게 개인 위젯·메모가 보이�
   await expect(
     page.getByRole('button', { name: '메모 저장', exact: true }),
   ).toBeDisabled();
-  await page.getByLabel('미리보기 역할').selectOption('member');
+  await selectPreviewOption(page, '미리보기 역할', 'member');
   await page.goto('/preview/spaces/1/teams/1');
   await expect(page.locator('.dashboard-heading h1')).toHaveText('삼위일체');
   await expect(page.locator('.dashboard-widget')).toHaveCount(3);
-  await page.getByLabel('미리보기 역할').selectOption('leader');
+  await selectPreviewOption(page, '미리보기 역할', 'leader');
   await page.goto('/preview/spaces/1/teams/1');
   await expect(
     page.getByRole('textbox', { name: '빠른 메모', exact: true }),

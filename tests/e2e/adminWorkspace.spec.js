@@ -1,3 +1,4 @@
+import { selectPreviewOption } from './helpers/previewControls.js';
 import { test, expect } from '@playwright/test';
 import { fillDateTime } from './helpers/dateTime.js';
 
@@ -5,9 +6,9 @@ async function openManagerPreview(page, path, scenario = 'active') {
   await page.goto('/preview/main');
   await page.locator('.preview-toolbar').waitFor({ state: 'visible' });
   if (!(await page.getByLabel('미리보기 역할').isVisible()))
-    await page.getByText('미리보기 설정', { exact: true }).click();
-  await page.getByLabel('미리보기 역할').selectOption('manager');
-  await page.getByLabel('미리보기 상황').selectOption(scenario);
+    await page.getByRole('button', { name: '미리보기 설정', exact: true }).click();
+  await selectPreviewOption(page, '미리보기 역할', 'manager');
+  await selectPreviewOption(page, '미리보기 상황', scenario);
   await page.goto(`/preview${path}`);
 }
 
