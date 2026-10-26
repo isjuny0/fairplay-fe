@@ -168,6 +168,18 @@ test("관리자는 홈 요약에서 공지를 작성하고 일반 텍스트로 �
   await page.goto("/spaces/1");
   const summary = page.getByRole("region", { name: "공지사항", exact: true });
   await expect(summary.locator(".announcement-row")).toHaveCount(3);
+  await expect(summary.locator(".heading-actions > button")).toHaveText([
+    "공지 작성",
+    "전체 보기",
+  ]);
+  for (const width of [1440, 320]) {
+    await page.setViewportSize({ width, height: 1000 });
+    const createBox = await summary.getByRole("button", { name: "공지 작성", exact: true }).boundingBox();
+    const allBox = await summary.getByRole("button", { name: "전체 보기", exact: true }).boundingBox();
+    expect(createBox.x + createBox.width).toBeLessThanOrEqual(allBox.x);
+    expect(createBox.height).toBeLessThanOrEqual(32);
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await expect(summary.locator(".announcement-title").first()).toHaveText(
     "프로젝트 공지 1",
   );

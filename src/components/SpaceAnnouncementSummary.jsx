@@ -25,12 +25,6 @@ export default function SpaceAnnouncementSummary({ space }) {
       <div className="announcement-section-heading">
         <h2 id="space-announcement-heading">공지사항</h2>
         <div className="heading-actions">
-          <button
-            className="text-button"
-            onClick={() => navigate(announcementsPath(space.id))}
-          >
-            전체 보기
-          </button>
           {space.myRole === "MANAGER" && (
             <button
               className="secondary-button"
@@ -39,6 +33,12 @@ export default function SpaceAnnouncementSummary({ space }) {
               공지 작성
             </button>
           )}
+          <button
+            className="text-button"
+            onClick={() => navigate(announcementsPath(space.id))}
+          >
+            전체 보기
+          </button>
         </div>
       </div>
       <ErrorNotice error={resource.error} onRetry={resource.reload} />
