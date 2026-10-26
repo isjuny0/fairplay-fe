@@ -145,6 +145,7 @@ export default function WorkspaceNavigation({
               <p className="nav-section">스페이스 운영</p>
               {[
                 ['dashboard', '관리자 대시보드', 'dashboard'],
+                ['participants', '참여자 관리', 'users'],
                 ['rounds', '평가 회차 관리', 'calendar'],
                 ['reports', '리포트 검토·공개', 'chart'],
                 ['settings', '스페이스 관리', 'settings'],
