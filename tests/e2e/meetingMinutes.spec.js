@@ -182,6 +182,23 @@ async function editor(page) {
   return page.getByRole("dialog", { name: "팀 회의록 등록", exact: true });
 }
 
+for (const width of [320, 1440]) {
+  test(`${width}px 회의록 제목과 작성자의 왼쪽 시작점을 맞춘다`, async ({
+    page,
+  }) => {
+    await backend(page);
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(path);
+    const row = page.locator(".meeting-list-title").first();
+    await expect(row).toBeVisible();
+    const title = await row.getByRole("button").boundingBox();
+    const author = await row.locator(".field-help").boundingBox();
+    expect(Math.abs(title.x - author.x)).toBeLessThanOrEqual(1);
+    await expect(row.getByRole("button")).toHaveCSS("padding-left", "0px");
+    await expect(row.getByRole("button")).toHaveCSS("padding-right", "0px");
+  });
+}
+
 test("팀 작업 메뉴에서 등록·상세·공동 수정·삭제와 KST·CSRF·부분 수정 계약을 확인한다", async ({
   page,
 }) => {
@@ -195,12 +212,14 @@ test("팀 작업 메뉴에서 등록·상세·공동 수정·삭제와 KST·CSRF
   await expect(
     page.locator(".meeting-minutes-page > .page-heading p"),
   ).toHaveCount(0);
-  await expect(
-    page.locator(".meeting-minutes-page > .page-heading"),
-  ).toHaveCSS("border-bottom-width", "1px");
-  await expect(
-    page.getByRole("list", { name: "팀 회의록 목록" }),
-  ).toHaveCSS("border-top-width", "0px");
+  await expect(page.locator(".meeting-minutes-page > .page-heading")).toHaveCSS(
+    "border-bottom-width",
+    "1px",
+  );
+  await expect(page.getByRole("list", { name: "팀 회의록 목록" })).toHaveCSS(
+    "border-top-width",
+    "0px",
+  );
   const dialog = await editor(page);
   await dialog.getByLabel("제목", { exact: true }).fill("신규 회의");
   await fillDateTime(dialog, "회의일시", "2026-11-01T19:30");

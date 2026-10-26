@@ -31,6 +31,7 @@
 }
 .meeting-list-title .text-button {
   justify-self: start;
+  padding-inline: 0;
   text-align: left;
   overflow-wrap: anywhere;
   font-weight: 600;
