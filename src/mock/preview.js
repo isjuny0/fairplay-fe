@@ -4,6 +4,7 @@ import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
 import { isMutable } from '../lib/domain.js';
 import { previewTaskComments } from './taskComments.js';
 import { previewSpaceAnnouncements } from './spaceAnnouncements.js';
+import { previewMeetingMinutes } from './meetingMinutes.js';
 import { isRemovedSpaceParticipant, previewSpaceParticipants } from './spaceParticipants.js';
 import { searchPreviewDeliverables } from './deliverableSearch.js';
 import { previewAiReview, invalidateReview } from './aiReviews.js';
@@ -157,6 +158,11 @@ export async function previewRequest(
   const url = new URL(path, 'https://preview.local');
   const parts = url.pathname.split('/').filter(Boolean);
   const id = Number(parts[2]);
+  if ((parts[1] === 'teams' && parts[3] === 'meeting-minutes') || parts[1] === 'meeting-minutes') {
+    const result = previewMeetingMinutes(context, state, parts, url, method, body);
+    saveMockState(context, state);
+    return structuredClone(result);
+  }
   if (isRemovedSpaceParticipant(context, state)) {
     const team = parts[1] === 'teams' ? state.teams[id] : Object.values(state.teams).find((entry) =>
       (parts[1] === 'tasks' && entry.tasks.some((item) => item.id === id)) ||
@@ -329,6 +335,7 @@ export async function previewRequest(
           (comment) => !taskIds.has(comment.taskId),
         );
         delete state.teams[id];
+        state.meetingMinutes = (state.meetingMinutes || []).filter((item) => item.teamId !== id);
         result = null;
       } else return teamDetail(entry, context, state);
     } else if (parts[3] === 'members' && parts[4] !== 'me')

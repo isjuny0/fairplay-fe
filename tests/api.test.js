@@ -4,6 +4,7 @@ import {
   publishReport,
 } from '../src/api/reports.js';
 import { getMemberContributions } from '../src/api/dashboard.js';
+import { listMeetingMinutes, getMeetingMinute, createMeetingMinute, updateMeetingMinute, deleteMeetingMinute } from '../src/api/meetingMinutes.js';
 import { listSpaceParticipants, removeSpaceParticipant } from '../src/api/spaceParticipants.js';
 import { getManagerPeerResponses } from '../src/api/evaluations.js';
 import { getAiReview, requestAiReview } from '../src/api/aiReviews.js';
@@ -65,6 +66,34 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
   clearCsrfToken();
   delete globalThis.window;
+});
+
+test('회의록 5개 API는 페이지 배열·부분 수정·쿼리 버전 삭제 및 세션·CSRF 계약을 사용한다', async () => {
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, ...options });
+    if (url.endsWith('/csrf')) return jsonResponse({ headerName: 'X-CSRF-TOKEN', token: 'token' });
+    if (options.method === 'DELETE') return new Response(null, { status: 204 });
+    return jsonResponse(url.includes('?page=') ? [] : { id: 7 });
+  };
+  const input = { title: '주간 회의', meetingAt: '2026-10-27T19:00:00', attendeeIds: [], agenda: ' 안건\n', content: '', decisions: '' };
+  assert.deepEqual(await listMeetingMinutes(1, 2, 20), []);
+  assert.equal((await getMeetingMinute(7)).id, 7);
+  await createMeetingMinute(1, input);
+  await updateMeetingMinute(7, { expectedVersion: 0, content: '논의\n ' });
+  assert.equal(await deleteMeetingMinute(7, 1), null);
+  assert.deepEqual(calls.map((call) => [call.url, call.method || 'GET']), [
+    ['/api/teams/1/meeting-minutes?page=2&size=20', 'GET'], ['/api/meeting-minutes/7', 'GET'],
+    ['/api/auth/csrf', 'GET'], ['/api/teams/1/meeting-minutes', 'POST'],
+    ['/api/meeting-minutes/7', 'PATCH'], ['/api/meeting-minutes/7?expectedVersion=1', 'DELETE'],
+  ]);
+  assert.deepEqual(JSON.parse(calls[3].body), input);
+  assert.deepEqual(JSON.parse(calls[4].body), { expectedVersion: 0, content: '논의\n ' });
+  assert.equal(calls[5].body, undefined);
+  for (const call of calls) assert.equal(call.credentials, 'include');
+  for (const call of calls.slice(3)) assert.equal(call.headers['X-CSRF-TOKEN'], 'token');
+  assert.equal(calls[0].headers['X-CSRF-TOKEN'], undefined);
+  globalThis.fetch = async () => jsonResponse({ content: [] });
+  await assert.rejects(listMeetingMinutes(1), /응답 형식/);
 });
 
 test('참여자 조회는 캐시·쿼리 없이 배열을 받고 삭제는 세션·CSRF 및 본문 없는 204 계약을 사용한다', async () => {
