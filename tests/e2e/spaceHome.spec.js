@@ -73,6 +73,7 @@ async function spaceHome(page, { joined = true, empty = false, rejected = false 
     }
     if (path === '/api/spaces') return reply([space]);
     if (path === '/api/spaces/1') return reply(space);
+    if (path === '/api/spaces/1/announcements') return reply([]);
     // Real list responses can omit membership and leader information.
     if (path === '/api/spaces/1/teams') return reply(teams.map(({ id, name }) => ({ id, name })));
     const memberMatch = path.match(/^\/api\/teams\/(\d+)\/members$/);

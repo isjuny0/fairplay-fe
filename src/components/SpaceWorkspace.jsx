@@ -31,6 +31,7 @@ import {
 } from './ui.jsx';
 
 const SpaceSettings = deferScreen(screenLoaders.SpaceSettings, '스페이스 관리');
+const SpaceAnnouncements = deferScreen(screenLoaders.SpaceAnnouncements, '공지사항');
 const TeamWorkspace = deferScreen(screenLoaders.TeamWorkspace, '팀 화면');
 const ManagerDashboard = deferScreen(
   screenLoaders.ManagerDashboard,
@@ -53,6 +54,7 @@ export default function SpaceWorkspace({
   spaceId,
   teamId,
   taskId,
+  announcementId,
   user,
   view,
   teamMenu,
@@ -153,6 +155,7 @@ export default function SpaceWorkspace({
       reports: '리포트 검토·공개',
       contributions: '팀원 수행 상세',
       teams: '스페이스 홈',
+      announcements: announcementId ? '공지 상세' : '공지사항',
     };
     setHeaderContext({
       pathname: location.pathname,
@@ -170,6 +173,12 @@ export default function SpaceWorkspace({
           : titles[view] || '스페이스 홈',
       detail: [space.name, team?.name].filter(Boolean).join(' / '),
       manager: managerView,
+      isTeamLeader:
+        view === 'team' &&
+        team?.id === teamId &&
+        !selectedTeamResource.error &&
+        isApprovedMember(team) &&
+        team.leaderId === user.id,
     });
   }, [
     setHeaderContext,
@@ -179,7 +188,11 @@ export default function SpaceWorkspace({
     view,
     teamMenu,
     taskId,
+    announcementId,
     managerView,
+    teamId,
+    user.id,
+    selectedTeamResource.error,
   ]);
   const joinedTeam = teams.find(isApprovedMember);
   const pendingTeam = teams.find((item) => item.myMembershipStatus === 'PENDING');
@@ -334,7 +347,7 @@ export default function SpaceWorkspace({
                   ))}
                 </nav>
               )}
-              {view !== 'teams' && !(view === 'team' && teamMenu === '팀 홈') && <nav className="workspace-breadcrumb" aria-label="현재 위치">
+              {view !== 'teams' && !(view === 'team' && teamMenu === '팀 홈') && !(view === 'announcements' && announcementId != null) && <nav className="workspace-breadcrumb" aria-label="현재 위치">
                 {team && (
                   <>
                     <button
@@ -360,6 +373,7 @@ export default function SpaceWorkspace({
                       : teamMenu
                     : {
                         teams: '스페이스 홈',
+                        announcements: announcementId ? '공지 상세' : '공지사항',
                         dashboard: '관리자 대시보드',
                         rounds: '평가 회차 관리',
                         reports: '리포트 검토·공개',
@@ -367,7 +381,7 @@ export default function SpaceWorkspace({
                         contributions: '팀원 수행 상세',
                       }[view]}
                 </span>
-                {team && (
+                {team && teamRole !== '리더' && (
                   <span className="role-badge breadcrumb-role">{teamRole}</span>
                 )}
               </nav>}
@@ -376,6 +390,8 @@ export default function SpaceWorkspace({
                   title="스페이스 관리 권한이 없습니다."
                   description="스페이스 관리자만 이 화면을 사용할 수 있습니다."
                 />
+              ) : view === 'announcements' ? (
+                <SpaceAnnouncements key={`${space.id}:${announcementId || 'list'}`} space={space} announcementId={announcementId} />
               ) : view === 'dashboard' ? (
                 <ManagerDashboard context={managerContext} />
               ) : view === 'rounds' ? (

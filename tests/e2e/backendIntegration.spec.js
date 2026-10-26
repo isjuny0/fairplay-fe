@@ -131,6 +131,7 @@ async function backend(
       return respond({ headerName: 'X-CSRF-TOKEN', token: 'test-token' });
     if (path === '/api/spaces') return respond([space]);
     if (path === '/api/spaces/1') return respond(space);
+    if (path === '/api/spaces/1/announcements') return respond([]);
     if (path === '/api/spaces/1/teams') return respond([team]);
     if (path === '/api/teams/1') return respond(team);
     if (path === '/api/teams/1/members') return respond(members);
@@ -1031,8 +1032,8 @@ test('리포트를 실제 생성·검토·공개하고 다른 팀 미제출은 �
     .getByRole('button', { name: '공개 확정' })
     .click();
   await expect(
-    page.getByText('공개된 최종 결과', { exact: true }),
-  ).toBeVisible();
+    page.locator('.report-team-result > .section-heading > .status-badge'),
+  ).toHaveText('공개');
   for (const path of ['/api/teams/1/report', '/api/reports/40/publish']) {
     const request = fixture.requests.find(
       (request) => request.path === path && request.method === 'POST',
@@ -1043,8 +1044,8 @@ test('리포트를 실제 생성·검토·공개하고 다른 팀 미제출은 �
   }
   await page.reload();
   await expect(
-    page.getByText('공개된 최종 결과', { exact: true }),
-  ).toBeVisible();
+    page.locator('.report-team-result > .section-heading > .status-badge'),
+  ).toHaveText('공개');
   await expect(
     page.getByRole('button', { name: '리포트 공개', exact: true }),
   ).toHaveCount(0);
@@ -1151,8 +1152,8 @@ test('리포트 공개 실패는 비공개 결과를 유지하고 자동 재요�
     '해당 팀의 두 회차 마감',
   );
   await expect(
-    page.getByText('관리자 검토용 비공개 리포트', { exact: true }),
-  ).toBeVisible();
+    page.locator('.report-team-result > .section-heading > .status-badge'),
+  ).toHaveText('비공개');
   expect(
     fixture.requests.filter((request) => request.path.endsWith('/publish')),
   ).toHaveLength(1);

@@ -301,11 +301,6 @@
   flex-shrink: 0;
   padding: 8px 12px;
 }
-.space-home .space-home-refresh {
-  width: 36px;
-  min-width: 36px;
-  padding: 8px;
-}
 .space-home-team-list {
   display: grid;
   margin: 16px 0 0;

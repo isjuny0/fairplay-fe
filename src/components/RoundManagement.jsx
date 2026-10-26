@@ -1,4 +1,5 @@
 import { apiTimeToEpoch } from '../lib/koreanTime.js';
+import RefreshButton from './RefreshButton.jsx';
 import ManagerPeerResponses from './ManagerPeerResponses.jsx';
 import { useState } from 'react';
 import DateTimeInput from './DateTimeInput.jsx';
@@ -100,17 +101,14 @@ export default function RoundManagement({ context, onChanged }) {
     <section className="stack round-management-page">
       <div className="page-heading page-heading--compact">
         <div>
-          <span className="eyebrow">스페이스 단위 평가</span>
           <h1>평가 회차 관리</h1>
         </div>
         <div className="heading-actions">
-          <button
-            className="secondary-button"
+          <RefreshButton
+            label="회차·제출 현황 새로고침"
             disabled={busy || resource.loading || submissions.loading}
             onClick={reload}
-          >
-            회차·제출 현황 새로고침
-          </button>
+          />
           <button
             className="primary-button"
             disabled={busy || resource.loading || rounds.length >= 2}

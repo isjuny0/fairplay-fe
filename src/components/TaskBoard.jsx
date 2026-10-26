@@ -2,6 +2,7 @@ import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import { screenLoaders } from '../lib/routeScreens.js';
 import { deferScreen } from './DeferredScreen.jsx';
 import Icon from './Icon.jsx';
+import RefreshButton from './RefreshButton.jsx';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { createTask, listTasks } from '../api/tasks.js';
@@ -391,10 +392,7 @@ export default function TaskBoard({
             마감 지난 작업만
           </label>
         </div>
-        <button className="secondary-button" onClick={resource.reload}>
-          <Icon name="refresh" />
-          새로고침
-        </button>
+        <RefreshButton onClick={resource.reload} />
       </div>
       {isSchedule && (
         <div className="task-schedule-controls">

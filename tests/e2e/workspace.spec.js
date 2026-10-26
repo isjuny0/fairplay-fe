@@ -132,6 +132,7 @@ async function workspace(
         method === 'POST' ? space : [space],
       );
     if (path === '/api/spaces/1') return respond(space);
+    if (path === '/api/spaces/1/announcements') return respond([]);
     if (path === '/api/spaces/1/team-building-period') {
       Object.assign(space, request.postDataJSON(), {
         version: space.version + 1,

@@ -6,7 +6,9 @@ import {
   formatDate,
 } from '../lib/domain.js';
 import Icon from './Icon.jsx';
+import RefreshButton from './RefreshButton.jsx';
 import TeamMemberCount from './TeamMemberCount.jsx';
+import SpaceAnnouncementSummary from './SpaceAnnouncementSummary.jsx';
 import { ErrorNotice } from './ui.jsx';
 import '../space-home.css';
 
@@ -122,6 +124,7 @@ export default function SpaceHome({
       </header>
 
       <SpaceSchedule space={space} />
+      <SpaceAnnouncementSummary key={space.id} space={space} />
 
       <ErrorNotice error={error} onRetry={onReload} />
       <ErrorNotice error={directoryError} onRetry={onReload} />
@@ -229,15 +232,12 @@ export default function SpaceHome({
             />
           </label>
           <div className="space-home-actions">
-            <button
-              className="secondary-button space-home-refresh"
-              aria-label="팀 목록 새로고침"
-              title="새로고침"
+            <RefreshButton
+              className="space-home-refresh"
+              label="팀 목록 새로고침"
               disabled={loading || busy}
               onClick={onReload}
-            >
-              <Icon name="refresh" />
-            </button>
+            />
           </div>
         </div>
         <div className="space-home-team-columns" aria-hidden="true">

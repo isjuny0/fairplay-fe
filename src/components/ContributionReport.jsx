@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import RefreshButton from './RefreshButton.jsx';
 import {
   getTeamReport,
   generateTeamReport,
@@ -68,7 +69,6 @@ function ReportDetail({ context, report }) {
       {report.myDetails && (
         <section className="report-own-result">
           <div>
-            <span className="eyebrow">공개된 나의 최종 결과</span>
             <h2>나의 최종 기여율</h2>
             <p className="field-help">
               현재 작업 현황과 구분된 최종 평가 결과입니다.
@@ -80,11 +80,6 @@ function ReportDetail({ context, report }) {
       <section className="panel report-team-result">
         <div className="section-heading">
           <div>
-            <span className="eyebrow">
-              {report.status === 'PUBLISHED'
-                ? '공개된 최종 결과'
-                : '관리자 검토용 비공개 리포트'}
-            </span>
             <h2>팀 기여도 리포트</h2>
             <p>
               {report.status === 'PUBLISHED'
@@ -332,16 +327,15 @@ export function TeamReport({ context, manager = false }) {
             </li>
           </ol>
         )}
-        <button
-          className="secondary-button report-refresh"
+        <RefreshButton
+          className="report-refresh"
+          label={manager ? '리포트·준비 상태 새로고침' : '리포트 새로고침'}
           disabled={busy}
           onClick={() => {
             resource.reload();
             readiness.reload();
           }}
-        >
-          {manager ? '리포트·준비 상태 새로고침' : '리포트 새로고침'}
-        </button>
+        />
       </div>
       <ErrorNotice error={error} />
       {manager && (
@@ -445,7 +439,6 @@ export default function ContributionReport({ context }) {
     <section className="stack contribution-report-page">
       <div className="page-heading page-heading--compact">
         <div>
-          <span className="eyebrow">함께 만든 최종 결과</span>
           <h1>기여도 리포트</h1>
         </div>
       </div>

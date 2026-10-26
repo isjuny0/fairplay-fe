@@ -1,4 +1,5 @@
 import { apiTimeToEpoch } from '../lib/koreanTime.js';
+import RefreshButton from './RefreshButton.jsx';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   useInteractions,
@@ -519,16 +520,13 @@ export default function PeerEvaluation({ context }) {
     <section className="stack peer-evaluation-page">
       <div className="page-heading page-heading--compact">
         <div>
-          <span className="eyebrow">협업 돌아보기</span>
           <h1>동료 평가</h1>
         </div>
-        <button
-          className="secondary-button"
+        <RefreshButton
+          label="평가 상태 새로고침"
           disabled={resource.loading}
           onClick={resource.reload}
-        >
-          평가 상태 새로고침
-        </button>
+        />
       </div>
       <ResourceState resource={resource}>
         {rounds.length ? (

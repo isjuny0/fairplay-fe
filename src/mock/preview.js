@@ -3,6 +3,7 @@ import { previewTeamHome } from './teamHome.js';
 import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
 import { isMutable } from '../lib/domain.js';
 import { previewTaskComments } from './taskComments.js';
+import { previewSpaceAnnouncements } from './spaceAnnouncements.js';
 import { searchPreviewDeliverables } from './deliverableSearch.js';
 import { previewAiReview, invalidateReview } from './aiReviews.js';
 import {
@@ -155,6 +156,11 @@ export async function previewRequest(
   const url = new URL(path, 'https://preview.local');
   const parts = url.pathname.split('/').filter(Boolean);
   const id = Number(parts[2]);
+  if (parts[1] === 'spaces' && parts[3] === 'announcements') {
+    const result = previewSpaceAnnouncements(context, state, parts, url, method, body);
+    saveMockState(context, state);
+    return structuredClone(result);
+  }
   if (parts[1] === 'teams' && parts[3] === 'rag') {
     const result = previewRag(context, state, parts, url, method, body);
     if (method !== 'GET') saveMockState(context, state);
