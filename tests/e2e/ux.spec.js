@@ -1,3 +1,4 @@
+import { selectPreviewOption } from './helpers/previewControls.js';
 import { koreanDateTime } from '../../src/lib/koreanTime.js';
 import { fillDateTime } from './helpers/dateTime.js';
 import { addDashboardWidgets } from './helpers/teamDashboard.js';
@@ -15,10 +16,10 @@ async function openPreview(page, path, role = 'leader', scenario = 'active') {
   await page.goto('/preview/main');
   await page.locator('.preview-toolbar').waitFor({ state: 'visible' });
   if (!(await page.getByLabel('미리보기 역할').isVisible()))
-    await page.getByText('미리보기 설정', { exact: true }).click();
-  await page.getByLabel('미리보기 역할').selectOption(role);
+    await page.getByRole('button', { name: '미리보기 설정', exact: true }).click();
+  await selectPreviewOption(page, '미리보기 역할', role);
   if (scenario !== 'active')
-    await page.getByLabel('미리보기 상황').selectOption(scenario);
+    await selectPreviewOption(page, '미리보기 상황', scenario);
   await page.goto(`/preview${path}`);
   await page.locator('.preview-toolbar').waitFor({ state: 'visible' });
 }

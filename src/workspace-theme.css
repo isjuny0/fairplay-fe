@@ -363,7 +363,6 @@
   color: #1b4437;
 }
 
-.preview-toolbar,
 .mock-notice {
   background: var(--surface-secondary);
   color: var(--text-muted);
