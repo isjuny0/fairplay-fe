@@ -1,13 +1,16 @@
 const storageKey = 'fairplay:task-view-preferences';
 const defaults = { view: 'board', labelWidth: 300 };
 
+export function normalizeTaskView(view) {
+  if (view === 'calendar') return 'list';
+  return ['board', 'list', 'timeline'].includes(view) ? view : defaults.view;
+}
+
 export function readTaskViewPreferences() {
   try {
     const saved = JSON.parse(globalThis.localStorage.getItem(storageKey));
     return {
-      view: ['board', 'list', 'calendar', 'timeline'].includes(saved?.view)
-        ? saved.view
-        : defaults.view,
+      view: normalizeTaskView(saved?.view),
       labelWidth: Number.isInteger(saved?.labelWidth) &&
         saved.labelWidth >= 220 && saved.labelWidth <= 520
         ? saved.labelWidth

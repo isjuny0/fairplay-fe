@@ -157,9 +157,6 @@
   border-color: var(--schedule-color);
   color: var(--schedule-text);
 }
-.calendar-period {
-  color: var(--schedule-text);
-}
 .timeline-row.is-late .timeline-period {
   box-shadow: none;
   border-bottom-color: var(--notice-coral);

@@ -195,8 +195,10 @@ for (const width of [1440, 390])
     });
     for (const [labelIndex, scoreIndex] of [
       [0, 0],
-      [1, 2],
-      [2, 4],
+      [1, 1],
+      [2, 2],
+      [3, 3],
+      [4, 4],
     ]) {
       const label = await criterion
         .locator('.score-scale > span')

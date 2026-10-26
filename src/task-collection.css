@@ -47,26 +47,30 @@
   margin: 0;
   line-height: 1.25;
 }
-.task-board-page[data-task-view='calendar'] {
-  gap: 12px;
+.task-month-navigation .task-month-select {
+  position: relative;
+  display: inline-flex;
+  min-height: 34px;
+  padding: 5px 6px;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
 }
-.task-board-page .calendar-overview {
-  justify-content: space-between;
-  gap: 8px 16px;
+.task-month-select > span { display: inline-flex; align-items: center; gap: 8px; }
+.task-month-select svg { color: var(--text-muted); }
+.task-month-navigation .task-month-select input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
 }
-.task-board-page .calendar-overview .list-summary {
-  flex: 1 1 300px;
-  min-height: 0;
-  gap: 8px;
-}
-.calendar-legends {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px 20px;
-  margin-left: auto;
-}
+.task-month-select:hover { background: var(--surface-secondary); }
+.task-month-select:focus-within { outline: 2px solid var(--brand); outline-offset: 2px; }
 .task-schedule-controls .secondary-button {
   min-height: 34px;
   padding: 5px 9px;
@@ -148,6 +152,17 @@
   }
 }
 @media (max-width: 900px) {
+  .task-month-navigation { position: relative; }
+  .task-month-navigation .schedule-help-trigger { position: static; }
+  .task-month-navigation .schedule-help-tooltip {
+    left: 0;
+    max-width: 100%;
+    transform: translateY(-3px);
+  }
+  .task-month-navigation .schedule-help-trigger:hover .schedule-help-tooltip,
+  .task-month-navigation .schedule-help-trigger:focus .schedule-help-tooltip {
+    transform: translateY(0);
+  }
   .task-collection-heading .task-view-navigation {
     order: 1;
     width: 100%;
