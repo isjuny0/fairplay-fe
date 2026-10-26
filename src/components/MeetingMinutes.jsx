@@ -150,11 +150,6 @@ export default function MeetingMinutes({
               ? "팀 회의록"
               : (!failure && resource.data?.title) || "팀 회의록"}
           </h1>
-          {meetingMinuteId == null && (
-            <p className="field-help">
-              회의 내용을 기록하고 팀원들과 함께 정리하세요.
-            </p>
-          )}
         </div>
         <div className="heading-actions">
           <RefreshButton

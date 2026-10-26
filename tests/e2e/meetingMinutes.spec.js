@@ -192,6 +192,15 @@ test("팀 작업 메뉴에서 등록·상세·공동 수정·삭제와 KST·CSRF
       .locator('[data-navigation-group="팀 작업"]')
       .getByRole("button", { name: "회의록", exact: true }),
   ).toHaveAttribute("aria-current", "page");
+  await expect(
+    page.locator(".meeting-minutes-page > .page-heading p"),
+  ).toHaveCount(0);
+  await expect(
+    page.locator(".meeting-minutes-page > .page-heading"),
+  ).toHaveCSS("border-bottom-width", "1px");
+  await expect(
+    page.getByRole("list", { name: "팀 회의록 목록" }),
+  ).toHaveCSS("border-top-width", "0px");
   const dialog = await editor(page);
   await dialog.getByLabel("제목", { exact: true }).fill("신규 회의");
   await fillDateTime(dialog, "회의일시", "2026-11-01T19:30");
