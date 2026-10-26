@@ -16,10 +16,12 @@ function WorkspaceRoute({ user, view = 'teams', teamMenu = '팀 홈' }) {
   const spaceId = parseRouteId(params.spaceId);
   const teamId = params.teamId == null ? null : parseRouteId(params.teamId);
   const taskId = params.taskId == null ? null : parseRouteId(params.taskId);
+  const announcementId = params.announcementId == null ? null : parseRouteId(params.announcementId);
   if (
     spaceId == null ||
     (params.teamId != null && teamId == null) ||
-    (params.taskId != null && taskId == null)
+    (params.taskId != null && taskId == null) ||
+    (params.announcementId != null && announcementId == null)
   )
     return (
       <main className="main-content">
@@ -32,6 +34,7 @@ function WorkspaceRoute({ user, view = 'teams', teamMenu = '팀 홈' }) {
       spaceId={spaceId}
       teamId={teamId}
       taskId={taskId}
+      announcementId={announcementId}
       user={user}
       view={view}
       teamMenu={teamMenu}
@@ -74,6 +77,8 @@ export default function AppRoutes({ user, prefix = '' }) {
         path={`${prefix}/spaces/:spaceId/settings`}
         element={<WorkspaceRoute user={user} view="settings" />}
       />
+      <Route path={`${prefix}/spaces/:spaceId/announcements`} element={<WorkspaceRoute user={user} view="announcements" />} />
+      <Route path={`${prefix}/spaces/:spaceId/announcements/:announcementId`} element={<WorkspaceRoute user={user} view="announcements" />} />
       {Object.entries(teamMenuPaths).map(([menu, segment]) => (
         <Route
           key={menu}
