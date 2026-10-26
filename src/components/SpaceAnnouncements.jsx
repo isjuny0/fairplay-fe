@@ -152,13 +152,22 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
         className={`stack announcements-page${announcementId == null ? " is-list" : ""}`}
       >
         <div className="page-heading">
-          <h1>
-            {announcementId == null
-              ? "공지사항"
-              : !accessError && resource.data?.title
-                ? resource.data.title
-                : resource.loading ? "공지를 불러오는 중…" : "공지사항"}
-          </h1>
+          <div className="announcement-title-group">
+            <h1>
+              {announcementId == null
+                ? "공지사항"
+                : !accessError && resource.data?.title
+                  ? resource.data.title
+                  : resource.loading
+                    ? "공지를 불러오는 중…"
+                    : "공지사항"}
+            </h1>
+            {announcementId != null &&
+              !accessError &&
+              resource.data?.pinned && (
+                <span className="announcement-pin">상단 고정</span>
+              )}
+          </div>
           <div className="heading-actions">
             <button
               className="secondary-button"
@@ -230,9 +239,6 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
             ) : (
               <article className="announcement-detail">
                 <header className="announcement-detail-heading">
-                  {resource.data.pinned && (
-                    <span className="announcement-pin">상단 고정</span>
-                  )}
                   <div className="announcement-metadata">
                     <span>{resource.data.authorName}</span>
                     <time dateTime={resource.data.createdAt}>
