@@ -121,137 +121,157 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
     else resource.reload();
   };
   return (
-    <section className={`stack announcements-page${announcementId == null ? " is-list" : ""}`}>
+    <>
       {announcementId != null && (
-        <button
-          className="secondary-button back-button"
-          onClick={() => navigate(`${base}${query}`)}
+        <nav
+          className="workspace-breadcrumb announcement-breadcrumb"
+          aria-label="현재 위치"
         >
-          ← 공지 목록으로
-        </button>
+          <button onClick={() => navigate(`${base}${query}`)}>공지사항</button>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">
+            {!accessError && resource.data?.title
+              ? resource.data.title
+              : resource.loading
+                ? "불러오는 중…"
+                : "공지 상세"}
+          </span>
+        </nav>
       )}
-      <div className="page-heading">
-        <h1>{announcementId == null ? "공지사항" : "공지 상세"}</h1>
-        <div className="heading-actions">
-          <button
-            className="secondary-button"
-            disabled={resource.loading || busy}
-            onClick={() => {
-              setError(null);
-              resource.reload();
-            }}
-          >
-            새로고침
-          </button>
-          {canManage && announcementId == null && (
-            <button
-              className="primary-button"
-              disabled={resource.loading && !resource.data}
-              onClick={() => setEditing(true)}
-            >
-              공지 작성
-            </button>
-          )}
-        </div>
-      </div>
-      <ErrorNotice error={error} />
-      <ResourceState
-        resource={{ ...resource, error: accessError }}
-        label="공지사항"
+      <section
+        className={`stack announcements-page${announcementId == null ? " is-list" : ""}`}
       >
-        {resource.data &&
-          (announcementId == null ? (
-            <>
-              {resource.data.length ? (
-                <AnnouncementList
-                  items={resource.data}
-                  onOpen={(id) =>
-                    navigate(`${announcementPath(space.id, id)}${query}`)
-                  }
-                />
-              ) : (
-                <p className="announcement-empty">
-                  등록된 공지사항이 없습니다.
-                </p>
-              )}
-              <ErrorNotice error={next.error} onRetry={next.reload} />
-              <nav
-                className="announcement-pagination"
-                aria-label="공지 목록 페이지"
+        {announcementId != null && (
+          <button
+            className="secondary-button back-button"
+            onClick={() => navigate(`${base}${query}`)}
+          >
+            ← 공지 목록으로
+          </button>
+        )}
+        <div className="page-heading">
+          <h1>{announcementId == null ? "공지사항" : "공지 상세"}</h1>
+          <div className="heading-actions">
+            <button
+              className="secondary-button"
+              disabled={resource.loading || busy}
+              onClick={() => {
+                setError(null);
+                resource.reload();
+              }}
+            >
+              새로고침
+            </button>
+            {canManage && announcementId == null && (
+              <button
+                className="primary-button"
+                disabled={resource.loading && !resource.data}
+                onClick={() => setEditing(true)}
               >
-                <button
-                  className="secondary-button"
-                  disabled={page === 0 || resource.loading}
-                  onClick={() =>
-                    navigate(`${base}${page > 1 ? `?page=${page - 1}` : ""}`)
-                  }
-                >
-                  이전
-                </button>
-                <span>{page + 1}페이지</span>
-                <button
-                  className="secondary-button"
-                  disabled={
-                    resource.loading || next.loading || !next.data?.length
-                  }
-                  onClick={() => navigate(`${base}?page=${page + 1}`)}
-                >
-                  다음
-                </button>
-              </nav>
-            </>
-          ) : (
-            <article className="announcement-detail">
-              <header className="announcement-detail-heading">
-                {resource.data.pinned && (
-                  <span className="announcement-pin">상단 고정</span>
+                공지 작성
+              </button>
+            )}
+          </div>
+        </div>
+        <ErrorNotice error={error} />
+        <ResourceState
+          resource={{ ...resource, error: accessError }}
+          label="공지사항"
+        >
+          {resource.data &&
+            (announcementId == null ? (
+              <>
+                {resource.data.length ? (
+                  <AnnouncementList
+                    items={resource.data}
+                    onOpen={(id) =>
+                      navigate(`${announcementPath(space.id, id)}${query}`)
+                    }
+                  />
+                ) : (
+                  <p className="announcement-empty">
+                    등록된 공지사항이 없습니다.
+                  </p>
                 )}
-                <h2>{resource.data.title}</h2>
-                <div className="announcement-metadata">
-                  <span>{resource.data.authorName}</span>
-                  <time dateTime={resource.data.createdAt}>
-                    등록 {formatDate(resource.data.createdAt)}
-                  </time>
-                  {resource.data.updatedAt !== resource.data.createdAt && (
-                    <time dateTime={resource.data.updatedAt}>
-                      수정 {formatDate(resource.data.updatedAt)}
-                    </time>
-                  )}
-                </div>
-              </header>
-              <p className="announcement-content">{resource.data.content}</p>
-              {canManage && (
-                <div className="announcement-detail-actions">
+                <ErrorNotice error={next.error} onRetry={next.reload} />
+                <nav
+                  className="announcement-pagination"
+                  aria-label="공지 목록 페이지"
+                >
                   <button
                     className="secondary-button"
-                    disabled={busy || resource.loading}
-                    onClick={() => {
-                      setError(null);
-                      setEditing(true);
-                    }}
+                    disabled={page === 0 || resource.loading}
+                    onClick={() =>
+                      navigate(`${base}${page > 1 ? `?page=${page - 1}` : ""}`)
+                    }
                   >
-                    공지 수정
+                    이전
                   </button>
+                  <span>{page + 1}페이지</span>
                   <button
-                    className="danger-button"
-                    disabled={busy || resource.loading}
-                    onClick={remove}
+                    className="secondary-button"
+                    disabled={
+                      resource.loading || next.loading || !next.data?.length
+                    }
+                    onClick={() => navigate(`${base}?page=${page + 1}`)}
                   >
-                    공지 삭제
+                    다음
                   </button>
-                </div>
-              )}
-            </article>
-          ))}
-      </ResourceState>
-      {editing && canManage && (
-        <AnnouncementEditor
-          spaceId={space.id}
-          announcement={announcementId == null ? null : resource.data}
-          onClose={() => setEditing(false)}
-          onSaved={onSaved}
-        />
-      )}
-    </section>
+                </nav>
+              </>
+            ) : (
+              <article className="announcement-detail">
+                <header className="announcement-detail-heading">
+                  {resource.data.pinned && (
+                    <span className="announcement-pin">상단 고정</span>
+                  )}
+                  <h2>{resource.data.title}</h2>
+                  <div className="announcement-metadata">
+                    <span>{resource.data.authorName}</span>
+                    <time dateTime={resource.data.createdAt}>
+                      등록 {formatDate(resource.data.createdAt)}
+                    </time>
+                    {resource.data.updatedAt !== resource.data.createdAt && (
+                      <time dateTime={resource.data.updatedAt}>
+                        수정 {formatDate(resource.data.updatedAt)}
+                      </time>
+                    )}
+                  </div>
+                </header>
+                <p className="announcement-content">{resource.data.content}</p>
+                {canManage && (
+                  <div className="announcement-detail-actions">
+                    <button
+                      className="secondary-button"
+                      disabled={busy || resource.loading}
+                      onClick={() => {
+                        setError(null);
+                        setEditing(true);
+                      }}
+                    >
+                      공지 수정
+                    </button>
+                    <button
+                      className="danger-button"
+                      disabled={busy || resource.loading}
+                      onClick={remove}
+                    >
+                      공지 삭제
+                    </button>
+                  </div>
+                )}
+              </article>
+            ))}
+        </ResourceState>
+        {editing && canManage && (
+          <AnnouncementEditor
+            spaceId={space.id}
+            announcement={announcementId == null ? null : resource.data}
+            onClose={() => setEditing(false)}
+            onSaved={onSaved}
+          />
+        )}
+      </section>
+    </>
   );
 }

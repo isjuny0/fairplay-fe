@@ -244,28 +244,52 @@ for (const width of [1440, 320]) {
     await page.goto("/spaces/1");
     const summary = page.locator(".space-announcement-summary");
     await expect(summary.locator(".announcement-row")).toHaveCount(2);
-    const bottomGap = await summary.evaluate((element) =>
-      element.getBoundingClientRect().bottom -
-      element.querySelector(".announcement-row:last-child").getBoundingClientRect().bottom,
+    const bottomGap = await summary.evaluate(
+      (element) =>
+        element.getBoundingClientRect().bottom -
+        element
+          .querySelector(".announcement-row:last-child")
+          .getBoundingClientRect().bottom,
     );
     expect(bottomGap).toBeLessThanOrEqual(6);
-    await summary.screenshot({ path: testInfo.outputPath("compact-summary.png") });
-    await summary.getByRole("button", { name: "전체 보기", exact: true }).click();
+    await summary.screenshot({
+      path: testInfo.outputPath("compact-summary.png"),
+    });
+    await summary
+      .getByRole("button", { name: "전체 보기", exact: true })
+      .click();
     const heading = page.locator(".announcements-page > .page-heading");
-    const titleBox = await heading.getByRole("heading", { name: "공지사항", exact: true }).boundingBox();
-    const refreshBox = await heading.getByRole("button", { name: "새로고침", exact: true }).boundingBox();
+    const titleBox = await heading
+      .getByRole("heading", { name: "공지사항", exact: true })
+      .boundingBox();
+    const refreshBox = await heading
+      .getByRole("button", { name: "새로고침", exact: true })
+      .boundingBox();
     expect(Math.abs(titleBox.y - refreshBox.y)).toBeLessThan(1);
     expect(Math.abs(titleBox.height - refreshBox.height)).toBeLessThan(1);
-    await heading.screenshot({ path: testInfo.outputPath("aligned-heading.png") });
+    await heading.screenshot({
+      path: testInfo.outputPath("aligned-heading.png"),
+    });
     const list = page.locator(".announcements-page > .announcement-list");
     await expect(list.locator(".announcement-row")).toHaveCount(2);
     const listBox = await list.boundingBox();
     const headingBox = await heading.boundingBox();
-    expect(listBox.y - headingBox.y - headingBox.height).toBeLessThanOrEqual(13);
-    await expect(list.locator(".announcement-row").first()).toHaveCSS("padding-top", "8px");
-    const paginationBox = await page.locator(".announcement-pagination").boundingBox();
-    expect(paginationBox.y - listBox.y - listBox.height).toBeLessThanOrEqual(17);
-    await page.locator(".announcements-page").screenshot({ path: testInfo.outputPath("compact-list.png") });
+    expect(listBox.y - headingBox.y - headingBox.height).toBeLessThanOrEqual(
+      13,
+    );
+    await expect(list.locator(".announcement-row").first()).toHaveCSS(
+      "padding-top",
+      "8px",
+    );
+    const paginationBox = await page
+      .locator(".announcement-pagination")
+      .boundingBox();
+    expect(paginationBox.y - listBox.y - listBox.height).toBeLessThanOrEqual(
+      17,
+    );
+    await page
+      .locator(".announcements-page")
+      .screenshot({ path: testInfo.outputPath("compact-list.png") });
   });
 
   test(`USER·팀 리더는 ${width}px에서 공지를 읽고 관리 버튼 없이 목록으로 돌아간다`, async ({
@@ -290,6 +314,14 @@ for (const width of [1440, 320]) {
     await expect(page.locator(".announcement-content")).toHaveText(
       "공지 1 본문\n두 번째 줄",
     );
+    const breadcrumb = page.getByRole("navigation", {
+      name: "현재 위치",
+      exact: true,
+    });
+    await expect(breadcrumb).toHaveCount(1);
+    await expect(breadcrumb.locator('[aria-current="page"]')).toHaveText(
+      "프로젝트 공지 1",
+    );
     await expect(
       page.getByRole("button", { name: "공지 수정", exact: true }),
     ).toHaveCount(0);
@@ -304,8 +336,8 @@ for (const width of [1440, 320]) {
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
-    await page
-      .getByRole("button", { name: "← 공지 목록으로", exact: true })
+    await breadcrumb
+      .getByRole("button", { name: "공지사항", exact: true })
       .click();
     await expect(page.locator(".announcement-row")).toHaveCount(3);
     expect(
@@ -346,7 +378,8 @@ test("고정 우선 목록의 페이지를 복원하고 마지막 공지 삭제 
   await page.locator(".announcement-title").click();
   await expect(page).toHaveURL(/\/announcements\/2\?page=1$/);
   await page
-    .getByRole("button", { name: "← 공지 목록으로", exact: true })
+    .getByRole("navigation", { name: "현재 위치", exact: true })
+    .getByRole("button", { name: "공지사항", exact: true })
     .click();
   await expect(pagination).toContainText("2페이지");
   await page.locator(".announcement-title").click();

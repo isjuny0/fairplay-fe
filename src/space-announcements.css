@@ -99,6 +99,18 @@
 .announcements-page {
   min-width: 0;
 }
+.main-content .announcement-breadcrumb {
+  display: flex;
+}
+.announcement-breadcrumb > button {
+  flex-shrink: 0;
+  color: var(--brand-dark);
+  text-decoration: underline;
+}
+.announcement-breadcrumb > [aria-current="page"] {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .main-content .announcements-page.is-list {
   gap: 12px;
 }
