@@ -1,7 +1,7 @@
 import { getMidFeedback } from '../api/evaluations.js';
 import useResource from '../hooks/useResource.js';
 import { formatDate } from '../lib/domain.js';
-import Icon from './Icon.jsx';
+import RefreshButton from './RefreshButton.jsx';
 import { FeedbackSummary } from './PlanningUi.jsx';
 import { EmptyState, ResourceState } from './ui.jsx';
 
@@ -20,14 +20,11 @@ export default function MidFeedback({ context }) {
           <h1>중간 피드백</h1>
           <p>팀원에게 받은 평가를 네 가지 협업 항목으로 확인하세요.</p>
         </div>
-        <button
-          className="secondary-button"
+        <RefreshButton
+          label="피드백 새로고침"
           disabled={resource.loading}
           onClick={resource.reload}
-        >
-          <Icon name="refresh" />
-          피드백 새로고침
-        </button>
+        />
       </div>
       {resource.error?.code === 'MID_FEEDBACK_NOT_READY' ||
       resource.error?.code === 'ROUND_NOT_FOUND' ? (

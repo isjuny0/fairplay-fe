@@ -17,6 +17,8 @@ export function parseRouteId(value) {
 }
 
 export const spacePath = (spaceId) => `/spaces/${spaceId}`;
+export const announcementsPath = (spaceId) => `${spacePath(spaceId)}/announcements`;
+export const announcementPath = (spaceId, id) => `${announcementsPath(spaceId)}/${id}`;
 export const teamPath = (spaceId, teamId) =>
   `${spacePath(spaceId)}/teams/${teamId}`;
 export function teamMenuPath(spaceId, teamId, menu) {

@@ -24,6 +24,7 @@ import {
   MessageSquareText,
   ChartNoAxesCombined,
   PanelLeft,
+  Megaphone,
 } from "lucide-react";
 
 const icons = {
@@ -43,6 +44,7 @@ const icons = {
   feedback: MessageSquareText,
   chart: ChartNoAxesCombined,
   sidebar: PanelLeft,
+  announcement: Megaphone,
   'sidebar-close': ArrowLeft,
   'sidebar-open': ArrowRight,
   settings: SlidersHorizontal,

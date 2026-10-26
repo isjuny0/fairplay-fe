@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import RefreshButton from './RefreshButton.jsx';
 import DateTimeInput from './DateTimeInput.jsx';
 import { currentDateTime } from '../lib/dateTime.js';
 import {
@@ -97,7 +98,6 @@ export default function SpaceSettings({ space, onChanged }) {
     <section className="stack space-settings">
       <div className="page-heading page-heading--compact">
         <div>
-          <span className="eyebrow">스페이스 운영</span>
           <h1>스페이스 관리</h1>
         </div>
         <span className="status-badge">
@@ -205,13 +205,11 @@ export default function SpaceSettings({ space, onChanged }) {
           <div className="settings-section-content">
             <div className="section-heading">
               <h3>현재 참여 코드</h3>
-              <button
-                className="ghost-button"
+              <RefreshButton
+                label="코드 새로고침"
                 disabled={busy || codes.loading}
                 onClick={codes.reload}
-              >
-                코드 새로고침
-              </button>
+              />
             </div>
             <ResourceState resource={codes}>
               {codes.data ? (

@@ -21,6 +21,7 @@ import { getManagerDashboard } from '../src/api/dashboard.js';
 import { afterEach, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { apiRequest, clearCsrfToken } from '../src/api/client.js';
+import { listSpaceAnnouncements, getSpaceAnnouncement, createSpaceAnnouncement, updateSpaceAnnouncement, deleteSpaceAnnouncement } from '../src/api/spaceAnnouncements.js';
 import { updateTask } from '../src/api/tasks.js';
 import {
   listTaskComments,
@@ -63,6 +64,35 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
   clearCsrfToken();
   delete globalThis.window;
+});
+
+test('공지 5개 API는 배열 페이지·전체 수정·쿼리 버전 삭제와 세션 및 CSRF 계약을 사용한다', async () => {
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, ...options });
+    if (url.endsWith('/csrf')) return jsonResponse({ headerName: 'X-CSRF-TOKEN', token: 'token' });
+    if (options.method === 'DELETE') return new Response(null, { status: 204 });
+    return jsonResponse(options.method === 'GET' && url.includes('?page=') ? [] : { id: 7, version: 2 });
+  };
+  const input = { title: '제목', content: '본문', pinned: true };
+  assert.deepEqual(await listSpaceAnnouncements(1, 2, 20), []);
+  assert.equal((await getSpaceAnnouncement(1, 7)).id, 7);
+  await createSpaceAnnouncement(1, input);
+  await updateSpaceAnnouncement(1, 7, { ...input, expectedVersion: 2 });
+  assert.equal(await deleteSpaceAnnouncement(1, 7, 3), null);
+  assert.deepEqual(calls.map((call) => [call.url, call.method || 'GET']), [
+    ['/api/spaces/1/announcements?page=2&size=20', 'GET'],
+    ['/api/spaces/1/announcements/7', 'GET'],
+    ['/api/auth/csrf', 'GET'],
+    ['/api/spaces/1/announcements', 'POST'],
+    ['/api/spaces/1/announcements/7', 'PATCH'],
+    ['/api/spaces/1/announcements/7?expectedVersion=3', 'DELETE'],
+  ]);
+  assert.deepEqual(JSON.parse(calls[3].body), input);
+  assert.deepEqual(JSON.parse(calls[4].body), { ...input, expectedVersion: 2 });
+  assert.equal(calls[5].body, undefined);
+  for (const call of calls) assert.equal(call.credentials, 'include');
+  for (const call of calls.slice(3)) assert.equal(call.headers['X-CSRF-TOKEN'], 'token');
+  assert.equal(calls[0].headers['X-CSRF-TOKEN'], undefined);
 });
 
 test('댓글 4개 API는 페이지 배열·본문 필드·세션과 CSRF·204 삭제 계약을 사용한다', async () => {
