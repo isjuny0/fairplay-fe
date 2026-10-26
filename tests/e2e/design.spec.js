@@ -137,7 +137,8 @@ for (const width of [1440, 768, 390, 320]) {
   test(`새 레이아웃 ${width}px: 스페이스 목록과 로그인 영역의 반응형 배치`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/preview/main');
-    await expect(page.locator('.topbar .logo-mark')).toHaveCSS('background-color', 'rgb(8, 124, 85)');
+    await expect(page.locator('.topbar .brand-logo')).toBeVisible();
+    await expect(page.locator('.topbar .brand-logo')).toHaveAttribute('src', '/branding/fairplay-logo.webp');
     await expect(page.locator('.space-list')).toBeVisible();
     await expect(page.getByLabel('스페이스 이름 검색')).toBeVisible();
     await expect(page.getByLabel('내 역할 필터')).toBeVisible();
