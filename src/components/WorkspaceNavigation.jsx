@@ -200,7 +200,7 @@ export default function WorkspaceNavigation({
                         )}
                         {items.map(([label, icon]) =>
                           navButton(
-                            label,
+                            label === '팀 회의록' ? '회의록' : label,
                             icon,
                             teamMenuPath(spaceId, team.id, label),
                             view === 'team' && teamMenu === label,

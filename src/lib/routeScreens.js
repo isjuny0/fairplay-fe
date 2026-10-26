@@ -15,6 +15,7 @@ const imports = {
   TaskDetail: () => import('../components/TaskDetail.jsx'),
   TaskForm: () => import('../components/TaskForm.jsx'),
   Deliverables: () => import('../components/Deliverables.jsx'),
+  MeetingMinutes: () => import('../components/MeetingMinutes.jsx'),
   TeamMembers: () => import('../components/TeamMembers.jsx'),
   TeamSettings: () => import('../components/TeamSettings.jsx'),
   PeerEvaluation: () => import('../components/PeerEvaluation.jsx'),
@@ -45,6 +46,7 @@ export function preloadRoute(pathname) {
     const menu = path.split('/')[5] || '';
     const screen = {
       'materials-search': 'TeamRagSearch',
+      'meeting-minutes': 'MeetingMinutes',
       '': 'TeamHome', tasks: 'TaskBoard', deliverables: 'Deliverables',
       members: 'TeamMembers', settings: 'TeamSettings',
       'peer-evaluations': 'PeerEvaluation', 'mid-feedback': 'MidFeedback',

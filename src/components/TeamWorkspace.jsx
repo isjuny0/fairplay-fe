@@ -14,6 +14,7 @@ import { teamMenuPath } from '../lib/routes.js';
 import { ErrorNotice, ResourceState } from './ui.jsx';
 
 const Deliverables = deferScreen(screenLoaders.Deliverables, '산출물');
+const MeetingMinutes = deferScreen(screenLoaders.MeetingMinutes, '팀 회의록');
 const TaskBoard = deferScreen(screenLoaders.TaskBoard, '작업');
 const TeamMembers = deferScreen(screenLoaders.TeamMembers, '팀원 관리');
 const TeamSettings = deferScreen(screenLoaders.TeamSettings, '팀 설정');
@@ -49,6 +50,7 @@ export default function TeamWorkspace({
   user,
   menu,
   taskId,
+  meetingMinuteId,
   onChanged,
   onRemoved,
 }) {
@@ -230,6 +232,9 @@ export default function TeamWorkspace({
           )}
           {currentMenu === '산출물' && (
             <TeamDeliverables team={workTeam} user={user} members={members} />
+          )}
+          {currentMenu === '팀 회의록' && approved && (
+            <MeetingMinutes key={`${team.id}:${meetingMinuteId || 'list'}`} context={context} meetingMinuteId={meetingMinuteId} />
           )}
           {currentMenu === '팀 설정' && approved && (
             <TeamSettings
