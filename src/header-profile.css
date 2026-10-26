@@ -31,7 +31,7 @@
     grid-column: 1;
     grid-row: 1;
   }
-  .topbar:has(.profile-leader-badge) .logo-mark {
+  .topbar:has(.profile-leader-badge) .brand-logo {
     flex-shrink: 0;
   }
   .profile-area:has(.profile-leader-badge) .profile-avatar {

@@ -535,30 +535,14 @@ p {
   align-items: center;
   gap: 10px;
 }
-.logo-mark {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: var(--brand);
-  color: #fff;
-  font-size: 24px;
-  font-family: var(--font-brand);
-  font-weight: 400;
-}
+
 .brand-button {
   padding: 0;
   border: 0;
   background: transparent;
   color: #303941;
 }
-.wordmark {
-  font-family: var(--font-brand);
-  font-size: 24px;
-  font-weight: 400;
-  letter-spacing: -0.035em;
-}
+
 .context-info {
   color: var(--text-muted);
   font-size: var(--text-support);
@@ -1616,12 +1600,7 @@ fieldset {
   box-shadow: 0 12px 50px #304d3910;
   text-align: center;
 }
-.login-card .logo-mark {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-  font-size: 31px;
-}
+
 .login-card h1 {
   margin: 0;
   font-family: var(--font-brand);

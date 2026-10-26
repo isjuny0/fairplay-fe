@@ -36,9 +36,10 @@ for (const width of [1440, 1024, 768, 390, 320]) {
     ).toBeLessThan(1);
     expect(roleBox.x + roleBox.width).toBeLessThanOrEqual(width);
     const logoBox = await page
-      .locator('.topbar-brand .logo-mark')
+      .locator('.topbar-brand .brand-logo')
       .boundingBox();
-    expect(Math.abs(logoBox.width - logoBox.height)).toBeLessThan(1);
+    expect(logoBox.width).toBeGreaterThan(logoBox.height * 3);
+    await expect(page.locator('.topbar-brand .brand-logo')).toHaveAttribute('src', '/branding/fairplay-logo.webp');
     expect(
       await page
         .locator('.topbar')
