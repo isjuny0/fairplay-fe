@@ -25,7 +25,7 @@ export function useTaskSchedulePreview(tasks, month) {
       );
     }, 120);
   };
-  const showPreview = (anchor, task, markerType) => {
+  const showPreview = (anchor, task) => {
     cancelHover();
     cancelClose();
     const bounds = anchor.getBoundingClientRect();
@@ -36,7 +36,6 @@ export function useTaskSchedulePreview(tasks, month) {
     );
     setPreview({
       task,
-      markerType,
       anchor,
       left,
       top: bounds.bottom + 8,
@@ -45,9 +44,9 @@ export function useTaskSchedulePreview(tasks, month) {
       anchorBottom: bounds.bottom,
     });
   };
-  const previewEvents = (task, markerType = null) => ({
+  const previewEvents = (task) => ({
     'aria-describedby':
-      preview?.task.id === task.id && preview.markerType === markerType
+      preview?.task.id === task.id
         ? previewId
         : undefined,
     onMouseEnter: (event) => {
@@ -55,7 +54,7 @@ export function useTaskSchedulePreview(tasks, month) {
       cancelClose();
       const anchor = event.currentTarget;
       hoverTimer.current = setTimeout(
-        () => showPreview(anchor, task, markerType),
+        () => showPreview(anchor, task),
         200,
       );
     },
@@ -63,7 +62,7 @@ export function useTaskSchedulePreview(tasks, month) {
       cancelHover();
       if (document.activeElement !== event.currentTarget) closePreview();
     },
-    onFocus: (event) => showPreview(event.currentTarget, task, markerType),
+    onFocus: (event) => showPreview(event.currentTarget, task),
     onBlur: closePreview,
   });
   useEffect(() => {
@@ -132,7 +131,6 @@ export default function TaskSchedulePreview({
   controller,
   members,
   now,
-  variant,
 }) {
   const { preview, previewId, cancelClose, closePreview } = controller;
   if (!preview) return null;
@@ -151,7 +149,7 @@ export default function TaskSchedulePreview({
             : anchorBounds.top - bounds.height - 8;
         element.style.top = `${Math.max(12, Math.min(top, globalThis.innerHeight - bounds.height - 12))}px`;
       }}
-      className={`task-schedule-preview ${variant}-preview`}
+      className="task-schedule-preview timeline-preview"
       style={{ left: preview.left, top: preview.top, width: preview.width }}
       onMouseEnter={cancelClose}
       onMouseLeave={closePreview}
@@ -162,19 +160,6 @@ export default function TaskSchedulePreview({
         >
           {statusLabels[preview.task.status]}
         </span>
-        {preview.markerType && (
-          <span className="calendar-preview-kind">
-            <span
-              className={`calendar-event-symbol is-${preview.markerType}`}
-              aria-hidden="true"
-            />
-            {
-              { start: '시작 일정', due: '마감 일정', period: '작업 기간' }[
-                preview.markerType
-              ]
-            }
-          </span>
-        )}
       </div>
       <strong>
         #{preview.task.id} {preview.task.title}

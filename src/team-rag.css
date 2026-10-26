@@ -5,8 +5,7 @@
   flex-direction: column;
   overflow: hidden;
 }
-.app-shell:has(.rag-page) > .topbar,
-.app-shell:has(.rag-page) > .preview-toolbar {
+.app-shell:has(.rag-page) > .topbar {
   flex-shrink: 0;
 }
 .workspace:has(.rag-page) {

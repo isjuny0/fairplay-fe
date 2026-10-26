@@ -1,3 +1,4 @@
+import { selectPreviewOption } from './helpers/previewControls.js';
 import { test, expect } from '@playwright/test';
 import { addDashboardWidgets } from './helpers/teamDashboard.js';
 
@@ -24,8 +25,8 @@ for (const width of [1440, 390]) {
     await expect(header.locator('strong')).toHaveText('내 스페이스');
     await page.locator('.preview-toolbar').waitFor({ state: 'visible' });
     if (!await page.getByLabel('미리보기 역할').isVisible())
-      await page.getByText('미리보기 설정', { exact: true }).click();
-    await page.getByLabel('미리보기 역할').selectOption('manager');
+      await page.getByRole('button', { name: '미리보기 설정', exact: true }).click();
+    await selectPreviewOption(page, '미리보기 역할', 'manager');
     await page.goto('/preview/spaces/1/settings');
     await expect(header.locator('strong')).toHaveText('2026 서비스 디자인 프로젝트');
     await expect(header).not.toContainText('삼위일체');
@@ -123,8 +124,8 @@ for (const width of [1440, 390]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
     await page.locator('.preview-toolbar').waitFor({ state: 'visible' });
     if (!await page.getByLabel('미리보기 역할').isVisible())
-      await page.getByText('미리보기 설정', { exact: true }).click();
-    await page.getByLabel('미리보기 역할').selectOption('manager');
+      await page.getByRole('button', { name: '미리보기 설정', exact: true }).click();
+    await selectPreviewOption(page, '미리보기 역할', 'manager');
     await page.goto('/preview/spaces/1/settings');
     await expect(page.locator('.main-content .panel').first()).toHaveCSS('border-radius', '0px');
     await expect(page.locator('.main-content .panel').first()).toHaveCSS('box-shadow', 'none');

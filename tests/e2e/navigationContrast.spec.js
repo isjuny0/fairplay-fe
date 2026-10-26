@@ -222,7 +222,7 @@ test('팀 홈의 마감 지연은 빨간색 아이콘으로 표시한다', async
   ).toHaveCSS('color', 'rgb(8, 124, 85)');
 });
 
-test('타임라인·캘린더·목록은 밝은 상태 배경과 읽기 쉬운 글씨색을 공유한다', async ({
+test('타임라인·목록은 밝은 상태 배경과 읽기 쉬운 글씨색을 공유한다', async ({
   page,
 }) => {
   const palette = [
@@ -273,10 +273,7 @@ test('타임라인·캘린더·목록은 밝은 상태 배경과 읽기 쉬운 �
   await expect(overdue).toHaveCSS('color', 'rgb(255, 85, 92)');
   await expect(overdue).toHaveCSS('background-color', 'rgb(255, 240, 241)');
   await expect(page.locator('.task-table td:has(> .is-overdue) > time').first()).toHaveCSS('color', 'rgb(255, 85, 92)');
-  await page.getByRole('button', { name: '캘린더', exact: true }).click();
-  await expect(page.locator('.calendar-period')).not.toHaveCount(0);
-  await expect(page.locator('.calendar-period.schedule-task-done')).toHaveCount(0);
-  await expect(page.locator('.calendar-date-marker')).not.toHaveCount(0);
+
 });
 
 test('작업 상세와 관리자 화면도 작업 보드의 공통 상태색을 사용한다', async ({ page }) => {

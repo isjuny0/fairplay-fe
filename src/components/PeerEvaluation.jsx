@@ -22,7 +22,7 @@ import {
   validatePeerResponse,
   isLowScore,
 } from '../lib/evaluation.js';
-import { peerCriteria, peerGuides } from '../lib/peerCriteria.js';
+import { peerCriteria, peerCriteriaDescriptions, peerEvaluationNotes, peerGuides, peerScoreOptions } from '../lib/peerCriteria.js';
 import { EmptyState, ErrorNotice, Field, Modal, ResourceState } from './ui.jsx';
 import { ProgressBar, RoundPicker } from './PlanningUi.jsx';
 
@@ -134,7 +134,7 @@ function PeerResponseForm({
           >
             <legend>{label}</legend>
             <div className="score-options">
-              {[1, 2, 3, 4, 5].map((score) => (
+              {peerScoreOptions.map(({ score }) => (
                 <label
                   key={score}
                   className={Number(scores[code]) === score ? 'selected' : ''}
@@ -143,6 +143,7 @@ function PeerResponseForm({
                     type="radio"
                     name={`${target.targetId}-${code}`}
                     aria-label={`${target.name} ${label} ${score}점`}
+                    aria-describedby={`${target.targetId}-${code}-${score}-description`}
                     checked={Number(scores[code]) === score}
                     onChange={() => {
                       setScores((current) => ({ ...current, [code]: score }));
@@ -155,21 +156,11 @@ function PeerResponseForm({
               ))}
             </div>
             <p className="score-scale" aria-label="점수 기준">
-              <span>
-                1점
-                <br />
-                기준 미달
-              </span>
-              <span>
-                3점
-                <br />
-                기준 충족
-              </span>
-              <span>
-                5점
-                <br />
-                기준 초과
-              </span>
+              {peerScoreOptions.map(({ score, label: scoreLabel }) => (
+                <span key={score} id={`${target.targetId}-${code}-${score}-description`}>
+                  {scoreLabel}
+                </span>
+              ))}
             </p>
             {scoreError?.code === code && (
               <p
@@ -182,10 +173,12 @@ function PeerResponseForm({
             )}
             <details>
               <summary>점수별 행동 기준</summary>
-              <p>1점 · {peerGuides[code][0]}</p>
-              <p>3점 · {peerGuides[code][1]}</p>
-              <p>5점 · {peerGuides[code][2]}</p>
+              <p>{peerCriteriaDescriptions[code]}</p>
+              <p>1점 · 매우 미흡 · {peerGuides[code][0]}</p>
+              <p>3점 · 보통 · {peerGuides[code][1]}</p>
+              <p>5점 · 매우 우수 · {peerGuides[code][2]}</p>
               <p>2·4점은 인접 기준 사이의 수행 행동입니다.</p>
+              <p>{peerEvaluationNotes[code]}</p>
             </details>
           </fieldset>
         ))}

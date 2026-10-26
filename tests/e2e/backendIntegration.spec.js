@@ -485,6 +485,9 @@ test('동료 평가는 실제 PUT과 POST로 저장·제출하고 새로고침 �
 }) => {
   const { requests } = await backend(page);
   await page.goto('/spaces/1/teams/1/peer-evaluations');
+  await expect(page.locator('.score-scale').first().locator('span')).toHaveText([
+    '매우 미흡', '미흡', '보통', '우수', '매우 우수',
+  ]);
   for (const label of ['작업 수행', '책임감', '적극성', '의사소통'])
     await page.getByLabel(`리더 ${label} 4점`, { exact: true }).check();
   await page.getByRole('button', { name: '리더 평가 저장' }).click();
@@ -531,14 +534,45 @@ test('평가 비참여 상태는 대상·응답 조회를 요청하지 않는다
     requests.some((request) => /targets|responses/.test(request.path)),
   ).toBeFalsy();
 });
-test('중간 피드백은 실제 서버 평균과 행동 안내를 제공한다', async ({
+test('중간 피드백은 서버 평균을 네 항목으로 표시하고 집계 안내를 제공한다', async ({
   page,
 }) => {
   await backend(page);
   await page.goto('/spaces/1/teams/1/mid-feedback');
   await expect(page.getByText('4.25 / 5', { exact: true })).toBeVisible();
-  await expect(page.getByText('역할 조율을 함께 확인해 보세요.')).toBeVisible();
+  await expect(page.getByText('역할 조율을 함께 확인해 보세요.')).toHaveCount(0);
+  await expect(page.getByLabel('평가 정보')).toContainText('받은 평가 1개');
+  await expect(page.getByRole('meter')).toHaveCount(4);
+  await expect(page.getByRole('meter', { name: '작업 수행 평균', exact: true })).toHaveAttribute('aria-valuenow', '4.25');
+  await expect(page.locator('.feedback-score-row.needs-attention')).toHaveCount(1);
+  await expect(page.locator('.feedback-score-row.needs-attention')).toContainText('적극성');
+  await expect(page.locator('.feedback-score-row.needs-attention')).toContainText('확인할 항목');
   await expect(page.getByText('목업', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '내 담당 작업 보기', exact: true })).toHaveCount(0);
+  await expect(page.getByText('평가 기준 보기', { exact: true })).toHaveCount(0);
+  await expect(page.locator('.feedback-calculation-note')).toContainText('최종 기여율과는 별개');
+  await expect(page.getByRole('tooltip')).toHaveCount(0);
+  for (const label of ['작업 수행', '책임감', '적극성', '의사소통']) {
+    const help = page.getByRole('button', { name: `${label} 설명`, exact: true });
+    await help.hover();
+    await expect(page.getByRole('tooltip')).toContainText('확인합니다.');
+    await page.mouse.move(0, 0);
+    await expect(page.getByRole('tooltip')).toHaveCount(0);
+    await help.focus();
+    await expect(help).toHaveAttribute('aria-describedby', await page.getByRole('tooltip').getAttribute('id'));
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('tooltip')).toHaveCount(0);
+    await expect(help).toBeFocused();
+    await help.blur();
+  }
+  const items = await page.locator('.feedback-score-row').all();
+  const boxes = await Promise.all(items.map((item) => item.boundingBox()));
+  expect(Math.abs(boxes[0].y - boxes[1].y)).toBeLessThan(1);
+  expect(boxes[2].y).toBeGreaterThan(boxes[0].y + boxes[0].height - 1);
+  await page.setViewportSize({ width: 390, height: 844 });
+  const mobileBoxes = await Promise.all(items.map((item) => item.boundingBox()));
+  expect(mobileBoxes[1].y).toBeGreaterThanOrEqual(mobileBoxes[0].y + mobileBoxes[0].height - 1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 test('관리자 대시보드는 현재 DTO의 가중 진행률과 선택 팀 구성원을 표시한다', async ({
   page,

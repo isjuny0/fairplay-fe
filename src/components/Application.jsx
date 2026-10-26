@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Monitor, X } from 'lucide-react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 import { getCurrentUser, loginWithGoogle, logout } from '../api/auth.js';
 import AppRoutes from './AppRoutes.jsx';
@@ -8,6 +9,7 @@ import { useInteractions } from '../hooks/useInteractions.js';
 import { HeaderContext } from './HeaderContext.js';
 import { invalidateSharedReads } from '../api/sharedReads.js';
 import googleLogo from '../assets/google-g.svg';
+import '../preview-controls.css';
 
 export default function Application({ previewRuntime }) {
   const {
@@ -38,9 +40,25 @@ export default function Application({ previewRuntime }) {
           detail: '팀 프로젝트를 함께 만들어가는 공간',
         };
   const [sessionNotice, setSessionNotice] = useState('');
-  const [previewSettingsOpen, setPreviewSettingsOpen] = useState(
-    () => window.innerWidth > 720,
-  );
+  const [previewSettingsOpen, setPreviewSettingsOpen] = useState(false);
+  const previewControls = useRef(null);
+  const previewToggle = useRef(null);
+  const closePreviewSettings = () => {
+    setPreviewSettingsOpen(false);
+    previewToggle.current?.focus({ preventScroll: true });
+  };
+  useEffect(() => {
+    setPreviewSettingsOpen(false);
+  }, [location.pathname]);
+  useEffect(() => {
+    if (!previewSettingsOpen) return;
+    previewControls.current?.querySelector('select')?.focus();
+    const closeOutside = (event) => {
+      if (!previewControls.current?.contains(event.target)) setPreviewSettingsOpen(false);
+    };
+    document.addEventListener('pointerdown', closeOutside);
+    return () => document.removeEventListener('pointerdown', closeOutside);
+  }, [previewSettingsOpen]);
   const { confirmDiscard } = useInteractions();
   useEffect(() => {
     let active = true;
@@ -206,6 +224,135 @@ export default function Application({ previewRuntime }) {
             </div>
           </div>
           <div className="profile-area">
+            {preview && (
+              <div
+                className="preview-toolbar"
+                ref={previewControls}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape' && !event.defaultPrevented) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    closePreviewSettings();
+                  }
+                }}
+                onBlur={(event) => {
+                  if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) {
+                    setPreviewSettingsOpen(false);
+                  }
+                }}
+              >
+                <button
+                  className="preview-toggle"
+                  type="button"
+                  ref={previewToggle}
+                  aria-label="미리보기 설정"
+                  aria-expanded={previewSettingsOpen}
+                  aria-controls="preview-settings-panel"
+                  title="미리보기 설정"
+                  onClick={() => setPreviewSettingsOpen((value) => !value)}
+                >
+                  <Monitor size={15} />
+                  <span>미리보기</span>
+                </button>
+                <section
+                  className="preview-popover"
+                  id="preview-settings-panel"
+                  role="region"
+                  aria-labelledby="preview-settings-title"
+                  hidden={!previewSettingsOpen}
+                >
+                  <header className="preview-popover-heading">
+                    <h2 id="preview-settings-title">미리보기 설정</h2>
+                    <button
+                      className="icon-button"
+                      type="button"
+                      aria-label="미리보기 설정 닫기"
+                      onClick={closePreviewSettings}
+                    ><X size={17} /></button>
+                  </header>
+                  <p className="preview-popover-note">모든 데이터는 예시이며 서버에 전송되지 않습니다.</p>
+                  <div className="preview-controls">
+                    <label>
+                      역할
+                      <select
+                        aria-label="미리보기 역할"
+                        value={previewRole()}
+                        onChange={async (event) => {
+                          const nextRole = event.target.value;
+                          if (!(await confirmDiscard())) return;
+                          invalidateSharedReads();
+                          setPreviewRole(nextRole);
+                          setUser(getPreviewUser());
+                          setPreviewRevision((value) => value + 1);
+                          navigate('/preview/main');
+                        }}
+                      >
+                        <option value="leader">팀 리더</option>
+                        <option value="participant">
+                          스페이스 참여자·팀 미가입
+                        </option>
+                        <option value="member">일반 담당자</option>
+                        <option value="teammate">다른 팀원</option>
+                        <option value="manager">스페이스 관리자</option>
+                      </select>
+                    </label>
+                    <label>
+                      상황
+                      <select
+                        aria-label="미리보기 상황"
+                        value={scenario}
+                        onChange={async (event) => {
+                          const nextScenario = event.target.value;
+                          if (!(await confirmDiscard())) return;
+                          invalidateSharedReads();
+                          setScenario(nextScenario);
+                          resetPreview(nextScenario);
+                          setPreviewRevision((value) => value + 1);
+                        }}
+                      >
+                        <option value="active">평가 진행 중</option>
+                        <option value="setup">평가 시작 전</option>
+                        <option value="building">팀 빌딩 진행 중</option>
+                        <option value="review">리포트 검토</option>
+                        <option value="published">리포트 공개 완료</option>
+                      </select>
+                    </label>
+                    {location.pathname.endsWith('/materials-search') && (
+                      <label>
+                        자료 검색
+                        <select
+                          aria-label="자료 검색 미리보기 상황"
+                          value={getRagPreviewScenario()}
+                          onChange={async (event) => {
+                            const nextScenario = event.target.value;
+                            if (!(await confirmDiscard())) return;
+                            setRagPreviewScenario(nextScenario);
+                            setPreviewRevision((value) => value + 1);
+                          }}
+                        >
+                          <option value="ready">검색 가능</option>
+                          <option value="no-evidence">관련 근거 없음</option>
+                          <option value="preparing">자료 준비 중</option>
+                          <option value="failed">준비 실패</option>
+                          <option value="disabled">기능 비활성화</option>
+                        </select>
+                      </label>
+                    )}
+                    <button
+                      className="secondary-button"
+                      onClick={async () => {
+                        if (!(await confirmDiscard())) return;
+                        invalidateSharedReads();
+                        resetPreview(scenario);
+                        setPreviewRevision((value) => value + 1);
+                      }}
+                    >
+                      예시 초기화
+                    </button>
+                  </div>
+                </section>
+              </div>
+            )}
             <span className="profile-avatar" aria-hidden="true">
               {user.name?.slice(0, 1)}
             </span>
@@ -215,102 +362,6 @@ export default function Application({ previewRuntime }) {
             </button>
           </div>
         </header>
-        {preview && (
-          <div className="preview-toolbar">
-            <div>
-              <span className="mock-tag">화면 미리보기</span>
-              <span>모든 데이터는 예시이며 서버에 전송되지 않습니다.</span>
-            </div>
-            <details
-              className="preview-settings"
-              open={previewSettingsOpen}
-              onToggle={(event) =>
-                setPreviewSettingsOpen(event.currentTarget.open)
-              }
-            >
-              <summary>미리보기 설정</summary>
-              <div className="preview-controls">
-                <label>
-                  역할
-                  <select
-                    aria-label="미리보기 역할"
-                    value={previewRole()}
-                    onChange={async (event) => {
-                      const nextRole = event.target.value;
-                      if (!(await confirmDiscard())) return;
-                      invalidateSharedReads();
-                      setPreviewRole(nextRole);
-                      setUser(getPreviewUser());
-                      setPreviewRevision((value) => value + 1);
-                      navigate('/preview/main');
-                    }}
-                  >
-                    <option value="leader">팀 리더</option>
-                    <option value="participant">
-                      스페이스 참여자·팀 미가입
-                    </option>
-                    <option value="member">일반 담당자</option>
-                    <option value="teammate">다른 팀원</option>
-                    <option value="manager">스페이스 관리자</option>
-                  </select>
-                </label>
-                <label>
-                  상황
-                  <select
-                    aria-label="미리보기 상황"
-                    value={scenario}
-                    onChange={async (event) => {
-                      const nextScenario = event.target.value;
-                      if (!(await confirmDiscard())) return;
-                      invalidateSharedReads();
-                      setScenario(nextScenario);
-                      resetPreview(nextScenario);
-                      setPreviewRevision((value) => value + 1);
-                    }}
-                  >
-                    <option value="active">평가 진행 중</option>
-                    <option value="setup">평가 시작 전</option>
-                    <option value="building">팀 빌딩 진행 중</option>
-                    <option value="review">리포트 검토</option>
-                    <option value="published">리포트 공개 완료</option>
-                  </select>
-                </label>
-                {location.pathname.endsWith('/materials-search') && (
-                  <label>
-                    자료 검색
-                    <select
-                      aria-label="자료 검색 미리보기 상황"
-                      value={getRagPreviewScenario()}
-                      onChange={async (event) => {
-                        const nextScenario = event.target.value;
-                        if (!(await confirmDiscard())) return;
-                        setRagPreviewScenario(nextScenario);
-                        setPreviewRevision((value) => value + 1);
-                      }}
-                    >
-                      <option value="ready">검색 가능</option>
-                      <option value="no-evidence">관련 근거 없음</option>
-                      <option value="preparing">자료 준비 중</option>
-                      <option value="failed">준비 실패</option>
-                      <option value="disabled">기능 비활성화</option>
-                    </select>
-                  </label>
-                )}
-                <button
-                  className="secondary-button"
-                  onClick={async () => {
-                    if (!(await confirmDiscard())) return;
-                    invalidateSharedReads();
-                    resetPreview(scenario);
-                    setPreviewRevision((value) => value + 1);
-                  }}
-                >
-                  예시 초기화
-                </button>
-              </div>
-            </details>
-          </div>
-        )}
         {error && <ErrorNotice error={error} />}
         <AppRoutes
           key={`${user.id}-${previewRevision}`}

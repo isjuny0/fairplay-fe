@@ -1,5 +1,36 @@
 import { roundLabels, roundStatusLabels } from '../lib/evaluation.js';
-import { peerCriteria } from '../lib/peerCriteria.js';
+import { peerCriteria, peerCriteriaDescriptions } from '../lib/peerCriteria.js';
+import { useId, useState } from 'react';
+import { CircleHelp } from 'lucide-react';
+
+function FeedbackCriterionHelp({ label, description }) {
+  const id = useId();
+  const [open, setOpen] = useState(false);
+  return (
+    <span
+      className="feedback-criterion-help"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={(event) => {
+        if (!event.currentTarget.contains(document.activeElement)) setOpen(false);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') setOpen(false);
+      }}
+    >
+      <button
+        type="button"
+        aria-label={`${label} 설명`}
+        aria-describedby={open ? id : undefined}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        onClick={() => setOpen(true)}
+      >
+        <CircleHelp size={16} aria-hidden="true" />
+      </button>
+      {open && <span className="feedback-criterion-tooltip" id={id} role="tooltip">{description}</span>}
+    </span>
+  );
+}
 
 export function MetricCard({ label, value, description, accent = false }) {
   return (
@@ -45,77 +76,46 @@ export function RoundPicker({ rounds, selected, onSelect }) {
   );
 }
 export function FeedbackSummary({ member }) {
+  const criteria = Object.entries(peerCriteria).map(([code, label]) => {
+    const value = member.averageScores?.[code];
+    const score = typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 5 ? value : null;
+    return { code, label, score, needsAttention: score != null && score < 3 };
+  });
   return (
     <div className="feedback-layout">
       <section className="feedback-score-list" aria-label="항목별 협업 평균">
         <div className="feedback-score-heading">
           <h2>항목별 평균</h2>
-          <span className="feedback-help">
-            <button
-              type="button"
-              className="feedback-help-button"
-              aria-label="항목별 평균 안내"
-              aria-describedby="feedback-score-help"
-            >
-              ?
-            </button>
-            <span
-              className="feedback-help-tooltip"
-              id="feedback-score-help"
-              role="tooltip"
-            >
-              <span>
-                동료에게 받은 평균입니다. 최종 기여율과는 다른 지표입니다.
-              </span>
-              <span>
-                중간 평가 마감과 우리 팀 전원 제출 후 확인할 수 있습니다. 관리자
-                공개와는 별개이며, 소규모 팀의 익명성을 보장하지 않습니다.
-              </span>
-            </span>
-          </span>
+          <span>5점 척도</span>
         </div>
         <dl>
-          {Object.entries(peerCriteria).map(([code, label]) => (
-            <div key={code}>
-              <dt>{label}</dt>
-              <dd>{Number(member.averageScores[code]).toFixed(2)} / 5</dd>
+          {criteria.map(({ code, label, score, needsAttention }) => (
+            <div className={`feedback-score-row${needsAttention ? ' needs-attention' : ''}`} key={code}>
+              <dt>
+                <span className="feedback-criterion-name">
+                  {label}
+                  <FeedbackCriterionHelp label={label} description={peerCriteriaDescriptions[code]} />
+                  {needsAttention && <span className="feedback-attention-label">확인할 항목</span>}
+                </span>
+              </dt>
+              <dd>
+                <span className="feedback-score-value">{score == null ? '집계 정보 없음' : `${score.toFixed(2)} / 5`}</span>
+                {score != null && (
+                  <div className="feedback-score-meter" role="meter" aria-label={`${label} 평균`} aria-valuemin={0} aria-valuemax={5} aria-valuenow={score} aria-valuetext={`5점 만점에 ${score.toFixed(2)}점`}>
+                    {Array.from({ length: 5 }, (_, index) => (
+                      <span key={index} aria-hidden="true"><span style={{ width: `${Math.max(0, Math.min(1, score - index)) * 100}%` }} /></span>
+                    ))}
+                  </div>
+                )}
+              </dd>
             </div>
           ))}
         </dl>
       </section>
-      <section className="panel guidance-panel">
-        <span className="eyebrow">다음 협업을 위한 안내</span>
-        <div className="guidance-heading">
-          <h2>다음 작업에서 확인할 점</h2>
-          <span className="feedback-help">
-            <button
-              type="button"
-              className="feedback-help-button"
-              aria-label="다음 작업 안내 기준"
-              aria-describedby="guidance-help"
-            >
-              ?
-            </button>
-            <span
-              className="feedback-help-tooltip"
-              id="guidance-help"
-              role="tooltip"
-            >
-              수신 평균과 고정 행동 안내입니다. 평가자·개별 점수·사유 원문은
-              제공하지 않습니다.
-            </span>
-          </span>
-        </div>
-        {member.improvementGuidance.length ? (
-          member.improvementGuidance.map((guidance) => (
-            <p key={guidance}>{guidance}</p>
-          ))
-        ) : (
-          <p>
-            현재 평균 3점 미만인 항목이 없습니다. 지금의 협업 방식을 이어가세요.
-          </p>
-        )}
-      </section>
+      <div className="feedback-calculation-note">
+        <p>동료에게 받은 평균이며 최종 기여율과는 별개입니다. ‘확인할 항목’은 평균 3점 미만인 항목입니다.</p>
+        <p>중간 평가 마감과 팀 전원 제출 후 조회할 수 있습니다. 평가자·개별 점수·사유 원문은 제공하지 않으며, 소규모 팀의 익명성을 보장하지 않습니다.</p>
+      </div>
     </div>
   );
 }

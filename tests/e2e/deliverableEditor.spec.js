@@ -1,9 +1,10 @@
+import { selectPreviewOption } from './helpers/previewControls.js';
 import { test, expect } from '@playwright/test';
 
 const deliverablesPath = '/preview/spaces/1/teams/1/deliverables';
 async function openDeliverables(page, role = 'leader') {
   await page.goto('/preview/main');
-  await page.getByLabel('미리보기 역할').selectOption(role);
+  await selectPreviewOption(page, '미리보기 역할', role);
   await page.goto(deliverablesPath);
   await expect(
     page.getByRole('heading', { name: '산출물 관리', exact: true }),

@@ -16,13 +16,6 @@
   .workspace:has(> .workspace-sidebar.is-collapsed) {
     padding-left: 40px;
   }
-  .app-shell:has(.workspace-sidebar) > .preview-toolbar {
-    margin-left: 240px;
-    transition: margin-left 180ms ease;
-  }
-  .app-shell:has(.workspace-sidebar.is-collapsed) > .preview-toolbar {
-    margin-left: 40px;
-  }
   .workspace-sidebar {
     position: fixed;
     inset: var(--header-height) auto 0 0;
