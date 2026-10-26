@@ -3,6 +3,7 @@ const imports = {
   SpaceWorkspace: () => import('../components/SpaceWorkspace.jsx'),
   TeamWorkspace: () => import('../components/TeamWorkspace.jsx'),
   SpaceSettings: () => import('../components/SpaceSettings.jsx'),
+  SpaceAnnouncements: () => import('../components/SpaceAnnouncements.jsx'),
   ManagerDashboard: () => import('../components/ManagerDashboard.jsx'),
   RoundManagement: () => import('../components/RoundManagement.jsx'),
   ReportReview: () => import('../components/ReportReview.jsx'),
@@ -54,6 +55,7 @@ export function preloadRoute(pathname) {
     const screen = path.includes('/manager/') ? 'MemberContributions' : {
       dashboard: 'ManagerDashboard', rounds: 'RoundManagement',
       reports: 'ReportReview', settings: 'SpaceSettings',
+      announcements: 'SpaceAnnouncements',
     }[path.split('/')[3]];
     if (screen) loaders.push(screenLoaders[screen]);
   }

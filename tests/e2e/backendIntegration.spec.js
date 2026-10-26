@@ -131,6 +131,7 @@ async function backend(
       return respond({ headerName: 'X-CSRF-TOKEN', token: 'test-token' });
     if (path === '/api/spaces') return respond([space]);
     if (path === '/api/spaces/1') return respond(space);
+    if (path === '/api/spaces/1/announcements') return respond([]);
     if (path === '/api/spaces/1/teams') return respond([team]);
     if (path === '/api/teams/1') return respond(team);
     if (path === '/api/teams/1/members') return respond(members);

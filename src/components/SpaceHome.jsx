@@ -7,6 +7,7 @@ import {
 } from '../lib/domain.js';
 import Icon from './Icon.jsx';
 import TeamMemberCount from './TeamMemberCount.jsx';
+import SpaceAnnouncementSummary from './SpaceAnnouncementSummary.jsx';
 import { ErrorNotice } from './ui.jsx';
 import '../space-home.css';
 
@@ -122,6 +123,7 @@ export default function SpaceHome({
       </header>
 
       <SpaceSchedule space={space} />
+      <SpaceAnnouncementSummary key={space.id} space={space} />
 
       <ErrorNotice error={error} onRetry={onReload} />
       <ErrorNotice error={directoryError} onRetry={onReload} />

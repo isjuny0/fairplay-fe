@@ -3,7 +3,7 @@ import { useLocation } from 'react-router';
 import useAppNavigate from '../hooks/useAppNavigate.js';
 import useSpaceList from '../hooks/useSpaceList.js';
 import { isApprovedMember } from '../lib/domain.js';
-import { spacePath, teamMenuPath } from '../lib/routes.js';
+import { announcementsPath, spacePath, teamMenuPath } from '../lib/routes.js';
 import {
   availableTeamMenus,
   teamNavigationGroups,
@@ -138,6 +138,7 @@ export default function WorkspaceNavigation({
         </div>
         <div className="workspace-navigation-links">
           {navButton('스페이스 홈', 'home', spacePath(spaceId), view === 'teams')}
+          {navButton('공지사항', 'announcement', announcementsPath(spaceId), view === 'announcements')}
           {isManager && (
             <div className="workspace-nav-group manager-workspace-navigation">
               <p className="nav-section">스페이스 운영</p>

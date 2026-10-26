@@ -10,7 +10,7 @@ export default function SaveRecovery({
   children,
 }) {
   if (!error) return null;
-  const conflict = error.code === 'VERSION_CONFLICT';
+  const conflict = ['VERSION_CONFLICT', 'ANNOUNCEMENT_VERSION_CONFLICT'].includes(error.code);
   const changedRows = rows.filter((row) => row.latest !== row.input);
   return (
     <section className="save-recovery" aria-label="저장 실패 복구">
