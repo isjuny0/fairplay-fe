@@ -200,6 +200,17 @@ for (const width of [320, 1440]) {
       "참석자",
     ]);
     await expect(table.locator("tbody tr")).toHaveCount(2);
+    await expect(table.locator("thead th").first()).toHaveCSS(
+      "text-align",
+      "left",
+    );
+    await expect(table.locator("thead th").nth(1)).toHaveCSS(
+      "text-align",
+      "center",
+    );
+    await expect(
+      table.locator("tbody tr").first().locator("td").first(),
+    ).toHaveCSS("text-align", "center");
     const region = page.getByRole("region", { name: "회의록 목록" });
     await expect(region).toHaveAttribute("tabindex", "0");
     if (width < 960) {
