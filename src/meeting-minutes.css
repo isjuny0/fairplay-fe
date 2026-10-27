@@ -13,31 +13,35 @@
   justify-content: flex-end;
   gap: 12px;
 }
-.meeting-list-item {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 24px;
-  padding: 18px 0;
-  border-bottom: 1px solid var(--border);
+.meeting-table {
+  min-width: 760px;
 }
-.meeting-list-title {
-  display: grid;
-  gap: 6px;
-  min-width: 0;
+.meeting-table th:first-child {
+  width: 40%;
 }
-.meeting-list-title .text-button {
-  justify-self: start;
-  padding-inline: 0;
-  text-align: left;
-  overflow-wrap: anywhere;
-  font-weight: 600;
+.meeting-table th:nth-child(2) {
+  width: 24%;
 }
-.meeting-list-title .field-help {
-  overflow-wrap: anywhere;
+.meeting-table th:nth-child(3) {
+  width: 20%;
 }
-.meeting-list-item time,
-.meeting-attendee-count {
+.meeting-table th:nth-child(4) {
+  width: 16%;
+}
+.meeting-table tbody tr:hover {
+  background: var(--surface-secondary);
+}
+.meeting-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.meeting-table .collection-name-cell {
+  white-space: normal;
+}
+.meeting-table .collection-title-button {
+  min-height: 0;
+  padding: 6px 0;
+}
+.meeting-table time {
   color: var(--text-muted);
   font-size: var(--text-support);
 }
@@ -213,13 +217,6 @@
   background: var(--surface);
 }
 @media (max-width: 720px) {
-  .meeting-list-item {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 10px;
-  }
-  .meeting-list-title {
-    grid-column: 1 / -1;
-  }
   .meeting-metadata {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;

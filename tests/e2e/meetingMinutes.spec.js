@@ -183,19 +183,34 @@ async function editor(page) {
 }
 
 for (const width of [320, 1440]) {
-  test(`${width}px 회의록 제목과 작성자의 왼쪽 시작점을 맞춘다`, async ({
+  test(`${width}px 회의록 목록을 산출물처럼 표로 표시한다`, async ({
     page,
   }) => {
     await backend(page);
     await page.setViewportSize({ width, height: 900 });
     await page.goto(path);
-    const row = page.locator(".meeting-list-title").first();
-    await expect(row).toBeVisible();
-    const title = await row.getByRole("button").boundingBox();
-    const author = await row.locator(".field-help").boundingBox();
-    expect(Math.abs(title.x - author.x)).toBeLessThanOrEqual(1);
-    await expect(row.getByRole("button")).toHaveCSS("padding-left", "0px");
-    await expect(row.getByRole("button")).toHaveCSS("padding-right", "0px");
+    const table = page.getByRole("table", {
+      name: /회의록 목록: 제목, 회의일시/,
+    });
+    await expect(table).toBeVisible();
+    await expect(table.getByRole("columnheader")).toHaveText([
+      "회의 제목",
+      "회의일시",
+      "최초 작성자",
+      "참석자",
+    ]);
+    await expect(table.locator("tbody tr")).toHaveCount(2);
+    const region = page.getByRole("region", { name: "회의록 목록" });
+    await expect(region).toHaveAttribute("tabindex", "0");
+    if (width < 960) {
+      expect(
+        await region.evaluate((node) => node.scrollWidth > node.clientWidth),
+      ).toBe(true);
+    } else {
+      expect(
+        await region.evaluate((node) => node.scrollWidth <= node.clientWidth),
+      ).toBe(true);
+    }
   });
 }
 
@@ -216,9 +231,9 @@ test("팀 작업 메뉴에서 등록·상세·공동 수정·삭제와 KST·CSRF
     "border-bottom-width",
     "1px",
   );
-  await expect(page.getByRole("list", { name: "팀 회의록 목록" })).toHaveCSS(
+  await expect(page.getByRole("region", { name: "회의록 목록" })).toHaveCSS(
     "border-top-width",
-    "0px",
+    "1px",
   );
   const dialog = await editor(page);
   await dialog.getByLabel("제목", { exact: true }).fill("신규 회의");
@@ -244,9 +259,9 @@ test("팀 작업 메뉴에서 등록·상세·공동 수정·삭제와 KST·CSRF
   await expect(
     detailToolbar.getByRole("button", { name: "← 목록으로" }),
   ).toBeVisible();
-  await expect(detailToolbar.getByText("팀 회의록", { exact: true })).toHaveCount(
-    0,
-  );
+  await expect(
+    detailToolbar.getByText("팀 회의록", { exact: true }),
+  ).toHaveCount(0);
   const created = api.calls.find(
     (call) => call.method === "POST" && call.target === base,
   );
@@ -260,7 +275,7 @@ test("팀 작업 메뉴에서 등록·상세·공동 수정·삭제와 KST·CSRF
   expect(created.headers["x-csrf-token"]).toBe("meeting-token");
   await page.getByRole("button", { name: "← 목록으로" }).click();
   await page
-    .getByRole("list", { name: "팀 회의록 목록" })
+    .getByRole("region", { name: "회의록 목록" })
     .getByRole("button", { name: "주간 회의 1", exact: true })
     .click();
   await page.getByRole("button", { name: "회의록 수정", exact: true }).click();
@@ -384,20 +399,32 @@ test("목록 페이지·상세 새로고침·뒤로가기와 마지막 항목 �
 }) => {
   const api = await backend(page, { count: 21 });
   await page.goto(path);
-  await expect(page.getByRole("listitem")).toHaveCount(20);
+  await expect(
+    page.getByRole("region", { name: "회의록 목록" }).locator("tbody tr"),
+  ).toHaveCount(20);
   await page
     .getByRole("navigation", { name: "회의록 목록 페이지" })
     .getByRole("button", { name: "다음", exact: true })
     .click();
   await expect(page).toHaveURL(/page=1$/);
-  await page.getByRole("listitem").getByRole("button").click();
+  await page
+    .getByRole("region", { name: "회의록 목록" })
+    .locator("tbody tr")
+    .first()
+    .getByRole("button")
+    .click();
   await page.reload();
   await expect(
     page.getByRole("heading", { name: "주간 회의 1", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "← 목록으로" }).click();
   await expect(page).toHaveURL(/page=1$/);
-  await page.getByRole("listitem").getByRole("button").click();
+  await page
+    .getByRole("region", { name: "회의록 목록" })
+    .locator("tbody tr")
+    .first()
+    .getByRole("button")
+    .click();
   await page.getByRole("button", { name: "회의록 삭제", exact: true }).click();
   await page
     .getByRole("dialog", { name: "팀 회의록 삭제" })
@@ -457,7 +484,12 @@ test("팀 삭제 동의 중 회의록 조회만 허용한다", async ({ page }) 
   await expect(
     page.getByRole("button", { name: "회의록 등록", exact: true }),
   ).toBeDisabled();
-  await page.getByRole("listitem").first().getByRole("button").click();
+  await page
+    .getByRole("region", { name: "회의록 목록" })
+    .locator("tbody tr")
+    .first()
+    .getByRole("button")
+    .click();
   await expect(
     page.getByRole("button", { name: "회의록 수정", exact: true }),
   ).toBeDisabled();
@@ -509,7 +541,12 @@ test("빈 목록·조회 실패·재조회와 서버에서 삭제된 편집 대�
   await page
     .getByRole("button", { name: "다시 불러오기", exact: true })
     .click();
-  await page.getByRole("listitem").getByRole("button").click();
+  await page
+    .getByRole("region", { name: "회의록 목록" })
+    .locator("tbody tr")
+    .first()
+    .getByRole("button")
+    .click();
   await page.getByRole("button", { name: "회의록 수정", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "팀 회의록 수정" });
   await dialog.getByLabel("제목", { exact: true }).fill("삭제된 회의의 초안");
@@ -662,7 +699,7 @@ test("미리보기 CRUD는 실제 서버를 호출하지 않고 새로고침 후
     .click();
   await expect(page).toHaveURL(new RegExp(`/preview${path}$`));
   await expect(
-    page.getByRole("list", { name: "팀 회의록 목록" }),
+    page.getByRole("region", { name: "회의록 목록" }),
   ).not.toContainText("미리보기 회의");
   expect(calls).toEqual([]);
 });

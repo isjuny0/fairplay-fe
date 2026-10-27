@@ -175,35 +175,49 @@ export default function MeetingMinutes({
             <>
               {resource.data.items.length ? (
                 <div
-                  className="meeting-list"
-                  role="list"
-                  aria-label="팀 회의록 목록"
+                  className="table-scroll collection-table-scroll meeting-list-scroll"
+                  role="region"
+                  aria-label="회의록 목록"
+                  tabIndex={0}
                 >
-                  {resource.data.items.map((item) => (
-                    <article
-                      className="meeting-list-item"
-                      role="listitem"
-                      key={item.id}
-                    >
-                      <div className="meeting-list-title">
-                        <button
-                          className="text-button"
-                          onClick={() => navigate(`${base}/${item.id}${query}`)}
-                        >
-                          {item.title}
-                        </button>
-                        <span className="field-help">
-                          최초 작성 {item.authorName}
-                        </span>
-                      </div>
-                      <time dateTime={item.meetingAt}>
-                        {formatDate(item.meetingAt)}
-                      </time>
-                      <span className="meeting-attendee-count">
-                        참석자 {item.attendeeCount}명
-                      </span>
-                    </article>
-                  ))}
+                  <table className="data-table collection-table meeting-table">
+                    <caption className="sr-only">
+                      회의록 목록: 제목, 회의일시, 최초 작성자, 참석자
+                    </caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">회의 제목</th>
+                        <th scope="col">회의일시</th>
+                        <th scope="col">최초 작성자</th>
+                        <th scope="col">참석자</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {resource.data.items.map((item) => (
+                        <tr key={item.id}>
+                          <th scope="row" className="collection-name-cell">
+                            <h3>
+                              <button
+                                className="collection-title-button"
+                                onClick={() =>
+                                  navigate(`${base}/${item.id}${query}`)
+                                }
+                              >
+                                {item.title}
+                              </button>
+                            </h3>
+                          </th>
+                          <td>
+                            <time dateTime={item.meetingAt}>
+                              {formatDate(item.meetingAt)}
+                            </time>
+                          </td>
+                          <td>{item.authorName}</td>
+                          <td>{item.attendeeCount}명</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               ) : (
                 <EmptyState>등록된 팀 회의록이 없습니다.</EmptyState>
