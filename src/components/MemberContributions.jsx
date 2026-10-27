@@ -1,4 +1,5 @@
-import { useId, useState } from 'react';
+import { usePreviewGuide } from '../lib/previewGuideContext.js';
+import { useEffect, useId, useState } from 'react';
 import SectionTabs from './SectionTabs.jsx';
 import '../member-contributions.css';
 import RefreshButton from './RefreshButton.jsx';
@@ -20,17 +21,26 @@ import { EmptyState, ResourceState } from './ui.jsx';
 const detailTabs = [['work', '작업 기록'], ['evaluations', '동료 평가 결과']];
 
 export default function MemberContributions({ context, targetUserId, onBack, members }) {
+  const guide = usePreviewGuide();
+  const guidedManager = guide?.guiding && guide.scenarioId === 'team-management' && context.manager;
   const [params, setParams] = useSearchParams();
   const location = useLocation();
   const tabsId = useId();
   const activeTab = params.get('tab') === 'evaluations' ? 'evaluations' : 'work';
   const statusFilter = Object.hasOwn(statusLabels, params.get('status')) ? params.get('status') : 'ALL';
   const member = members.data?.find((entry) => entry.userId === targetUserId);
-  const resource = useResource(() => getMemberContributions(context.team.id, targetUserId), [context.team.id, targetUserId]);
+  const resource = useResource(() => getMemberContributions(context.team.id, targetUserId), [context.team.id, targetUserId, guide?.scope]);
   const [evaluationRevision, setEvaluationRevision] = useState(0);
   const tasks = resource.data || [];
   const filteredTasks = tasks.filter((task) => statusFilter === 'ALL' || task.status === statusFilter);
   const selectedTask = filteredTasks.find((task) => String(task.taskId) === params.get('taskId')) || filteredTasks[0];
+  const reportManagerState = guide?.setManagerState;
+  useEffect(() => {
+    if (!guidedManager) return;
+    reportManagerState(activeTab === 'work' && !resource.loading && !resource.error && !members.loading && !members.error && member && selectedTask
+      ? { kind: 'member', teamId: context.team.id, userId: targetUserId, task: selectedTask } : null);
+    return () => reportManagerState(null);
+  }, [guidedManager, reportManagerState, activeTab, resource.loading, resource.error, members.loading, members.error, member, selectedTask, context.team.id, targetUserId]);
   const updateQuery = (changes) => {
     const next = new URLSearchParams(params);
     Object.entries(changes).forEach(([key, value]) => value == null ? next.delete(key) : next.set(key, value));
@@ -64,14 +74,15 @@ export default function MemberContributions({ context, targetUserId, onBack, mem
           <ResourceState resource={resource}>
             {resource.data && (tasks.length ? (filteredTasks.length ? <div className="member-record-layout">
               <nav className="member-record-list" aria-label="담당 작업 목록">
-                {filteredTasks.map((task) => <button type="button" key={task.taskId} aria-current={task.taskId === selectedTask?.taskId ? 'true' : undefined}
+                {filteredTasks.map((task) => <button type="button" key={task.taskId}
+                  data-guide-manager-task={guidedManager && task.taskId !== selectedTask?.taskId ? task.taskId : undefined} aria-current={task.taskId === selectedTask?.taskId ? 'true' : undefined}
                   onClick={() => updateQuery({ taskId: String(task.taskId) })}>
                   <span className={`status-badge task-state-${task.status.toLowerCase()}`}>{statusLabels[task.status]}</span>
                   <strong>{task.title}</strong>
                   <small>마감 {formatDate(task.dueAt)}</small>
                 </button>)}
               </nav>
-              {selectedTask && <MemberTaskRecord key={`${selectedTask.taskId}:${selectedTask.taskVersion}`} task={selectedTask} teamId={context.team.id} />}
+              {selectedTask && <MemberTaskRecord key={`${selectedTask.taskId}:${selectedTask.taskVersion}:${guide?.scope || 'free'}`} task={selectedTask} teamId={context.team.id} />}
             </div> : <EmptyState>선택한 상태의 담당 작업이 없습니다.</EmptyState>) : <EmptyState>현재 담당 작업이 없습니다.</EmptyState>)}
           </ResourceState>
         </>}
@@ -84,6 +95,8 @@ export default function MemberContributions({ context, targetUserId, onBack, mem
 }
 
 function MemberTaskRecord({ task, teamId }) {
+  const guide = usePreviewGuide();
+  const guidedRecord = guide?.guiding && guide.scenarioId === 'team-management' && guide.stepId === 'manager-member' && task.taskId === guide.managerTaskId;
   return <section className="member-task-record" aria-label="선택한 작업 기록">
     <div className="member-record-heading"><span className={`status-badge task-state-${task.status.toLowerCase()}`}>{statusLabels[task.status]}</span><h2>{task.title}</h2></div>
     <dl className="member-task-metadata">
@@ -92,6 +105,10 @@ function MemberTaskRecord({ task, teamId }) {
       <div><dt>예상 작업량</dt><dd>{formatExpectedWorkload(task.weight)}</dd></div>
       <div><dt>본인 배분</dt><dd>{task.allocationPercent}%</dd></div>
     </dl>
+    {guidedRecord && <div className="heading-actions preview-guide-inline-action">
+      <button className="secondary-button" data-guide="confirm-manager-member"
+        onClick={() => guide.confirmManagerStep('manager-member')}>수행 기록 확인 완료</button>
+    </div>}
     <div className="member-task-materials">
       <section className="member-task-description"><div className="section-heading"><h3>수행 설명</h3>
         {task.contributionUpdatedAt && <small>수정 {formatDate(task.contributionUpdatedAt)}</small>}</div>
@@ -107,14 +124,16 @@ function MemberTaskRecord({ task, teamId }) {
 
 function LinkedDeliverable({ item, teamId, taskId }) {
   const [opened, setOpened] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   return (
     <details
       className="read-only-deliverable"
       onToggle={(event) => {
+        setExpanded(event.currentTarget.open);
         if (event.currentTarget.open) setOpened(true);
       }}
     >
-      <summary>
+      <summary data-guide-manager-deliverable={item.id}>
         {item.title} · {{ TEXT: '문서', FILE: '파일', URL: '링크' }[item.type]}
       </summary>
       {opened && (
@@ -123,13 +142,17 @@ function LinkedDeliverable({ item, teamId, taskId }) {
           taskId={taskId}
           deliverableId={item.id}
           summaryVersion={item.version}
+          expanded={expanded}
         />
       )}
     </details>
   );
 }
 
-function DeliverableContent({ teamId, taskId, deliverableId, summaryVersion }) {
+function DeliverableContent({ teamId, taskId, deliverableId, summaryVersion, expanded }) {
+  const guide = usePreviewGuide();
+  const guidedSource = guide?.guiding && guide.scenarioId === 'team-management' && guide.stepId === 'manager-material'
+    && taskId === guide.managerTaskId && deliverableId === guide.managerDeliverableId;
   const resource = useResource(async () => {
     // 목록 API의 페이지 한도를 지키면서 요약에 연결된 산출물의 현재 본문을 찾는다.
     for (let page = 0; ; page++) {
@@ -147,6 +170,14 @@ function DeliverableContent({ teamId, taskId, deliverableId, summaryVersion }) {
   const [busy, setBusy] = useState(false);
   const [downloadError, setDownloadError] = useState(null);
   const item = resource.data;
+  const reportSource = guide?.setManagerSource;
+  const sourceReady = Boolean(expanded && !resource.loading && !resource.error && item?.id === deliverableId
+    && item.taskId === taskId && item.teamId === teamId && item.version === summaryVersion && item.type === 'TEXT' && item.text?.trim());
+  useEffect(() => {
+    if (!guidedSource) return;
+    reportSource({ ready: sourceReady, expanded, loading: resource.loading, error: Boolean(resource.error), teamId, taskId, deliverableId, version: item?.version });
+    return () => reportSource(null);
+  }, [guidedSource, reportSource, sourceReady, expanded, resource.loading, resource.error, teamId, taskId, deliverableId, item?.version]);
   const download = async () => {
     setBusy(true);
     setDownloadError(null);
@@ -190,8 +221,12 @@ function DeliverableContent({ teamId, taskId, deliverableId, summaryVersion }) {
               <ErrorNotice error={downloadError} />
             </>
           ) : (
-            <MarkdownBody>{item.text ?? item.textOrUrl}</MarkdownBody>
+            <div data-guide="manager-material-content"><MarkdownBody>{item.text ?? item.textOrUrl}</MarkdownBody></div>
           )}
+          {guidedSource && <div className="heading-actions preview-guide-inline-action">
+            <button className="secondary-button" data-guide="confirm-manager-material" disabled={!sourceReady}
+              onClick={() => guide.confirmManagerStep('manager-material')}>산출물 확인 완료</button>
+          </div>}
         </>
       )}
     </ResourceState>

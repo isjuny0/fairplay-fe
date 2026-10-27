@@ -1,3 +1,4 @@
+import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import { formatDate } from '../lib/domain.js';
 import { spacePath, teamMenuPath } from '../lib/routes.js';
@@ -11,6 +12,8 @@ export default function SpaceGuide({
   onCreateTeam,
   onReload,
 }) {
+  const guide = usePreviewGuide();
+  if (guide?.guiding) return null;
   const isManager = space.myRole === 'MANAGER';
   const pendingTeam = teams.find(
     (team) => team.myMembershipStatus === 'PENDING',

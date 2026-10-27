@@ -79,6 +79,7 @@ export default function TeamHomeCalendar({ team, today }) {
   const categoryName = useId();
   const dateTrigger = useRef(null);
   const datePanelId = useId();
+  const calendarGridId = useId();
   const categoryPanelId = useId();
   const { confirm } = useInteractions();
   const fortnight = calendarView === 'fortnight';
@@ -257,6 +258,7 @@ export default function TeamHomeCalendar({ team, today }) {
               type="button"
               key={view}
               aria-pressed={calendarView === view}
+              aria-controls={calendarGridId}
               onClick={() => {
                 if (view === 'fortnight')
                   setFortnightStart(weekStart(selected));
@@ -314,6 +316,7 @@ export default function TeamHomeCalendar({ team, today }) {
             </div>
             <div
               className="team-calendar-grid"
+              id={calendarGridId}
               style={{ '--calendar-week-count': days.length / 7 }}
               ref={grid}
               role="group"

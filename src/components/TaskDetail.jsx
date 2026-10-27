@@ -1,3 +1,4 @@
+import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { useEffect, useRef, useState } from 'react';
 import {
   CalendarDays,
@@ -53,7 +54,15 @@ function ReadinessItem({ complete, children }) {
 }
 
 function OwnContribution({ task, contribution, busy, blocked, onSave }) {
-  const [description, setDescription] = useState(contribution || '');
+  const guide = usePreviewGuide();
+  const guideExample = guide?.guiding && guide.stepId === 'contribution' && task.id === guide.taskId
+    ? guide.examples.contributionDescription : null;
+  const [description, setDescription] = useState(contribution || guideExample || '');
+  const manuallyEdited = useRef(false);
+  useEffect(() => {
+    if (guideExample && !contribution && !manuallyEdited.current)
+      setDescription((current) => current || guideExample);
+  }, [guideExample, contribution]);
   const [error, setError] = useState(null);
   const descriptionInput = useRef(null);
   const hasChanges = description.trim() !== (contribution || '').trim();
@@ -91,11 +100,13 @@ function OwnContribution({ task, contribution, busy, blocked, onSave }) {
           rows={4}
           value={description}
           onChange={(event) => {
+            manuallyEdited.current = true;
             setDescription(event.target.value);
             setError(null);
           }}
         />
       </Field>
+      {guideExample && !contribution && <p className="field-help">가이드 예시가 자동 입력되었습니다. 내용을 확인하거나 수정한 뒤 저장하세요.</p>}
       {isMutable(task) && hasChanges && (
         <p className="field-help" role="status">
           저장하지 않은 수행 설명이 있습니다.
@@ -106,6 +117,7 @@ function OwnContribution({ task, contribution, busy, blocked, onSave }) {
           <span className="field-help">{description.length} / 1000자</span>
           <button
             className="secondary-button"
+            data-guide="save-contribution"
             disabled={busy || blocked || !hasChanges}
           >
             수행 설명 저장
@@ -125,6 +137,7 @@ export default function TaskDetail({
   onBack,
   readOnly = false,
 }) {
+  const guide = usePreviewGuide();
   const resource = useResource(async () => {
     const detail = await getTask(taskId);
     if (detail.task.teamId !== team.id)
@@ -169,9 +182,9 @@ export default function TaskDetail({
   const canViewAi = Boolean(!readOnly && task && isAssignee(task, user.id));
   const tabs = [
     ['task-description-section', '작업내용'],
-    ['task-contributions-section', '수행설명'],
     ['task-deliverables-section', '산출물'],
     ...(canViewAi ? [['task-ai-review-section', 'AI피드백']] : []),
+    ['task-contributions-section', '수행설명'],
   ];
   const visibleTab =
     activeTab === 'task-ai-review-section' && !canViewAi
@@ -243,6 +256,16 @@ export default function TaskDetail({
     );
     setSectionToFocus(id);
   };
+  useEffect(() => {
+    if (!guide?.guiding || Number(taskId) !== guide.taskId) return;
+    const section = guide.section || 'task-description-section';
+    setActiveTab(section);
+    const focus = (event) => {
+      if (tabs.some(([id]) => id === event.detail)) setActiveTab(event.detail);
+    };
+    window.addEventListener('fairplay:guide-focus', focus);
+    return () => window.removeEventListener('fairplay:guide-focus', focus);
+  }, [guide?.guiding, guide?.section, guide?.taskId, taskId]);
   const panelProps = (id) => ({
     role: 'tabpanel',
     'aria-labelledby': `${id}-tab`,
@@ -623,6 +646,7 @@ export default function TaskDetail({
                               task.completionBlockReason !== null ||
                               !completionReady
                             }
+                            data-guide="complete-task"
                             onClick={() => changeStatus('DONE')}
                           >
                             {task.status === 'REVISING'

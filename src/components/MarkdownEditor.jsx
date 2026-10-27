@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useId, useLayoutEffect, useRef, useState } from 'react';
 import MarkdownBody from './MarkdownBody.jsx';
 
 const tools = [
@@ -9,6 +9,7 @@ const tools = [
 
 export default function MarkdownEditor({ value, onValueChange, labelText, ...inputProps }) {
   const [mode, setMode] = useState('write');
+  const panelId = useId();
   const [insertionError, setInsertionError] = useState('');
   const input = useRef(null);
   const invalid = inputProps['aria-invalid'];
@@ -69,11 +70,11 @@ export default function MarkdownEditor({ value, onValueChange, labelText, ...inp
   return (
     <div className="markdown-editor">
       <div className="markdown-editor-modes" role="group" aria-label="본문 표시 방식">
-        <button type="button" aria-pressed={mode === 'write'} onClick={() => setMode('write')}>작성</button>
-        <button type="button" aria-pressed={mode === 'preview'} disabled={Boolean(invalid)} onClick={() => setMode('preview')}>미리보기</button>
+        <button type="button" aria-pressed={mode === 'write'} aria-controls={`${panelId}-write`} onClick={() => setMode('write')}>작성</button>
+        <button type="button" aria-pressed={mode === 'preview'} aria-controls={`${panelId}-preview`} disabled={Boolean(invalid)} onClick={() => setMode('preview')}>미리보기</button>
         <span>마크다운 지원</span>
       </div>
-      <div hidden={mode !== 'write'}>
+      <div id={`${panelId}-write`} hidden={mode !== 'write'}>
         <div className="markdown-editor-tools" role="group" aria-label="본문 서식 도구">
           {tools.map(([action, label]) => (
             <button key={action} type="button" onClick={() => insert(action)} aria-label={`${label} 서식 삽입`}>{label}</button>
@@ -90,7 +91,7 @@ export default function MarkdownEditor({ value, onValueChange, labelText, ...inp
         />
       </div>
       {mode === 'preview' && (
-        <div className="markdown-editor-preview" role="region" aria-label="본문 미리보기">
+        <div id={`${panelId}-preview`} className="markdown-editor-preview" role="region" aria-label="본문 미리보기">
           {value.trim() ? <MarkdownBody>{value}</MarkdownBody> : <p className="field-help">본문을 작성하면 이곳에서 표시 형식을 확인할 수 있습니다.</p>}
         </div>
       )}

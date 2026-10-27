@@ -148,7 +148,7 @@ function previewTaskResponse(state, context, entry, task) {
   return { ...task, completionBlockReason };
 }
 
-export async function previewRequest(
+async function executePreviewRequest(
   path,
   { method = 'GET', body, responseType } = {},
 ) {
@@ -758,4 +758,12 @@ export async function previewRequest(
   } else return plannedRequest(context, path, { method, body });
   saveMockState(context, state);
   return structuredClone(result);
+}
+
+// Publish only successful mutations; failed saves must never advance a guide.
+export async function previewRequest(path, options = {}) {
+  const result = await executePreviewRequest(path, options);
+  if (options.method && options.method !== 'GET' && typeof globalThis.window?.dispatchEvent === 'function')
+    window.dispatchEvent(new CustomEvent('fairplay:preview-saved', { detail: { path } }));
+  return result;
 }

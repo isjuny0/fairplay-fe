@@ -1,3 +1,4 @@
+import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { useLayoutEffect, useRef } from 'react';
 import { ChevronRight, FileText, X } from 'lucide-react';
 import RefreshButton from './RefreshButton.jsx';
@@ -8,6 +9,8 @@ export default function RagMaterialList({
   resource, page, setPage, onSelect, onDismiss, active,
 }) {
   const data = resource.data;
+  const guide = usePreviewGuide();
+  const guidedOverview = guide?.guiding && guide.scenarioId === 'materials-search' && guide.stepId === 'materials-overview';
   const scroll = useRef(null);
   const scrollTop = useRef(0);
   useLayoutEffect(() => {
@@ -121,6 +124,11 @@ export default function RagMaterialList({
           </div>
         </nav>
       )}
+      {guidedOverview && <div className="preview-guide-inline-action">
+        <button className="secondary-button" data-guide="confirm-materials-overview"
+          disabled={resource.loading || Boolean(resource.error) || !data?.enabled || !data.readyCount}
+          onClick={() => guide.confirmMaterialsStep('materials-overview')}>자료 확인 완료</button>
+      </div>}
       <p className="rag-material-support">작성 문서·UTF-8 TXT·MD 파일을 검색합니다.</p>
     </section>
   );

@@ -624,3 +624,360 @@ test('미리보기 평가 시작은 본문 없는 POST로 호출한다', async (
   assert.equal(opened.status, 'OPEN');
   assert.ok(opened.participantCount >= 2);
 });
+
+test('가이드 전용 작업은 단독 담당이며 자유 탐색 데이터와 분리된다', async () => {
+  const session = new Map();
+  globalThis.sessionStorage = { getItem: (key) => session.get(key) ?? null, setItem: (key, value) => session.set(key, value), removeItem: (key) => session.delete(key) };
+  try {
+    const { prepareGuide, completedGuideStep, guideScopeKey, guideTaskId, guideHome, guideStorageKey, readGuideSession } = await import('../src/mock/guide.js');
+    const original = getMockState(context('leader'));
+    original.teams[1].tasks[0].title = '자유 탐색에서 수정한 작업';
+    saveMockState(context('leader'), original);
+    const guide = prepareGuide();
+    assert.equal(Object.hasOwn(JSON.parse(sessionStorage.getItem(guideStorageKey)), 'step'), false);
+    assert.equal(readGuideSession().status, 'active');
+    const state = getMockState(previewContext());
+    const task = state.teams[1].tasks.find((task) => task.id === guideTaskId);
+    assert.equal(previewContext().user.name, '이지원');
+    assert.equal(completedGuideStep(guide, guideHome), false);
+    assert.equal(completedGuideStep(guide, `${guideHome}/tasks`), true);
+    assert.deepEqual(task.assignees, [{ userId: previewContext().user.id, allocationPercent: 100 }]);
+    assert.equal(completedGuideStep({ ...guide, step: 4 }, ''), false);
+    await assert.rejects(previewRequest(`/api/tasks/${guideTaskId}/contribution`, { method: 'PATCH', body: { expectedVersion: 0, contributionDescription: '짧음' } }));
+    assert.equal(completedGuideStep({ ...guide, step: 4 }, ''), false);
+    await previewRequest(`/api/tasks/${guideTaskId}/contribution`, { method: 'PATCH', body: { expectedVersion: 0, contributionDescription: '조사 결과의 핵심 발견을 정리했습니다.' } });
+    assert.equal(completedGuideStep({ ...guide, step: 4 }, ''), true);
+    assert.equal(completedGuideStep({ ...guide, step: 2 }, ''), false);
+    const restarted = prepareGuide();
+    assert.notEqual(restarted.scope, guide.scope);
+    assert.equal(restarted.step, 0);
+    const restartedTask = getMockState(previewContext()).teams[1].tasks.find((item) => item.id === guideTaskId);
+    assert.equal(restartedTask.contributions[previewContext().user.id], null);
+    assert.equal(restartedTask.status, 'IN_PROGRESS');
+    sessionStorage.removeItem(guideScopeKey);
+    assert.equal(getMockState(context('leader')).teams[1].tasks[0].title, '자유 탐색에서 수정한 작업');
+    assert.equal(getMockState(context('leader')).teams[1].tasks.some((task) => task.id === guideTaskId), false);
+  } finally { delete globalThis.sessionStorage; }
+});
+
+test('사용자 가이드의 AI피드백은 현재 결과가 준비되고 사용자가 확인해야 진행한다', async () => {
+  const session = new Map();
+  globalThis.sessionStorage = { getItem: (key) => session.get(key) ?? null, setItem: (key, value) => session.set(key, value), removeItem: (key) => session.delete(key) };
+  try {
+    const { prepareGuide, completedGuideStep, guideSteps, guideTaskId, guideExamples } = await import('../src/mock/guide.js');
+    const guide = prepareGuide();
+    const aiStep = { ...guide, step: guideSteps.findIndex((step) => step.id === 'ai-feedback') };
+    await assert.rejects(previewRequest(`/api/tasks/${guideTaskId}/ai-review`, { method: 'POST' }), { code: 'AI_REVIEW_INPUT_REQUIRED' });
+    await previewRequest('/api/teams/1/deliverables', { method: 'POST', body: { ...guideExamples.deliverable, taskId: guideTaskId } });
+    await previewRequest(`/api/tasks/${guideTaskId}/ai-review`, { method: 'POST' });
+    assert.equal(completedGuideStep(aiStep, '', { aiFeedbackConfirmed: true }), false);
+    const state = getMockState(previewContext());
+    state.reviews[guideTaskId].completesAt = Date.now() - 1;
+    saveMockState(previewContext(), state);
+    const review = await previewRequest(`/api/tasks/${guideTaskId}/ai-review`);
+    assert.equal(review.status, 'COMPLETED');
+    assert.equal(completedGuideStep(aiStep, ''), false);
+    assert.equal(completedGuideStep(aiStep, '', { aiFeedbackConfirmed: true }), true);
+    const stale = getMockState(previewContext());
+    stale.reviews[guideTaskId].isCurrent = false;
+    saveMockState(previewContext(), stale);
+    assert.equal(completedGuideStep(aiStep, '', { aiFeedbackConfirmed: true }), false);
+  } finally { delete globalThis.sessionStorage; }
+});
+
+test('동료 평가 가이드는 본인을 제외한 모든 응답 저장과 제출 확정 후에만 완료한다', async () => {
+  const session = new Map();
+  globalThis.sessionStorage = { getItem: (key) => session.get(key) ?? null, setItem: (key, value) => session.set(key, value), removeItem: (key) => session.delete(key) };
+  try {
+    const { prepareGuide, completedGuideStep, guidePeerRoundId, guideExamples, getGuideSteps, readGuideSession } = await import('../src/mock/guide.js');
+    const guide = prepareGuide('peer-evaluation');
+    assert.equal(readGuideSession().scenarioId, 'peer-evaluation');
+    assert.equal(getGuideSteps(guide.scenarioId).length, 4);
+    const targets = await previewRequest(`/api/evaluation-rounds/${guidePeerRoundId}/targets`);
+    assert.equal(targets.length, 2);
+    assert.ok(targets.every((target) => target.targetId !== previewContext().user.id));
+    assert.equal(completedGuideStep(guide, ''), false);
+    assert.equal(completedGuideStep(guide, '', { peerConfirmed: true }), true);
+    await assert.rejects(previewRequest(`/api/evaluation-rounds/${guidePeerRoundId}/submit`, { method: 'POST' }), { code: 'PEER_RESPONSES_INCOMPLETE' });
+    const responseStep = { ...guide, step: 1 };
+    await assert.rejects(previewRequest(`/api/evaluation-rounds/${guidePeerRoundId}/responses/${targets[0].targetId}`, { method: 'PUT', body: { scores: { ...guideExamples.peerScores, taskExecution: 1 }, reason: '' } }), { code: 'INVALID_PEER_SCORES' });
+    assert.equal(completedGuideStep(responseStep, ''), false);
+    for (let index = 0; index < targets.length; index++) {
+      await previewRequest(`/api/evaluation-rounds/${guidePeerRoundId}/responses/${targets[index].targetId}`, { method: 'PUT', body: { scores: guideExamples.peerScores, reason: guideExamples.peerReason } });
+      assert.equal(completedGuideStep(responseStep, ''), index === targets.length - 1);
+    }
+    assert.equal(completedGuideStep({ ...guide, step: 2 }, ''), false);
+    await previewRequest(`/api/evaluation-rounds/${guidePeerRoundId}/submit`, { method: 'POST' });
+    assert.equal(completedGuideStep({ ...guide, step: 2 }, ''), true);
+    assert.equal(completedGuideStep({ ...guide, step: 3 }, ''), false);
+    assert.equal(completedGuideStep({ ...guide, step: 3 }, '', { peerConfirmed: true }), true);
+    await assert.rejects(previewRequest(`/api/evaluation-rounds/${guidePeerRoundId}/responses/${targets[0].targetId}`, { method: 'PUT', body: { scores: guideExamples.peerScores } }), { code: 'PEER_ALREADY_SUBMITTED' });
+    const fresh = prepareGuide('peer-evaluation');
+    assert.notEqual(fresh.scope, guide.scope);
+    assert.equal((await previewRequest(`/api/evaluation-rounds/${guidePeerRoundId}/responses/me`)).length, 0);
+    assert.equal(completedGuideStep({ ...fresh, step: 2 }, ''), false);
+  } finally { delete globalThis.sessionStorage; }
+});
+
+test('기여도 가이드는 공개된 본인 근거만 사용하고 누락·미공개·잘못된 비중을 완료로 취급하지 않는다', async () => {
+  const session = new Map();
+  globalThis.sessionStorage = { getItem: (key) => session.get(key) ?? null, setItem: (key, value) => session.set(key, value), removeItem: (key) => session.delete(key) };
+  try {
+    const { prepareGuide, contributionGuideReady, readGuideSession, getGuideSteps } = await import('../src/mock/guide.js');
+    const guide = prepareGuide('contribution-report');
+    const userId = previewContext().user.id;
+    assert.equal(getGuideSteps(guide.scenarioId).length, 3);
+    assert.equal(readGuideSession().scenarioId, 'contribution-report');
+    const report = await previewRequest('/api/teams/1/report');
+    assert.equal(report.status, 'PUBLISHED');
+    assert.equal(contributionGuideReady(report, userId), true);
+    assert.ok(report.members.every((member) => !Object.hasOwn(member, 'details')));
+    assert.equal(contributionGuideReady(null, userId), false);
+    for (const change of [{ status: 'UNPUBLISHED' }, { teamId: 2 }, { myDetails: null }, { weights: { taskPercent: 70, midPercent: 20, finalPercent: 20 } }, { myDetails: { ...report.myDetails, taskRatioPercent: null } }]) {
+      assert.equal(contributionGuideReady({ ...report, ...change }, userId), false);
+    }
+    assert.equal(contributionGuideReady(report, 'unknown-user'), false);
+    const fresh = prepareGuide('contribution-report');
+    assert.notEqual(fresh.scope, guide.scope);
+    assert.equal(fresh.step, 0);
+    assert.equal((await previewRequest('/api/teams/1/report')).status, 'PUBLISHED');
+  } finally { delete globalThis.sessionStorage; }
+});
+
+test('관리자 팀 진행 가이드는 조회 데이터와 열린 산출물의 연결·버전이 일치해야 완료할 수 있다', async () => {
+  const session = new Map();
+  globalThis.sessionStorage = { getItem: (key) => session.get(key) ?? null, setItem: (key, value) => session.set(key, value), removeItem: (key) => session.delete(key) };
+  try {
+    const { prepareGuide, managerGuideReady, managerGuideMemberId, managerGuideTaskId, managerGuideDeliverableId, getGuideSteps, readGuideSession } = await import('../src/mock/guide.js');
+    const guide = prepareGuide('team-management');
+    assert.equal(previewContext().manager, true);
+    assert.equal(readGuideSession().scenarioId, 'team-management');
+    assert.equal(getGuideSteps(guide.scenarioId).length, 4);
+    const dashboard = await previewRequest('/api/spaces/1/manager-dashboard?teamId=1');
+    const selected = { kind: 'team', team: dashboard.teams[0] };
+    assert.equal(managerGuideReady('manager-select-team', selected), true);
+    assert.equal(managerGuideReady('manager-select-team', null), false);
+    const tasks = await previewRequest(`/api/teams/1/members/${managerGuideMemberId}/contributions`);
+    const task = tasks.find((item) => item.taskId === managerGuideTaskId);
+    const member = { kind: 'member', teamId: 1, userId: managerGuideMemberId, task };
+    assert.equal(managerGuideReady('manager-overview', member), true);
+    assert.equal(managerGuideReady('manager-member', { ...member, userId: 'wrong' }), false);
+    const documents = await previewRequest(`/api/teams/1/deliverables?taskId=${managerGuideTaskId}&page=0&size=100`);
+    const document = documents.find((item) => item.id === managerGuideDeliverableId);
+    const source = { ready: true, teamId: document.teamId, taskId: document.taskId, deliverableId: document.id, version: document.version };
+    assert.equal(managerGuideReady('manager-material', member, source), true);
+    for (const change of [{ ready: false }, { version: source.version + 1 }, { taskId: 999 }, { teamId: 2 }]) {
+      assert.equal(managerGuideReady('manager-material', member, { ...source, ...change }), false);
+    }
+    await assert.rejects(previewRequest(`/api/tasks/${managerGuideTaskId}`, { method: 'PATCH', body: { expectedVersion: 1, title: '관리자 수정' } }), { status: 403 });
+    const fresh = prepareGuide('team-management');
+    assert.equal(fresh.step, 0);
+    assert.notEqual(fresh.scope, guide.scope);
+  } finally { delete globalThis.sessionStorage; }
+});
+
+test('관리자 평가 시작 가이드는 일정 저장과 개방 성공을 구분하고 실제 제출 현황 확인 후에만 완료한다', async () => {
+  const session = new Map();
+  globalThis.sessionStorage = { getItem: (key) => session.get(key) ?? null, setItem: (key, value) => session.set(key, value), removeItem: (key) => session.delete(key) };
+  try {
+    const { prepareGuide, evaluationGuideReady, evaluationGuideSchedule, getGuideSteps, readGuideSession, guideScopeKey } = await import('../src/mock/guide.js');
+    setPreviewRole('leader');
+    resetMockState(previewContext(), 'published');
+    const guide = prepareGuide('evaluation-management');
+    assert.equal(previewContext().manager, true);
+    assert.equal(readGuideSession().scenarioId, 'evaluation-management');
+    assert.equal(getGuideSteps(guide.scenarioId).length, 4);
+    const observed = async (viewedRoundId) => ({
+      space: await previewRequest('/api/spaces/1'),
+      rounds: await previewRequest('/api/spaces/1/evaluation-rounds'),
+      dashboard: await previewRequest('/api/spaces/1/manager-dashboard'), viewedRoundId,
+    });
+    const initial = await observed();
+    assert.equal(initial.space.membershipLockedAt, null);
+    assert.equal(evaluationGuideReady('evaluation-overview', initial), true);
+    assert.equal(evaluationGuideReady('evaluation-overview', null), false);
+    assert.equal(evaluationGuideReady('evaluation-schedule', initial), false);
+    const schedule = evaluationGuideSchedule();
+    await assert.rejects(previewRequest('/api/spaces/1/evaluation-rounds', { method: 'POST', body: { ...schedule, closesAt: schedule.opensAt } }), { code: 'INVALID_ROUND_WINDOW' });
+    assert.equal(evaluationGuideReady('evaluation-schedule', await observed()), false);
+    const round = await previewRequest('/api/spaces/1/evaluation-rounds', { method: 'POST', body: schedule });
+    const scheduled = await observed();
+    assert.equal(round.status, 'DRAFT');
+    assert.equal(evaluationGuideReady('evaluation-schedule', scheduled), true);
+    assert.equal(evaluationGuideReady('evaluation-open', scheduled), false);
+    const state = getMockState(previewContext());
+    const teamBuildingClosesAt = state.spaceOverrides.teamBuildingClosesAt;
+    state.spaceOverrides.teamBuildingClosesAt = koreanDateTime(Date.now() + 86400000);
+    saveMockState(previewContext(), state);
+    await assert.rejects(previewRequest(`/api/evaluation-rounds/${round.id}/open`, { method: 'POST' }), { code: 'TEAM_BUILDING_OPEN' });
+    assert.equal(evaluationGuideReady('evaluation-open', await observed()), false);
+    const restored = getMockState(previewContext());
+    restored.spaceOverrides.teamBuildingClosesAt = teamBuildingClosesAt;
+    saveMockState(previewContext(), restored);
+    await previewRequest(`/api/evaluation-rounds/${round.id}/open`, { method: 'POST' });
+    const opened = await observed();
+    assert.equal(opened.space.teamBuildingStatus, 'LOCKED');
+    assert.ok(opened.space.membershipLockedAt);
+    assert.equal(opened.rounds[0].participantCount, 5);
+    assert.equal(evaluationGuideReady('evaluation-open', opened), true);
+    assert.equal(evaluationGuideReady('evaluation-result', opened), false);
+    const viewed = await observed(round.id);
+    assert.equal(evaluationGuideReady('evaluation-result', viewed), true);
+    for (const change of [
+      { viewedRoundId: 999 }, { space: { ...viewed.space, membershipLockedAt: null } },
+      { rounds: [{ ...viewed.rounds[0], participantCount: 0 }] },
+      { dashboard: { ...viewed.dashboard, missingPeerSubmissions: [] } },
+      { dashboard: { ...viewed.dashboard, spaceId: 2 } },
+    ]) assert.equal(evaluationGuideReady('evaluation-result', { ...viewed, ...change }), false);
+    const fresh = prepareGuide('evaluation-management');
+    assert.notEqual(fresh.scope, guide.scope);
+    assert.equal(fresh.step, 0);
+    assert.deepEqual(await previewRequest('/api/spaces/1/evaluation-rounds'), []);
+    assert.equal((await previewRequest('/api/spaces/1')).membershipLockedAt, null);
+    sessionStorage.removeItem(guideScopeKey);
+    assert.equal(getMockState(previewContext()).reports.every((report) => report.status === 'PUBLISHED'), true);
+  } finally { delete globalThis.sessionStorage; }
+});
+
+test('관리자 리포트 가이드는 전체 생성·계산 근거 검토·선택 팀 공개를 구분하며 재시작 시 초기화한다', async () => {
+  const session = new Map();
+  globalThis.sessionStorage = { getItem: (key) => session.get(key) ?? null, setItem: (key, value) => session.set(key, value), removeItem: (key) => session.delete(key) };
+  try {
+    const { prepareGuide, reportManagementGuideReady, managerGuideMemberId, getGuideSteps, readGuideSession, guideScopeKey } = await import('../src/mock/guide.js');
+    setPreviewRole('leader');
+    resetMockState(previewContext(), 'published');
+    const guide = prepareGuide('report-management');
+    assert.equal(previewContext().manager, true);
+    assert.equal(readGuideSession().scenarioId, 'report-management');
+    assert.equal(getGuideSteps(guide.scenarioId).length, 5);
+    const weights = { taskPercent: 60, midPercent: 20, finalPercent: 20 };
+    const batch = async () => ({
+      space: await previewRequest('/api/spaces/1'), rounds: await previewRequest('/api/spaces/1/evaluation-rounds'),
+      dashboard: await previewRequest('/api/spaces/1/manager-dashboard'), weights, canGenerate: true,
+    });
+    const initial = await batch();
+    assert.equal(initial.rounds.every((round) => round.status === 'CLOSED'), true);
+    assert.equal(initial.dashboard.teams.every((team) => team.reportId == null), true);
+    assert.equal(initial.space.reportWeights, null);
+    assert.equal(reportManagementGuideReady('management-report-weights', initial), true);
+    assert.equal(reportManagementGuideReady('management-report-weights', { ...initial, weights: { ...weights, taskPercent: 70 } }), false);
+    assert.equal(reportManagementGuideReady('management-report-weights', { ...initial, rounds: [{ ...initial.rounds[0], status: 'OPEN' }] }), false);
+    assert.equal(reportManagementGuideReady('management-report-generate', initial), false);
+    await assert.rejects(previewRequest('/api/teams/1/report', { method: 'POST', body: { ...weights, taskPercent: 70 } }), { code: 'INVALID_REQUEST' });
+    assert.equal(reportManagementGuideReady('management-report-generate', await batch()), false);
+    const first = await previewRequest('/api/teams/1/report', { method: 'POST', body: weights });
+    assert.equal(first.status, 'UNPUBLISHED');
+    assert.equal(reportManagementGuideReady('management-report-generate', await batch()), false);
+    await previewRequest('/api/teams/2/report', { method: 'POST', body: weights });
+    const generated = await batch();
+    assert.deepEqual(generated.space.reportWeights, weights);
+    assert.equal(reportManagementGuideReady('management-report-generate', generated), true);
+    const result = { teamId: 1, report: await previewRequest('/api/teams/1/report') };
+    const review = { reportId: first.id, memberId: managerGuideMemberId, open: true };
+    assert.equal(reportManagementGuideReady('management-report-review', generated, result), false);
+    assert.equal(reportManagementGuideReady('management-report-review', generated, result, review), true);
+    for (const change of [{ open: false }, { memberId: 'unknown' }, { reportId: 0 }]) {
+      assert.equal(reportManagementGuideReady('management-report-review', generated, result, { ...review, ...change }), false);
+    }
+    assert.equal(reportManagementGuideReady('management-report-review', generated, { ...result, teamId: 2 }, review), false);
+    assert.equal(reportManagementGuideReady('management-report-publish', generated, result), false);
+    assert.equal(reportManagementGuideReady('management-report-result', generated, null), false);
+    const state = getMockState(previewContext());
+    const savedSubmission = state.submitted[`12:${managerGuideMemberId}`];
+    delete state.submitted[`12:${managerGuideMemberId}`];
+    saveMockState(previewContext(), state);
+    await assert.rejects(previewRequest(`/api/reports/${first.id}/publish`, { method: 'POST' }), { code: 'REPORT_PUBLICATION_BLOCKED' });
+    assert.equal(reportManagementGuideReady('management-report-publish', await batch(), { teamId: 1, report: await previewRequest('/api/teams/1/report') }), false);
+    const restored = getMockState(previewContext());
+    restored.submitted[`12:${managerGuideMemberId}`] = savedSubmission;
+    saveMockState(previewContext(), restored);
+    const published = await previewRequest(`/api/reports/${first.id}/publish`, { method: 'POST' });
+    assert.equal(reportManagementGuideReady('management-report-publish', await batch(), { teamId: 1, report: published }), true);
+    assert.equal(reportManagementGuideReady('management-report-result', await batch(), { teamId: 1, report: published }), true);
+    assert.equal((await previewRequest('/api/teams/2/report')).status, 'UNPUBLISHED');
+    setPreviewRole('member');
+    const memberReport = await previewRequest('/api/teams/1/report');
+    assert.equal(memberReport.status, 'PUBLISHED');
+    assert.ok(memberReport.myDetails);
+    assert.equal(memberReport.members.every((member) => !member.details), true);
+    const fresh = prepareGuide('report-management');
+    assert.equal(previewContext().manager, true);
+    assert.notEqual(fresh.scope, guide.scope);
+    assert.equal(fresh.step, 0);
+    assert.equal((await previewRequest('/api/spaces/1/manager-dashboard')).teams.every((team) => team.reportId == null), true);
+    assert.equal((await previewRequest('/api/spaces/1')).reportWeights, null);
+    sessionStorage.removeItem(guideScopeKey);
+    assert.equal(getMockState(previewContext()).reports.every((report) => report.status === 'PUBLISHED'), true);
+  } finally { delete globalThis.sessionStorage; }
+});
+
+test('완료 후 다음 가이드는 같은 역할의 이용 가능한 흐름만 안내하고 마지막에는 종료한다', async () => {
+  const { guideScenarios, nextGuideScenario } = await import('../src/mock/guide.js');
+  const expected = {
+    'task-completion': 'materials-search',
+    'materials-search': 'peer-evaluation',
+    'peer-evaluation': 'contribution-report',
+    'contribution-report': null,
+    'team-management': 'evaluation-management',
+    'evaluation-management': 'report-management',
+    'report-management': null,
+    'mid-feedback': null,
+    unknown: null,
+  };
+  for (const [id, nextId] of Object.entries(expected)) {
+    const next = nextGuideScenario(id);
+    assert.equal(next?.id ?? null, nextId);
+    if (next) {
+      assert.equal(next.available, true);
+      assert.equal(next.audience, guideScenarios.find((scenario) => scenario.id === id).audience);
+    }
+  }
+});
+
+test('관리자 산출물 안내는 일치하는 원문을 연 뒤에만 비교 안내로 전환한다', async () => {
+  const { managerGuideStep, managerGuideSteps, managerGuideTaskId, managerGuideMemberId, managerGuideDeliverableId } = await import('../src/mock/guide.js');
+  const step = managerGuideSteps.find((entry) => entry.id === 'manager-material');
+  const member = { kind: 'member', teamId: 1, userId: managerGuideMemberId,
+    task: { taskId: managerGuideTaskId, contributionDescription: '수행 설명',
+      deliverableSummary: [{ id: managerGuideDeliverableId, type: 'TEXT', version: 2 }] } };
+  const source = { teamId: 1, taskId: managerGuideTaskId, deliverableId: managerGuideDeliverableId,
+    expanded: true, ready: true, loading: false, error: false, version: 2 };
+  assert.equal(managerGuideStep(step, { member }).title, step.title);
+  assert.match(managerGuideStep(step, { member, source }).title, /원문과 수행 설명/);
+  assert.equal(managerGuideStep(step, { member, source: { ...source, ready: false, expanded: false } }).title, step.title);
+  for (const change of [{ version: 1 }, { teamId: 2 }, { taskId: 102 }, { deliverableId: 999 }]) {
+    assert.doesNotMatch(managerGuideStep(step, { member, source: { ...source, ...change } }).title, /원문과 수행 설명/);
+  }
+  const loading = managerGuideStep(step, { member, source: { ...source, ready: false, loading: true } });
+  assert.match(loading.title, /불러오고/);
+  assert.equal(loading.actionTarget, null);
+  const failed = managerGuideStep(step, { member, source: { ...source, ready: false, error: true } });
+  assert.match(failed.description, /불러오지 못했습니다/);
+  assert.equal(failed.actionTarget, null);
+});
+
+test('다른 작업이나 팀을 선택하면 해당 결과를 확인하도록 안내하지 않는다', async () => {
+  const { managerGuideStep, managerGuideSteps, reportManagementGuideSteps } = await import('../src/mock/guide.js');
+  for (const step of managerGuideSteps.filter((entry) => ['manager-member', 'manager-material'].includes(entry.id))) {
+    const resolved = managerGuideStep(step, { member: { kind: 'member', task: { taskId: 102 } } });
+    assert.match(resolved.title, /사용자 인터뷰 계획.*선택/);
+    assert.equal(resolved.target, null);
+    assert.doesNotMatch(resolved.actionTarget, /confirm-manager/);
+  }
+  for (const step of reportManagementGuideSteps.slice(2)) {
+    const resolved = managerGuideStep(step, { reportResult: { teamId: 2 }, reportReviewReady: true });
+    assert.match(resolved.title, /삼위일체로 선택/);
+    assert.equal(resolved.target, null);
+    assert.match(resolved.actionTarget, /choose-report-guide-team/);
+  }
+});
+
+test('리포트 계산 근거를 확인하기 전과 후의 안내를 구분한다', async () => {
+  const { managerGuideStep, reportManagementGuideSteps } = await import('../src/mock/guide.js');
+  const step = reportManagementGuideSteps.find((entry) => entry.id === 'management-report-review');
+  assert.match(managerGuideStep(step).dialogDescription, /펼쳐/);
+  const ready = managerGuideStep(step, { reportResult: { teamId: 1 }, reportReviewReady: true });
+  assert.doesNotMatch(ready.dialogDescription, /펼쳐/);
+  assert.match(ready.dialogDescription, /반올림 보정/);
+  assert.equal(ready.dialogActionTarget, '[data-guide="confirm-management-report-review"]');
+});

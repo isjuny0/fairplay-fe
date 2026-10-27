@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { useSearchParams } from 'react-router';
 import ReportBatchGeneration from './ReportBatchGeneration.jsx';
 import { TeamReport } from './ContributionReport.jsx';
@@ -7,6 +8,7 @@ import useResource from '../hooks/useResource.js';
 import { EmptyState, Field, ResourceState } from './ui.jsx';
 
 export default function ReportReview({ context }) {
+  const guide = usePreviewGuide();
   const [params, setParams] = useSearchParams();
   const [toolbarTarget, setToolbarTarget] = useState(null);
   const [generationRevision, setGenerationRevision] = useState(0);
@@ -15,7 +17,7 @@ export default function ReportReview({ context }) {
     context.teams[0];
   const detail = useResource(
     () => (team ? getTeam(team.id) : Promise.resolve(null)),
-    [team?.id],
+    [team?.id, guide?.scope],
   );
   return (
     <section className="stack space-operation-page report-review-page">
@@ -26,10 +28,11 @@ export default function ReportReview({ context }) {
       </div>
       {team ? (
         <>
-          <ReportBatchGeneration key={context.space.id} context={context} onGenerated={() => setGenerationRevision((value) => value + 1)} />
+          <ReportBatchGeneration key={`${context.space.id}:${guide?.scope || 'free'}`} context={context} onGenerated={() => setGenerationRevision((value) => value + 1)} />
           <div className="report-team-toolbar">
             <Field label="리포트 대상 팀">
               <select
+                data-guide={guide?.guiding && guide.scenarioId === 'report-management' && team.id !== guide.reportManagementTeamId ? 'choose-report-guide-team' : undefined}
                 value={team.id}
                 onChange={(event) => {
                   const next = new URLSearchParams(params);

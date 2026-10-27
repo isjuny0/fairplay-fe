@@ -334,6 +334,7 @@ export default function LandingPage() {
             <Link className="landing-button" to="/login">
               Fairplay 시작하기 <ArrowRight size={17} />
             </Link>
+            <Link className="landing-text-link" to="/preview/main?guide=start">사용자 가이드 <ChevronRight size={16} /></Link>
             <a className="landing-text-link" href="#features">
               화면 먼저 살펴보기 <ChevronRight size={16} />
             </a>

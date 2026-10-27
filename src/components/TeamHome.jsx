@@ -228,7 +228,7 @@ function TeamDashboard({
     if (id === 'progress')
       return (
         <section
-          className="dashboard-card dashboard-team-progress"
+          className="dashboard-card dashboard-team-progress" data-guide="team-progress"
           aria-label="팀 진행 현황"
         >
           <header className="dashboard-card-heading">
@@ -273,6 +273,7 @@ function TeamDashboard({
                 )}
                 <button
                   className="dashboard-shortcut-button"
+                  data-guide="open-tasks"
                   onClick={() => onNavigate('작업', { view: 'board' })}
                 >
                   작업 보드 보기 <ArrowUpRight size={16} />

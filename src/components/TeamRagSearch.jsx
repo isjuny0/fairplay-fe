@@ -1,3 +1,4 @@
+import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowUp,
@@ -25,11 +26,14 @@ import '../team-rag.css';
 
 export default function TeamRagSearch({ context }) {
   const { team, user } = context;
-  return <TeamMaterialSearch key={`${team.id}:${user.id}`} context={context} />;
+  const guide = usePreviewGuide();
+  return <TeamMaterialSearch key={`${team.id}:${user.id}:${guide?.scope || 'free'}`} context={context} />;
 }
 function TeamMaterialSearch({ context }) {
   const { team, space } = context;
   const navigate = useAppNavigate();
+  const guide = usePreviewGuide();
+  const guidedMaterials = Boolean(guide?.guiding && guide.scenarioId === 'materials-search' && team.id === 1);
   const [question, setQuestion] = useState('');
   const [submittedQuestion, setSubmittedQuestion] = useState('');
   const [result, setResult] = useState(null);
@@ -53,6 +57,18 @@ function TeamMaterialSearch({ context }) {
     [team.id, statusPage],
   );
   const data = status.data;
+  const reportMaterialsState = guide?.setMaterialsState;
+  useEffect(() => {
+    if (!guidedMaterials) return;
+    reportMaterialsState({ status: !status.loading && !status.error ? data : null, answer: !busy && !error ? result : null });
+    return () => reportMaterialsState(null);
+  }, [guidedMaterials, reportMaterialsState, status.loading, status.error, data, busy, error, result]);
+  useEffect(() => {
+    if (!guidedMaterials || guide.stepId !== 'materials-question') return;
+    setQuestion((current) => current || guide.examples.question);
+    setReference(null);
+    setMaterialsOpen(false);
+  }, [guidedMaterials, guide?.stepId, guide?.examples.question]);
   const permissionError =
     [401, 403, 404].includes(error?.status) ||
     [401, 403, 404].includes(status.error?.status);
@@ -173,6 +189,7 @@ function TeamMaterialSearch({ context }) {
           <button
             className="secondary-button rag-mobile-materials-toggle"
             onClick={showMaterials}
+            data-guide="open-materials"
             ref={materialsToggle}
             aria-expanded={isMaterialsOpen}
             aria-controls="rag-materials-panel"
@@ -186,6 +203,7 @@ function TeamMaterialSearch({ context }) {
           </button>
         </div>
       </header>
+      {guidedMaterials && <p className="field-help">사용자 가이드의 예시 답변입니다. 실제 AI 모델을 호출하지 않습니다.</p>}
       {status.error && !isMaterialsOpen && (
         <div className="rag-mobile-status-error">
           <ErrorNotice error={status.error} onRetry={status.reload} />
@@ -301,6 +319,7 @@ function TeamMaterialSearch({ context }) {
                           <li key={`${item.sourceId}:${index}`}>
                             <button
                               className={`rag-reference ${reference === item ? 'is-selected' : ''}`}
+                              data-guide="open-material-citation"
                               aria-pressed={reference === item}
                               aria-label={`${item.title} 원문 확인`}
                               onClick={() => { setReference(item); setMaterialsOpen(true); }}
@@ -322,6 +341,12 @@ function TeamMaterialSearch({ context }) {
                         ))}
                       </ol>
                     </section>
+                    {guidedMaterials && guide.stepId === 'materials-answer' && result.references.length > 0 && (
+                      <div className="heading-actions preview-guide-inline-action">
+                        <button className="secondary-button" data-guide="confirm-material-answer"
+                          onClick={() => guide.confirmMaterialsStep('materials-answer')}>답변 확인 완료</button>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <section className="rag-no-evidence">
@@ -381,6 +406,7 @@ function TeamMaterialSearch({ context }) {
                 <button
                   className="primary-button rag-send-button"
                   type="submit"
+                  data-guide="send-material-question"
                   aria-label={busy ? '답변 작성 중' : '질문 보내기'}
                   disabled={
                     busy || permissionError || !data?.enabled || !data.readyCount ||

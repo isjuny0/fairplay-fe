@@ -1,4 +1,5 @@
-import { useId, useState } from 'react';
+import { usePreviewGuide } from '../lib/previewGuideContext.js';
+import { useEffect, useId, useState } from 'react';
 import { CircleHelp } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import '../contribution-report.css';
@@ -46,9 +47,23 @@ function ReportComponentHelp({ component, details }) {
   );
 }
 
-function CalculationDetails({ name, details, components }) {
+function CalculationDetails({ name, details, components, guide, managementGuide, reviewContext, onReviewConfirmed }) {
+  const [open, setOpen] = useState(false);
+  const guidedCalculation = guide?.guiding && guide.stepId === 'report-calculation';
+  const reportOpen = guide?.setReportCalculationOpen;
+  useEffect(() => {
+    if (!guidedCalculation) return;
+    reportOpen(open);
+    return () => reportOpen(false);
+  }, [guidedCalculation, open, reportOpen]);
+  const reportReview = managementGuide?.setManagedReportReview;
+  useEffect(() => {
+    if (!reportReview || !reviewContext) return;
+    reportReview({ ...reviewContext, open });
+    return () => reportReview(null);
+  }, [reportReview, reviewContext?.reportId, reviewContext?.memberId, open]);
   return (
-    <details className="report-calculation">
+    <details className="report-calculation" onToggle={(event) => setOpen(event.currentTarget.open)}>
       <summary>{name} 계산 근거 보기</summary>
       <h3>{name} 계산 근거</h3>
       <div className="table-scroll">
@@ -72,11 +87,20 @@ function CalculationDetails({ name, details, components }) {
       </div>
       <p className="field-help">반올림 보정 {formatReportNumber(details.roundingAdjustmentPercent)}%p · 최종 {formatReportNumber(details.totalPercent)}%</p>
       <p className="field-help">각 반영분을 더하고 반올림을 보정한 결과가 최종 기여율입니다. 표시된 수치는 소수 첫째 자리로 반올림하여 합계와 미세한 차이가 날 수 있습니다.</p>
+      {guidedCalculation && <div className="heading-actions preview-guide-inline-action">
+        <button className="secondary-button" data-guide="confirm-report-calculation"
+          disabled={!open || !guide.reportReady}
+          onClick={() => guide.confirmReportStep('report-calculation')}>계산 근거 확인 완료</button>
+      </div>}
+      {managementGuide && reviewContext && <div className="heading-actions preview-guide-inline-action">
+        <button className="secondary-button" data-guide="confirm-management-report-review" disabled={!open || !managementGuide.reportManagementReady}
+          onClick={() => { if (managementGuide.confirmReportManagementStep('management-report-review')) onReviewConfirmed(); }}>리포트 검토 완료</button>
+      </div>}
     </details>
   );
 }
 
-function ResultSummary({ name, details, weights, own = false }) {
+function ResultSummary({ name, details, weights, own = false, guide, managementGuide, reviewContext, onReviewConfirmed }) {
   const appliedWeights = validReportWeights(weights) ? weights : null;
   const components = reportComponents.map((component) => ({ ...component, weight: appliedWeights?.[component.weightKey] ?? '—' }));
   return (
@@ -85,6 +109,9 @@ function ResultSummary({ name, details, weights, own = false }) {
         <h2>{name} 최종 기여율</h2>
         <strong>{formatReportNumber(details.totalPercent)}<span>%</span></strong>
         <span className="report-score-caption">팀 전체 기여율 100% 중</span>
+        {guide?.stepId === 'report-overview' && <button className="secondary-button preview-guide-report-confirm"
+          data-guide="confirm-report-overview" disabled={!guide.reportReady}
+          onClick={() => guide.confirmReportStep('report-overview')}>기여율 확인 완료</button>}
       </div>
       <div className="report-score-components">
         <p>최종 기여율에 반영된 값 <span>단위 %p</span></p>
@@ -99,7 +126,12 @@ function ResultSummary({ name, details, weights, own = false }) {
           ))}
         </dl>
       </div>
-      <CalculationDetails name={name} details={details} components={components} />
+      {guide?.stepId === 'report-components' && <div className="heading-actions preview-guide-report-components-action">
+        <button className="secondary-button" data-guide="confirm-report-components" disabled={!guide.reportReady}
+          onClick={() => guide.confirmReportStep('report-components')}>반영 비중 확인 완료</button>
+      </div>}
+      <CalculationDetails name={name} details={details} components={components} guide={guide}
+        managementGuide={managementGuide} reviewContext={reviewContext} onReviewConfirmed={onReviewConfirmed} />
     </section>
   );
 }
@@ -110,7 +142,7 @@ function ReportStatus({ report }) {
   </span>;
 }
 
-function ReportDetail({ context, report, actions, toolbarTarget }) {
+function ReportDetail({ context, report, actions, toolbarTarget, guide, managementGuide }) {
   const [selectedMemberId, setSelectedMemberId] = useState(null);
   const reviewableMembers = context.manager ? report.members.filter((member) => member.details) : [];
   const selectedMember = reviewableMembers.find((member) => member.userId === selectedMemberId);
@@ -125,7 +157,7 @@ function ReportDetail({ context, report, actions, toolbarTarget }) {
           {actions}
         </div>
       )}
-      {!context.manager && report.myDetails && <ResultSummary name="나의" details={report.myDetails} weights={report.weights} own />}
+      {!context.manager && report.myDetails && <ResultSummary name="나의" details={report.myDetails} weights={report.weights} own guide={guide} />}
       <section className="report-team-result">
         <div className="section-heading">
           <div><h2>팀원별 최종 기여율</h2><p>팀 전체 합계 {formatReportNumber(report.totalPercent)}%</p></div>
@@ -149,7 +181,7 @@ function ReportDetail({ context, report, actions, toolbarTarget }) {
                       <strong>{formatReportNumber(member.contributionPercent)}%</strong>
                     </div></td>
                     {context.manager && <td className="report-member-action">
-                      {member.details ? <button type="button" className="report-member-select"
+                      {member.details ? <button type="button" className="report-member-select" data-guide-report-member={member.userId}
                         aria-label={`${member.name} 계산 근거 보기`} aria-haspopup="dialog"
                         onClick={() => setSelectedMemberId(member.userId)}>계산 근거 보기</button> : <span className="field-help">근거 없음</span>}
                     </td>}
@@ -173,10 +205,16 @@ function ReportDetail({ context, report, actions, toolbarTarget }) {
           <p className="field-help">이 리포트는 최종 평가 기준으로 확정된 결과이며 팀 홈의 현재 작업 현황과는 다릅니다. 팀원에게는 전체 최종 기여율과 본인의 계산 근거만 공개하며, 평가자·개별 동료 점수·사유 원문은 공개하지 않습니다.</p>
         </details>
       </div>
+      {managementGuide?.stepId === 'management-report-result' && <div className="heading-actions preview-guide-inline-action">
+        <button className="secondary-button" data-guide="confirm-management-report-result" disabled={!managementGuide.reportManagementReady}
+          onClick={() => managementGuide.confirmReportManagementStep('management-report-result')}>공개 결과 확인 완료</button>
+      </div>}
       {selectedMember && (
         <Modal title={`${selectedMember.name}님의 기여도 상세`} wide className="report-member-modal" onClose={() => setSelectedMemberId(null)}>
           <div className="report-result">
-            <ResultSummary name={`${selectedMember.name}님의`} details={selectedMember.details} weights={report.weights} />
+            <ResultSummary name={`${selectedMember.name}님의`} details={selectedMember.details} weights={report.weights}
+              managementGuide={managementGuide?.stepId === 'management-report-review' && selectedMember.userId === managementGuide.reportManagementMemberId ? managementGuide : null}
+              reviewContext={{ reportId: report.id, memberId: selectedMember.userId }} onReviewConfirmed={() => setSelectedMemberId(null)} />
           </div>
         </Modal>
       )}
@@ -184,15 +222,30 @@ function ReportDetail({ context, report, actions, toolbarTarget }) {
   );
 }
 export function TeamReport({ context, manager = false, toolbarTarget, generationRevision = 0 }) {
+  const guide = usePreviewGuide();
+  const guidedReport = Boolean(guide?.guiding && guide.scenarioId === 'contribution-report' && !manager && !context.manager && context.team.id === 1);
+  const guidedManagement = Boolean(guide?.guiding && guide.scenarioId === 'report-management' && manager && context.manager);
   const { notify } = useInteractions();
   const resource = useResource(
     () => getTeamReport(context.team.id),
-    [context.team.id, context.user.id, generationRevision],
+    [context.team.id, context.user.id, generationRevision, guide?.scope],
   );
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(null),
     [publishing, setPublishing] = useState(null);
   const selected = resource.data;
+  const reportResource = guide?.setReportState;
+  useEffect(() => {
+    if (!guidedReport) return;
+    reportResource({ report: !resource.loading && !resource.error ? selected : null, userId: context.user.id });
+    return () => reportResource(null);
+  }, [guidedReport, reportResource, resource.loading, resource.error, selected, context.user.id]);
+  const reportResult = guide?.setManagedReportResult;
+  useEffect(() => {
+    if (!guidedManagement) return;
+    reportResult({ teamId: context.team.id, report: !busy && !resource.loading && !resource.error ? selected : null });
+    return () => reportResult(null);
+  }, [guidedManagement, reportResult, busy, resource.loading, resource.error, selected, context.team.id]);
   const refreshAction = (
     <RefreshButton
       className="report-refresh"
@@ -205,7 +258,9 @@ export function TeamReport({ context, manager = false, toolbarTarget, generation
     <div className="report-result-actions">
       {refreshAction}
       {selected?.status === 'UNPUBLISHED' && (
-        <button className="primary-button" disabled={busy} onClick={() => setPublishing(selected)}>
+        <button className="primary-button" data-guide="publish-team-report"
+          disabled={busy || (guidedManagement && (guide.stepId !== 'management-report-publish' || context.team.id !== guide.reportManagementTeamId))}
+          onClick={() => setPublishing(selected)}>
           팀원에게 공개
         </button>
       )}
@@ -221,7 +276,8 @@ export function TeamReport({ context, manager = false, toolbarTarget, generation
       <ErrorNotice error={error} />
       <ResourceState resource={resource}>
         {selected ? (
-          <ReportDetail key={`${selected.id}:${context.user.id}`} context={context} report={selected} actions={resultActions} toolbarTarget={toolbarTarget} />
+          <ReportDetail key={`${selected.id}:${context.user.id}:${guide?.scope || 'free'}`} context={context} report={selected} guide={guidedReport ? guide : null}
+            managementGuide={guidedManagement && context.team.id === guide.reportManagementTeamId ? guide : null} actions={resultActions} toolbarTarget={toolbarTarget} />
         ) : manager ? (
           <EmptyState><h2>이 팀의 리포트가 아직 생성되지 않았습니다.</h2><p>상단에서 전체 리포트를 생성한 뒤 결과를 확인할 수 있습니다.</p></EmptyState>
         ) : (
@@ -253,6 +309,7 @@ export function TeamReport({ context, manager = false, toolbarTarget, generation
             </button>
             <button
               className="primary-button"
+              data-guide="confirm-publish-report"
               disabled={busy}
               onClick={async () => {
                 setBusy(true);

@@ -1,3 +1,4 @@
+import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { useEffect, useState } from 'react';
 import { getAiReview, requestAiReview } from '../api/aiReviews.js';
 import useResource from '../hooks/useResource.js';
@@ -43,6 +44,8 @@ function References({ references }) {
   ));
 }
 export default function AiReview({ context }) {
+  const guide = usePreviewGuide();
+  const guidedFeedback = Boolean(guide?.guiding && guide.stepId === 'ai-feedback' && context.task.id === guide.taskId);
   const resource = useResource(
     () => getAiReview(context.task.id),
     [context.task.id, context.task.version],
@@ -52,6 +55,13 @@ export default function AiReview({ context }) {
   const [notice, setNotice] = useState('');
   const review = resource.data;
   const active = review && ['PENDING', 'PROCESSING'].includes(review.status);
+  const reportFeedbackReady = guide?.setAiFeedbackReady;
+  const feedbackReady = Boolean(review?.status === 'COMPLETED' && review.isCurrent && !resource.loading && !resource.error);
+  useEffect(() => {
+    if (!guidedFeedback) return;
+    reportFeedbackReady(feedbackReady);
+    return () => reportFeedbackReady(false);
+  }, [guidedFeedback, feedbackReady, reportFeedbackReady]);
   const canRequest =
     context.task.completionBlockReason !== 'WORK_PERIOD_CLOSED' &&
     error?.code !== 'TASK_WORK_CLOSED' &&
@@ -125,6 +135,7 @@ export default function AiReview({ context }) {
                   review.status === 'COMPLETED' &&
                   !resource.error)
               }
+              data-guide="request-ai-review"
               onClick={requestReview}
             >
               {busy
@@ -147,6 +158,7 @@ export default function AiReview({ context }) {
           </button>
         </div>
       </div>
+      {guidedFeedback && <p className="field-help">사용자 가이드의 예시 피드백입니다. 실제 AI 모델을 호출하지 않습니다.</p>}
       <div className="ai-review-introduction">
         <p>
           연결된 산출물과 작업 설명을 함께 검토해 잘된 점과 보완할 내용을
@@ -281,6 +293,16 @@ export default function AiReview({ context }) {
                         ))}
                       </ul>
                     </section>
+                  )}
+                  {guidedFeedback && (
+                    <div className="heading-actions">
+                      <button
+                        className="secondary-button"
+                        data-guide="confirm-ai-feedback"
+                        disabled={!feedbackReady}
+                        onClick={guide.confirmAiFeedback}
+                      >피드백 확인 완료</button>
+                    </div>
                   )}
                 </>
               )}

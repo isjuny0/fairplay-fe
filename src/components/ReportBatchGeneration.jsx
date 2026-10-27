@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { listEvaluationRounds } from '../api/evaluations.js';
 import { getManagerDashboard } from '../api/dashboard.js';
 import { generateTeamReport } from '../api/reports.js';
@@ -36,6 +37,8 @@ function generationState(data, teams) {
 }
 
 export default function ReportBatchGeneration({ context, onGenerated }) {
+  const guide = usePreviewGuide();
+  const guidedManagement = guide?.guiding && guide.scenarioId === 'report-management' && context.manager;
   const { notify } = useInteractions();
   const loadReadiness = async () => {
     const [rounds, dashboard, space] = await Promise.all([
@@ -43,7 +46,7 @@ export default function ReportBatchGeneration({ context, onGenerated }) {
     ]);
     return { rounds, dashboard, space };
   };
-  const resource = useResource(loadReadiness, [context.space.id, context.teams.map((team) => team.id).join(',')]);
+  const resource = useResource(loadReadiness, [context.space.id, context.teams.map((team) => team.id).join(','), guide?.scope]);
   const state = generationState(resource.data, context.teams);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -57,6 +60,13 @@ export default function ReportBatchGeneration({ context, onGenerated }) {
   const totalWeight = reportWeightFields.reduce((sum, { key }) => sum + (Number.isFinite(weights[key]) ? weights[key] : 0), 0);
   const running = useRef(false);
   const allGenerated = state && state.teams.length > 0 && state.pending.length === 0;
+  const reportBatch = guide?.setManagedReportBatch;
+  useEffect(() => {
+    if (!guidedManagement) return;
+    reportBatch(!busy && !resource.loading && !resource.error && resource.data
+      ? { ...resource.data, weights, canGenerate: state?.canGenerate } : null);
+    return () => reportBatch(null);
+  }, [guidedManagement, reportBatch, busy, resource.loading, resource.error, resource.data, weights, state?.canGenerate]);
   const generateAll = async () => {
     if (running.current || !weightsValid) return;
     const requestedWeights = { ...weights };
@@ -135,8 +145,9 @@ export default function ReportBatchGeneration({ context, onGenerated }) {
         </div>
         <div className="heading-actions">
           <RefreshButton label="전체 리포트 생성 조건 새로고침" disabled={busy || resource.loading} onClick={resource.reload} />
-          {!allGenerated && <button type="button" className="primary-button"
-            disabled={busy || resource.loading || Boolean(resource.error) || !state?.canGenerate || !weightsValid}
+          {!allGenerated && <button type="button" className="primary-button" data-guide="generate-all-reports"
+            disabled={busy || resource.loading || Boolean(resource.error) || !state?.canGenerate || !weightsValid
+              || (guidedManagement && guide.stepId === 'management-report-weights')}
             onClick={generateAll}>
             {busy ? progress ? `생성 중 ${progress.finished}/${progress.total}팀` : '생성 조건 확인 중…' : '전체 리포트 생성'}
           </button>}
@@ -160,6 +171,10 @@ export default function ReportBatchGeneration({ context, onGenerated }) {
           </ul>
           <p className="field-help">모든 팀의 중간·최종 평가가 마감되고 필수 제출이 완료되면 미생성 리포트를 한 번에 생성합니다. 생성 후 팀별 결과를 확인하고 공개 여부를 결정할 수 있습니다.</p>
         </>}
+        {guidedManagement && guide.stepId === 'management-report-weights' && <div className="heading-actions preview-guide-inline-action">
+          <button className="secondary-button" data-guide="confirm-management-report-weights" disabled={!guide.reportManagementReady}
+            onClick={() => guide.confirmReportManagementStep('management-report-weights')}>생성 조건 확인 완료</button>
+        </div>}
       </ResourceState>
       {failures.length > 0 && <div className="report-generation-failures">
         <p>일부 리포트를 생성하지 못했습니다. 다시 생성하면 이미 생성된 팀은 건너뜁니다.</p>

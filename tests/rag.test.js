@@ -113,3 +113,65 @@ test('실패 자료의 준비 현황은 조회만 제공하고 사용자 재처�
   );
   assert.deepEqual(await previewRequest(`${base}/index-status`), before);
 });
+
+test('자료 검색 가이드는 독립 데이터로 시작하고 선택한 시나리오만 저장한다', async () => {
+  const session = new Map();
+  globalThis.sessionStorage = { getItem: (key) => session.get(key) ?? null, setItem: (key, value) => session.set(key, value), removeItem: (key) => session.delete(key) };
+  try {
+    const { prepareGuide, getGuideSteps, readGuideSession, guideTaskId, guideScopeKey } = await import('../src/mock/guide.js');
+    const guide = prepareGuide('materials-search');
+    assert.equal(getGuideSteps(guide.scenarioId).length, 4);
+    assert.equal(readGuideSession().scenarioId, 'materials-search');
+    assert.equal(Object.hasOwn(readGuideSession(), 'step'), false);
+    assert.equal(getMockState(previewContext()).teams[1].tasks.some((task) => task.id === guideTaskId), false);
+    const status = await previewRequest(`${base}/index-status`);
+    assert.ok(status.readyCount > 0);
+    const originalScope = sessionStorage.getItem(guideScopeKey);
+    const fresh = prepareGuide(readGuideSession().scenarioId);
+    assert.equal(fresh.step, 0);
+    assert.notEqual(fresh.scope, originalScope);
+    assert.throws(() => prepareGuide('mid-feedback'));
+  } finally { delete globalThis.sessionStorage; }
+});
+
+test('자료 가이드는 답변 없음·다른 팀·버전이나 인용 범위가 다른 원문을 완료로 취급하지 않는다', async () => {
+  const { materialsGuideReady, guideExamples } = await import('../src/mock/guide.js');
+  const status = await previewRequest(`${base}/index-status`);
+  assert.equal(materialsGuideReady('materials-overview', { status }), true);
+  assert.equal(materialsGuideReady('materials-overview', { status: { ...status, readyCount: 0 } }), false);
+  const answer = await previewRequest(`${base}/questions`, { method: 'POST', body: { question: guideExamples.question } });
+  assert.equal(materialsGuideReady('materials-answer', { answer: { ...answer, answerable: false } }), false);
+  assert.equal(materialsGuideReady('materials-question', { answer }), true);
+  const reference = answer.references[0];
+  const content = await previewRequest(`${base}/sources/${reference.deliverableId}?expectedVersion=${reference.deliverableVersion}`);
+  const source = { ...reference, teamId: content.teamId, ready: true };
+  assert.equal(materialsGuideReady('materials-source', { answer, source }), true);
+  for (const change of [{ ready: false }, { teamId: 2 }, { deliverableVersion: reference.deliverableVersion + 1 }, { endLine: reference.endLine + 1 }]) {
+    assert.equal(materialsGuideReady('materials-source', { answer, source: { ...source, ...change } }), false);
+  }
+});
+
+test('자료 검색 가이드의 원문 설명은 열기 전·로딩·준비 완료·실패·다른 자료를 구분한다', async () => {
+  const { materialsGuideSteps, materialsSourceGuideStep, materialsGuideReady } = await import('../src/mock/guide.js');
+  const step = materialsGuideSteps.find((entry) => entry.id === 'materials-source');
+  const answer = { teamId: 1, answerable: true, references: [{ deliverableId: 1, deliverableVersion: 2, startLine: 1, endLine: 3 }] };
+  const source = { ...answer.references[0], teamId: 1, ready: true, loading: false, error: false };
+  assert.equal(materialsSourceGuideStep(step, { answer }), step);
+  assert.equal(materialsSourceGuideStep(step, { answer, source: null }), step);
+  const opened = materialsSourceGuideStep(step, { answer, source });
+  assert.equal(opened.title, '강조된 원문과 인용 내용을 비교하세요');
+  assert.match(opened.description, /강조된 부분과 답변의 인용문·줄 번호/);
+  assert.doesNotMatch(opened.description, /‘원문 확인’을 눌러/);
+  assert.equal(materialsGuideReady(step.id, { answer, source }), true);
+  const loading = materialsSourceGuideStep(step, { answer, source: { ...source, ready: false, loading: true } });
+  assert.equal(loading.title, '근거 원문을 불러오고 있습니다');
+  assert.equal(loading.calloutTarget, '.rag-source-message');
+  const failed = materialsSourceGuideStep(step, { answer, source: { ...source, ready: false, error: true } });
+  assert.equal(failed.title, '원문 조회 상태를 확인하세요');
+  assert.equal(failed.actionTarget, null);
+  assert.equal(materialsGuideReady(step.id, { answer, source: { ...source, ready: false } }), false);
+  for (const change of [{ deliverableId: 99 }, { deliverableVersion: 3 }, { teamId: 2 }, { startLine: undefined, endLine: undefined }]) {
+    assert.equal(materialsSourceGuideStep(step, { answer, source: { ...source, ...change } }).title, '답변의 근거 자료를 열어 주세요');
+  }
+  assert.equal(materialsSourceGuideStep(materialsGuideSteps[0], { answer, source }), materialsGuideSteps[0]);
+});

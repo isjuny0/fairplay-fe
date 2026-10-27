@@ -1,4 +1,5 @@
-import { useId, useState } from 'react';
+import { usePreviewGuide } from '../lib/previewGuideContext.js';
+import { useEffect, useId, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowUpRight, CircleHelp } from 'lucide-react';
 import { useLocation, useSearchParams } from 'react-router';
@@ -65,13 +66,21 @@ function DashboardHelp({ label, description }) {
 }
 
 export default function ManagerDashboard({ context }) {
+  const guide = usePreviewGuide();
+  const guidedManager = guide?.guiding && guide.scenarioId === 'team-management' && context.manager;
   const [params, setParams] = useSearchParams();
   const location = useLocation();
   const teamId = params.get('teamId') || '';
   const navigate = useAppNavigate();
-  const resource = useResource(() => getManagerDashboard(context.space.id, teamId), [context.space.id, teamId]);
+  const resource = useResource(() => getManagerDashboard(context.space.id, teamId), [context.space.id, teamId, guide?.scope]);
   const dashboard = resource.data;
   const selectedTeam = dashboard?.teams.find((team) => String(team.teamId) === teamId);
+  const reportManagerState = guide?.setManagerState;
+  useEffect(() => {
+    if (!guidedManager) return;
+    reportManagerState(!resource.loading && !resource.error && selectedTeam ? { kind: 'team', team: selectedTeam } : null);
+    return () => reportManagerState(null);
+  }, [guidedManager, reportManagerState, resource.loading, resource.error, selectedTeam]);
   const selectedTeamName = selectedTeam?.teamName || context.teams.find((team) => String(team.id) === teamId)?.name || '팀 상세';
   const teamQuery = params.get('teamQuery') || '';
   const teamFilter = Object.hasOwn(teamFilters, params.get('teamFilter')) ? params.get('teamFilter') : 'all';
@@ -168,7 +177,7 @@ export default function ManagerDashboard({ context }) {
                         {team.members.map((member) => (
                           <tr key={member.userId}>
                             <th scope="row">
-                              <button type="button" className="dashboard-member-link" aria-label={`${member.name} 수행 상세`}
+                              <button type="button" className="dashboard-member-link" data-guide-manager-member={member.userId} aria-label={`${member.name} 수행 상세`}
                                 title={`${member.name} 수행 상세 보기`} onClick={() => openMember(team.teamId, member.userId)}>
                                 <span>{member.name}</span><ArrowUpRight size={14} aria-hidden="true" />
                               </button>
@@ -228,6 +237,7 @@ export default function ManagerDashboard({ context }) {
                         </details>
                         <button
                           className="secondary-button"
+                          data-guide-manager-member={member.userId}
                           onClick={() =>
                             openMember(team.teamId, member.userId)
                           }
@@ -344,10 +354,11 @@ export default function ManagerDashboard({ context }) {
                       </thead>
                       <tbody>
                         {visibleTeams.map((team) => (
-                          <tr key={team.teamId}>
+                          <tr key={team.teamId} data-guide-manager-team-row={team.teamId}>
                             <th scope="row">
                               <button
                                 className="table-name-button"
+                                data-guide-manager-team={team.teamId}
                                 aria-label={`${team.teamName} 현황 보기`}
                                 onClick={() => selectTeam(team.teamId)}
                               >
@@ -398,10 +409,11 @@ export default function ManagerDashboard({ context }) {
                 )}
                 <div className="mobile-data-cards">
                   {visibleTeams.map((team) => (
-                    <article key={team.teamId}>
+                    <article key={team.teamId} data-guide-manager-team-row={team.teamId}>
                       <h3>
                         <button
                           className="table-name-button"
+                          data-guide-manager-team={team.teamId}
                           aria-label={`${team.teamName} 현황 보기`}
                           onClick={() => selectTeam(team.teamId)}
                         >

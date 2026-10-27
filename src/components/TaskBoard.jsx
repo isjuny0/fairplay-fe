@@ -519,7 +519,7 @@ export default function TaskBoard({
                                   )}
                               </div>
                               <button
-                                className="task-title-button"
+                                className="task-title-button" data-guide-task-id={task.id}
                                 onClick={() => onOpenTask(task.id)}
                               >
                                 <h3>{task.title}</h3>

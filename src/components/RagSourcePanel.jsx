@@ -1,3 +1,4 @@
+import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { useEffect, useRef } from 'react';
 import { ArrowLeft, ArrowUpRight, X } from 'lucide-react';
 import useResource from '../hooks/useResource.js';
@@ -14,6 +15,8 @@ export default function RagSourcePanel({
   onOpenMaterials,
 }) {
   const panel = useRef(null);
+  const guide = usePreviewGuide();
+  const guidedSource = guide?.guiding && guide.scenarioId === 'materials-search' && guide.stepId === 'materials-source';
   const hasCitation = Number.isInteger(reference.startLine) &&
     Number.isInteger(reference.endLine) && reference.startLine >= 1 &&
     reference.endLine >= reference.startLine;
@@ -51,6 +54,15 @@ export default function RagSourcePanel({
     (reference.type == null || content?.type === reference.type) &&
     typeof content?.title === 'string' &&
     typeof content?.content === 'string';
+  const reportSource = guide?.setMaterialsSource;
+  const sourceReady = Boolean(matchesSource && hasCitation && !resource.loading && !resource.error
+    && reference.endLine <= content.content.split('\n').length);
+  useEffect(() => {
+    if (!guidedSource) return;
+    reportSource({ ready: sourceReady, loading: resource.loading, error: Boolean(resource.error), teamId, deliverableId: reference.deliverableId,
+      deliverableVersion: reference.deliverableVersion, startLine: reference.startLine, endLine: reference.endLine });
+    return () => reportSource(null);
+  }, [guidedSource, reportSource, sourceReady, resource.loading, resource.error, teamId, reference.deliverableId, reference.deliverableVersion, reference.startLine, reference.endLine]);
   return (
     <aside
       className="rag-source-panel"
@@ -128,6 +140,8 @@ export default function RagSourcePanel({
         </div>
       )}
       <footer>
+        {guidedSource && <button className="primary-button" data-guide="confirm-material-source"
+          disabled={!sourceReady} onClick={() => guide.confirmMaterialsStep('materials-source')}>원문 확인 완료</button>}
         <button className="secondary-button" onClick={onOpenMaterials}>
           산출물에서 찾기
           <ArrowUpRight size={15} />

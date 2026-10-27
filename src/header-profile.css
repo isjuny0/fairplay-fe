@@ -43,16 +43,16 @@
     justify-self: end;
   }
   .profile-area:has(.profile-leader-badge) .preview-toolbar {
-    position: relative;
+    position: static;
     grid-column: 1;
     grid-row: 2;
     justify-self: start;
   }
   .profile-area:has(.profile-leader-badge) .preview-popover {
     position: absolute;
-    top: calc(100% + 24px);
-    left: 0;
-    right: auto;
+    top: calc(100% + 8px);
+    left: 12px;
+    right: 12px;
     max-height: 60dvh;
   }
   .profile-area:has(.profile-leader-badge) .logout-button {
