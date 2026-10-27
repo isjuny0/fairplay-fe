@@ -1,0 +1,56 @@
+.header-activity-actions { position: relative; display: inline-flex; align-items: center; gap: 4px; }
+.header-activity-button { position: relative; display: inline-grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 1px solid transparent; border-radius: 9px; background: transparent; color: #465461; }
+.header-activity-button:hover, .header-activity-button[aria-expanded="true"] { border-color: var(--border); background: #f7f8fa; color: var(--brand-dark); }
+.notification-count { position: absolute; top: -3px; right: -4px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 10px; background: #b33b39; color: #fff; font-size: 10px; line-height: 17px; text-align: center; }
+.notification-popover { position: absolute; z-index: 40; top: calc(100% + 10px); right: 0; width: min(360px, calc(100vw - 24px)); padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: #fff; box-shadow: 0 12px 32px #17212b1c; }
+.notification-popover-heading { display: flex; align-items: center; justify-content: space-between; padding: 4px 4px 10px; border-bottom: 1px solid var(--border); }
+.notification-popover-heading button, .text-button { border: 0; padding: 4px; background: transparent; color: var(--brand-dark); font-size: var(--text-support); }
+.notification-popover ul, .personal-notification-list { list-style: none; margin: 0; padding: 0; }
+.notification-preview { display: grid; width: 100%; gap: 4px; padding: 11px 8px; border: 0; border-bottom: 1px solid var(--border); background: #fff; text-align: left; }
+.notification-preview.is-unread { background: #f3faf6; }
+.notification-preview-title, .notification-preview-message { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.notification-preview-message, .notification-preview time { color: var(--text-muted); font-size: var(--text-support); }
+.notification-popover-state { margin: 14px 4px; color: var(--text-muted); font-size: var(--text-support); }
+.notification-popover-all { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 8px; padding: 9px; border: 0; border-radius: 8px; background: #f5f7f8; color: var(--brand-dark); }
+.personal-work-page { max-width: 1440px; overflow-x: clip; contain: layout; }
+.personal-work-tabs { display: flex; gap: 8px; margin: 22px 0 14px; border-bottom: 1px solid var(--border); }
+.personal-work-tabs button { padding: 10px 14px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--text-muted); }
+.personal-work-tabs button.active { border-bottom-color: var(--brand); color: var(--brand-dark); font-weight: 650; }
+.personal-notification-list { border-top: 1px solid var(--border); }
+.personal-notification { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 18px 14px; border-bottom: 1px solid var(--border); }
+.personal-notification.is-unread { background: #f7fbf8; }
+.personal-notification-copy { min-width: 0; }
+.personal-notification-title-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.personal-notification-copy p { margin: 7px 0; color: var(--text-muted); }
+.personal-notification-copy time, .notification-type-label, .notification-unread-label { color: var(--text-muted); font-size: var(--text-support); }
+.notification-unread-label { color: var(--brand-dark); }
+.personal-notification-actions { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+.personal-notification-actions .secondary-button { display: inline-flex; align-items: center; gap: 6px; }
+.personal-notification.is-inaccessible { color: var(--text-muted); }
+.personal-work-pagination { display: flex; justify-content: center; align-items: center; gap: 16px; margin: 28px 0; }
+.personal-task-title { min-width: 220px; }
+.personal-task-title strong { white-space: normal; }
+.task-overdue-label { display: inline-flex; margin-left: 8px; padding: 3px 7px; border-radius: 5px; background: #fff0ef; color: #a83c39; font-size: 12px; }
+.task-restrictions { margin: 7px 0 0; padding-left: 17px; white-space: normal; color: #8a5c22; font-size: 12px; }
+.task-team-name { display: block; margin-top: 3px; color: var(--text-muted); }
+.personal-task-open { display: inline-grid; place-items: center; }
+.is-overdue { color: #a83c39; }
+@media (max-width: 720px) {
+  .profile-area { gap: 5px; }
+  .header-activity-actions { gap: 0; }
+  .header-activity-button { width: 34px; height: 34px; }
+  .personal-notification { align-items: flex-start; gap: 10px; padding: 14px 8px; }
+  .personal-notification-actions { flex-direction: column; align-items: flex-end; }
+  .personal-work-page .page-heading { align-items: flex-start; }
+  .personal-task-table { min-width: 960px; }
+}
+@media (min-width: 721px) and (max-width: 900px) {
+  .topbar .context-info { max-width: 220px; }
+  .profile-area { gap: 6px; }
+  .profile-account-group { gap: 5px; }
+  .header-activity-actions { gap: 0; }
+  .header-activity-button { width: 32px; height: 34px; }
+  .profile-area .logout-button { padding-inline: 8px; }
+  .profile-area .preview-toggle span { display: none; }
+  .profile-area .preview-toggle { min-width: 34px; padding-inline: 8px; }
+}

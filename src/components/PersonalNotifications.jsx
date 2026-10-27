@@ -1,0 +1,102 @@
+import { useContext, useEffect, useState } from 'react';
+import { CheckCheck, ExternalLink } from 'lucide-react';
+import { useLocation } from 'react-router';
+import useResource from '../hooks/useResource.js';
+import useAppNavigate from '../hooks/useAppNavigate.js';
+import { getMyNotificationUnreadCount, listMyNotifications, markAllNotificationsRead, markNotificationRead } from '../api/personalWork.js';
+import { announceNotificationChange, notificationPath, notificationTypeLabels } from '../lib/personalWork.js';
+import { formatDate } from '../lib/domain.js';
+import { ErrorNotice, EmptyState, ResourceState } from './ui.jsx';
+import { HeaderContext } from './HeaderContext.js';
+
+const PAGE_SIZE = 20;
+
+export default function PersonalNotifications() {
+  const navigate = useAppNavigate();
+  const setHeaderContext = useContext(HeaderContext);
+  const { pathname } = useLocation();
+  const [filter, setFilter] = useState('ALL');
+  const [cursors, setCursors] = useState([null]);
+  const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState(null);
+  const cursor = cursors.at(-1);
+  const resource = useResource(() => listMyNotifications({ filter, size: PAGE_SIZE, cursor }), [filter, cursor]);
+  const unreadCount = useResource(getMyNotificationUnreadCount, []);
+
+  useEffect(() => {
+    setHeaderContext?.({ pathname, scope: '개인 업무', title: '알림함', detail: '내 알림' });
+  }, [setHeaderContext, pathname]);
+
+  const changeFilter = (value) => { setCursors([null]); setFilter(value); };
+
+  const markOne = async (item) => {
+    setBusy(true);
+    try {
+      await markNotificationRead(item.id);
+      setActionError(null);
+      announceNotificationChange();
+      resource.reload();
+      unreadCount.reload();
+    } catch (error) { setActionError(error); }
+    finally { setBusy(false); }
+  };
+  const markAll = async () => {
+    setBusy(true);
+    try {
+      await markAllNotificationsRead();
+      setActionError(null);
+      announceNotificationChange();
+      resource.reload();
+      unreadCount.reload();
+    } catch (error) { setActionError(error); }
+    finally { setBusy(false); }
+  };
+
+  const page = resource.data;
+  return <main className="main-content personal-work-page">
+    <header className="page-heading">
+      <div><h1>알림함</h1><p>내게 도착한 알림을 확인하고 읽음으로 표시합니다.</p></div>
+      <button type="button" className="secondary-button" disabled={busy || !(unreadCount.data > 0)} onClick={markAll}><CheckCheck size={17} /> 모두 읽음</button>
+    </header>
+    <nav className="personal-work-tabs" aria-label="알림 필터">
+      <button type="button" aria-pressed={filter === 'ALL'} className={filter === 'ALL' ? 'active' : ''} onClick={() => changeFilter('ALL')}>전체</button>
+      <button type="button" aria-pressed={filter === 'UNREAD'} className={filter === 'UNREAD' ? 'active' : ''} onClick={() => changeFilter('UNREAD')}>읽지 않음</button>
+    </nav>
+    <ResourceState resource={resource} label="알림">
+      {page?.items.length ? <ul className="personal-notification-list">
+        {page.items.map((item) => {
+          const targetPath = notificationPath(item);
+          return <li key={item.id} className={`personal-notification ${!item.readAt ? 'is-unread' : ''} ${!item.accessible ? 'is-inaccessible' : ''}`}>
+            <div className="personal-notification-copy">
+              <div className="personal-notification-title-row">
+                <strong>{item.title}</strong>
+                {item.type && <span className="notification-type-label">{notificationTypeLabels[item.type] || item.type}</span>}
+                {!item.readAt && <span className="notification-unread-label">읽지 않음</span>}
+              </div>
+              {item.message && <p>{item.message}</p>}
+              <time dateTime={item.createdAt}>{formatDate(item.createdAt)}</time>
+            </div>
+            <div className="personal-notification-actions">
+              {targetPath && <button type="button" className="secondary-button" onClick={async () => {
+                if (!item.readAt) {
+                  setBusy(true);
+                  try { await markNotificationRead(item.id); announceNotificationChange(); }
+                  catch (error) { setActionError(error); setBusy(false); return; }
+                  finally { setBusy(false); }
+                }
+                navigate(targetPath);
+              }}><ExternalLink size={15} /> 열기</button>}
+              {!item.readAt && <button type="button" className="text-button" disabled={busy} onClick={() => markOne(item)}>읽음</button>}
+            </div>
+          </li>;
+        })}
+      </ul> : <EmptyState>{filter === 'UNREAD' ? '읽지 않은 알림이 없습니다.' : '표시할 알림이 없습니다.'}</EmptyState>}
+    </ResourceState>
+    {actionError && <ErrorNotice error={actionError} onRetry={() => setActionError(null)} />}
+    {!resource.error && page && <nav className="personal-work-pagination" aria-label="알림 페이지">
+      <button type="button" className="secondary-button" disabled={cursors.length <= 1 || resource.loading} onClick={() => setCursors((items) => items.slice(0, -1))}>이전</button>
+      <span>{cursors.length}페이지</span>
+      <button type="button" className="secondary-button" disabled={!page.nextCursor || resource.loading} onClick={() => setCursors((items) => [...items, page.nextCursor])}>다음</button>
+    </nav>}
+  </main>;
+}
