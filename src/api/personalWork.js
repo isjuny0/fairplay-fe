@@ -30,15 +30,6 @@ export const markNotificationRead = (id) =>
 export const markAllNotificationsRead = () =>
   apiRequest('/api/me/notifications/read-all', { method: 'POST' });
 
-export async function listMyTasks(page = 0, size = 20) {
-  const items = await apiRequest(
-    `/api/me/tasks?${new URLSearchParams({ page, size })}`,
-  );
-  if (!Array.isArray(items))
-    throw new Error('내 할 일 목록 응답 형식을 확인해 주세요.');
-  return items;
-}
-
 export async function listMyTodos(page = 0, size = 20) {
   const items = await apiRequest(
     `/api/me/todos?${new URLSearchParams({ page, size })}`,

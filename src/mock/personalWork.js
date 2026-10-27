@@ -62,22 +62,6 @@ export function previewPersonalWork(context, state, parts, url, method) {
       return { items: structuredClone(page), nextCursor: offset + size < items.length ? String(offset + size) : null };
     }
   }
-  if (parts[2] === 'tasks' && parts.length === 3 && method === 'GET') {
-    if (context.manager || !context.members.some((member) => member.userId === context.user.id)) return [];
-    const page = Math.max(0, Number(url.searchParams.get('page') || 0));
-    const size = Math.max(1, Math.min(100, Number(url.searchParams.get('size') || 20)));
-    const assigned = (context.teamContexts || []).flatMap(({ team, members }) => {
-      const entry = state.teams[team.id];
-      if (!entry || !members.some((member) => member.userId === context.user.id)) return [];
-      return entry.tasks.filter((task) => ['TODO', 'IN_PROGRESS', 'REVISING'].includes(task.status) && task.assignees?.some((assignee) => assignee.userId === context.user.id)).map((task) => ({
-        taskId: task.id, spaceId: team.spaceId, spaceName: previewSpace.name, teamId: team.id, teamName: team.name,
-        title: task.title, status: task.status, startAt: task.startAt, dueAt: task.dueAt,
-        isOverdue: new Date(task.dueAt) < new Date(), myAllocationPercent: task.assignees.find((assignee) => assignee.userId === context.user.id).allocationPercent,
-        workRestrictionReasons: [],
-      }));
-    }).sort((a, b) => a.dueAt.localeCompare(b.dueAt) || a.taskId - b.taskId);
-    return structuredClone(assigned.slice(page * size, (page + 1) * size));
-  }
   if (parts[2] === 'todos' && parts.length === 3 && method === 'GET') {
     if (context.manager) return [];
     const page = Math.max(0, Number(url.searchParams.get('page') || 0));

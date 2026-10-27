@@ -161,7 +161,7 @@ export async function previewRequest(
   const url = new URL(path, 'https://preview.local');
   const parts = url.pathname.split('/').filter(Boolean);
   const id = Number(parts[2]);
-  if (parts[1] === 'me' && ['notifications', 'tasks', 'todos'].includes(parts[2])) {
+  if (parts[1] === 'me' && ['notifications', 'todos'].includes(parts[2])) {
     const result = previewPersonalWork(context, state, parts, url, method);
     if (method !== 'GET') saveMockState(context, state);
     return structuredClone(result);
