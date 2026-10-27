@@ -7,8 +7,6 @@ async function enterPreview(page) {
   });
   await page.goto('/preview/main');
   await expect(page.getByRole('button', { name: '알림함' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '알림함' })).toHaveAttribute('title', '내 알림을 확인해요');
-  await expect(page.getByRole('button', { name: '할 일' })).toHaveAttribute('title', '배정된 작업을 모아봐요');
   return networkApiCalls;
 }
 
@@ -17,7 +15,9 @@ test('헤더 알림 미리보기는 최근 접근 가능 항목을 표시하고 
   await expect(page.getByRole('button', { name: '알림함' })).toContainText('3');
   await page.getByRole('button', { name: '알림함' }).click();
   await expect(page.getByRole('region', { name: '최근 알림' })).toBeVisible();
+  await expect(page.getByRole('region', { name: '최근 알림' })).toContainText('읽지 않은 알림 3개');
   await expect(page.getByText('더 이상 접근할 수 없는 항목입니다')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /최종 평가가 시작되었습니다/ })).toBeVisible();
   await page.getByRole('button', { name: /새 작업에 배정되었습니다/ }).click();
   await expect(page).toHaveURL(/\/preview\/spaces\/1\/teams\/1\/tasks\/102$/);
   expect(calls).toEqual([]);
@@ -40,6 +40,14 @@ test('알림함은 전체·미읽음 커서 목록과 전체 읽음을 제공한
 test('통합 할 일 화면은 현재 담당 미완료 작업과 기존 작업 상세 경로를 제공한다', async ({ page }) => {
   const calls = await enterPreview(page);
   await page.getByRole('button', { name: '할 일' }).click();
+  await expect(page.getByRole('region', { name: '할 일 미리보기' })).toBeVisible();
+  await expect(page.getByRole('region', { name: '할 일 미리보기' })).toContainText('할 일 2개');
+  await page.getByRole('region', { name: '할 일 미리보기' }).getByRole('button', { name: /설문 결과 분석/ }).click();
+  await expect(page).toHaveURL(/\/preview\/spaces\/1\/teams\/1\/tasks\/102$/);
+
+  await page.goto('/preview/main');
+  await page.getByRole('button', { name: '할 일' }).click();
+  await page.getByRole('region', { name: '할 일 미리보기' }).getByRole('button', { name: '전체 보기', exact: true }).click();
   await expect(page).toHaveURL(/\/preview\/my\/tasks$/);
   await expect(page.getByRole('heading', { name: '할 일', exact: true })).toBeVisible();
   await expect(page.getByRole('table')).toBeVisible();
@@ -50,13 +58,13 @@ test('통합 할 일 화면은 현재 담당 미완료 작업과 기존 작업 �
   expect(calls).toEqual([]);
 });
 
-test('모바일에서도 헤더 액션과 할 일 표를 가로 스크롤로 사용할 수 있다', async ({ page }) => {
+test('모바일에서도 헤더 할 일 카드 패널이 화면 너비를 넘지 않는다', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await enterPreview(page);
   await expect(page.getByRole('button', { name: '알림함' })).toBeVisible();
   await expect(page.getByRole('button', { name: '할 일' })).toBeVisible();
   await page.getByRole('button', { name: '할 일' }).click();
-  await expect(page.getByRole('table')).toBeVisible();
+  await expect(page.getByRole('region', { name: '할 일 미리보기' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /설문 결과 분석/ })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
-  expect(await page.locator('.table-scroll').evaluate((element) => element.scrollWidth > element.clientWidth)).toBeTruthy();
 });
