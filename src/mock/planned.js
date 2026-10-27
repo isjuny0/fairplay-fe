@@ -16,8 +16,14 @@ const fail = (code, message, status) => {
 const now = () => koreanDateTime();
 const clone = (value) => structuredClone(value);
 const memoryStates = new Map();
-export const mockKey = (context) =>
-  `fairplay:mock:v7:${context.preview ? 'preview' : context.user.id}:${context.space.id}`;
+export function mockKey(context) {
+  const baseKey = `fairplay:mock:v7:${context.preview ? 'preview' : context.user.id}:${context.space.id}`;
+  if (!context.preview) return baseKey;
+  try {
+    const guideScope = globalThis.sessionStorage?.getItem('fairplay:preview-guide-scope');
+    return guideScope ? `${baseKey}:guide:${guideScope}` : baseKey;
+  } catch { return baseKey; }
+}
 export function getMockState(context) {
   const key = mockKey(context);
   let state = memoryStates.get(key);
@@ -665,6 +671,12 @@ export async function plannedRequest(
             '중간 평가 마감 후 최종 평가를 시작할 수 있습니다.',
           );
         round.status = 'OPEN';
+        if (round.type === 'MID') state.spaceOverrides = {
+          ...state.spaceOverrides,
+          membershipLockedAt: context.space.membershipLockedAt || now(),
+          teamBuildingStatus: 'LOCKED',
+          version: context.space.version + 1,
+        };
       } else {
         fail('NOT_FOUND', '지원하지 않는 요청입니다.', 404);
       }

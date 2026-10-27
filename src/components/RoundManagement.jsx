@@ -1,7 +1,8 @@
 import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import RefreshButton from './RefreshButton.jsx';
 import '../space-operation.css';
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
+import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { useSearchParams } from 'react-router';
 import SectionTabs from './SectionTabs.jsx';
 import ManagerPeerResponses from './ManagerPeerResponses.jsx';
@@ -29,6 +30,8 @@ import {
 } from './ui.jsx';
 
 export default function RoundManagement({ context, onChanged }) {
+  const guide = usePreviewGuide();
+  const guidedEvaluation = guide?.guiding && guide.scenarioId === 'evaluation-management' && context.manager;
   const { notify } = useInteractions();
   const [params, setParams] = useSearchParams();
   const tabsId = useId();
@@ -43,11 +46,11 @@ export default function RoundManagement({ context, onChanged }) {
   const reload = () => setRevision((value) => value + 1);
   const resource = useResource(
     () => listEvaluationRounds(context.space.id),
-    [context.space.id, revision],
+    [context.space.id, revision, guide?.scope],
   );
   const submissions = useResource(
     () => getManagerDashboard(context.space.id),
-    [context.space.id, revision],
+    [context.space.id, revision, guide?.scope],
   );
   const [editing, setEditing] = useState(null),
     [busy, setBusy] = useState(false),
@@ -56,10 +59,24 @@ export default function RoundManagement({ context, onChanged }) {
   const [initialForm, setInitialForm] = useState(null);
   const [viewingSubmissions, setViewingSubmissions] = useState(null);
   const rounds = resource.data || [];
+  const reportEvaluationState = guide?.setEvaluationState;
+  const ready = !busy && !resource.loading && !resource.error && !submissions.loading && !submissions.error;
+  useEffect(() => {
+    if (!guidedEvaluation) return;
+    reportEvaluationState(ready && activeTab === 'operations' && resource.data && submissions.data
+      ? { space: context.space, rounds: resource.data, dashboard: submissions.data, viewedRoundId: viewingSubmissions?.id } : null);
+    return () => reportEvaluationState(null);
+  }, [guidedEvaluation, reportEvaluationState, ready, activeTab, resource.data, submissions.data, context.space, viewingSubmissions?.id]);
+  useEffect(() => {
+    setEditing(null);
+    setViewingSubmissions(null);
+    setError(null);
+  }, [guide?.scope]);
   const openForm = (kind, round) => {
     setError(null);
     setEditing({ kind, round });
-    const nextForm = {
+    const nextForm = guidedEvaluation && guide.stepId === 'evaluation-schedule' && kind === 'create' && round.type === 'MID'
+      ? { ...guide.evaluationSchedule } : {
       type: round.type,
       opensAt: toDateInput(round?.opensAt) || currentDateTime(),
       closesAt:
@@ -135,7 +152,7 @@ export default function RoundManagement({ context, onChanged }) {
       <ErrorNotice error={submissions.error} onRetry={reload} />
       <ErrorNotice error={error} />
       <ResourceState resource={resource}>
-          <div className="table-scroll" role="region" aria-label="평가 회차 일정과 제출 현황" tabIndex={0}>
+          <div className="table-scroll" data-guide="evaluation-rounds" role="region" aria-label="평가 회차 일정과 제출 현황" tabIndex={0}>
             <table className="data-table round-management-table">
               <caption className="sr-only">중간·최종 평가 회차 운영 현황</caption>
               <thead><tr>
@@ -147,13 +164,13 @@ export default function RoundManagement({ context, onChanged }) {
                   const round = rounds.find((entry) => entry.type === type);
                   const needsMidSchedule = type === 'FINAL' && !rounds.some((entry) => entry.type === 'MID');
                   if (!round) return (
-                    <tr key={type}>
+                    <tr key={type} data-guide-round={type}>
                       <th scope="row"><span className="round-name">{roundLabels[type]}</span></th>
                       <td><span className="status-badge round-lifecycle-status round-lifecycle-unconfigured">미설정</span></td>
                       <td><span className="round-table-note">일정을 설정해 주세요.</span></td>
                       <td><span className="round-table-note">평가 시작 후 집계</span></td>
                       <td><div className="round-management-actions">
-                        <button type="button" className="secondary-button" disabled={busy || resource.loading || needsMidSchedule} aria-label={`${roundLabels[type]} 일정 설정`} onClick={() => openForm('create', { type })}>일정 설정</button>
+                        <button type="button" className="secondary-button" data-guide={type === 'MID' ? 'schedule-mid-evaluation' : undefined} disabled={busy || resource.loading || needsMidSchedule} aria-label={`${roundLabels[type]} 일정 설정`} onClick={() => openForm('create', { type })}>일정 설정</button>
                       </div>
                         {needsMidSchedule && <p className="round-opening-block">중간 평가 일정을 먼저 설정해 주세요.</p>}
                       </td>
@@ -165,7 +182,7 @@ export default function RoundManagement({ context, onChanged }) {
                   const missingCount = teamSubmissions?.reduce((sum, team) => sum + team.missingCount, 0);
                   const openingBlockReason = blockReason(round);
                   return (
-                    <tr key={round.id}>
+                    <tr key={round.id} data-guide-round={type}>
                       <th scope="row"><span className="round-name">{roundLabels[round.type]}</span></th>
                       <td>
                         <span className={`status-badge round-lifecycle-status round-lifecycle-${round.status.toLowerCase()}`}>{roundStatusLabels[round.status]}</span>
@@ -183,14 +200,14 @@ export default function RoundManagement({ context, onChanged }) {
                           : <div className="round-submission-overview">
                             <strong>{submittedCount} / {requiredCount}명</strong>
                             <span className={missingCount > 0 ? 'round-missing-count' : 'round-table-note'}>{requiredCount === 0 ? '평가 대상 없음' : missingCount > 0 ? `미제출 ${missingCount}명` : '전원 제출'}</span>
-                            <button type="button" className="round-detail-button" aria-label={`${roundLabels[round.type]} 팀별 제출 현황 보기`} aria-haspopup="dialog" onClick={() => setViewingSubmissions(round)}>팀별 현황 보기</button>
+                            <button type="button" className="round-detail-button" data-guide={type === 'MID' ? 'view-mid-submissions' : undefined} aria-label={`${roundLabels[round.type]} 팀별 제출 현황 보기`} aria-haspopup="dialog" onClick={() => setViewingSubmissions(round)}>팀별 현황 보기</button>
                           </div>}
                       </td>
                       <td>
                         <div className="round-management-actions">
                           {round.status === 'DRAFT' && <>
                             <button className="secondary-button" disabled={busy} aria-label={`${roundLabels[round.type]} 일정 수정`} onClick={() => openForm('edit', round)}>일정 수정</button>
-                            <button className="primary-button" disabled={busy || Boolean(openingBlockReason)} aria-label={`${roundLabels[round.type]} 시작`} onClick={() => openRound(round)}>평가 시작</button>
+                            <button className="primary-button" data-guide={type === 'MID' ? 'start-mid-evaluation' : undefined} disabled={busy || Boolean(openingBlockReason)} aria-label={`${roundLabels[round.type]} 시작`} onClick={() => openRound(round)}>평가 시작</button>
                           </>}
                           {round.status === 'OPEN' && <button className="secondary-button" disabled={busy} aria-label={`${roundLabels[round.type]} 마감 시각 수정`} onClick={() => openForm('edit', round)}>마감 시각 수정</button>}
                           {round.status === 'CLOSED' && <span className="round-table-note">종료된 평가</span>}
@@ -204,6 +221,10 @@ export default function RoundManagement({ context, onChanged }) {
               </tbody>
             </table>
           </div>
+          {guidedEvaluation && guide.stepId === 'evaluation-overview' && <div className="heading-actions preview-guide-inline-action">
+            <button className="secondary-button" data-guide="confirm-evaluation-overview" disabled={!ready || !guide.evaluationReady}
+              onClick={() => guide.confirmEvaluationStep('evaluation-overview')}>평가 회차 확인 완료</button>
+          </div>}
       </ResourceState>
       <details className="round-operation-guide">
         <summary>평가 운영 기준</summary>
@@ -233,6 +254,10 @@ export default function RoundManagement({ context, onChanged }) {
               })}</tbody>
             </table>
           </div>
+          {guidedEvaluation && guide.stepId === 'evaluation-result' && viewingSubmissions.type === 'MID' && <div className="modal-actions">
+            <button className="primary-button" data-guide="confirm-evaluation-result" disabled={!ready || !guide.evaluationReady}
+              onClick={() => { if (guide.confirmEvaluationStep('evaluation-result')) setViewingSubmissions(null); }}>시작 결과 확인 완료</button>
+          </div>}
         </Modal>
       )}
 

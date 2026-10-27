@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Monitor, X } from 'lucide-react';
+import { BookOpen, Monitor, X } from 'lucide-react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 import { getCurrentUser, loginWithGoogle, logout } from '../api/auth.js';
 import AppRoutes from './AppRoutes.jsx';
@@ -10,6 +10,7 @@ import { HeaderContext } from './HeaderContext.js';
 import { invalidateSharedReads } from '../api/sharedReads.js';
 import googleLogo from '../assets/google-g.svg';
 import BrandLogo from './BrandLogo.jsx';
+import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import HeaderActivityActions from './HeaderActivityActions.jsx';
 import '../preview-controls.css';
 import '../header-profile.css';
@@ -19,6 +20,7 @@ export default function Application({ previewRuntime }) {
     getMockState, getPreviewUser, previewRole, setPreviewRole,
     resetPreview, previewContext, getRagPreviewScenario, setRagPreviewScenario,
   } = previewRuntime || {};
+  const guide = usePreviewGuide();
   const navigate = useNavigate();
   const location = useLocation();
   const preview = Boolean(previewRuntime);
@@ -93,6 +95,17 @@ export default function Application({ previewRuntime }) {
       window.removeEventListener('fairplay:session-expired', expired);
     };
   }, [preview]);
+  useEffect(() => {
+    if (!preview) return;
+    const refreshPreview = () => {
+      invalidateSharedReads();
+      setUser(getPreviewUser());
+      setScenario(getMockState(previewContext()).scenario);
+      setPreviewRevision((value) => value + 1);
+    };
+    window.addEventListener('fairplay:preview-updated', refreshPreview);
+    return () => window.removeEventListener('fairplay:preview-updated', refreshPreview);
+  }, [preview]);
   const authenticate = async () => {
     setBusy(true);
     setError(null);
@@ -110,6 +123,7 @@ export default function Application({ previewRuntime }) {
   const signOut = async () => {
     if (!(await confirmDiscard())) return;
     if (preview) {
+      guide?.stop();
       invalidateSharedReads();
       setUser(null);
       navigate('/', { replace: true });
@@ -193,9 +207,9 @@ export default function Application({ previewRuntime }) {
             </button>
             <button
               className="secondary-button preview-entry"
-              onClick={() => navigate('/preview/main')}
+              onClick={() => navigate('/preview/main?guide=start')}
             >
-              로그인 없이 화면 미리보기
+              로그인 없이 사용자 가이드
             </button>
             <p className="field-help">
               개발·조사·발표·행사 등 다양한 팀 프로젝트에 사용할 수 있습니다.
@@ -226,6 +240,9 @@ export default function Application({ previewRuntime }) {
             </div>
           </div>
           <div className="profile-area">
+            {preview && <button className="preview-toggle preview-guide-entry" aria-label="사용자 가이드" title="사용자 가이드" onClick={guide?.open}>
+              <BookOpen size={15} aria-hidden="true" /><span>사용자 가이드</span>
+            </button>}
             {preview && (
               <div
                 className="preview-toolbar"
@@ -282,6 +299,7 @@ export default function Application({ previewRuntime }) {
                         onChange={async (event) => {
                           const nextRole = event.target.value;
                           if (!(await confirmDiscard())) return;
+                          if (guide && !(await guide.endForSettings())) return;
                           invalidateSharedReads();
                           setPreviewRole(nextRole);
                           setUser(getPreviewUser());
@@ -306,6 +324,7 @@ export default function Application({ previewRuntime }) {
                         onChange={async (event) => {
                           const nextScenario = event.target.value;
                           if (!(await confirmDiscard())) return;
+                          if (guide && !(await guide.endForSettings())) return;
                           invalidateSharedReads();
                           setScenario(nextScenario);
                           resetPreview(nextScenario);
@@ -344,6 +363,7 @@ export default function Application({ previewRuntime }) {
                       className="secondary-button"
                       onClick={async () => {
                         if (!(await confirmDiscard())) return;
+                        if (guide && !(await guide.endForSettings())) return;
                         invalidateSharedReads();
                         resetPreview(scenario);
                         setPreviewRevision((value) => value + 1);

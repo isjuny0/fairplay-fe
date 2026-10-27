@@ -1,3 +1,4 @@
+import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import { screenLoaders } from '../lib/routeScreens.js';
 import { deferScreen } from './DeferredScreen.jsx';
@@ -65,6 +66,7 @@ export default function SpaceWorkspace({
   targetUserId,
   onBack,
 }) {
+  const guide = usePreviewGuide();
   const navigate = useAppNavigate();
   const location = useLocation();
   const setHeaderContext = useContext(HeaderContext);
@@ -328,7 +330,8 @@ export default function SpaceWorkspace({
         user={user}
         onBack={onBack}
       />
-      <main className="main-content">
+      <main className="main-content" data-preview-guide-step={guide?.guiding ? guide.stepId : undefined}>
+        {guide?.panel}
         <ResourceState resource={pageResource} label="스페이스 정보">
           {space && (
             <>

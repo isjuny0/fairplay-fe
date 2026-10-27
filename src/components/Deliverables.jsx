@@ -1,3 +1,4 @@
+import { usePreviewGuide } from "../lib/previewGuideContext.js";
 import useAppNavigate from "../hooks/useAppNavigate.js";
 import Icon from "./Icon.jsx";
 import RefreshButton from "./RefreshButton.jsx";
@@ -58,6 +59,9 @@ function DeliverableForm({
   onLoadLatest,
 }) {
   const { confirm } = useInteractions();
+  const guide = usePreviewGuide();
+  const guideExample = !initial && guide?.guiding && guide.stepId === "deliverable" && Number(taskId) === guide.taskId
+    ? guide.examples.deliverable : null;
   const recovery = useSaveRecovery(error);
   const conflict = error?.code === "VERSION_CONFLICT";
   const canReapply =
@@ -70,10 +74,11 @@ function DeliverableForm({
     category: initial?.category || "OTHER",
     type: initial?.type || "TEXT",
     text: initial?.text || "",
+    ...guideExample,
     taskId: taskId ?? "",
   });
   const [form, setForm] = useState(initialForm);
-  const [step, setStep] = useState(initial ? "editor" : "choose");
+  const [step, setStep] = useState(initial || guideExample ? "editor" : "choose");
   const formElement = useRef(null);
   const fileExtensions = /\.(txt|md|pdf|doc|docx|ppt|pptx|xls|xlsx)$/i;
   const fileHelp = "TXT, MD, PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX";
@@ -176,6 +181,7 @@ function DeliverableForm({
         noValidate
       >
         <div className="deliverable-editor-scroll">
+          {guideExample && <p className="field-help" data-guide-deliverable-hint="">예시 문서가 자동 입력되었습니다. 내용을 확인하거나 수정한 뒤 저장하세요.</p>}
           {step === "choose" ? (
             <fieldset
               disabled={busy || recovery.loading || blocked}
@@ -668,6 +674,11 @@ export default function Deliverables({
     isApprovedMember(team) &&
     !teamWorkBlocked(team) &&
     (taskId == null || eligibleTasks.some((task) => task.id === taskId));
+  const openRegistration = () => {
+    if (!canCreate || busy || !taskOptionsReady) return;
+    setError(null);
+    setEditing(null);
+  };
   const save = async (input, file, type) => {
     if (
       !taskOptionsReady ||
@@ -769,10 +780,8 @@ export default function Deliverables({
           {canCreate && (
             <button
               className="primary-button"
-              onClick={() => {
-                setError(null);
-                setEditing(null);
-              }}
+              data-guide="open-deliverable"
+              onClick={openRegistration}
             >
               <Icon name="plus" />
               산출물 등록

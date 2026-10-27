@@ -1,3 +1,4 @@
+import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import RefreshButton from './RefreshButton.jsx';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -37,11 +38,20 @@ function PeerResponseForm({
   onStateChanged,
   submitted,
 }) {
+  const guide = usePreviewGuide();
+  const example = guide?.guiding && guide.scenarioId === 'peer-evaluation' && guide.stepId === 'peer-responses';
+  const manuallyEdited = useRef(false);
   const [scores, setScores] = useState(
     response?.scores ||
       Object.fromEntries(Object.keys(peerCriteria).map((code) => [code, ''])),
   );
   const [reason, setReason] = useState(response?.reason || '');
+  useEffect(() => {
+    if (example && !response && !manuallyEdited.current) {
+      setScores({ ...guide.examples.peerScores });
+      setReason(guide.examples.peerReason);
+    }
+  }, [example, response, guide?.examples]);
   const formElement = useRef(null);
   const reasonInput = useRef(null);
   const [reasonError, setReasonError] = useState('');
@@ -120,6 +130,7 @@ function PeerResponseForm({
         </span>
       </div>
       <ErrorNotice error={error} />
+      {example && !response && <p className="field-help">가이드용 예시 점수와 사유입니다. 실제 팀원의 행동에 맞춰 평가하는 방식으로 확인하거나 수정한 뒤 저장하세요.</p>}
       <div className="peer-score-grid">
         {Object.entries(peerCriteria).map(([code, label]) => (
           <fieldset
@@ -147,6 +158,7 @@ function PeerResponseForm({
                     aria-describedby={`${target.targetId}-${code}-${score}-description`}
                     checked={Number(scores[code]) === score}
                     onChange={() => {
+                      manuallyEdited.current = true;
                       setScores((current) => ({ ...current, [code]: score }));
                       setScoreError(null);
                       setError(null);
@@ -200,6 +212,7 @@ function PeerResponseForm({
           maxLength={500}
           value={reason}
           onChange={(event) => {
+            manuallyEdited.current = true;
             setReason(event.target.value);
             setReasonError('');
             setError(null);
@@ -211,6 +224,8 @@ function PeerResponseForm({
   );
 }
 function RoundResponses({ context, round, onSubmitted }) {
+  const guide = usePreviewGuide();
+  const guidedPeer = guide?.guiding && guide.scenarioId === 'peer-evaluation';
   const now = useCurrentTime();
   const resource = useResource(async () => {
     const responses = await getMyPeerResponses(round.id);
@@ -293,6 +308,11 @@ function RoundResponses({ context, round, onSubmitted }) {
                   확인하세요.
                 </p>
               )}
+            {guidedPeer && guide.stepId === 'peer-overview' && <div className="heading-actions">
+              <button className="secondary-button" data-guide="confirm-peer-overview"
+                disabled={resource.loading || Boolean(resource.error) || !targets.length || locked}
+                onClick={() => guide.confirmPeerStep('peer-overview')}>평가 대상 확인 완료</button>
+            </div>}
             <div className="peer-response-layout">
               <aside className="peer-response-sidebar">
                 <section className="evaluation-progress">
@@ -380,6 +400,11 @@ function RoundResponses({ context, round, onSubmitted }) {
                 })}
               </div>
             </div>
+            {guidedPeer && guide.stepId === 'peer-result' && submitted && <div className="heading-actions">
+              <button className="secondary-button" data-guide="confirm-peer-result"
+                disabled={resource.loading || Boolean(resource.error)}
+                onClick={() => guide.confirmPeerStep('peer-result')}>제출 결과 확인 완료</button>
+            </div>}
             {!locked && currentTarget && (
               <div
                 className="review-action-dock peer-evaluation-actions"
@@ -403,6 +428,7 @@ function RoundResponses({ context, round, onSubmitted }) {
                     <button
                       type="submit"
                       form={`peer-response-${round.id}-${currentTargetId}`}
+                      data-guide={!currentResponse || currentState?.changed ? 'save-peer-response' : undefined}
                       className="secondary-button"
                       disabled={busy || saving || resource.loading}
                     >
@@ -416,6 +442,7 @@ function RoundResponses({ context, round, onSubmitted }) {
                         className="ghost-button"
                         disabled={busy || saving}
                         onClick={() => setActiveTargetId(nextTarget.targetId)}
+                        data-guide={currentResponse && !currentState?.changed ? 'next-peer-target' : undefined}
                         aria-label={`다음 팀원 · ${nextTarget.name}`}
                       >
                         다음 팀원 →
@@ -444,6 +471,7 @@ function RoundResponses({ context, round, onSubmitted }) {
                   <button
                     className="primary-button"
                     disabled={!readyToSubmit || busy}
+                    data-guide="submit-peer-evaluation"
                     onClick={() => setConfirming(true)}
                   >
                     최종 제출
@@ -482,6 +510,7 @@ function RoundResponses({ context, round, onSubmitted }) {
             <button
               className="primary-button"
               disabled={busy || !readyToSubmit}
+              data-guide="confirm-peer-submit"
               onClick={async () => {
                 if (!readyToSubmit) return;
                 setBusy(true);
@@ -506,6 +535,10 @@ function RoundResponses({ context, round, onSubmitted }) {
   );
 }
 export default function PeerEvaluation({ context }) {
+  const guide = usePreviewGuide();
+  return <PeerEvaluationScreen key={`${context.space.id}:${context.user.id}:${guide?.scope || 'free'}`} context={context} />;
+}
+function PeerEvaluationScreen({ context }) {
   const resource = useResource(
     () => listEvaluationRounds(context.space.id),
     [context.space.id, context.user.id],

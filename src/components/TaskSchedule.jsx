@@ -271,7 +271,7 @@ export function TaskTimeline({
                     />
                     <span className="timeline-task-id">#{task.id}</span>
                     <button
-                      className="task-title-button"
+                      className="task-title-button" data-guide-task-id={task.id}
                       {...previewEvents(task)}
                       onClick={() => onOpenTask(task.id)}
                     >

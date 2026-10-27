@@ -1,3 +1,4 @@
+import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import Icon from './Icon.jsx';
 import RefreshButton from './RefreshButton.jsx';
 import DateTimeInput from './DateTimeInput.jsx';
@@ -31,6 +32,7 @@ import {
 } from './ui.jsx';
 
 export default function Spaces({ onSelect, user }) {
+  const guide = usePreviewGuide();
   const { notify, clearChanges } = useInteractions();
   const resource = useSpaceList(user.id);
   const [openingSpaceId, setOpeningSpaceId] = useState(null);
@@ -176,7 +178,8 @@ export default function Spaces({ onSelect, user }) {
         onSelect={openShortcut}
         openingSpaceId={openingSpaceId}
       />
-      <main className="main-content spaces-main">
+      <main className="main-content spaces-main" data-preview-guide-step={guide?.guiding ? guide.stepId : undefined}>
+        {guide?.panel}
         <section className="space-directory stack">
           <div className="page-heading page-heading--compact space-page-header">
             <div className="space-page-heading">

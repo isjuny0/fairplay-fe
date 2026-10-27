@@ -48,16 +48,16 @@
     min-width: 0;
   }
   .profile-area:has(.profile-leader-badge) .preview-toolbar {
-    position: relative;
+    position: static;
     grid-column: 1;
     grid-row: 2;
     justify-self: start;
   }
   .profile-area:has(.profile-leader-badge) .preview-popover {
     position: absolute;
-    top: calc(100% + 24px);
-    left: 0;
-    right: auto;
+    top: calc(100% + 8px);
+    left: 12px;
+    right: 12px;
     max-height: 60dvh;
   }
   .profile-area:has(.profile-leader-badge) .logout-button {
@@ -68,4 +68,26 @@
 }
 @media (max-width: 360px) {
   .profile-identity:has(.profile-leader-badge) .profile-name { max-width: 56px; }
+}
+
+@media (max-width: 900px) {
+  .app-shell:has(.preview-guide-entry) { --header-height: 110px; }
+  .topbar:has(.preview-guide-entry) { grid-template-columns: minmax(0, 1fr) auto; }
+  .topbar:has(.preview-guide-entry) .context-info { display: none; }
+  .topbar .profile-area:has(.preview-guide-entry) { display: contents; }
+  .topbar:has(.preview-guide-entry) .topbar-brand { grid-column: 1; grid-row: 1; }
+  .profile-area:has(.preview-guide-entry) .profile-account-group {
+    grid-column: 2; grid-row: 1; justify-self: end;
+  }
+  .profile-area > .preview-guide-entry {
+    grid-column: 1; grid-row: 2; justify-self: start; width: 34px; min-height: 34px; padding: 8px;
+  }
+  .preview-guide-entry > span { display: none; }
+  .profile-area:has(.preview-guide-entry) .preview-toolbar {
+    grid-column: 1; grid-row: 2; justify-self: start; margin-left: 42px; position: static;
+  }
+  .profile-area:has(.preview-guide-entry) .logout-button { grid-column: 2; grid-row: 2; justify-self: end; }
+  .profile-area:has(.preview-guide-entry) .preview-popover {
+    position: absolute; top: calc(100% + 8px); left: 12px; right: 12px; max-height: 60dvh;
+  }
 }

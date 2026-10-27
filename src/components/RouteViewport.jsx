@@ -1,7 +1,9 @@
 import { useLayoutEffect, useRef } from 'react';
 import { useLocation, useNavigationType } from 'react-router';
+import useScreenMotion from '../hooks/useScreenMotion.js';
 
 export default function RouteViewport() {
+  useScreenMotion();
   const location = useLocation();
   const navigationType = useNavigationType();
   const positions = useRef(new Map());

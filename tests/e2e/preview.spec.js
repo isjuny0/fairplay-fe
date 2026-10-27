@@ -274,7 +274,7 @@ test('로그인 미리보기는 Google 요청 없이 화면 미리보기로 이�
   await expect(
     page.getByRole('button', { name: 'Google 로그인 · 실제 서비스에서 연결' }),
   ).toBeDisabled();
-  await page.getByRole('button', { name: '로그인 없이 화면 미리보기' }).click();
+  await page.getByRole('button', { name: '로그인 없이 사용자 가이드' }).click();
   await expect(
     page.getByRole('heading', { name: '내 스페이스', exact: true }),
   ).toBeVisible();
@@ -301,7 +301,7 @@ test('실제 로그인 화면에서 인증 없이 미리보기를 시작할 수 
     page.getByRole('button', { name: 'Google로 계속하기' }),
   ).toBeVisible();
   const initialCalls = apiCalls.length;
-  await page.getByRole('button', { name: '로그인 없이 화면 미리보기' }).click();
+  await page.getByRole('button', { name: '로그인 없이 사용자 가이드' }).click();
   await expect(
     page.getByRole('heading', { name: '내 스페이스', exact: true }),
   ).toBeVisible();
