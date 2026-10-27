@@ -2,25 +2,39 @@ import { MockError } from './planned.js';
 import { previewSpace } from './fixtures.js';
 import { koreanDateTime } from '../lib/koreanTime.js';
 
-const initialNotifications = () => {
+const initialNotifications = (context, state) => {
   const now = Date.now();
+  const evaluationRound = state.rounds.find((round) => round.type === 'FINAL')
+    || state.rounds.find((round) => round.type === 'MID');
+  const roundLabel = evaluationRound?.type === 'FINAL' ? '최종 평가' : '중간 평가';
   return [
     { id: 205, type: 'TASK_ASSIGNED', title: '새 작업에 배정되었습니다', message: '설문 결과 분석', spaceId: 1, teamId: 1, target: { type: 'TASK', id: 102, taskId: null }, accessible: true, createdAt: koreanDateTime(now - 3600000), readAt: null },
     { id: 204, type: 'TASK_COMMENT_CREATED', title: '작업에 댓글이 등록되었습니다', message: '서비스 흐름 설계', spaceId: 1, teamId: 1, target: { type: 'TASK_COMMENT', id: 9002, taskId: 103 }, accessible: true, createdAt: koreanDateTime(now - 7200000), readAt: null },
-    { id: 203, type: 'EVALUATION_ROUND_OPENED', title: '동료 평가가 시작되었습니다', message: '삼위일체 · 중간 평가', spaceId: 1, teamId: 1, target: { type: 'EVALUATION_ROUND', id: 11, taskId: null }, accessible: true, createdAt: koreanDateTime(now - 86400000), readAt: null },
+    ...(evaluationRound ? [{
+      id: 203,
+      type: 'EVALUATION_ROUND_OPENED',
+      title: `${roundLabel}가 시작되었습니다`,
+      message: `${context.team?.name || '삼위일체'} · ${roundLabel}`,
+      spaceId: context.space.id,
+      teamId: context.team?.id || 1,
+      target: { type: 'EVALUATION_ROUND', id: evaluationRound.id, taskId: null },
+      accessible: true,
+      createdAt: koreanDateTime(now - 86400000),
+      readAt: null,
+    }] : []),
     { id: 202, type: null, title: '더 이상 접근할 수 없는 항목입니다', message: null, spaceId: null, teamId: null, target: null, accessible: false, createdAt: koreanDateTime(now - 172800000), readAt: koreanDateTime(now - 160000000) },
   ];
 };
 const notificationStore = new Map();
-const storeFor = (context) => {
+const storeFor = (context, state) => {
   const key = context.user.id;
-  if (!notificationStore.has(key)) notificationStore.set(key, initialNotifications());
+  if (!notificationStore.has(key)) notificationStore.set(key, initialNotifications(context, state));
   return notificationStore.get(key);
 };
 
 export function previewPersonalWork(context, state, parts, url, method) {
   if (parts[2] === 'notifications') {
-    const notifications = storeFor(context);
+    const notifications = storeFor(context, state);
     if (parts[3] === 'unread-count' && method === 'GET')
       return { unreadCount: notifications.filter((item) => item.accessible && !item.readAt).length };
     if (parts[3] === 'read-all' && method === 'POST') {

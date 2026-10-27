@@ -7,6 +7,8 @@ async function enterPreview(page) {
   });
   await page.goto('/preview/main');
   await expect(page.getByRole('button', { name: '알림함' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '알림함' })).toHaveAttribute('title', '내 알림을 확인해요');
+  await expect(page.getByRole('button', { name: '할 일' })).toHaveAttribute('title', '배정된 작업을 모아봐요');
   return networkApiCalls;
 }
 

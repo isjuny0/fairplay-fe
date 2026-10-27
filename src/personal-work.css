@@ -1,6 +1,37 @@
 .header-activity-actions { position: relative; display: inline-flex; align-items: center; gap: 4px; }
+.header-activity-item { position: relative; display: inline-flex; }
 .header-activity-button { position: relative; display: inline-grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 1px solid transparent; border-radius: 9px; background: transparent; color: #465461; }
 .header-activity-button:hover, .header-activity-button[aria-expanded="true"] { border-color: var(--border); background: #f7f8fa; color: var(--brand-dark); }
+.header-task-popover { max-height: min(480px, calc(100vh - 80px)); overflow-y: auto; }
+.header-task-preview-cards { display: grid; gap: 7px; }
+.header-task-preview-card { display: grid; width: 100%; gap: 5px; padding: 9px 10px; border: 1px solid var(--border); border-left: 3px solid var(--task-progress); border-radius: 8px; background: #fff; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.header-task-preview-card:hover { border-color: var(--brand-light); background: #f8fbf9; }
+.header-task-preview-card[data-status="TODO"] { border-left-color: var(--task-todo); }
+.header-task-preview-card[data-status="IN_PROGRESS"] { border-left-color: var(--task-progress); }
+.header-task-preview-card[data-status="REVISING"] { border-left-color: var(--task-revising); }
+.header-task-preview-card-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.header-task-preview-status { display: inline-flex; align-items: center; gap: 5px; color: var(--text-muted); font-size: 11px; }
+.header-task-preview-status i { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: var(--task-progress); }
+.header-task-preview-card[data-status="TODO"] .header-task-preview-status i { background: var(--task-todo); }
+.header-task-preview-card[data-status="REVISING"] .header-task-preview-status i { background: var(--task-revising); }
+.header-task-preview-card > strong { overflow: hidden; color: var(--text); text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.header-task-preview-meta { overflow: hidden; color: var(--text-muted); text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+.header-task-preview-overdue { color: #a83c39; font-size: 11px; font-weight: 650; }
+.header-task-preview-more { justify-self: start; padding: 3px 8px; border-radius: 999px; background: #f1f4f6; color: var(--text-muted); font-size: 11px; font-weight: 650; }
+.header-notification-preview-cards { display: grid; gap: 7px; }
+.header-notification-preview-card { display: grid; width: 100%; gap: 5px; padding: 9px 10px; border: 1px solid var(--border); border-left: 3px solid #cbd5df; border-radius: 8px; background: #fff; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.header-notification-preview-card:hover { border-color: var(--brand-light); background: #f8fbf9; }
+.header-notification-preview-card:disabled { cursor: wait; opacity: .65; }
+.header-notification-preview-card[data-unread="true"] { border-left-color: var(--brand); background: #f5faf7; }
+.header-notification-preview-card-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.header-notification-preview-state { display: inline-flex; align-items: center; gap: 5px; color: var(--text-muted); font-size: 11px; }
+.header-notification-preview-card[data-unread="true"] .header-notification-preview-state { color: var(--brand-dark); }
+.header-notification-preview-state i { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: #aab5c1; }
+.header-notification-preview-card[data-unread="true"] .header-notification-preview-state i { background: var(--brand); }
+.header-notification-preview-card-heading time { color: var(--text-muted); font-size: 10px; white-space: nowrap; }
+.header-notification-preview-card > strong { overflow: hidden; color: var(--text); text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.header-notification-preview-message { overflow: hidden; color: var(--text-muted); text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+.header-notification-preview-more { justify-self: start; padding: 3px 8px; border-radius: 999px; background: #f1f4f6; color: var(--text-muted); font-size: 11px; font-weight: 650; }
 .notification-count { position: absolute; top: -3px; right: -4px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 10px; background: #b33b39; color: #fff; font-size: 10px; line-height: 17px; text-align: center; }
 .notification-popover { position: absolute; z-index: 40; top: calc(100% + 10px); right: 0; width: min(360px, calc(100vw - 24px)); padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: #fff; box-shadow: 0 12px 32px #17212b1c; }
 .notification-popover-heading { display: flex; align-items: center; justify-content: space-between; padding: 4px 4px 10px; border-bottom: 1px solid var(--border); }

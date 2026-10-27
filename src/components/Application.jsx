@@ -356,10 +356,10 @@ export default function Application({ previewRuntime }) {
               </div>
             )}
             <div className="profile-account-group">
+              <HeaderActivityActions />
               <span className="profile-avatar" aria-hidden="true">
                 {user.name?.slice(0, 1)}
               </span>
-              <HeaderActivityActions />
               <span className="profile-identity">
                 <span className="profile-name">{user.name}</span>
                 {currentHeader.isTeamLeader && (
