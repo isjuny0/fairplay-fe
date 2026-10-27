@@ -17,7 +17,7 @@ export default function MyTasks() {
   const { pathname } = useLocation();
   const [pageNumber, setPageNumber] = useState(0);
   const resource = useResource(() => listMyTodos(pageNumber, PAGE_SIZE), [pageNumber]);
-  const todos = resource.data || [];
+  const todos = resource.data?.items || [];
   useEffect(() => {
     setHeaderContext?.({ pathname, scope: '개인 업무', title: '할 일', detail: '내 할 일' });
   }, [setHeaderContext, pathname]);
@@ -46,7 +46,7 @@ export default function MyTasks() {
     {resource.data && <nav className="personal-work-pagination" aria-label="할 일 페이지">
       <button type="button" className="secondary-button" disabled={pageNumber === 0 || resource.loading} onClick={() => setPageNumber((value) => value - 1)}>이전</button>
       <span>{pageNumber + 1}페이지</span>
-      <button type="button" className="secondary-button" disabled={todos.length < PAGE_SIZE || resource.loading} onClick={() => setPageNumber((value) => value + 1)}>다음</button>
+      <button type="button" className="secondary-button" disabled={(pageNumber + 1) * PAGE_SIZE >= (resource.data?.totalCount ?? 0) || resource.loading} onClick={() => setPageNumber((value) => value + 1)}>다음</button>
     </nav>}
   </main>;
 }

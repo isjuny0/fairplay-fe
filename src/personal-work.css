@@ -19,7 +19,6 @@
 .header-task-preview-card > strong { overflow: hidden; color: var(--text); text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
 .header-task-preview-meta { overflow: hidden; color: var(--text-muted); text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
 .header-task-preview-overdue { color: #a83c39; font-size: 11px; font-weight: 650; }
-.header-task-preview-more { justify-self: start; padding: 3px 8px; border-radius: 999px; background: #f1f4f6; color: var(--text-muted); font-size: 11px; font-weight: 650; }
 .header-notification-preview-cards { display: grid; gap: 7px; }
 .header-notification-preview-card { display: grid; width: 100%; gap: 5px; padding: 9px 10px; border: 1px solid var(--border); border-left: 3px solid #cbd5df; border-radius: 8px; background: #fff; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .header-notification-preview-card:hover { border-color: var(--brand-light); background: #f8fbf9; }
@@ -33,7 +32,6 @@
 .header-notification-preview-card-heading time { color: var(--text-muted); font-size: 10px; white-space: nowrap; }
 .header-notification-preview-card > strong { overflow: hidden; color: var(--text); text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
 .header-notification-preview-message { overflow: hidden; color: var(--text-muted); text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
-.header-notification-preview-more { justify-self: start; padding: 3px 8px; border-radius: 999px; background: #f1f4f6; color: var(--text-muted); font-size: 11px; font-weight: 650; }
 .notification-count { position: absolute; top: -3px; right: -4px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 10px; background: #b33b39; color: #fff; font-size: 10px; line-height: 17px; text-align: center; }
 .notification-popover { position: absolute; z-index: 40; top: calc(100% + 10px); right: 0; width: min(360px, calc(100vw - 24px)); padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: #fff; box-shadow: 0 12px 32px #17212b1c; }
 .notification-popover-heading { display: flex; align-items: center; justify-content: space-between; padding: 4px 4px 10px; border-bottom: 1px solid var(--border); }
