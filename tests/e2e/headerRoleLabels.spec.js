@@ -127,6 +127,7 @@ for (const [path, heading, role = 'leader'] of [
   ['/spaces/1/teams/1/mid-feedback', '중간 피드백'],
   ['/spaces/1/teams/1/reports', '기여도 리포트'],
   ['/spaces/1/dashboard', '팀 관리', 'manager'],
+  ['/spaces/1/participants', '참여자 관리', 'manager'],
   ['/spaces/1/rounds', '동료 평가 관리', 'manager'],
   ['/spaces/1/reports', '리포트 관리', 'manager'],
   ['/spaces/1/settings', '스페이스 관리', 'manager'],

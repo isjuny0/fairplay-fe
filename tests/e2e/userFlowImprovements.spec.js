@@ -127,7 +127,13 @@ test('모바일 관리자는 공간 선택을 펼치지 않고 평가와 리포�
   const navigation = page.getByRole('navigation', {
     name: '모바일 관리자 메뉴',
   });
-  await expect(navigation.getByRole('button')).toHaveCount(4);
+  await expect(navigation.getByRole('button')).toHaveCount(5);
+  await expect(navigation.getByRole('button', { name: '참여자', exact: true })).toBeVisible();
+  for (const width of [320, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    const boxes = await navigation.getByRole('button').evaluateAll((buttons) => buttons.map((button) => ({ top: button.getBoundingClientRect().top, fits: button.scrollWidth <= button.clientWidth })));
+    expect(boxes.every((box) => Math.abs(box.top - boxes[0].top) < 1 && box.fits)).toBe(true);
+  }
   await expect(page.getByLabel('스페이스 선택', { exact: true })).toBeHidden();
   await navigation.getByRole('button', { name: '평가', exact: true }).click();
   await expect(

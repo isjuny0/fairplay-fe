@@ -138,12 +138,14 @@ export default function WorkspaceNavigation({
         </div>
         <div className="workspace-navigation-links">
           {navButton('스페이스 홈', 'home', spacePath(spaceId), view === 'teams')}
-          {navButton('공지사항', 'announcement', announcementsPath(spaceId), view === 'announcements')}
+          {view !== 'team' &&
+            navButton('공지사항', 'announcement', announcementsPath(spaceId), view === 'announcements')}
           {isManager && (
             <div className="workspace-nav-group manager-workspace-navigation">
               <p className="nav-section">스페이스 운영</p>
               {[
                 ['dashboard', '팀 관리', 'dashboard'],
+                ['participants', '참여자 관리', 'users'],
                 ['rounds', '동료 평가 관리', 'calendar'],
                 ['reports', '리포트 관리', 'chart'],
                 ['settings', '스페이스 관리', 'settings'],

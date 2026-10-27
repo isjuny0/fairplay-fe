@@ -90,7 +90,7 @@ export default function AppRoutes({ user, prefix = '' }) {
         path={`${prefix}/spaces/:spaceId/teams/:teamId/tasks/:taskId`}
         element={<WorkspaceRoute user={user} view="team" teamMenu="작업" />}
       />
-      {['dashboard', 'rounds', 'reports'].map((view) => (
+      {['dashboard', 'participants', 'rounds', 'reports'].map((view) => (
         <Route
           key={view}
           path={`${prefix}/spaces/:spaceId/${view}`}

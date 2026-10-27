@@ -404,7 +404,7 @@ for (const width of [1440, 1280, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     await openManagerPreview(page, '/spaces/1/dashboard');
     let baseline, tabBaseline;
-    for (const path of ['dashboard', 'rounds', 'rounds?tab=peer-responses', 'reports', 'settings', 'settings#join-code']) {
+    for (const path of ['dashboard', 'participants', 'rounds', 'rounds?tab=peer-responses', 'reports', 'settings', 'settings#join-code']) {
       await page.goto(`/preview/spaces/1/${path}`);
       const screen = page.locator('.space-operation-page');
       await expect(screen.getByRole('heading', { level: 1 })).toBeVisible();

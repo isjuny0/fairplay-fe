@@ -4,6 +4,7 @@ import {
   publishReport,
 } from '../src/api/reports.js';
 import { getMemberContributions } from '../src/api/dashboard.js';
+import { listSpaceParticipants, removeSpaceParticipant } from '../src/api/spaceParticipants.js';
 import { getManagerPeerResponses } from '../src/api/evaluations.js';
 import { getAiReview, requestAiReview } from '../src/api/aiReviews.js';
 import { getMyWorkSummary, getTeam, getTeamMembers } from '../src/api/teams.js';
@@ -22,7 +23,7 @@ import { afterEach, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { apiRequest, clearCsrfToken } from '../src/api/client.js';
 import { listSpaceAnnouncements, getSpaceAnnouncement, createSpaceAnnouncement, updateSpaceAnnouncement, deleteSpaceAnnouncement } from '../src/api/spaceAnnouncements.js';
-import { updateTask } from '../src/api/tasks.js';
+import { updateTask, recommendTaskAssignees } from '../src/api/tasks.js';
 import {
   listTaskComments,
   createTaskComment,
@@ -64,6 +65,37 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
   clearCsrfToken();
   delete globalThis.window;
+});
+
+test('담당자 추천은 인원 쿼리와 세션으로 조회하며 본문·CSRF 요청 없이 선택 목록을 받는다', async () => {
+  const selected = [{ userId: '00000000-0000-4000-8000-000000000001', allocationPercent: 100 }];
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, ...options });
+    return jsonResponse(selected);
+  };
+  assert.deepEqual(await recommendTaskAssignees(7, 1), selected);
+  assert.equal(calls.length, 1);
+  assert.ok(calls[0].url.endsWith('/api/teams/7/task-assignee-recommendations?count=1'));
+  assert.equal(calls[0].credentials, 'include');
+  assert.equal(calls[0].body, undefined);
+});
+
+test('참여자 조회는 캐시·쿼리 없이 배열을 받고 삭제는 세션·CSRF 및 본문 없는 204 계약을 사용한다', async () => {
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, ...options });
+    if (url.endsWith('/csrf')) return jsonResponse({ headerName: 'X-CSRF-TOKEN', token: 'token' });
+    return options.method === 'DELETE' ? new Response(null, { status: 204 }) : jsonResponse([]);
+  };
+  const path = '/api/spaces/1/manager-dashboard/members';
+  assert.deepEqual(await listSpaceParticipants(1), []);
+  assert.deepEqual(await listSpaceParticipants(1), []);
+  assert.equal(await removeSpaceParticipant(1, '00000000-0000-4000-8000-000000000003'), null);
+  assert.deepEqual(calls.map((call) => [call.url, call.method]), [[path, 'GET'], [path, 'GET'], ['/api/auth/csrf', undefined], [`${path}/00000000-0000-4000-8000-000000000003`, 'DELETE']]);
+  assert.equal(calls[3].body, undefined);
+  assert.equal(calls[3].headers['X-CSRF-TOKEN'], 'token');
+  for (const call of calls) assert.equal(call.credentials, 'include');
+  globalThis.fetch = async () => jsonResponse({ members: [] });
+  await assert.rejects(listSpaceParticipants(1), /응답 형식/);
 });
 
 test('공지 5개 API는 배열 페이지·전체 수정·쿼리 버전 삭제와 세션 및 CSRF 계약을 사용한다', async () => {

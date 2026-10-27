@@ -4,8 +4,10 @@ import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
 import { isMutable } from '../lib/domain.js';
 import { previewTaskComments } from './taskComments.js';
 import { previewSpaceAnnouncements } from './spaceAnnouncements.js';
+import { isRemovedSpaceParticipant, previewSpaceParticipants } from './spaceParticipants.js';
 import { searchPreviewDeliverables } from './deliverableSearch.js';
 import { previewAiReview, invalidateReview } from './aiReviews.js';
+import { previewAssigneeRecommendations } from './taskAssigneeRecommendations.js';
 import {
   previewUsers,
   previewMembers,
@@ -157,6 +159,18 @@ export async function previewRequest(
   const url = new URL(path, 'https://preview.local');
   const parts = url.pathname.split('/').filter(Boolean);
   const id = Number(parts[2]);
+  if (isRemovedSpaceParticipant(context, state)) {
+    const team = parts[1] === 'teams' ? state.teams[id] : Object.values(state.teams).find((entry) =>
+      (parts[1] === 'tasks' && entry.tasks.some((item) => item.id === id)) ||
+      (parts[1] === 'deliverables' && entry.deliverables.some((item) => item.id === id)));
+    if ((parts[1] === 'spaces' && id === context.space.id) || team?.team.spaceId === context.space.id)
+      throw new MockError('FORBIDDEN', '이 스페이스의 참여자가 아닙니다.', 403);
+  }
+  if (parts[1] === 'spaces' && parts[3] === 'manager-dashboard' && parts[4] === 'members') {
+    const result = previewSpaceParticipants(context, state, parts, method);
+    saveMockState(context, state);
+    return structuredClone(result);
+  }
   if (parts[1] === 'spaces' && parts[3] === 'announcements') {
     const result = previewSpaceAnnouncements(context, state, parts, url, method, body);
     saveMockState(context, state);
@@ -222,7 +236,7 @@ export async function previewRequest(
   if (parts[1] === 'spaces') {
     if (parts.length === 2 && method === 'GET')
       return [
-        context.space,
+        ...(!isRemovedSpaceParticipant(context, state) ? [context.space] : []),
         ...(state.extraSpace ? [state.extraSpace] : []),
       ].map((space) => ({
         ...space,
@@ -237,7 +251,13 @@ export async function previewRequest(
         version: 0,
       };
       result = state.extraSpace;
-    } else if (parts[2] === 'join') result = context.space;
+    } else if (parts[2] === 'join') {
+      state.removedSpaceParticipants = (state.removedSpaceParticipants || []).filter((item) => item.spaceId !== context.space.id || item.userId !== context.user.id);
+      state.spaceParticipantMemberships ||= [];
+      if (!state.spaceParticipantMemberships.some((item) => item.spaceId === context.space.id && item.userId === context.user.id))
+        state.spaceParticipantMemberships.push({ spaceId: context.space.id, userId: context.user.id, name: context.user.name, role: 'USER', joinedAt: koreanDateTime() });
+      result = context.space;
+    }
     else if (parts.length === 3)
       return id === 1
         ? context.space
@@ -368,6 +388,10 @@ export async function previewRequest(
       if (existing) Object.assign(existing, application);
       else state.applications.push(application);
       result = application;
+    } else if (parts[3] === 'task-assignee-recommendations' && method === 'GET') {
+      return previewAssigneeRecommendations(
+        context, state, entry, url.searchParams.get('count'),
+      );
     } else if (parts[3] === 'tasks') {
       if (method === 'GET')
         return entry.tasks.map((task) =>

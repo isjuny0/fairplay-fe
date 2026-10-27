@@ -1,0 +1,38 @@
+.task-assignee-recommendation {
+  border-bottom: 1px solid var(--border, #e4e9e6);
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+}
+
+.task-assignee-recommendation > p {
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0 0 10px;
+}
+
+.task-assignee-recommendation-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+}
+
+.task-assignee-recommendation-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.task-assignee-recommendation-controls input {
+  width: 90px;
+  max-width: 100%;
+}
+
+.task-assignee-recommendation-controls button {
+  white-space: normal;
+}
+
+.task-assignee-recommendation [role='status'] {
+  margin: 10px 0 0;
+}

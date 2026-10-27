@@ -4,7 +4,8 @@ import TaskWorkloadHelp from './TaskWorkloadHelp.jsx';
 import { currentDateTime } from '../lib/dateTime.js';
 import useMobileLayout from '../hooks/useMobileLayout.js';
 import useSaveRecovery from '../hooks/useSaveRecovery.js';
-import { getTask } from '../api/tasks.js';
+import { getTask, recommendTaskAssignees } from '../api/tasks.js';
+import './task-assignee-recommendation.css';
 import { getTeamWorkContext } from '../api/teams.js';
 import { useInteractions } from '../hooks/useInteractions.js';
 import SaveRecovery from './SaveRecovery.jsx';
@@ -67,6 +68,11 @@ export default function TaskForm({
     assignees: task?.assignees.map((assignment) => ({ ...assignment })) || [],
   });
   const [form, setForm] = useState(initialForm);
+  const [recommendationCount, setRecommendationCount] = useState('1');
+  const [recommending, setRecommending] = useState(false);
+  const recommendationInFlight = useRef(false);
+  const [recommendationError, setRecommendationError] = useState(null);
+  const [recommendationNotice, setRecommendationNotice] = useState('');
   const startAt = withDefaultTime(
     form.startAt,
     initialForm.startAt || defaultDateTime,
@@ -92,6 +98,7 @@ export default function TaskForm({
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const update = (name, value) => {
+    if (name === 'assignees') setRecommendationNotice('');
     setFieldErrors((current) => ({
       ...Object.fromEntries(
         Object.entries(current).filter(
@@ -101,6 +108,59 @@ export default function TaskForm({
       [name]: undefined,
     }));
     setForm((current) => ({ ...current, [name]: value }));
+  };
+  const selectRecommendedAssignees = async () => {
+    if (recommendationInFlight.current || busy || blocked) return;
+    const count = Number(recommendationCount);
+    setRecommendationError(null);
+    setRecommendationNotice('');
+    if (
+      !Number.isInteger(count) ||
+      count < 1 ||
+      count > Math.min(editingMembers.length, 100)
+    ) {
+      setRecommendationError(
+        new Error(
+          `인원을 1~${Math.min(editingMembers.length, 100)}명 사이의 정수로 입력해 주세요.`,
+        ),
+      );
+      return;
+    }
+    recommendationInFlight.current = true;
+    setRecommending(true);
+    try {
+      if (
+        form.assignees.length &&
+        !(await confirm({
+          title: '담당자 자동 선택',
+          message: '현재 담당자와 배분을 자동 선택 결과로 바꿀까요?',
+          label: '자동 선택',
+        }))
+      )
+        return;
+      const selected = await recommendTaskAssignees(team.id, count);
+      if (
+        selected.some(
+          (assignment) =>
+            !editingMembers.some(
+              (member) => member.userId === assignment.userId,
+            ),
+        )
+      ) {
+        throw new Error(
+          '팀원 정보가 변경됐습니다. 창을 다시 열어 확인해 주세요.',
+        );
+      }
+      update('assignees', selected);
+      setRecommendationNotice(
+        `${selected.length}명을 선택했습니다. 담당자와 배분을 조정할 수 있습니다.`,
+      );
+    } catch (failure) {
+      setRecommendationError(failure);
+    } finally {
+      recommendationInFlight.current = false;
+      setRecommending(false);
+    }
   };
   const total = form.assignees.reduce(
     (sum, assignment) => sum + Number(assignment.allocationPercent),
@@ -126,7 +186,8 @@ export default function TaskForm({
   const conflict = serverError?.code === 'VERSION_CONFLICT';
   const submit = async (event) => {
     event.preventDefault();
-    if (busy || recovery.loading || blocked) return;
+    if (busy || recovery.loading || blocked || recommendationInFlight.current)
+      return;
     setError(null);
     if (editingMembers.length < 2) {
       setError(new Error('승인된 팀원이 2명 이상 필요합니다.'));
@@ -206,7 +267,7 @@ export default function TaskForm({
   return (
     <Modal
       title={task ? '작업 수정' : '새 작업 만들기'}
-      busy={busy || recovery.loading}
+      busy={busy || recovery.loading || recommending}
       onClose={onClose}
       wide
       editor
@@ -233,7 +294,7 @@ export default function TaskForm({
         )}
         <fieldset
           className="form-fields"
-          disabled={busy || recovery.loading || blocked}
+          disabled={busy || recovery.loading || blocked || recommending}
         >
           <div className="task-form-layout">
             <section
@@ -354,6 +415,42 @@ export default function TaskForm({
                 </span>
               </h3>
               <div className="assignment-allocation-panel">
+                {!task && (
+                  <div className="task-assignee-recommendation">
+                    <p id="assignee-recommendation-help">
+                      완료·미완료 작업의 예상 작업량과 담당 비율을 기준으로
+                      선택합니다.
+                    </p>
+                    <div className="task-assignee-recommendation-controls">
+                      <label>
+                        자동 선택 인원
+                        <input
+                          type="number"
+                          min={1}
+                          max={Math.min(editingMembers.length, 100)}
+                          step={1}
+                          value={recommendationCount}
+                          aria-describedby="assignee-recommendation-help"
+                          onChange={(event) =>
+                            setRecommendationCount(event.target.value)
+                          }
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        disabled={editingMembers.length < 2}
+                        onClick={selectRecommendedAssignees}
+                      >
+                        {recommending ? '선택 중…' : '작업량 기준 자동 선택'}
+                      </button>
+                    </div>
+                    <ErrorNotice error={recommendationError} />
+                    {recommendationNotice && (
+                      <p role="status">{recommendationNotice}</p>
+                    )}
+                  </div>
+                )}
                 <div className="section-heading">
                   <p>담당자를 선택하면 자동으로 균등 배분됩니다.</p>
                   <button
@@ -664,6 +761,7 @@ export default function TaskForm({
         <FormActions
           busy={busy || recovery.loading}
           disabled={
+            recommending ||
             blocked ||
             ((!mobile || step === 2) &&
               ((conflict && !recovery.latest) || !canReapply))
