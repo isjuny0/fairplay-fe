@@ -9,6 +9,8 @@
 .header-task-preview-card[data-status="TODO"] { border-left-color: var(--task-todo); }
 .header-task-preview-card[data-status="IN_PROGRESS"] { border-left-color: var(--task-progress); }
 .header-task-preview-card[data-status="REVISING"] { border-left-color: var(--task-revising); }
+.header-task-preview-card[data-type="PEER_EVALUATION"] { border-left-color: #8270c9; }
+.header-task-preview-card[data-type="PEER_EVALUATION"] .header-task-preview-status i { background: #8270c9; }
 .header-task-preview-card-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .header-task-preview-status { display: inline-flex; align-items: center; gap: 5px; color: var(--text-muted); font-size: 11px; }
 .header-task-preview-status i { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: var(--task-progress); }

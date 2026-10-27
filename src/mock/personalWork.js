@@ -78,5 +78,31 @@ export function previewPersonalWork(context, state, parts, url, method) {
     }).sort((a, b) => a.dueAt.localeCompare(b.dueAt) || a.taskId - b.taskId);
     return structuredClone(assigned.slice(page * size, (page + 1) * size));
   }
+  if (parts[2] === 'todos' && parts.length === 3 && method === 'GET') {
+    if (context.manager) return [];
+    const page = Math.max(0, Number(url.searchParams.get('page') || 0));
+    const size = Math.max(1, Math.min(100, Number(url.searchParams.get('size') || 20)));
+    const now = Date.now();
+    const todos = (context.teamContexts || []).flatMap(({ team, members }) => {
+      const entry = state.teams[team.id];
+      if (!entry || !members.some((member) => member.userId === context.user.id)) return [];
+      const tasks = entry.tasks.filter((task) => ['TODO', 'IN_PROGRESS', 'REVISING'].includes(task.status) && task.assignees?.some((assignee) => assignee.userId === context.user.id)).map((task) => {
+        const assignee = task.assignees.find((member) => member.userId === context.user.id);
+        return {
+          type: 'TASK', id: task.id, spaceId: team.spaceId, spaceName: previewSpace.name, teamId: team.id, teamName: team.name,
+          title: task.title, dueAt: task.dueAt, isOverdue: new Date(task.dueAt) < new Date(),
+          task: { taskId: task.id, title: task.title, status: task.status, startAt: task.startAt, dueAt: task.dueAt, myAllocationPercent: assignee.allocationPercent, workRestrictionReasons: [] },
+          evaluation: null,
+        };
+      });
+      const evaluations = state.rounds.filter((round) => round.spaceId === team.spaceId && round.status === 'OPEN' && new Date(round.closesAt).getTime() > now && !state.submitted[`${round.id}:${context.user.id}`]).map((round) => ({
+        type: 'PEER_EVALUATION', id: round.id, spaceId: team.spaceId, spaceName: previewSpace.name, teamId: team.id, teamName: team.name,
+        title: round.type === 'MID' ? '중간 동료 평가' : '최종 동료 평가', dueAt: round.closesAt, isOverdue: false,
+        task: null, evaluation: { roundId: round.id, roundType: round.type, opensAt: round.opensAt, closesAt: round.closesAt },
+      }));
+      return [...tasks, ...evaluations];
+    }).sort((a, b) => a.dueAt.localeCompare(b.dueAt) || (a.type === b.type ? a.id - b.id : a.type === 'TASK' ? -1 : 1));
+    return structuredClone(todos.slice(page * size, (page + 1) * size));
+  }
   return undefined;
 }

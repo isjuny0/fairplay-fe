@@ -25,7 +25,7 @@ import assert from 'node:assert/strict';
 import { apiRequest, clearCsrfToken } from '../src/api/client.js';
 import { listSpaceAnnouncements, getSpaceAnnouncement, createSpaceAnnouncement, updateSpaceAnnouncement, deleteSpaceAnnouncement } from '../src/api/spaceAnnouncements.js';
 import { updateTask, recommendTaskAssignees } from '../src/api/tasks.js';
-import { getMyNotificationUnreadCount, listMyNotifications, listMyTasks, markAllNotificationsRead, markNotificationRead } from '../src/api/personalWork.js';
+import { getMyNotificationUnreadCount, listMyNotifications, listMyTasks, listMyTodos, markAllNotificationsRead, markNotificationRead } from '../src/api/personalWork.js';
 import {
   listTaskComments,
   createTaskComment,
@@ -104,12 +104,15 @@ test('개인 알림과 통합 할 일은 명세의 응답 모양·커서·CSRF �
     if (url.endsWith('/unread-count')) return jsonResponse({ unreadCount: 4 });
     if (options.method === 'PATCH' || options.method === 'POST') return new Response(null, { status: 204 });
     if (url.includes('/notifications?')) return jsonResponse({ items: [{ id: 'n1' }], nextCursor: 'opaque-next' });
+    if (url.includes('/api/me/todos?')) return jsonResponse([{ type: 'PEER_EVALUATION', id: 12, spaceId: 1, spaceName: '공간', teamId: 3, teamName: '팀', title: '최종 동료 평가', dueAt: '2026-10-30T00:00:00+09:00', isOverdue: false, task: null, evaluation: { roundId: 12, roundType: 'FINAL', opensAt: '2026-10-20T00:00:00+09:00', closesAt: '2026-10-30T00:00:00+09:00' } }]);
     return jsonResponse([{ taskId: 1 }]);
   };
   assert.deepEqual(await listMyNotifications({ filter: 'ALL', accessibleOnly: true, size: 5 }), { items: [{ id: 'n1' }], nextCursor: 'opaque-next' });
   assert.deepEqual(await listMyNotifications({ filter: 'UNREAD', cursor: 'cursor/a+b', size: 20 }), { items: [{ id: 'n1' }], nextCursor: 'opaque-next' });
   assert.equal(await getMyNotificationUnreadCount(), 4);
   assert.deepEqual(await listMyTasks(2, 20), [{ taskId: 1 }]);
+  const evaluation = { type: 'PEER_EVALUATION', id: 12, spaceId: 1, spaceName: '공간', teamId: 3, teamName: '팀', title: '최종 동료 평가', dueAt: '2026-10-30T00:00:00+09:00', isOverdue: false, task: null, evaluation: { roundId: 12, roundType: 'FINAL', opensAt: '2026-10-20T00:00:00+09:00', closesAt: '2026-10-30T00:00:00+09:00' } };
+  assert.deepEqual(await listMyTodos(1, 8), [evaluation]);
   await markNotificationRead('notice/a');
   await markAllNotificationsRead();
   assert.deepEqual(calls.filter((call) => !call.url.endsWith('/csrf')).map((call) => [call.url, call.method || 'GET', call.body]), [
@@ -117,6 +120,7 @@ test('개인 알림과 통합 할 일은 명세의 응답 모양·커서·CSRF �
     ['/api/me/notifications?filter=UNREAD&accessibleOnly=false&size=20&cursor=cursor%2Fa%2Bb', 'GET', undefined],
     ['/api/me/notifications/unread-count', 'GET', undefined],
     ['/api/me/tasks?page=2&size=20', 'GET', undefined],
+    ['/api/me/todos?page=1&size=8', 'GET', undefined],
     ['/api/me/notifications/notice%2Fa/read', 'PATCH', undefined],
     ['/api/me/notifications/read-all', 'POST', undefined],
   ]);
@@ -127,6 +131,8 @@ test('개인 알림과 통합 할 일은 명세의 응답 모양·커서·CSRF �
   await assert.rejects(listMyNotifications(), /응답 형식/);
   globalThis.fetch = async () => jsonResponse({ tasks: [] });
   await assert.rejects(listMyTasks(), /응답 형식/);
+  globalThis.fetch = async () => jsonResponse([{ type: 'UNKNOWN' }]);
+  await assert.rejects(listMyTodos(), /응답 형식/);
 });
 
 test('담당자 추천은 인원 쿼리와 세션으로 조회하며 본문·CSRF 요청 없이 선택 목록을 받는다', async () => {
