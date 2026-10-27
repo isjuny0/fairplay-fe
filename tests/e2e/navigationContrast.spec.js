@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { addDashboardWidgets } from './helpers/teamDashboard.js';
 
 function luminance(color) {
   const values = color
@@ -208,18 +209,13 @@ test('팀 홈의 마감 지연은 빨간색 아이콘으로 표시한다', async
   page,
 }) => {
   await page.goto('/preview/spaces/1/teams/1');
-  for (const [name, background] of [['.home-overdue-icon', 'rgb(255, 240, 241)']]) {
-    const icon = page.locator(name);
-    await expect(icon).toHaveCSS('background-color', background);
-    await expect(icon.locator('svg')).toBeVisible();
-  }
-  await expect(page.locator('.home-overdue-icon')).toHaveCSS(
-    'color',
-    'rgb(255, 85, 92)',
-  );
-  await expect(
-    page.locator('.has-overdue .home-action-title strong'),
-  ).toHaveCSS('color', 'rgb(8, 124, 85)');
+  await addDashboardWidgets(page, ['지금 확인할 작업']);
+  const overdue = page.getByRole('button', { name: /내 마감 지연/ });
+  const icon = overdue.locator('.dashboard-icon');
+  await expect(icon).toHaveCSS('background-color', 'rgb(255, 240, 240)');
+  await expect(icon.locator('svg')).toBeVisible();
+  await expect(icon).toHaveCSS('color', 'rgb(220, 38, 38)');
+  await expect(overdue.locator('strong')).toHaveCSS('color', 'rgb(220, 38, 38)');
 });
 
 test('타임라인·목록은 밝은 상태 배경과 읽기 쉬운 글씨색을 공유한다', async ({

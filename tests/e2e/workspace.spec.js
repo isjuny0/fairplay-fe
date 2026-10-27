@@ -132,6 +132,14 @@ async function workspace(
         method === 'POST' ? space : [space],
       );
     if (path === '/api/spaces/1') return respond(space);
+    if (path === '/api/spaces/1/manager-dashboard') return respond({
+      spaceId: 1, totalTeamCount: 1, missingPeerSubmissions: [],
+      teams: [{ teamId: team.id, teamName: team.name, approvedMemberCount: memberCount,
+        totalTaskCount: 1, todoTaskCount: 0, inProgressTaskCount: task.status === 'IN_PROGRESS' ? 1 : 0,
+        revisingTaskCount: task.status === 'REVISING' ? 1 : 0, doneTaskCount: task.status === 'DONE' ? 1 : 0,
+        completionRate: task.status === 'DONE' ? 100 : 0, overdueTaskCount: 0, staleTaskCount: 0,
+        deliverableCount: deliverables.length, reportId: null, reportStatus: null }],
+    });
     if (path === '/api/spaces/1/announcements') return respond([]);
     if (path === '/api/spaces/1/team-building-period') {
       Object.assign(space, request.postDataJSON(), {
@@ -530,7 +538,7 @@ test('팀원이 1명이면 작업 생성 버튼이 비활성화된다', async ({
 
 
 
-test('스페이스 관리자는 타 팀 자료만 조회하고 팀 작업 API를 호출하지 않는다', async ({
+test('스페이스 관리자는 타 팀 작업·산출물을 읽기 전용으로 조회한다', async ({
   page,
 }) => {
   const { requests } = await workspace(page, {
@@ -540,14 +548,15 @@ test('스페이스 관리자는 타 팀 자료만 조회하고 팀 작업 API를
   await expect(
     page.getByRole('button', { name: '작업', exact: true }),
   ).toHaveCount(0);
-  await page.getByRole('button', { name: '산출물', exact: true }).click();
+  await page.getByRole('button', { name: '산출물 보기', exact: true }).click();
   await expect(page.getByText('등록된 산출물이 없습니다.')).toBeVisible();
   await expect(
     page.getByRole('button', { name: '산출물 등록', exact: true }),
   ).toHaveCount(0);
-  expect(requests.some(({ path }) => path === '/api/teams/1/tasks')).toBe(
-    false,
-  );
+  await page.getByRole('button', { name: '작업 보기', exact: true }).click();
+  await expect(page.getByRole('button', { name: '새 작업 만들기', exact: true })).toHaveCount(0);
+  await expect.poll(() => requests.some(({ path, method }) => path === '/api/teams/1/tasks' && method === 'GET')).toBe(true);
+  expect(requests.some(({ method }) => ['POST', 'PATCH', 'DELETE'].includes(method))).toBe(false);
   const sidebar = page.getByRole('navigation', { name: '스페이스 메뉴', exact: true });
   await sidebar.getByRole('button', { name: '스페이스 홈', exact: true }).click();
   await expect(page).toHaveURL(/\/spaces\/1$/);
@@ -1242,29 +1251,22 @@ test('스페이스 관리 주소는 관리자에게만 화면을 제공한다', 
   ).toBeVisible();
 });
 
-test('관리자의 직접 작업·팀 설정 주소 접근은 작업 API를 호출하지 않는다', async ({
+test('관리자의 직접 작업 주소는 조회만 허용하고 팀 설정과 작업 변경은 제한한다', async ({
   page,
 }) => {
   const { requests } = await workspace(page, {
     manager: true,
     userId: 'manager',
   });
-  for (const path of [
-    '/spaces/1/teams/1/tasks/10',
-    '/spaces/1/teams/1/settings',
-  ]) {
-    await page.goto(path);
-    await expect(
-      page.getByRole('heading', { name: '이 팀 화면에 접근할 수 없습니다.' }),
-    ).toBeVisible();
-  }
+  await page.goto('/spaces/1/teams/1/tasks/10');
+  await expect(page.getByRole('heading', { name: '회원 탈퇴 구현', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '작업 수정', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '완료 처리', exact: true })).toHaveCount(0);
+  await page.goto('/spaces/1/teams/1/settings');
+  await expect(page.getByRole('heading', { name: '이 팀 화면에 접근할 수 없습니다.' })).toBeVisible();
+  expect(requests.some(({ path, method }) => path === '/api/tasks/10' && method === 'GET')).toBe(true);
   expect(
-    requests.some(
-      ({ path }) =>
-        path === '/api/tasks/10' ||
-        path === '/api/teams/1/tasks' ||
-        path.includes('deletion-request'),
-    ),
+    requests.some(({ path, method }) => path.includes('deletion-request') || ['POST', 'PATCH', 'DELETE'].includes(method)),
   ).toBe(false);
 });
 

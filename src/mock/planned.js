@@ -81,6 +81,7 @@ export function getMockState(context) {
     }
   }
   // Earlier preview reports were calculated using the fixed 70/10/20 ratio.
+  state.reports ??= [];
   for (const report of state.reports) report.weights ??= { ...defaultReportWeights };
   state.reportWeights ??= state.reports[0]?.weights ?? null;
   memoryStates.set(key, state);
@@ -606,7 +607,7 @@ export async function plannedRequest(
     } else {
       requireManager();
       if (
-        body.expectedVersion != null &&
+        body?.expectedVersion != null &&
         body.expectedVersion !== round.version
       )
         fail(

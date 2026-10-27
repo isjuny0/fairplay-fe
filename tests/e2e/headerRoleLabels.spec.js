@@ -172,9 +172,11 @@ test('리포트·관리자 원문 제목 위 문구를 제거하고 상태 표�
   await expect(
     page.locator('.report-metadata > .status-badge'),
   ).toHaveText('공개 완료');
-  await page.getByRole('tab', { name: '동료 평가 결과', exact: true }).click();
+  await page.goto('/preview/spaces/1/rounds?tab=peer-responses');
   await expect(
-    page.getByRole('heading', { name: '동료 평가 결과', exact: true }),
+    page.getByRole('heading', { name: '동료 평가 관리', exact: true }),
   ).toBeVisible();
+  await expect(page.getByRole('tab', { name: '동료 평가 결과', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('region', { name: '관리자 동료 평가 상세', exact: true })).toBeVisible();
   await expect(page.locator('.manager-peer-heading .eyebrow')).toHaveCount(0);
 });

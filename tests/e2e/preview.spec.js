@@ -247,7 +247,7 @@ test('평가 시작 전 회차 생성·일정 수정·개방 화면을 사용할
     scenario: 'setup',
     path: '/spaces/1/rounds',
   });
-  await page.getByRole('button', { name: '평가 회차 만들기' }).click();
+  await page.getByRole('button', { name: '중간 평가 일정 설정', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await fillDateTime(
     dialog,

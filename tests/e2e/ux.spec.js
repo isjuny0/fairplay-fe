@@ -451,6 +451,16 @@ test('데스크톱 작업 상세를 스크롤해도 작업 진행 버튼은 진�
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openPreview(page, '/spaces/1/teams/1/tasks/102');
+  // Sticky positioning is bounded by the detail layout: provide enough real content for a 700px scroll.
+  await page.evaluate(async () => {
+    const { previewContext } = await import('/src/mock/preview.js');
+    const { getMockState, saveMockState } = await import('/src/mock/planned.js');
+    const context = previewContext();
+    const state = getMockState(context);
+    state.teams[1].tasks.find((task) => task.id === 102).description = '설문 응답을 분석하고 구현 및 검증 근거를 기록합니다.\n'.repeat(70);
+    saveMockState(context, state);
+  });
+  await page.reload();
   const sidebar = page.getByRole('complementary', {
     name: '작업 진행 및 담당',
   });

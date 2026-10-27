@@ -605,3 +605,22 @@ test('미리보기는 잘못된 비율이나 생성 실패로 비율을 고정�
   assert.deepEqual(report.weights, weights);
   for (const member of report.members) assert.equal(member.details.taskContributionPercent, 0);
 });
+
+test('팀 빌딩 미리보기의 최소 저장 상태에도 리포트 기본 정보를 복원한다', async () => {
+  const manager = context('manager');
+  storage.set('fairplay:mock:v7:preview:1', JSON.stringify({ teams: {}, rounds: [], scenario: 'building', spaceOverrides: { membershipLockedAt: null, teamBuildingStatus: 'OPEN' } }));
+  const restored = getMockState(manager);
+  assert.deepEqual(restored.reports, []);
+  assert.equal(restored.reportWeights, null);
+  assert.equal((await previewRequest('/api/spaces/1')).reportWeights, null);
+  assert.equal(await previewRequest('/api/teams/1/report'), null);
+});
+
+test('미리보기 평가 시작은 본문 없는 POST로 호출한다', async () => {
+  const manager = context('manager');
+  resetMockState(manager, 'setup');
+  const round = await plannedRequest(manager, '/api/spaces/1/evaluation-rounds', { method: 'POST', body: { type: 'MID', opensAt: koreanDateTime(Date.now() - 60000), closesAt: koreanDateTime(Date.now() + 86400000) } });
+  const opened = await plannedRequest(manager, `/api/evaluation-rounds/${round.id}/open`, { method: 'POST' });
+  assert.equal(opened.status, 'OPEN');
+  assert.ok(opened.participantCount >= 2);
+});
