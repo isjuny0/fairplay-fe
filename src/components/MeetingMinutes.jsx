@@ -130,12 +130,6 @@ export default function MeetingMinutes({
       {meetingMinuteId != null && (
         <div className="meeting-detail-toolbar">
           <button
-            className="text-button"
-            onClick={() => navigate(`${base}${query}`)}
-          >
-            팀 회의록
-          </button>
-          <button
             className="secondary-button"
             onClick={() => navigate(`${base}${query}`)}
           >

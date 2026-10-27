@@ -10,11 +10,8 @@
 .meeting-detail-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.meeting-detail-actions {
   justify-content: flex-end;
+  gap: 12px;
 }
 .meeting-list-item {
   display: grid;

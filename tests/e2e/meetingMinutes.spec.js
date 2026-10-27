@@ -239,6 +239,14 @@ test("팀 작업 메뉴에서 등록·상세·공동 수정·삭제와 KST·CSRF
   await expect(
     page.getByRole("heading", { name: "신규 회의", exact: true }),
   ).toBeVisible();
+  const detailToolbar = page.locator(".meeting-detail-toolbar");
+  await expect(detailToolbar.getByRole("button")).toHaveCount(1);
+  await expect(
+    detailToolbar.getByRole("button", { name: "← 목록으로" }),
+  ).toBeVisible();
+  await expect(detailToolbar.getByText("팀 회의록", { exact: true })).toHaveCount(
+    0,
+  );
   const created = api.calls.find(
     (call) => call.method === "POST" && call.target === base,
   );
