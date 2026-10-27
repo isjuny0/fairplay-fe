@@ -70,7 +70,10 @@
   .profile-identity:has(.profile-leader-badge) .profile-name { max-width: 56px; }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 900px) {
+  .app-shell:has(.preview-guide-entry) { --header-height: 110px; }
+  .topbar:has(.preview-guide-entry) { grid-template-columns: minmax(0, 1fr) auto; }
+  .topbar:has(.preview-guide-entry) .context-info { display: none; }
   .topbar .profile-area:has(.preview-guide-entry) { display: contents; }
   .topbar:has(.preview-guide-entry) .topbar-brand { grid-column: 1; grid-row: 1; }
   .profile-area:has(.preview-guide-entry) .profile-account-group {
