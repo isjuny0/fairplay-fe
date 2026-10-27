@@ -9,6 +9,8 @@ import useAppNavigate from '../hooks/useAppNavigate.js';
 
 const Spaces = deferScreen(screenLoaders.Spaces, '스페이스 목록');
 const SpaceWorkspace = deferScreen(screenLoaders.SpaceWorkspace, '스페이스 화면');
+const PersonalNotifications = deferScreen(screenLoaders.PersonalNotifications, '알림함');
+const MyTasks = deferScreen(screenLoaders.MyTasks, '내 할 일');
 
 function WorkspaceRoute({ user, view = 'teams', teamMenu = '팀 홈' }) {
   const params = useParams();
@@ -72,6 +74,8 @@ export default function AppRoutes({ user, prefix = '' }) {
         element={<Navigate to={`${prefix}/main`} replace />}
       />
       <Route path={`${prefix}/main`} element={<SpacesRoute user={user} />} />
+      <Route path={`${prefix}/notifications`} element={<PersonalNotifications />} />
+      <Route path={`${prefix}/my/tasks`} element={<MyTasks />} />
       <Route
         path={`${prefix}/spaces/:spaceId`}
         element={<WorkspaceRoute user={user} />}

@@ -5,6 +5,7 @@ import { isMutable } from '../lib/domain.js';
 import { previewTaskComments } from './taskComments.js';
 import { previewSpaceAnnouncements } from './spaceAnnouncements.js';
 import { previewMeetingMinutes } from './meetingMinutes.js';
+import { previewPersonalWork } from './personalWork.js';
 import { isRemovedSpaceParticipant, previewSpaceParticipants } from './spaceParticipants.js';
 import { searchPreviewDeliverables } from './deliverableSearch.js';
 import { previewAiReview, invalidateReview } from './aiReviews.js';
@@ -160,6 +161,11 @@ export async function previewRequest(
   const url = new URL(path, 'https://preview.local');
   const parts = url.pathname.split('/').filter(Boolean);
   const id = Number(parts[2]);
+  if (parts[1] === 'me' && ['notifications', 'todos'].includes(parts[2])) {
+    const result = previewPersonalWork(context, state, parts, url, method);
+    if (method !== 'GET') saveMockState(context, state);
+    return structuredClone(result);
+  }
   if ((parts[1] === 'teams' && parts[3] === 'meeting-minutes') || parts[1] === 'meeting-minutes') {
     const result = previewMeetingMinutes(context, state, parts, url, method, body);
     saveMockState(context, state);

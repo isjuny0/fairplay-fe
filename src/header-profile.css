@@ -5,6 +5,7 @@
   min-width: 0;
   white-space: nowrap;
 }
+.profile-account-group { display: inline-flex; align-items: center; gap: 10px; min-width: 0; }
 .profile-identity .profile-leader-badge {
   flex-shrink: 0;
   padding: 3px 6px;
@@ -27,6 +28,12 @@
   .topbar .profile-area:has(.profile-leader-badge) {
     display: contents;
   }
+  .profile-area:has(.profile-leader-badge) .profile-account-group {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    gap: 4px;
+  }
   .topbar:has(.profile-leader-badge) .topbar-brand {
     grid-column: 1;
     grid-row: 1;
@@ -38,9 +45,7 @@
     display: none;
   }
   .profile-area:has(.profile-leader-badge) .profile-identity {
-    grid-column: 2;
-    grid-row: 1;
-    justify-self: end;
+    min-width: 0;
   }
   .profile-area:has(.profile-leader-badge) .preview-toolbar {
     position: relative;
@@ -60,4 +65,7 @@
     grid-row: 2;
     justify-self: end;
   }
+}
+@media (max-width: 360px) {
+  .profile-identity:has(.profile-leader-badge) .profile-name { max-width: 56px; }
 }
