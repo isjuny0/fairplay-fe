@@ -1,6 +1,7 @@
 import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
 import { exampleDeliverables, exampleTasks, peerCriteria } from './fixtures.js';
 import { validatePeerResponse, workSummary } from '../lib/evaluation.js';
+import { defaultReportWeights, sameReportWeights, validReportWeights } from '../lib/reportWeights.js';
 
 export class MockError extends Error {
   constructor(code, message, status = 409) {
@@ -79,6 +80,9 @@ export function getMockState(context) {
       round.version++;
     }
   }
+  // Earlier preview reports were calculated using the fixed 70/10/20 ratio.
+  for (const report of state.reports) report.weights ??= { ...defaultReportWeights };
+  state.reportWeights ??= state.reports[0]?.weights ?? null;
   memoryStates.set(key, state);
   return state;
 }
@@ -134,6 +138,7 @@ export function resetMockState(context, scenario = 'active') {
         ),
       );
     }
+    state.reportWeights = { ...defaultReportWeights };
   }
   saveMockState(context, state);
 }
@@ -206,7 +211,7 @@ function allSubmitted(state, round, entries = Object.values(state.teams)) {
     .flatMap((entry) => entry.members)
     .every((member) => state.submitted[responseKey(round.id, member.userId)]);
 }
-function makeReport(state, entry, status = 'UNPUBLISHED') {
+function makeReport(state, entry, status = 'UNPUBLISHED', weights = state.reportWeights ?? defaultReportWeights) {
   const done = entry.tasks.filter((task) => task.status === 'DONE');
   const rawWork = entry.members.map((member) =>
     done.reduce(
@@ -237,8 +242,9 @@ function makeReport(state, entry, status = 'UNPUBLISHED') {
         ),
     );
   };
-  const normalize = (values) => {
+  const normalize = (values, weight) => {
     const total = values.reduce((a, b) => a + b, 0);
+    if (!total && weight === 0) return values.map(() => 0);
     if (!total)
       fail(
         'REPORT_UNCALCULABLE',
@@ -246,12 +252,13 @@ function makeReport(state, entry, status = 'UNPUBLISHED') {
       );
     return values.map((value) => (value / total) * 100);
   };
-  const work = normalize(rawWork),
-    mid = normalize(peerRaw('MID')),
-    final = normalize(peerRaw('FINAL'));
+  const work = normalize(rawWork, weights.taskPercent),
+    mid = normalize(peerRaw('MID'), weights.midPercent),
+    final = normalize(peerRaw('FINAL'), weights.finalPercent);
+  const taskPart = weights.taskPercent / 100, midPart = weights.midPercent / 100, finalPart = weights.finalPercent / 100;
   const rounded = entry.members.map(
     (_, i) =>
-      Math.round((work[i] * 0.7 + mid[i] * 0.1 + final[i] * 0.2) * 10) / 10,
+      Math.round((work[i] * taskPart + mid[i] * midPart + final[i] * finalPart) * 10) / 10,
   );
   const adjustment =
     Math.round((100 - rounded.reduce((a, b) => a + b, 0)) * 10) / 10;
@@ -270,6 +277,7 @@ function makeReport(state, entry, status = 'UNPUBLISHED') {
     status,
     cutoffAt: state.rounds.find((round) => round.type === 'FINAL').closesAt,
     totalPercent: 100,
+    weights: { ...weights },
     createdAt: now(),
     publishedAt: status === 'PUBLISHED' ? now() : null,
     members,
@@ -280,12 +288,12 @@ function makeReport(state, entry, status = 'UNPUBLISHED') {
           taskRatioPercent: work[i],
           midRatioPercent: mid[i],
           finalRatioPercent: final[i],
-          taskContributionPercent: work[i] * 0.7,
-          midContributionPercent: mid[i] * 0.1,
-          finalContributionPercent: final[i] * 0.2,
+          taskContributionPercent: work[i] * taskPart,
+          midContributionPercent: mid[i] * midPart,
+          finalContributionPercent: final[i] * finalPart,
           roundingAdjustmentPercent:
             member.contributionPercent -
-            (work[i] * 0.7 + mid[i] * 0.1 + final[i] * 0.2),
+            (work[i] * taskPart + mid[i] * midPart + final[i] * finalPart),
           totalPercent: member.contributionPercent,
         },
       ]),
@@ -453,7 +461,7 @@ function dashboard(state, context, teamFilter) {
 export async function plannedRequest(
   context,
   path,
-  { method = 'GET', body = {} } = {},
+  { method = 'GET', body } = {},
 ) {
   const state = getMockState(context);
   const url = new URL(path, 'https://mock.local');
@@ -737,6 +745,10 @@ export async function plannedRequest(
         result = report ? publicReport(report, context) : null;
       } else {
         requireManager();
+        const weights = body == null ? state.reportWeights ?? defaultReportWeights : body;
+        if (!validReportWeights(weights)) fail('INVALID_REQUEST', '각 반영 비율은 0~100 정수이며 합계가 100이어야 합니다.', 400);
+        if (state.reportWeights && !sameReportWeights(state.reportWeights, weights))
+          fail('REPORT_WEIGHTS_LOCKED', '첫 리포트 생성 시 확정한 스페이스 공통 반영 비율은 변경할 수 없습니다.');
         const existing = state.reports.find((report) => report.teamId === id);
         if (existing) return clone(publicReport(existing, context));
         if (entry.members.length < 2)
@@ -757,7 +769,8 @@ export async function plannedRequest(
             'REPORT_INPUT_INCOMPLETE',
             '우리 팀의 필수 평가 제출이 필요합니다.',
           );
-        const calculated = makeReport(state, entry);
+        const calculated = makeReport(state, entry, 'UNPUBLISHED', weights);
+        state.reportWeights = { ...weights };
         state.reports.push(calculated);
         result = publicReport(calculated, context);
       }

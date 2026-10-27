@@ -1,392 +1,236 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
+import { CircleHelp } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import '../contribution-report.css';
 import RefreshButton from './RefreshButton.jsx';
 import {
   getTeamReport,
-  generateTeamReport,
   publishReport,
 } from '../api/reports.js';
-import { listEvaluationRounds } from '../api/evaluations.js';
-import { getManagerDashboard } from '../api/dashboard.js';
-import ManagerPeerResponses from './ManagerPeerResponses.jsx';
 import useResource from '../hooks/useResource.js';
 import { useInteractions } from '../hooks/useInteractions.js';
-import useAppNavigate from '../hooks/useAppNavigate.js';
-import { spacePath } from '../lib/routes.js';
-import { roundLabels, roundStatusLabels } from '../lib/evaluation.js';
 import { formatDate } from '../lib/domain.js';
-import { ProgressBar } from './PlanningUi.jsx';
+import { validReportWeights } from '../lib/reportWeights.js';
 import { EmptyState, ErrorNotice, Modal, ResourceState } from './ui.jsx';
 
-function CalculationDetails({ name, details }) {
+const reportComponents = [
+  { label: '완료 작업', key: 'task', weightKey: 'taskPercent', description: '최종 평가 마감까지 완료된 작업의 예상 작업량과 담당 배분을 기준으로 팀 내 비율을 계산합니다. 수정 중인 작업은 제외합니다.' },
+  { label: '중간 동료 평가', key: 'mid', weightKey: 'midPercent', description: '중간 평가에서 본인이 받은 점수 합계를 팀 전체가 받은 점수 합계로 나눈 비율입니다. 자기 평가는 포함하지 않습니다.' },
+  { label: '최종 동료 평가', key: 'final', weightKey: 'finalPercent', description: '최종 평가에서 본인이 받은 점수 합계를 팀 전체가 받은 점수 합계로 나눈 비율입니다. 자기 평가는 포함하지 않습니다.' },
+];
+const formatReportNumber = (value) => value != null && Number.isFinite(Number(value))
+  ? Number(value).toFixed(1) : '—';
+
+function ReportComponentHelp({ component, details }) {
+  const tooltipId = useId();
+  const [open, setOpen] = useState(false);
   return (
-    <details className="panel report-calculation">
+    <span className="report-component-help"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={(event) => {
+        if (!event.currentTarget.contains(document.activeElement)) setOpen(false);
+      }}
+      onKeyDown={(event) => { if (event.key === 'Escape') setOpen(false); }}
+    >
+      <button type="button" aria-label={`${component.label} 반영분 설명`}
+        aria-describedby={open ? tooltipId : undefined}
+        onFocus={() => setOpen(true)} onBlur={() => setOpen(false)}
+        onClick={() => setOpen(true)}>
+        <CircleHelp size={15} aria-hidden="true" />
+      </button>
+      {open && <span className="report-component-tooltip" id={tooltipId} role="tooltip">
+        {component.description}
+        <span>팀 내 비율 {formatReportNumber(details[`${component.key}RatioPercent`])}% × 반영 비중 {component.weight}% = {formatReportNumber(details[`${component.key}ContributionPercent`])}%p 반영</span>
+      </span>}
+    </span>
+  );
+}
+
+function CalculationDetails({ name, details, components }) {
+  return (
+    <details className="report-calculation">
       <summary>{name} 계산 근거 보기</summary>
-      <h2>{name} 계산 근거</h2>
+      <h3>{name} 계산 근거</h3>
       <div className="table-scroll">
         <table className="data-table">
           <caption className="sr-only">{name} 최종 기여율 계산 근거</caption>
-          <thead>
-            <tr>
-              <th scope="col">구성 요소</th>
-              <th scope="col">팀 내 비율</th>
-              <th scope="col">반영 비중</th>
-              <th scope="col">기여분</th>
-            </tr>
-          </thead>
+          <thead><tr>
+            <th scope="col">구성 요소</th><th scope="col">팀 내 비율</th>
+            <th scope="col">반영 비중</th><th scope="col">반영분</th>
+          </tr></thead>
           <tbody>
-            {[
-              ['완료 작업', 'task', 70],
-              ['중간 동료 평가', 'mid', 10],
-              ['최종 동료 평가', 'final', 20],
-            ].map(([label, key, weight]) => (
+            {components.map(({ label, key, weight }) => (
               <tr key={key}>
                 <th scope="row">{label}</th>
-                <td>{Number(details[`${key}RatioPercent`]).toFixed(1)}%</td>
+                <td>{formatReportNumber(details[`${key}RatioPercent`])}%</td>
                 <td>{weight}%</td>
-                <td>
-                  {Number(details[`${key}ContributionPercent`]).toFixed(1)}
-                  %p
-                </td>
+                <td>{formatReportNumber(details[`${key}ContributionPercent`])}%p</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <p>
-        반올림 보정 {details.roundingAdjustmentPercent}%p · 최종{' '}
-        {Number(details.totalPercent).toFixed(1)}%
-      </p>
-      <p className="field-help">
-        기여분은 최종 기여율에 더해지는 퍼센트포인트(%p)입니다. 예: 팀 내 비율
-        80%에 반영 비중 70%를 곱하면 최종 기여율에 56%p가 반영됩니다.
-      </p>
+      <p className="field-help">반올림 보정 {formatReportNumber(details.roundingAdjustmentPercent)}%p · 최종 {formatReportNumber(details.totalPercent)}%</p>
+      <p className="field-help">각 반영분을 더하고 반올림을 보정한 결과가 최종 기여율입니다. 표시된 수치는 소수 첫째 자리로 반올림하여 합계와 미세한 차이가 날 수 있습니다.</p>
     </details>
   );
 }
-function ReportDetail({ context, report }) {
+
+function ResultSummary({ name, details, weights, own = false }) {
+  const appliedWeights = validReportWeights(weights) ? weights : null;
+  const components = reportComponents.map((component) => ({ ...component, weight: appliedWeights?.[component.weightKey] ?? '—' }));
   return (
-    <div className="stack report-result">
-      {report.myDetails && (
-        <section className="report-own-result">
-          <div>
-            <h2>나의 최종 기여율</h2>
-            <p className="field-help">
-              현재 작업 현황과 구분된 최종 평가 결과입니다.
-            </p>
-          </div>
-          <strong>{Number(report.myDetails.totalPercent).toFixed(1)}%</strong>
-        </section>
-      )}
-      <section className="panel report-team-result">
-        <div className="section-heading">
-          <div>
-            <h2>팀 기여도 리포트</h2>
-            <p>
-              {report.status === 'PUBLISHED'
-                ? `공개 ${formatDate(report.publishedAt)}`
-                : '팀원에게 공개되지 않았습니다.'}
-            </p>
-          </div>
-          <span
-            className={`status-badge ${report.status === 'PUBLISHED' ? 'task-state-done' : 'task-state-todo'}`}
-          >
-            {report.status === 'PUBLISHED' ? '공개' : '비공개'}
-          </span>
-        </div>
-        <div
-          className="table-scroll"
-          role="region"
-          aria-label="팀 최종 기여율"
-          tabIndex={0}
-        >
-          <table className="data-table report-results-table">
-            <caption className="sr-only">팀원별 최종 기여율</caption>
-            <thead>
-              <tr>
-                <th scope="col">팀원</th>
-                <th scope="col">최종 기여율</th>
-                <th scope="col">팀 내 비율</th>
-              </tr>
-            </thead>
-            <tbody>
-              {report.members.map((member) => (
-                <tr
-                  className={
-                    member.userId === context.user.id
-                      ? 'report-current-member'
-                      : ''
-                  }
-                  key={member.userId}
-                >
-                  <th scope="row">
-                    {member.name}
-                    {member.userId === context.user.id && (
-                      <span className="report-self-label">나</span>
-                    )}
-                  </th>
-                  <td>{Number(member.contributionPercent).toFixed(1)}%</td>
-                  <td>
-                    <ProgressBar
-                      value={member.contributionPercent}
-                      label={`${member.name} 최종 기여율`}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p className="field-help">
-          최종 기여율 합계 {Number(report.totalPercent).toFixed(1)}% · 팀 홈의
-          현재 작업 현황과는 다른 집계입니다.
-        </p>
-      </section>
-      <details className="panel report-method">
-        <summary>계산 방식 보기</summary>
-        <h2>어떻게 계산되나요?</h2>
-        <div
-          className="report-composition"
-          aria-label="완료 작업 70%, 중간 동료 평가 10%, 최종 동료 평가 20%"
-        >
-          <span style={{ width: '70%' }}>70%</span>
-          <span style={{ width: '10%' }}>10%</span>
-          <span style={{ width: '20%' }}>20%</span>
-        </div>
-        <ul className="clean-list composition-legend">
-          <li>완료 작업 70% · 최종 평가 마감까지 완료된 예상 작업량과 담당 배분</li>
-          <li>중간 동료 평가 10% · 팀 내 협업 평가 비율</li>
-          <li>최종 동료 평가 20% · 팀 내 협업 평가 비율</li>
-          <li>수정 중인 작업은 완료 분량에서 제외합니다.</li>
-        </ul>
-        <p className="field-help">
-          작업 집계 기준 {formatDate(report.cutoffAt)}. 평가자·개별 동료
-          점수·사유 원문은 공개하지 않습니다.
-        </p>
-      </details>
-      {report.myDetails && (
-        <CalculationDetails name="나의" details={report.myDetails} />
-      )}
-      {context.manager &&
-        report.members
-          .filter((member) => member.details)
-          .map((member) => (
-            <CalculationDetails
-              key={member.userId}
-              name={`${member.name}님의`}
-              details={member.details}
-            />
+    <section className={`report-score-summary${own ? ' report-personal-summary' : ''}`} aria-label={`${name} 기여율 요약`}>
+      <div className="report-score-total">
+        <h2>{name} 최종 기여율</h2>
+        <strong>{formatReportNumber(details.totalPercent)}<span>%</span></strong>
+        <span className="report-score-caption">팀 전체 기여율 100% 중</span>
+      </div>
+      <div className="report-score-components">
+        <p>최종 기여율에 반영된 값 <span>단위 %p</span></p>
+        <dl>
+          {components.map((component) => (
+            <div key={component.key}>
+              <dt>{component.label}<ReportComponentHelp component={component} details={details} /></dt>
+              <dd>{formatReportNumber(details[`${component.key}ContributionPercent`])}<span>%p</span>
+                <small className="report-component-weight">반영 비중 {component.weight}%</small>
+              </dd>
+            </div>
           ))}
+        </dl>
+      </div>
+      <CalculationDetails name={name} details={details} components={components} />
+    </section>
+  );
+}
+
+function ReportStatus({ report }) {
+  return <span className={`status-badge report-publication-status ${report.status === 'PUBLISHED' ? 'is-published' : 'is-unpublished'}`}>
+    {report.status === 'PUBLISHED' ? '공개 완료' : '미공개'}
+  </span>;
+}
+
+function ReportDetail({ context, report, actions, toolbarTarget }) {
+  const [selectedMemberId, setSelectedMemberId] = useState(null);
+  const reviewableMembers = context.manager ? report.members.filter((member) => member.details) : [];
+  const selectedMember = reviewableMembers.find((member) => member.userId === selectedMemberId);
+  return (
+    <div className="report-result">
+      {toolbarTarget ? createPortal(<>
+        <div className="report-metadata" aria-label="리포트 정보"><ReportStatus report={report} /></div>
+        {actions}
+      </>, toolbarTarget) : (
+        <div className="report-result-header">
+          <div className="report-metadata" aria-label="리포트 정보"><ReportStatus report={report} /></div>
+          {actions}
+        </div>
+      )}
+      {!context.manager && report.myDetails && <ResultSummary name="나의" details={report.myDetails} weights={report.weights} own />}
+      <section className="report-team-result">
+        <div className="section-heading">
+          <div><h2>팀원별 최종 기여율</h2><p>팀 전체 합계 {formatReportNumber(report.totalPercent)}%</p></div>
+        </div>
+        <div className="report-team-layout">
+          <div className="table-scroll" role="region" aria-label="팀 최종 기여율" tabIndex={0}>
+            <table className={`data-table report-results-table${context.manager ? ' report-results-table--manager' : ''}`}>
+              <caption className="sr-only">팀원별 최종 기여율</caption>
+              <thead><tr><th scope="col">팀원</th><th scope="col">최종 기여율</th>{context.manager && <th scope="col"><span className="sr-only">계산 근거</span></th>}</tr></thead>
+              <tbody>
+                {report.members.map((member) => (
+                  <tr className={[
+                    member.userId === context.user.id ? 'report-current-member' : '',
+                  ].filter(Boolean).join(' ')} key={member.userId}>
+                    <th scope="row">
+                      {member.name}
+                      {member.userId === context.user.id && <span className="report-self-label">나</span>}
+                    </th>
+                    <td><div className="report-member-share">
+                      <span className="report-share-track" aria-hidden="true"><span style={{ width: `${Math.min(100, Math.max(0, Number(member.contributionPercent) || 0))}%` }} /></span>
+                      <strong>{formatReportNumber(member.contributionPercent)}%</strong>
+                    </div></td>
+                    {context.manager && <td className="report-member-action">
+                      {member.details ? <button type="button" className="report-member-select"
+                        aria-label={`${member.name} 계산 근거 보기`} aria-haspopup="dialog"
+                        onClick={() => setSelectedMemberId(member.userId)}>계산 근거 보기</button> : <span className="field-help">근거 없음</span>}
+                    </td>}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </section>
+      <div className="report-result-footer">
+        <div className="report-dates">
+          <span>작업 집계 기준 <time dateTime={report.cutoffAt}>{formatDate(report.cutoffAt)}</time></span>
+          {report.status === 'PUBLISHED' && <span>공개일 <time dateTime={report.publishedAt}>{formatDate(report.publishedAt)}</time></span>}
+        </div>
+        <details className="report-method">
+          <summary>집계 기준과 계산 방식</summary>
+          <h3>{validReportWeights(report.weights) ? reportComponents.map((component) => `${component.label} ${report.weights[component.weightKey]}%`).join(' · ') : '반영 비중 정보를 확인할 수 없습니다.'}</h3>
+          <p>각 항목의 팀 내 비율에 반영 비중을 곱한 뒤 합산합니다. 완료 작업은 작업 개수가 아닌 예상 작업량과 담당 배분을 기준으로 집계하며, 수정 중인 작업은 완료 분량에서 제외합니다.</p>
+          <p className="field-help">이 리포트는 최종 평가 기준으로 확정된 결과이며 팀 홈의 현재 작업 현황과는 다릅니다. 팀원에게는 전체 최종 기여율과 본인의 계산 근거만 공개하며, 평가자·개별 동료 점수·사유 원문은 공개하지 않습니다.</p>
+        </details>
+      </div>
+      {selectedMember && (
+        <Modal title={`${selectedMember.name}님의 기여도 상세`} wide className="report-member-modal" onClose={() => setSelectedMemberId(null)}>
+          <div className="report-result">
+            <ResultSummary name={`${selectedMember.name}님의`} details={selectedMember.details} weights={report.weights} />
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
-export function TeamReport({ context, manager = false }) {
+export function TeamReport({ context, manager = false, toolbarTarget, generationRevision = 0 }) {
   const { notify } = useInteractions();
-  const navigate = useAppNavigate();
-  const readiness = useResource(async () => {
-    if (!manager) return null;
-    const [rounds, dashboard] = await Promise.all([
-      listEvaluationRounds(context.space.id),
-      getManagerDashboard(context.space.id, context.team.id),
-    ]);
-    return { rounds, dashboard };
-  }, [manager, context.space.id, context.team.id]);
   const resource = useResource(
     () => getTeamReport(context.team.id),
-    [context.team.id, context.user.id],
+    [context.team.id, context.user.id, generationRevision],
   );
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(null),
     [publishing, setPublishing] = useState(null);
   const selected = resource.data;
-  const closedRounds =
-    readiness.data &&
-    ['MID', 'FINAL'].every((type) =>
-      readiness.data.rounds.some(
-        (round) => round.type === type && round.status === 'CLOSED',
-      ),
-    );
-  const teamSubmissionComplete =
-    readiness.data &&
-    ['MID', 'FINAL'].every(
-      (type) =>
-        readiness.data.dashboard.missingPeerSubmissions
-          .find((round) => round.type === type)
-          ?.teams.find((team) => team.teamId === context.team.id)
-          ?.missingCount === 0 &&
-        readiness.data.dashboard.missingPeerSubmissions
-          .find((round) => round.type === type)
-          ?.teams.find((team) => team.teamId === context.team.id)
-          ?.requiredCount >= 2,
-    );
-  const knownBlock =
-    readiness.loading ||
-    Boolean(readiness.error) ||
-    !closedRounds ||
-    !teamSubmissionComplete ||
-    context.team.approvedMemberCount < 2;
-  const preparation = (
-    <section className="panel">
-      <ul
-        className="readiness-list round-readiness"
-        aria-label="회차별 리포트 준비 상태"
-      >
-        {['MID', 'FINAL'].map((type) => {
-          const round = readiness.data?.rounds.find(
-            (round) => round.type === type,
-          );
-          const submission = readiness.data?.dashboard.missingPeerSubmissions
-            .find((entry) => entry.type === type)
-            ?.teams.find((team) => team.teamId === context.team.id);
-          return (
-            <li key={type}>
-              <strong>{roundLabels[type]}</strong>
-              <span>
-                {readiness.loading
-                  ? '확인 중'
-                  : round
-                    ? roundStatusLabels[round.status]
-                    : '회차 미설정'}
-              </span>
-              <span>
-                {!round || round.status === 'DRAFT'
-                  ? '참여자 고정 전'
-                  : submission
-                    ? `${submission.submittedCount}/${submission.requiredCount}명 제출 · 미제출 ${submission.missingCount}명`
-                    : '제출 현황 확인 필요'}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-      {!knownBlock && (
-        <p className="field-help">
-          두 회차 마감과 해당 팀의 필수 제출 조건을 충족했습니다. 최종 계산 가능
-          여부는 생성 시 확인합니다.
-        </p>
-      )}
-      {context.team.approvedMemberCount < 2 && (
-        <p className="notice">승인된 팀원 2명 이상이 필요합니다.</p>
-      )}
-      <button
-        className="secondary-button"
-        onClick={() => navigate(`${spacePath(context.space.id)}/rounds`)}
-      >
-        평가 회차 관리로
-      </button>
-      <div className="page-heading">
-        <div>
-          <h2>{context.team.name} 리포트</h2>
-          <p>
-            완료 작업과 우리 팀 중간·최종 평가 제출을 충족하면 현재 산식으로
-            계산합니다.
-          </p>
-        </div>
-        <button
-          className={selected ? 'secondary-button' : 'primary-button'}
-          disabled={
-            busy ||
-            resource.loading ||
-            Boolean(resource.error) ||
-            knownBlock ||
-            Boolean(selected)
-          }
-          onClick={async () => {
-            setBusy(true);
-            setError(null);
-            try {
-              await generateTeamReport(context.team.id);
-              notify('리포트를 생성했습니다.');
-              resource.reload();
-            } catch (error) {
-              setError(error);
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          {selected ? '생성 완료' : '리포트 생성'}
+  const refreshAction = (
+    <RefreshButton
+      className="report-refresh"
+      label="리포트 새로고침"
+      disabled={busy}
+      onClick={resource.reload}
+    />
+  );
+  const resultActions = manager && (
+    <div className="report-result-actions">
+      {refreshAction}
+      {selected?.status === 'UNPUBLISHED' && (
+        <button className="primary-button" disabled={busy} onClick={() => setPublishing(selected)}>
+          팀원에게 공개
         </button>
-      </div>
-      <p className="field-help">
-        확정된 입력으로 한 번 생성한 결과를 검토하고 공개합니다. 생성된 계산
-        결과는 변경할 수 없습니다.
-      </p>
-    </section>
+      )}
+    </div>
   );
   return (
     <div className="stack team-report">
-      <div className="report-status-toolbar">
-        {manager && (
-          <ol className="process-steps" aria-label="리포트 진행 단계">
-            <li className={!selected ? 'active' : ''}>1. 리포트 생성</li>
-            <li className={selected?.status === 'UNPUBLISHED' ? 'active' : ''}>
-              2. 검토
-            </li>
-            <li className={selected?.status === 'PUBLISHED' ? 'active' : ''}>
-              3. 공개
-            </li>
-          </ol>
-        )}
-        <RefreshButton
-          className="report-refresh"
-          label={manager ? '리포트·준비 상태 새로고침' : '리포트 새로고침'}
-          disabled={busy}
-          onClick={() => {
-            resource.reload();
-            readiness.reload();
-          }}
-        />
-      </div>
-      <ErrorNotice error={error} />
-      {manager && (
-        <ErrorNotice error={readiness.error} onRetry={readiness.reload} />
+      {!(manager && selected) && (
+        manager && toolbarTarget
+          ? createPortal(refreshAction, toolbarTarget)
+          : <div className="report-status-toolbar">{refreshAction}</div>
       )}
-      {manager && !selected && preparation}
+      <ErrorNotice error={error} />
       <ResourceState resource={resource}>
         {selected ? (
-          <>
-            <ReportDetail context={context} report={selected} />
-            {manager && selected?.status === 'UNPUBLISHED' && (
-              <section className="panel">
-                <h2>검토 후 팀원에게 공개</h2>
-                <p>
-                  해당 팀의 중간·최종 평가 필수 제출 완료가 필요합니다. 다른
-                  팀의 미제출은 공개를 막지 않습니다. 공개 결과는 불변입니다.
-                </p>
-                <button
-                  className="primary-button"
-                  disabled={busy}
-                  onClick={() => setPublishing(selected)}
-                >
-                  리포트 공개
-                </button>
-              </section>
-            )}
-            {manager && (
-              <details className="report-readiness-details">
-                <summary>평가 제출·생성 조건 확인</summary>
-                {preparation}
-              </details>
-            )}
-          </>
+          <ReportDetail key={`${selected.id}:${context.user.id}`} context={context} report={selected} actions={resultActions} toolbarTarget={toolbarTarget} />
+        ) : manager ? (
+          <EmptyState><h2>이 팀의 리포트가 아직 생성되지 않았습니다.</h2><p>상단에서 전체 리포트를 생성한 뒤 결과를 확인할 수 있습니다.</p></EmptyState>
         ) : (
           <EmptyState>
-            <h2>
-              {manager
-                ? '생성된 리포트가 없습니다.'
-                : '공개된 리포트가 없습니다.'}
-            </h2>
-            <p>
-              {manager
-                ? '두 평가의 마감·필수 제출과 완료 작업을 확인한 뒤 팀별 리포트를 생성해 주세요.'
-                : '관리자가 최종 결과를 검토하고 공개하면 이곳에서 확인할 수 있습니다.'}
-            </p>
+            <h2>공개된 리포트가 없습니다.</h2>
+            <p>관리자가 최종 결과를 검토하고 공개하면 이곳에서 확인할 수 있습니다.</p>
           </EmptyState>
         )}
       </ResourceState>
-      {manager && (
-        <ManagerPeerResponses context={context} teamId={context.team.id} />
-      )}
       {publishing && (
         <Modal
           title="기여도 리포트 공개"
@@ -418,7 +262,6 @@ export function TeamReport({ context, manager = false }) {
                   setPublishing(null);
                   notify('리포트를 팀원에게 공개했습니다.');
                   resource.reload();
-                  readiness.reload();
                 } catch (error) {
                   setError(error);
                 } finally {

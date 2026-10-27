@@ -13,10 +13,11 @@ export default function TeamMembers({
   team,
   user,
   membersResource,
+  readOnly = false,
   onChanged,
 }) {
   const { notify } = useInteractions();
-  const isLeader = isApprovedMember(team) && team.leaderId === user.id;
+  const isLeader = !readOnly && isApprovedMember(team) && team.leaderId === user.id;
   const resource = useResource(
     () => (isLeader ? getTeamApplications(team.id) : Promise.resolve([])),
     [team.id, isLeader],
@@ -71,7 +72,7 @@ export default function TeamMembers({
     <section className="stack team-member-directory">
       <div className="page-heading page-heading--compact">
         <div>
-          <h1>팀원 관리</h1>
+          <h1>{readOnly ? '팀원 보기' : '팀원 관리'}</h1>
         </div>
         <RefreshButton
           onClick={reload}
@@ -90,9 +91,7 @@ export default function TeamMembers({
             <div className="directory-section-heading">
               <div>
                 <h2>승인된 팀원 · {members.length}명</h2>
-                <p>
-                  가입 신청 검토는 리더가 관리합니다.
-                </p>
+                {!readOnly && <p>가입 신청 검토는 리더가 관리합니다.</p>}
               </div>
             </div>
             <ul className="clean-list">

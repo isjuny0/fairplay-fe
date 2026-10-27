@@ -1,0 +1,9 @@
+.manager-team-links { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.manager-team-links > button { min-height: 34px; padding: 6px 12px; font-size: 13px; }
+.manager-team-links > button[aria-current='page'] { border-color: #c8dfd2; background: #edf5f0; color: var(--brand-dark); }
+.manager-team-links > .ghost-button { margin-right: auto; padding-left: 0; }
+.manager-team-materials { display: grid; gap: 24px; min-width: 0; }
+@media (max-width: 720px) {
+  .manager-team-links { width: 100%; }
+  .manager-team-links > .ghost-button { flex-basis: 100%; text-align: left; justify-content: flex-start; }
+}

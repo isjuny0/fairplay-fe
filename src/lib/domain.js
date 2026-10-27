@@ -113,6 +113,8 @@ export function errorMessage(error) {
     return '계산할 완료 작업 또는 평가 입력이 부족합니다. 최종 평가 마감 전 완료된 작업과 팀원의 담당 배분을 확인해 주세요.';
   if (error.code === 'REPORT_PUBLICATION_BLOCKED')
     return '해당 팀의 두 회차 마감과 필수 평가 제출을 확인한 뒤 공개해 주세요.';
+  if (error.code === 'REPORT_WEIGHTS_LOCKED')
+    return '스페이스 공통 반영 비율이 이미 확정되었습니다. 최신 비율을 확인한 뒤 다시 생성해 주세요.';
   if (error.code === 'TEAM_DELETION_REQUEST_INVALIDATED')
     return '팀 구성 또는 삭제 대상이 변경되었습니다. 리더가 새 삭제 요청을 만들어 다시 동의받아 주세요.';
   if (error.code === 'TEAM_DELETION_REQUEST_CANCELLED')

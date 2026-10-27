@@ -241,8 +241,7 @@
 }
 
 .team-card.is-joined,
-.metric-card.accent,
-.report-own-result {
+.metric-card.accent {
   border-color: #cfceca;
 }
 
@@ -343,18 +342,6 @@
 .getting-started-steps span {
   background: var(--brand-light);
   color: var(--brand);
-}
-
-.report-composition span {
-  background: #245747;
-}
-.report-composition span:nth-child(2) {
-  background: #abc7b7;
-  color: #1b4437;
-}
-.report-composition span:nth-child(3) {
-  background: #e0ece4;
-  color: #1b4437;
 }
 
 .mock-notice {

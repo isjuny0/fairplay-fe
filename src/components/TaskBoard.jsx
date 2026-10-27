@@ -4,7 +4,7 @@ import { deferScreen } from './DeferredScreen.jsx';
 import Icon from './Icon.jsx';
 import RefreshButton from './RefreshButton.jsx';
 import { useEffect, useId, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router';
+import { useLocation, useSearchParams } from 'react-router';
 import { createTask, listTasks } from '../api/tasks.js';
 import useResource from '../hooks/useResource.js';
 import useCurrentTime from '../hooks/useCurrentTime.js';
@@ -43,9 +43,11 @@ export default function TaskBoard({
   taskId,
   onOpenTask,
   onTaskBack,
+  readOnly = false,
 }) {
   const { notify, clearChanges } = useInteractions();
   const now = useCurrentTime();
+  const location = useLocation();
   const resource = useResource(() => listTasks(team.id), [team.id, taskId]);
   const [searchParams, setSearchParams] = useSearchParams();
   const filterControls = useRef({});
@@ -53,7 +55,7 @@ export default function TaskBoard({
   const filter = Object.hasOwn(statusLabels, searchParams.get('status'))
     ? searchParams.get('status')
     : 'ALL';
-  const onlyMine = searchParams.get('mine') === '1';
+  const onlyMine = !readOnly && searchParams.get('mine') === '1';
   const onlyExecutionOverdue = searchParams.get('overdue') === 'work';
   const onlyOverdue = onlyExecutionOverdue || searchParams.get('overdue') === '1';
   const [preferences, setPreferences] = useState(readTaskViewPreferences);
@@ -66,7 +68,7 @@ export default function TaskBoard({
       const next = new URLSearchParams(current);
       next.set('view', view);
       return next;
-    }, { replace: true });
+    }, { replace: true, state: location.state });
   }, [view, urlView, taskId, setSearchParams]);
   const timelineLabelWidth = preferences.labelWidth;
   const setTimelineLabelWidth = (labelWidth) =>
@@ -100,7 +102,7 @@ export default function TaskBoard({
         else next.delete(key);
         return next;
       },
-      { replace },
+      { replace, state: location.state },
     );
   const clearFilters = () => {
     filterControls.current.q?.focus();
@@ -109,7 +111,7 @@ export default function TaskBoard({
       for (const key of ['status', 'mine', 'q', 'overdue', 'sort'])
         next.delete(key);
       return next;
-    });
+    }, { state: location.state });
   };
   const setFilter = (status) =>
     setSearchParams((current) => {
@@ -117,14 +119,14 @@ export default function TaskBoard({
       if (status === 'ALL') next.delete('status');
       else next.set('status', status);
       return next;
-    });
+    }, { state: location.state });
   const setOnlyMine = (checked) =>
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
       if (checked) next.set('mine', '1');
       else next.delete('mine');
       return next;
-    });
+    }, { state: location.state });
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filterPanelId = useId();
   const appliedFilterCount = [
@@ -144,7 +146,7 @@ export default function TaskBoard({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const save = async (input) => {
-    if (!canModifyTeamWork(team)) return;
+    if (readOnly || !canModifyTeamWork(team)) return;
     setBusy(true);
     setError(null);
     try {
@@ -169,6 +171,7 @@ export default function TaskBoard({
         user={user}
         members={members}
         onBack={onTaskBack}
+        readOnly={readOnly}
       />
     );
   const toggleBoardTaskDetails = (taskId) =>
@@ -179,7 +182,7 @@ export default function TaskBoard({
       return next;
     });
   const canCreate =
-    team.canCreateTask && members.length >= 2 && canModifyTeamWork(team);
+    !readOnly && team.canCreateTask && members.length >= 2 && canModifyTeamWork(team);
   const hasFilters = appliedFilterCount > 0;
   const isOverdue = (task) =>
     task.status !== 'DONE' && apiTimeToEpoch(task.dueAt) < now;
@@ -261,7 +264,7 @@ export default function TaskBoard({
             </button>
           ))}
         </div>
-        <button
+        {!readOnly && <button
           className="primary-button"
           disabled={!canCreate}
           onClick={() => {
@@ -270,7 +273,7 @@ export default function TaskBoard({
           }}
         >
           <Icon name="plus" />새 작업 만들기
-        </button>
+        </button>}
       </div>
       <div
         className={`mobile-status-tabs ${view === 'list' ? 'list-status-tabs' : ''}`}
@@ -306,7 +309,7 @@ export default function TaskBoard({
           ),
         )}
       </div>
-      {members.length < 2 && (
+      {!readOnly && members.length < 2 && (
         <p className="notice">
           승인된 팀원이 2명 이상이어야 작업을 생성할 수 있습니다.
         </p>
@@ -371,7 +374,7 @@ export default function TaskBoard({
               <option value="newest">최근 생성 순</option>
             </select>
           </label>
-          <label>
+          {!readOnly && <label>
             <input
               type="checkbox"
               ref={(node) => { filterControls.current.mine = node; }}
@@ -379,7 +382,7 @@ export default function TaskBoard({
               onChange={(event) => setOnlyMine(event.target.checked)}
             />{' '}
             내 담당 작업만
-          </label>
+          </label>}
           <label>
             <input
               type="checkbox"
@@ -586,7 +589,9 @@ export default function TaskBoard({
             <span>
               {hasFilters
                 ? '검색어와 상태, 담당·마감 조건을 초기화해 전체 작업을 확인하세요.'
-                : canCreate
+                : readOnly
+                  ? '팀에서 등록한 작업이 이곳에 표시됩니다.'
+                  : canCreate
                   ? '작업 내용을 정하고 담당자와 배분을 정해 시작하세요.'
                   : members.length < 2
                     ? '승인된 팀원이 2명 이상 모이면 작업을 만들 수 있습니다.'

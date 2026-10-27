@@ -15,6 +15,7 @@ import TeamHomeCalendar from './TeamHomeCalendar.jsx';
 import DashboardMetricHelp from './DashboardMetricHelp.jsx';
 import DashboardWidgetFrame from './DashboardWidgetFrame.jsx';
 import TeamHomeContribution from './TeamHomeContribution.jsx';
+import TeamProgressRing from './TeamProgressRing.jsx';
 import { getHomePreferences, updateHomePreferences } from '../api/teamHome.js';
 import {
   useInteractions,
@@ -34,42 +35,6 @@ import { isPreviewPath } from '../lib/previewPath.js';
 import { teamMenuPath } from '../lib/routes.js';
 import { ErrorNotice, Modal, ResourceState } from './ui.jsx';
 import { ProgressBar } from './PlanningUi.jsx';
-
-function TeamProgressRing({ value }) {
-  const available = value != null;
-  const percent = available ? Math.min(100, Math.max(0, Number(value))) : 0;
-  return (
-    <div
-      className="dashboard-progress-ring home-progress-ring"
-      role="progressbar"
-      aria-label="예상 작업량을 반영한 팀 진행률"
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={available ? percent : undefined}
-      aria-valuetext={available ? undefined : '계산할 작업 없음'}
-    >
-      <svg viewBox="0 0 160 160" aria-hidden="true">
-        <circle className="home-ring-track" cx="80" cy="80" r="68" />
-        <circle
-          className="home-ring-value"
-          cx="80"
-          cy="80"
-          r="68"
-          pathLength="100"
-          strokeDasharray="100"
-          strokeDashoffset={100 - percent}
-          strokeOpacity={percent > 0 ? 1 : 0}
-        />
-      </svg>
-      <div>
-        <strong>{available ? formatPercent(value) : '—'}</strong>
-        <small>
-          {available ? '완료한 만큼, 한 걸음 더' : '계산할 작업 없음'}
-        </small>
-      </div>
-    </div>
-  );
-}
 
 export default function TeamHome(props) {
   const { pathname } = useLocation();

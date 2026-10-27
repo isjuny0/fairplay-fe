@@ -337,7 +337,7 @@ async function workspace(
     .getByRole('button', { name: /프로젝트 스페이스/ }).click();
   await page
     .getByRole('button', {
-      name: manager ? '팀 자료 조회' : '삼위일체 팀 팀 홈으로 이동',
+      name: manager ? '팀 상세 보기' : '삼위일체 팀 팀 홈으로 이동',
       exact: true,
     })
     .click();
@@ -552,7 +552,7 @@ test('스페이스 관리자는 타 팀 자료만 조회하고 팀 작업 API를
   await sidebar.getByRole('button', { name: '스페이스 홈', exact: true }).click();
   await expect(page).toHaveURL(/\/spaces\/1$/);
   await expect(sidebar.getByRole('button', { name: '스페이스 홈', exact: true })).toHaveAttribute('aria-current', 'page');
-  await expect(sidebar.getByRole('button', { name: '관리자 대시보드', exact: true })).toBeVisible();
+  await expect(sidebar.getByRole('button', { name: '팀 관리', exact: true })).toBeVisible();
 });
 
 test('버전 충돌에서 요청을 재전송하지 않고 입력 내용을 유지한다', async ({
@@ -660,6 +660,7 @@ test('관리자는 스페이스 생성 후 팀 빌딩 기간을 지정하고 코
     expectedVersion: 0,
     teamBuildingOpensAt: '2026-10-05T10:00:00',
   });
+  await page.getByRole('tab', { name: '참여 코드', exact: true }).click();
   await page.getByLabel('코드 유효 기간', { exact: true }).selectOption('custom');
   await page.getByLabel('유효 기간 (분)').fill('60');
   await page.getByRole('button', { name: '참여 코드 발급', exact: true }).click();
@@ -1367,6 +1368,7 @@ test('참여 코드 발급 권한 오류를 표시하고 요청을 반복하지 
     return route.fulfill({ status: 403, json: { code: 'FORBIDDEN', message: '관리 권한이 없습니다.' } });
   });
   await page.goto('/spaces/1/settings');
+  await page.getByRole('tab', { name: '참여 코드', exact: true }).click();
   await page.getByLabel('코드 유효 기간', { exact: true }).selectOption('4320');
   await page.getByRole('button', { name: '참여 코드 발급', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('관리 권한이 없습니다.');

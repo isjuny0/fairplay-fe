@@ -1,3 +1,4 @@
+import ManagerTeamLinks from './ManagerTeamLinks.jsx';
 import { screenLoaders } from '../lib/routeScreens.js';
 import { deferScreen } from './DeferredScreen.jsx';
 import { useEffect } from 'react';
@@ -67,6 +68,7 @@ export default function TeamWorkspace({
       },
       {
         state: {
+          ...location.state,
           taskList: {
             pathname: teamMenuPath(space.id, team.id, menu),
             search: location.search,
@@ -83,7 +85,7 @@ export default function TeamWorkspace({
           teamMenuPath(space.id, team.id, menu),
         search: location.state?.taskList?.search ?? location.search,
       },
-      { state: { restoreScrollY: location.state?.taskList?.scrollY } },
+      { state: { ...location.state, restoreScrollY: location.state?.taskList?.scrollY } },
     );
   const resource = useResource(
     () => getTeamMembers(team.id),
@@ -118,13 +120,15 @@ export default function TeamWorkspace({
     workStateUnknown:
       approved && (deletionResource.loading || Boolean(deletionResource.error)),
   };
-  const menus = availableTeamMenus(team);
+  const managerReadOnly = !approved && space.myRole === 'MANAGER';
+  const menus = managerReadOnly ? ['작업', ...availableTeamMenus(team)] : availableTeamMenus(team);
   const currentMenu = menus.includes(menu) ? menu : null;
   const members = resource.data || [];
   const context = { space, team: workTeam, user, members, manager: false };
   return (
-    <section className="stack">
-      <nav className="mobile-team-navigation" aria-label="모바일 팀 메뉴">
+    <section className={`stack${!approved && space.myRole === 'MANAGER' ? ' manager-team-materials' : ''}`}>
+      {!approved && space.myRole === 'MANAGER' && <ManagerTeamLinks spaceId={space.id} teamId={team.id} activeMenu={menu} />}
+      {approved && <nav className="mobile-team-navigation" aria-label="모바일 팀 메뉴">
         {menus
           .filter((label) => ['팀 홈', '작업', '산출물'].includes(label))
           .map((label) => (
@@ -162,7 +166,7 @@ export default function TeamWorkspace({
               ))}
           </div>
         </details>
-      </nav>
+      </nav>}
       {approved && currentMenu !== '팀 설정' && (
         <>
           <ErrorNotice
@@ -197,6 +201,7 @@ export default function TeamWorkspace({
           team={team}
           user={user}
           membersResource={resource}
+          readOnly={!approved && space.myRole === 'MANAGER'}
           onChanged={() => {
             resource.reload();
             onChanged();
@@ -217,7 +222,7 @@ export default function TeamWorkspace({
           {currentMenu === '팀 홈' && approved && (
             <TeamHome context={context} onNavigate={navigateToMenu} />
           )}
-          {currentMenu === '작업' && approved && (
+          {currentMenu === '작업' && (approved || managerReadOnly) && (
             <TaskBoard
               team={workTeam}
               user={user}
@@ -226,6 +231,7 @@ export default function TeamWorkspace({
               taskId={taskId}
               onOpenTask={navigateToTask}
               onTaskBack={navigateToTaskList}
+              readOnly={managerReadOnly}
             />
           )}
           {currentMenu === '산출물' && (

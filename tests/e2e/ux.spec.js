@@ -249,7 +249,7 @@ test('모바일 관리자 카드는 표 가로 스크롤 없이 수행 상세를
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openPreview(page, '/spaces/1/dashboard', 'manager');
-  await page.getByLabel('조회할 팀').selectOption('1');
+  await page.getByRole('button', { name: '삼위일체 현황 보기', exact: true }).click();
   await expect(page.getByRole('table')).toHaveCount(0);
   await page
     .getByRole('button', { name: '김하늘 수행 상세', exact: true })
@@ -341,17 +341,17 @@ test('관리자는 다른 팀 목록으로 자료 조회에 진입하고 팀 작
   page,
 }) => {
   await openPreview(page, '/spaces/1', 'manager');
-  await page.getByRole('listitem').filter({ hasText: '파도' }).getByRole('button', { name: '팀 자료 조회', exact: true }).click();
-  await expect(page).toHaveURL(/teams\/2\/members$/);
+  await page.getByRole('listitem').filter({ hasText: '파도' }).getByRole('button', { name: '팀 상세 보기', exact: true }).click();
+  await expect(page).toHaveURL(/dashboard\?teamId=2$/);
   await expect(
-    page.getByRole('heading', { name: '팀원 관리', exact: true }),
+    page.getByRole('heading', { name: '파도', exact: true }),
   ).toBeVisible();
   const sidebar = page.getByRole('navigation', {
     name: '스페이스 메뉴',
     exact: true,
   });
   await expect(
-    sidebar.getByRole('button', { name: '관리자 대시보드', exact: true }),
+    sidebar.getByRole('button', { name: '팀 관리', exact: true }),
   ).toBeVisible();
   await expect(
     sidebar.getByRole('button', { name: '작업', exact: true }),
@@ -362,7 +362,8 @@ test('관리자는 다른 팀 목록으로 자료 조회에 진입하고 팀 작
   await expect(
     sidebar.getByRole('button', { name: '팀 설정', exact: true }),
   ).toHaveCount(0);
-  await sidebar.getByRole('button', { name: '산출물', exact: true }).click();
+  await expect(sidebar.getByRole('navigation', { name: '팀 메뉴', exact: true })).toHaveCount(0);
+  await page.getByRole('navigation', { name: '팀 조회 바로가기' }).getByRole('button', { name: '산출물 보기', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: '산출물 관리', exact: true }),
   ).toBeVisible();

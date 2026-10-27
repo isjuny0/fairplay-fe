@@ -308,6 +308,7 @@ test('관리자 생성·공개 요청은 같은 결과를 반환하고 계산 �
       'publishedAt',
       'members',
       'myDetails',
+      'weights',
     ].sort(),
   );
   const result = await plannedRequest(manager, '/api/teams/1/report', {
@@ -564,4 +565,43 @@ test('이전 미리보기 역할 값이 남아 있어도 현재 역할 선택지
   setPreviewRole('obsolete-role');
   assert.equal(previewRole(), 'leader');
   assert.equal(previewContext().user.name, '김하늘');
+});
+
+test('미리보기는 최초 성공 비율을 스페이스에 고정하고 다른 팀과 공개 결과에도 유지한다', async () => {
+  const manager = context('manager');
+  resetMockState(manager, 'review');
+  const state = getMockState(manager);
+  state.reports = [];
+  state.reportWeights = null;
+  saveMockState(manager, state);
+  const weights = { taskPercent: 50, midPercent: 20, finalPercent: 30 };
+  const report = await previewRequest('/api/teams/1/report', { method: 'POST', body: weights });
+  assert.deepEqual(report.weights, weights);
+  assert.deepEqual((await previewRequest('/api/spaces/1')).reportWeights, weights);
+  await assert.rejects(previewRequest('/api/teams/2/report', { method: 'POST', body: { taskPercent: 70, midPercent: 10, finalPercent: 20 } }), { code: 'REPORT_WEIGHTS_LOCKED' });
+  const second = await previewRequest('/api/teams/2/report', { method: 'POST' });
+  assert.deepEqual(second.weights, weights);
+  const published = await previewRequest(`/api/reports/${report.id}/publish`, { method: 'POST' });
+  assert.deepEqual(published.weights, weights);
+  assert.deepEqual(published.members, report.members);
+  context('member');
+  assert.deepEqual((await previewRequest('/api/teams/1/report')).weights, weights);
+});
+
+test('미리보기는 잘못된 비율이나 생성 실패로 비율을 고정하지 않고 작업 비중 0도 허용한다', async () => {
+  const manager = context('manager');
+  resetMockState(manager, 'review');
+  const state = getMockState(manager);
+  state.reports = [];
+  state.reportWeights = null;
+  state.teams[1].tasks = [];
+  saveMockState(manager, state);
+  for (const body of [{}, { taskPercent: 50.5, midPercent: 20, finalPercent: 29.5 }, { taskPercent: 0, midPercent: 0, finalPercent: 99 }])
+    await assert.rejects(previewRequest('/api/teams/1/report', { method: 'POST', body }), { code: 'INVALID_REQUEST' });
+  await assert.rejects(previewRequest('/api/teams/1/report', { method: 'POST' }), { code: 'REPORT_UNCALCULABLE' });
+  assert.equal((await previewRequest('/api/spaces/1')).reportWeights, null);
+  const weights = { taskPercent: 0, midPercent: 0, finalPercent: 100 };
+  const report = await previewRequest('/api/teams/1/report', { method: 'POST', body: weights });
+  assert.deepEqual(report.weights, weights);
+  for (const member of report.members) assert.equal(member.details.taskContributionPercent, 0);
 });

@@ -38,9 +38,9 @@ for (const [path, heading, role] of [
   ['/spaces/1/teams/1/peer-evaluations', '동료 평가', 'leader'],
   ['/spaces/1/teams/1/mid-feedback', '중간 피드백', 'leader'],
   ['/spaces/1/teams/1/reports', '기여도 리포트', 'leader'],
-  ['/spaces/1/dashboard', '관리자 대시보드', 'manager'],
-  ['/spaces/1/rounds', '평가 회차 관리', 'manager'],
-  ['/spaces/1/reports', '리포트 검토·공개', 'manager'],
+  ['/spaces/1/dashboard', '팀 관리', 'manager'],
+  ['/spaces/1/rounds', '동료 평가 관리', 'manager'],
+  ['/spaces/1/reports', '리포트 관리', 'manager'],
   ['/spaces/1/settings', '스페이스 관리', 'manager'],
   [
     '/spaces/1/manager/teams/1/members/00000000-0000-4000-8000-000000000001',
@@ -69,21 +69,22 @@ test('팀 홈과 관리자 현황은 가중치 숫자 대신 비율과 계산 �
   await expect(
     page.getByText('작업 개수가 아닌 예상 작업량을 기준으로 계산해요.', { exact: false }),
   ).toBeVisible();
+  await page.getByRole('dialog').press('Escape');
   await selectPreviewOption(page, '미리보기 역할', 'manager');
   await page.goto('/preview/spaces/1/dashboard');
   await expect(
-    page.getByRole('columnheader', { name: '현재 팀원 완료 비중' }),
+    page.getByRole('columnheader', { name: /^완료 작업 비중/ }),
   ).toHaveCount(0);
-  await page.getByLabel('조회할 팀').selectOption('1');
+  await page.getByRole('button', { name: '삼위일체 현황 보기', exact: true }).click();
   await expect(
-    page.getByRole('columnheader', { name: '현재 팀원 완료 비중' }),
+    page.getByRole('columnheader', { name: /^완료 작업 비중/ }),
   ).toHaveCount(1);
   await expect(
     page.getByRole('columnheader', { name: '승인된 배분 가중치' }),
   ).toHaveCount(0);
   await expect(
     page.getByRole('row').filter({
-      has: page.getByRole('rowheader', { name: '김하늘', exact: true }),
+      has: page.getByRole('rowheader', { name: '김하늘 수행 상세', exact: true }),
     }),
   ).toContainText('80.00%');
   await page.evaluate(() => {
@@ -161,18 +162,15 @@ test('관리자가 리포트를 공개하면 팀원은 본인 계산 근거를 �
     path: '/spaces/1/reports',
   });
   await expect(page.getByRole('region', { name: '팀 최종 기여율', exact: true })).toBeVisible();
-  await page.getByText('평가 제출·생성 조건 확인', { exact: true }).click();
-  await expect(
-    page.getByRole('button', { name: '생성 완료', exact: true }),
-  ).toBeDisabled();
-  await page.getByRole('button', { name: '리포트 공개', exact: true }).click();
+  await expect(page.getByRole('list', { name: '회차별 리포트 준비 상태' })).toHaveCount(0);
+  await page.getByRole('button', { name: '팀원에게 공개', exact: true }).click();
   await page
     .getByRole('dialog')
     .getByRole('button', { name: '공개 확정' })
     .click();
   await expect(
-    page.locator('.report-team-result > .section-heading > .status-badge'),
-  ).toHaveText('공개');
+    page.locator('.report-metadata > .status-badge'),
+  ).toHaveText('공개 완료');
   await expect(
     page.getByRole('heading', { name: '나의 계산 근거' }),
   ).toHaveCount(0);
@@ -210,7 +208,7 @@ test('팀원 직접 관리자 주소 접근은 차단하고 관리자는 수행 
   ).toBeVisible();
   await selectPreviewOption(page, '미리보기 역할', 'manager');
   await page.goto('/preview/spaces/1/dashboard');
-  await page.getByLabel('조회할 팀').selectOption('1');
+  await page.getByRole('button', { name: '삼위일체 현황 보기', exact: true }).click();
   await page.getByRole('button', { name: '김하늘 수행 상세' }).click();
   await page.getByText('인터뷰 결과 기록 파일 · 파일', { exact: true }).click();
   const downloaded = page.waitForEvent('download');
@@ -393,7 +391,7 @@ for (const width of [320, 768, 1440])
     await selectPreviewOption(page, '미리보기 역할', 'manager');
     await page.goto('/preview/spaces/1/dashboard');
     await expect(
-      page.getByRole('heading', { name: '관리자 대시보드', exact: true }),
+      page.getByRole('heading', { name: '팀 관리', exact: true }),
     ).toBeVisible();
     expect(
       await page.evaluate(
