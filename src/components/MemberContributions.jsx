@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
+import SectionTabs from './SectionTabs.jsx';
+import '../member-contributions.css';
 import RefreshButton from './RefreshButton.jsx';
-import { useSearchParams } from 'react-router';
+import { useLocation, useSearchParams } from 'react-router';
 import { ErrorNotice } from './ui.jsx';
 import { getMemberContributions } from '../api/dashboard.js';
-import { getTeamMembers } from '../api/teams.js';
 import { listDeliverables, downloadDeliverable } from '../api/deliverables.js';
 import { ApiError } from '../api/client.js';
 import useResource from '../hooks/useResource.js';
@@ -16,160 +17,92 @@ import MemberEvaluationResults from './MemberEvaluationResults.jsx';
 import MarkdownBody from './MarkdownBody.jsx';
 import { EmptyState, ResourceState } from './ui.jsx';
 
-export default function MemberContributions({ context, targetUserId, onBack }) {
+const detailTabs = [['work', '작업 기록'], ['evaluations', '동료 평가 결과']];
+
+export default function MemberContributions({ context, targetUserId, onBack, members }) {
   const [params, setParams] = useSearchParams();
-  const statusFilter = Object.hasOwn(statusLabels, params.get('status'))
-    ? params.get('status')
-    : 'ALL';
-  const members = useResource(
-    () => getTeamMembers(context.team.id),
-    [context.team.id],
-  );
-  const member = members.data?.find((member) => member.userId === targetUserId);
-  const resource = useResource(
-    () => getMemberContributions(context.team.id, targetUserId),
-    [context.team.id, targetUserId],
-  );
+  const location = useLocation();
+  const tabsId = useId();
+  const activeTab = params.get('tab') === 'evaluations' ? 'evaluations' : 'work';
+  const statusFilter = Object.hasOwn(statusLabels, params.get('status')) ? params.get('status') : 'ALL';
+  const member = members.data?.find((entry) => entry.userId === targetUserId);
+  const resource = useResource(() => getMemberContributions(context.team.id, targetUserId), [context.team.id, targetUserId]);
   const [evaluationRevision, setEvaluationRevision] = useState(0);
+  const tasks = resource.data || [];
+  const filteredTasks = tasks.filter((task) => statusFilter === 'ALL' || task.status === statusFilter);
+  const selectedTask = filteredTasks.find((task) => String(task.taskId) === params.get('taskId')) || filteredTasks[0];
+  const updateQuery = (changes) => {
+    const next = new URLSearchParams(params);
+    Object.entries(changes).forEach(([key, value]) => value == null ? next.delete(key) : next.set(key, value));
+    setParams(next, { replace: true, preventScrollReset: true, state: location.state });
+  };
   return (
     <section className="stack member-contributions-page">
-      <button className="secondary-button back-button" onClick={onBack}>
-        ← 대시보드로
-      </button>
+      <button className="ghost-button back-button" onClick={onBack}>← 팀 관리</button>
       <div className="page-heading">
-        <div>
-          <h1>{member?.name || '팀원'}님의 수행 상세</h1>
-          <p>{context.team.name} · 현재 담당 작업과 최신 자료를 확인합니다.</p>
-        </div>
-        <RefreshButton
-          label="수행 상세 새로고침"
-          disabled={resource.loading}
-          onClick={() => {
-            resource.reload();
-            members.reload();
-            setEvaluationRevision((revision) => revision + 1);
-          }}
-        />
+        <div><h1>{member?.name || '팀원'}님의 수행 상세</h1></div>
+        <RefreshButton label="수행 상세 새로고침" disabled={resource.loading}
+          onClick={() => { resource.reload(); members.reload(); setEvaluationRevision((revision) => revision + 1); }} />
       </div>
       <ResourceState resource={members} label="팀원 정보" />
-      {!resource.error && resource.data && (
-        <section className="member-work-summary">
-          <h2>담당 작업 요약</h2>
-          <div className="action-summary">
-            {Object.entries(statusLabels).map(([status, label]) => (
-              <div key={status}>
-                {label}{' '}
-                <strong>
-                  {
-                    resource.data.filter((task) => task.status === status)
-                      .length
-                  }
-                  건
-                </strong>
-              </div>
-            ))}
-          </div>
-          <label className="form-field">
-            <span className="field-label">조회할 작업 상태</span>
-            <select
-              value={statusFilter}
-              onChange={(event) =>
-                setParams(
-                  event.target.value === 'ALL'
-                    ? {}
-                    : { status: event.target.value },
-                )
-              }
-            >
-              <option value="ALL">전체 작업</option>
-              {Object.entries(statusLabels).map(([status, label]) => (
-                <option value={status} key={status}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-        </section>
-      )}
-      <ResourceState resource={resource}>
-        {resource.data?.length ? (
-          resource.data
-            .filter(
-              (task) => statusFilter === 'ALL' || task.status === statusFilter,
-            )
-            .map((task) => (
-              <section className="member-task-record" key={task.taskId}>
-                <div className="page-heading">
-                  <h2>{task.title}</h2>
-                  <span
-                    className={`status-badge task-state-${task.status.toLowerCase()}`}
-                  >
-                    {statusLabels[task.status]}
-                  </span>
-                </div>
-                <dl className="member-task-metadata">
-                  <div>
-                    <dt>예상 작업량</dt>
-                    <dd>{formatExpectedWorkload(task.weight)}</dd>
-                  </div>
-                  <div>
-                    <dt>본인 배분</dt>
-                    <dd>{task.allocationPercent}%</dd>
-                  </div>
-                  <div>
-                    <dt>시작일</dt>
-                    <dd>{formatDate(task.startAt)}</dd>
-                  </div>
-                  <div>
-                    <dt>마감</dt>
-                    <dd>{formatDate(task.dueAt)}</dd>
-                  </div>
-                </dl>
-                <div className="member-task-materials">
-                  <div className="member-task-description">
-                    <h3>본인이 작성한 수행 설명</h3>
-                    <p className="preserve-lines">
-                      {task.contributionDescription ||
-                        '아직 작성하지 않았습니다. 미작성만으로 수행 여부를 판단할 수 없습니다.'}
-                    </p>
-                    <p className="field-help">
-                      수행 설명 수정 {formatDate(task.contributionUpdatedAt)}
-                    </p>
-                  </div>
-                  <div className="member-task-deliverables">
-                    <h3>연결된 최신 산출물</h3>
-                    {task.deliverableSummary.length ? (
-                      task.deliverableSummary.map((item) => (
-                        <LinkedDeliverable
-                          key={`${item.id}:${item.version}:${task.taskVersion}`}
-                          item={item}
-                          teamId={context.team.id}
-                          taskId={task.taskId}
-                        />
-                      ))
-                    ) : (
-                      <p className="field-help">연결된 산출물이 없습니다.</p>
-                    )}
-                  </div>
-                </div>
-              </section>
-            ))
-        ) : (
-          <EmptyState>현재 담당 작업이 없습니다.</EmptyState>
-        )}
-      </ResourceState>
-      {resource.data?.length > 0 &&
-        !resource.data.some(
-          (task) => statusFilter === 'ALL' || task.status === statusFilter,
-        ) && <EmptyState>선택한 상태의 담당 작업이 없습니다.</EmptyState>}
-      <MemberEvaluationResults
-        spaceId={context.space.id}
-        teamId={context.team.id}
-        targetUserId={targetUserId}
-        revision={evaluationRevision}
-      />
+      <SectionTabs id={tabsId} label="수행 상세 보기" tabs={detailTabs} activeTab={activeTab}
+        onSelect={(key) => updateQuery({ tab: key === 'work' ? null : key })} />
+      <div role="tabpanel" id={`${tabsId}-work-panel`} aria-labelledby={`${tabsId}-work-tab`} hidden={activeTab !== 'work'}>
+        {activeTab === 'work' && <>
+          {!resource.error && resource.data && <div className="member-record-toolbar">
+            <div className="member-record-summary" aria-label="담당 작업 요약">
+              <strong>담당 작업 {tasks.length}건</strong>
+              <dl>{Object.entries(statusLabels).map(([status, label]) => <div key={status}><dt>{label}</dt><dd>{tasks.filter((task) => task.status === status).length}</dd></div>)}</dl>
+            </div>
+            <label className="form-field"><span className="field-label">조회할 작업 상태</span>
+              <select aria-label="조회할 작업 상태" value={statusFilter} onChange={(event) => updateQuery({ status: event.target.value === 'ALL' ? null : event.target.value, taskId: null })}>
+                <option value="ALL">전체 작업</option>
+                {Object.entries(statusLabels).map(([status, label]) => <option value={status} key={status}>{label}</option>)}
+              </select>
+            </label>
+          </div>}
+          <ResourceState resource={resource}>
+            {resource.data && (tasks.length ? (filteredTasks.length ? <div className="member-record-layout">
+              <nav className="member-record-list" aria-label="담당 작업 목록">
+                {filteredTasks.map((task) => <button type="button" key={task.taskId} aria-current={task.taskId === selectedTask?.taskId ? 'true' : undefined}
+                  onClick={() => updateQuery({ taskId: String(task.taskId) })}>
+                  <span className={`status-badge task-state-${task.status.toLowerCase()}`}>{statusLabels[task.status]}</span>
+                  <strong>{task.title}</strong>
+                  <small>마감 {formatDate(task.dueAt)}</small>
+                </button>)}
+              </nav>
+              {selectedTask && <MemberTaskRecord key={`${selectedTask.taskId}:${selectedTask.taskVersion}`} task={selectedTask} teamId={context.team.id} />}
+            </div> : <EmptyState>선택한 상태의 담당 작업이 없습니다.</EmptyState>) : <EmptyState>현재 담당 작업이 없습니다.</EmptyState>)}
+          </ResourceState>
+        </>}
+      </div>
+      <div role="tabpanel" id={`${tabsId}-evaluations-panel`} aria-labelledby={`${tabsId}-evaluations-tab`} hidden={activeTab !== 'evaluations'}>
+        {activeTab === 'evaluations' && <MemberEvaluationResults spaceId={context.space.id} teamId={context.team.id} targetUserId={targetUserId} revision={evaluationRevision} />}
+      </div>
     </section>
   );
+}
+
+function MemberTaskRecord({ task, teamId }) {
+  return <section className="member-task-record" aria-label="선택한 작업 기록">
+    <div className="member-record-heading"><span className={`status-badge task-state-${task.status.toLowerCase()}`}>{statusLabels[task.status]}</span><h2>{task.title}</h2></div>
+    <dl className="member-task-metadata">
+      <div><dt>시작일</dt><dd>{formatDate(task.startAt)}</dd></div>
+      <div><dt>마감</dt><dd>{formatDate(task.dueAt)}</dd></div>
+      <div><dt>예상 작업량</dt><dd>{formatExpectedWorkload(task.weight)}</dd></div>
+      <div><dt>본인 배분</dt><dd>{task.allocationPercent}%</dd></div>
+    </dl>
+    <div className="member-task-materials">
+      <section className="member-task-description"><div className="section-heading"><h3>수행 설명</h3>
+        {task.contributionUpdatedAt && <small>수정 {formatDate(task.contributionUpdatedAt)}</small>}</div>
+        <p className="preserve-lines">{task.contributionDescription || '아직 작성하지 않았습니다. 미작성만으로 수행 여부를 판단할 수 없습니다.'}</p>
+      </section>
+      <section className="member-task-deliverables"><div className="section-heading"><h3>연결된 최신 산출물</h3><span>{task.deliverableSummary.length}개</span></div>
+        {task.deliverableSummary.length ? task.deliverableSummary.map((item) => <LinkedDeliverable key={`${item.id}:${item.version}:${task.taskVersion}`} item={item} teamId={teamId} taskId={task.taskId} />)
+          : <p className="field-help">연결된 산출물이 없습니다.</p>}
+      </section>
+    </div>
+  </section>;
 }
 
 function LinkedDeliverable({ item, teamId, taskId }) {
@@ -240,7 +173,7 @@ function DeliverableContent({ teamId, taskId, deliverableId, summaryVersion }) {
           {item.version !== summaryVersion && (
             <p className="notice">요약 조회 이후 변경된 최신 산출물입니다.</p>
           )}
-          <h4>{item.title}</h4>
+          <h4 className="sr-only">{item.title}</h4>
           {item.description && (
             <p className="preserve-lines">{item.description}</p>
           )}

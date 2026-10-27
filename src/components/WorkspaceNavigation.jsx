@@ -144,10 +144,10 @@ export default function WorkspaceNavigation({
             <div className="workspace-nav-group manager-workspace-navigation">
               <p className="nav-section">스페이스 운영</p>
               {[
-                ['dashboard', '관리자 대시보드', 'dashboard'],
+                ['dashboard', '팀 관리', 'dashboard'],
                 ['participants', '참여자 관리', 'users'],
-                ['rounds', '평가 회차 관리', 'calendar'],
-                ['reports', '리포트 검토·공개', 'chart'],
+                ['rounds', '동료 평가 관리', 'calendar'],
+                ['reports', '리포트 관리', 'chart'],
                 ['settings', '스페이스 관리', 'settings'],
               ].map(([segment, label, icon]) =>
                 navButton(
@@ -155,7 +155,7 @@ export default function WorkspaceNavigation({
                   icon,
                   `${spacePath(spaceId)}/${segment}`,
                   view === segment ||
-                    (segment === 'dashboard' && view === 'contributions'),
+                    (segment === 'dashboard' && (view === 'contributions' || (view === 'team' && team && !isApprovedMember(team)))),
                 ),
               )}
             </div>
@@ -169,22 +169,9 @@ export default function WorkspaceNavigation({
               teamMenuPath(spaceId, selectedTeam.id, '팀 홈'),
               false,
             )}
-          {team && (isManager || isApprovedMember(team)) && (
+          {team && isApprovedMember(team) && (
             <nav className="desktop-team-navigation" aria-label="팀 메뉴">
-              {!isApprovedMember(team) ? (
-                <div className="workspace-nav-group">
-                  <p className="nav-section">팀 자료 조회</p>
-                  {menus.map((label) =>
-                    navButton(
-                      label,
-                      label === '산출물' ? 'file' : 'member',
-                      teamMenuPath(spaceId, team.id, label),
-                      view === 'team' && teamMenu === label,
-                    ),
-                  )}
-                </div>
-              ) : (
-                teamNavigationGroups.map((group, index) => {
+              {teamNavigationGroups.map((group, index) => {
                   const items = group.items.filter(([label]) =>
                     menus.includes(label),
                   );
@@ -209,8 +196,7 @@ export default function WorkspaceNavigation({
                       </div>
                     )
                   );
-                })
-              )}
+                })}
             </nav>
           )}
         </div>

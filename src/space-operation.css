@@ -1,0 +1,70 @@
+.space-operation-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.space-operation-tabs > button {
+  min-height: 42px;
+  padding: 8px 0 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-body);
+}
+.space-operation-tabs > button[aria-selected="true"] {
+  border-bottom-color: var(--brand);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.space-operation-tabs > button:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+.space-settings > .page-heading { border-bottom: 0; padding-bottom: 0; }
+.space-settings .settings-tab-panel { min-width: 0; }
+.main-content .space-settings .settings-tab-panel > .settings-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}
+.space-settings .settings-tab-panel .settings-section-content { max-width: none; }
+.space-settings .settings-tab-panel .settings-section-content > :is(form, dl) { max-width: 760px; }
+.space-settings .settings-tab-panel .settings-section-heading > p { max-width: 80ch; }
+@media (max-width: 720px) {
+  .main-content .space-settings .settings-tab-panel > .settings-section { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .space-settings .settings-tab-panel .settings-section-heading > p { max-width: none; }
+}
+
+.main-content .round-management-page > [role='tabpanel'] > .peer-response-panel { padding: 0; border: 0; }
+.main-content > .space-operation-page {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  gap: var(--space-section);
+  align-content: start;
+}
+.main-content > .space-operation-page > .page-heading {
+  min-height: 40px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  align-items: center;
+  gap: 16px;
+}
+.main-content > .space-operation-page > .page-heading h1 {
+  margin: 0;
+  font-size: var(--text-page);
+  line-height: 1.35;
+}
+.main-content > .space-operation-page > .page-heading > :is(.heading-actions, .dashboard-heading-actions) {
+  width: auto;
+  max-width: 100%;
+  margin-left: auto;
+  justify-content: flex-end;
+}
+.space-operation-page > .space-operation-tabs { margin: 0; }
+.space-operation-page > [role='tabpanel'] { min-width: 0; }
+.space-operation-page > [role='tabpanel'][hidden] { display: none; }

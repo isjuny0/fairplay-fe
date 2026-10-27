@@ -295,7 +295,7 @@ export default function SpaceHome({
                         className="secondary-button"
                         onClick={() => onOpenTeam(team)}
                       >
-                        팀 자료 조회
+                        팀 상세 보기
                       </button>
                     ) : (
                       <button

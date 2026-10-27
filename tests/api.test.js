@@ -628,3 +628,13 @@ test('원문 변경·권한·읽기 실패는 목업이나 이전 버전으로 �
     await assert.rejects(getRagSource(3, 2, 0), { status, code });
   }
 });
+
+test('리포트 생성 비율은 최상위 JSON 본문과 CSRF로 전송한다', async () => {
+  const weights = { taskPercent: 50, midPercent: 20, finalPercent: 30 };
+  await generateTeamReport(7, weights);
+  const request = calls.find((call) => call.url === '/api/teams/7/report');
+  assert.equal(request.method, 'POST');
+  assert.deepEqual(JSON.parse(request.body), weights);
+  assert.equal(request.headers['Content-Type'], 'application/json');
+  assert.equal(request.headers['X-CSRF-TOKEN'], 'token');
+});

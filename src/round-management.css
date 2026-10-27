@@ -1,0 +1,70 @@
+.round-management-page { gap: 24px; }
+.round-management-page > .page-heading { border-bottom: 0; padding-bottom: 0; }
+.round-management-context {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  color: var(--text-muted);
+  font-size: var(--text-support);
+}
+.round-management-context .round-membership-status { background: var(--surface-secondary); color: var(--text-muted); }
+.round-management-page .round-management-table {
+  table-layout: fixed;
+  min-width: 900px;
+  width: 100%;
+  margin: 0;
+}
+.round-management-table th:nth-child(1) { width: 11%; }
+.round-management-table th:nth-child(2) { width: 12%; }
+.round-management-table th:nth-child(3) { width: 26%; }
+.round-management-table th:nth-child(4) { width: 19%; }
+.round-management-table th:nth-child(5) { width: 32%; }
+.round-management-table :is(th, td) { white-space: normal; overflow-wrap: anywhere; }
+.round-management-table tbody > tr > * { padding: 20px 12px; vertical-align: top; }
+.round-management-table tbody th { font-weight: 500; }
+.round-name { display: inline-block; padding-top: 5px; }
+.round-lifecycle-status { margin-bottom: 8px; }
+.round-lifecycle-draft { color: #556170; background: #f0f2f4; }
+.round-lifecycle-unconfigured { color: var(--text-muted); background: var(--surface-secondary); }
+.round-lifecycle-open { color: var(--brand-dark); background: var(--brand-light); }
+.round-lifecycle-closed { color: #556170; background: #f0f2f4; }
+.round-table-note { display: block; color: var(--text-muted); font-size: var(--text-caption); line-height: 1.7; }
+.round-period { display: grid; gap: 8px; margin: 0; }
+.round-period > div { display: flex; align-items: baseline; gap: 10px; }
+.round-period dt { color: var(--text-muted); font-size: var(--text-caption); white-space: nowrap; }
+.round-period dd { margin: 0; font-variant-numeric: tabular-nums; font-size: var(--text-support); line-height: 1.7; }
+.round-submission-overview { display: grid; justify-items: start; gap: 4px; }
+.round-submission-overview > strong { font-weight: 500; font-size: var(--text-body); font-variant-numeric: tabular-nums; }
+.round-missing-count { color: #90641b; font-size: var(--text-caption); }
+.round-detail-button {
+  min-height: 30px;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.round-detail-button:hover { color: var(--brand-dark); }
+.round-detail-button:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; border-radius: 3px; }
+.round-management-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+.round-management-actions > button { min-height: 34px; padding: 6px 12px; font-size: var(--text-support); white-space: nowrap; }
+.round-opening-block { margin: 8px 0 0; max-width: 36ch; color: var(--text-muted); font-size: var(--text-caption); line-height: 1.7; }
+.round-management-page .round-operation-guide { border-bottom: 1px solid var(--border); padding-bottom: 16px; }
+.round-management-page .round-operation-guide > summary { color: var(--text-muted); }
+.main-content .round-management-page > .panel.peer-response-panel { padding: 0; border: 0; border-radius: 0; }
+.round-submission-modal .round-submission-table { table-layout: fixed; min-width: 0; margin-bottom: 0; }
+.round-submission-table :is(th, td) { padding: 16px 12px; white-space: normal; overflow-wrap: anywhere; }
+.round-submission-table th:nth-child(1) { width: 28%; }
+.round-submission-table th:nth-child(2) { width: 25%; }
+.round-submission-table th:nth-child(3) { width: 29%; }
+.round-submission-table th:nth-child(4) { width: 18%; }
+.round-submission-table tbody th { font-weight: 500; }
+.round-submission-table .progress-track { height: 5px; }
+@media (max-width: 720px) {
+  .round-management-page > .page-heading { align-items: flex-start; gap: 16px; }
+  .round-management-page > .page-heading .heading-actions { width: 100%; justify-content: flex-end; }
+  .round-submission-table :is(th, td) { padding: 12px 6px; font-size: var(--text-caption); }
+}

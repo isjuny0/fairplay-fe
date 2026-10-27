@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { addDashboardWidgets } from './helpers/teamDashboard.js';
 
 function luminance(color) {
   const values = color
@@ -152,16 +153,16 @@ test('공간·팀 선택의 좌우 여백을 유지하고 뒤로가기는 접기
   }
 });
 
-test('관리자는 본문 팀 카드에서 키보드로 자료 조회에 진입한다', async ({ page }) => {
+test('관리자는 본문 팀 카드에서 키보드로 팀 상세에 진입한다', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('fairplay:preview-role', 'manager'));
   await page.goto('/preview/spaces/1');
   const sidebar = page.getByRole('navigation', { name: '스페이스 메뉴', exact: true });
   await expect(sidebar.getByRole('combobox', { name: '팀 선택', exact: true })).toHaveCount(0);
   const team = page.getByRole('list', { name: '팀 목록', exact: true }).getByRole('listitem').filter({ hasText: '삼위일체' });
-  await team.getByRole('button', { name: '팀 자료 조회', exact: true }).focus();
+  await team.getByRole('button', { name: '팀 상세 보기', exact: true }).focus();
   await page.keyboard.press('Enter');
-  await expect(page).toHaveURL(/\/teams\/1\/members$/);
-  await expect(page.getByRole('heading', { name: '팀원 관리', exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/dashboard\?teamId=1$/);
+  await expect(page.getByRole('heading', { name: '삼위일체', exact: true })).toBeVisible();
   await expect(sidebar.getByRole('button', { name: '작업', exact: true })).toHaveCount(0);
 });
 
@@ -208,18 +209,13 @@ test('팀 홈의 마감 지연은 빨간색 아이콘으로 표시한다', async
   page,
 }) => {
   await page.goto('/preview/spaces/1/teams/1');
-  for (const [name, background] of [['.home-overdue-icon', 'rgb(255, 240, 241)']]) {
-    const icon = page.locator(name);
-    await expect(icon).toHaveCSS('background-color', background);
-    await expect(icon.locator('svg')).toBeVisible();
-  }
-  await expect(page.locator('.home-overdue-icon')).toHaveCSS(
-    'color',
-    'rgb(255, 85, 92)',
-  );
-  await expect(
-    page.locator('.has-overdue .home-action-title strong'),
-  ).toHaveCSS('color', 'rgb(8, 124, 85)');
+  await addDashboardWidgets(page, ['지금 확인할 작업']);
+  const overdue = page.getByRole('button', { name: /내 마감 지연/ });
+  const icon = overdue.locator('.dashboard-icon');
+  await expect(icon).toHaveCSS('background-color', 'rgb(255, 240, 240)');
+  await expect(icon.locator('svg')).toBeVisible();
+  await expect(icon).toHaveCSS('color', 'rgb(220, 38, 38)');
+  await expect(overdue.locator('strong')).toHaveCSS('color', 'rgb(220, 38, 38)');
 });
 
 test('타임라인·목록은 밝은 상태 배경과 읽기 쉬운 글씨색을 공유한다', async ({
@@ -304,6 +300,7 @@ test('작업 상세와 관리자 화면도 작업 보드의 공통 상태색을 
     }
     const availableStatuses = memberId.endsWith('1') ? ['done', 'in_progress', 'revising'] : ['todo'];
     for (const status of availableStatuses) {
+      await page.getByRole('navigation', { name: '담당 작업 목록' }).getByRole('button').filter({ has: page.locator(`.task-state-${status}`) }).first().click();
       await expect(page.locator(`.member-task-record .status-badge.task-state-${status}`).first()).toBeVisible();
     }
   }
@@ -330,7 +327,7 @@ for (const role of ['member', 'manager', 'participant']) {
       sidebar.getByRole('button', { name: '팀 목록', exact: true }),
     ).toHaveCount(0);
     await expect(
-      sidebar.getByRole('button', { name: '관리자 대시보드', exact: true }),
+      sidebar.getByRole('button', { name: '팀 관리', exact: true }),
     ).toHaveCount(role === 'manager' ? 1 : 0);
     if (role === 'participant')
       await expect(
@@ -365,7 +362,7 @@ for (const role of ['member', 'manager']) {
         if (width <= 720) await page.getByRole('button', { name: '스페이스 메뉴 펼치기', exact: true }).click();
         await expect(home).toHaveAttribute('aria-current', 'page');
         if (role === 'manager' && width > 720)
-          await expect(sidebar.getByRole('button', { name: '관리자 대시보드', exact: true })).toBeVisible();
+          await expect(sidebar.getByRole('button', { name: '팀 관리', exact: true })).toBeVisible();
       }
       await page.reload();
       if (width <= 720) await page.getByRole('button', { name: '스페이스 메뉴 펼치기', exact: true }).click();

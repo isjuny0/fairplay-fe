@@ -113,10 +113,6 @@ html:has(.review-action-dock) {
   flex-wrap: wrap;
   gap: 8px 24px;
 }
-.report-review-page .report-status-toolbar .process-steps {
-  flex: 1 1 auto;
-  margin: 0;
-}
 .report-status-toolbar > .report-refresh {
   margin-left: auto;
   font-size: var(--text-support);
@@ -135,20 +131,6 @@ html:has(.review-action-dock) {
 }
 .report-review-page .report-team-result .section-heading p {
   margin-bottom: 0;
-}
-.report-readiness-details {
-  border-block: 1px solid var(--border);
-}
-.report-readiness-details > summary {
-  padding: 14px 0;
-  cursor: pointer;
-  color: var(--text-muted);
-  font-size: var(--text-support);
-}
-.report-readiness-details > .panel {
-  padding: 8px 0 16px;
-  border: 0;
-  border-radius: 0;
 }
 @media (max-width: 1100px) {
   .peer-evaluation-actions {
@@ -201,9 +183,6 @@ html:has(.review-action-dock) {
 }
 .report-review-page .report-team-toolbar {
   padding-block: 8px;
-}
-.report-review-page .report-status-toolbar .process-steps li {
-  padding-block: 6px;
 }
 .report-review-page .report-team-result .section-heading h2 {
   margin: 4px 0;

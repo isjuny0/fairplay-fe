@@ -150,11 +150,12 @@ function previewTaskResponse(state, context, entry, task) {
 
 export async function previewRequest(
   path,
-  { method = 'GET', body = {}, responseType } = {},
+  { method = 'GET', body, responseType } = {},
 ) {
   const context = previewContext();
   const state = getMockState(context);
   Object.assign(context.space, state.spaceOverrides || {});
+  context.space.reportWeights = state.reportWeights ?? null;
   const url = new URL(path, 'https://preview.local');
   const parts = url.pathname.split('/').filter(Boolean);
   const id = Number(parts[2]);

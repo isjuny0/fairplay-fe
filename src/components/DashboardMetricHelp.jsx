@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { CircleHelp } from 'lucide-react';
 import { Modal } from './ui.jsx';
 
-export default function DashboardMetricHelp({ title, contribution = false }) {
+export default function DashboardMetricHelp({ title, contribution = false, weights }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -26,18 +26,18 @@ export default function DashboardMetricHelp({ title, contribution = false }) {
                 </p>
                 <dl>
                   <div>
-                    <dt>완료 작업 · 70%</dt>
+                    <dt>완료 작업{weights && ` · ${weights.taskPercent}%`}</dt>
                     <dd>
                       최종 평가 마감까지 완료된 작업의 예상 작업량과 담당 배분
                     </dd>
                   </div>
                   <div>
-                    <dt>중간 동료 평가 · 10%</dt>
-                    <dd>팀 내 중간 협업 평가 비율</dd>
+                    <dt>중간 동료 평가{weights && ` · ${weights.midPercent}%`}</dt>
+                    <dd>팀 내 중간 동료 평가 비율</dd>
                   </div>
                   <div>
-                    <dt>최종 동료 평가 · 20%</dt>
-                    <dd>팀 내 최종 협업 평가 비율</dd>
+                    <dt>최종 동료 평가{weights && ` · ${weights.finalPercent}%`}</dt>
+                    <dd>팀 내 최종 동료 평가 비율</dd>
                   </div>
                 </dl>
                 <p>

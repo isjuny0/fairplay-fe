@@ -123,6 +123,7 @@ export default function TaskDetail({
   user,
   members,
   onBack,
+  readOnly = false,
 }) {
   const resource = useResource(async () => {
     const detail = await getTask(taskId);
@@ -149,7 +150,7 @@ export default function TaskDetail({
     action,
     successMessage = '작업 변경 사항을 저장했습니다.',
   ) => {
-    if (!canModifyTeamWork(team)) return;
+    if (readOnly || !canModifyTeamWork(team)) return;
     setBusy(true);
     setError(null);
     try {
@@ -165,7 +166,7 @@ export default function TaskDetail({
   };
   const reload = resource.reload;
   const task = resource.data?.task;
-  const canViewAi = Boolean(task && isAssignee(task, user.id));
+  const canViewAi = Boolean(!readOnly && task && isAssignee(task, user.id));
   const tabs = [
     ['task-description-section', '작업내용'],
     ['task-contributions-section', '수행설명'],
@@ -203,7 +204,7 @@ export default function TaskDetail({
     hasDeliverables;
   const workClosed = task?.completionBlockReason === 'WORK_PERIOD_CLOSED';
   const changeStatus = async (status) => {
-    if (busy || !canModifyTeamWork(team) || workClosed) return;
+    if (readOnly || busy || !canModifyTeamWork(team) || workClosed) return;
     if (
       status === 'DONE' &&
       (!completionReady || task.completionBlockReason !== null)
@@ -319,7 +320,7 @@ export default function TaskDetail({
                   <h1>{task.title}</h1>
                 </div>
                 <div className="task-detail-actions">
-                  {isAssignee(task, user.id) && (
+                  {!readOnly && isAssignee(task, user.id) && (
                     <button
                       className="secondary-button task-ai-shortcut"
                       onClick={() => focusTaskSection('task-ai-review-section')}
@@ -328,7 +329,7 @@ export default function TaskDetail({
                       AI 피드백 보기
                     </button>
                   )}
-                  {canEditTask(task, team, user.id) && (
+                  {!readOnly && canEditTask(task, team, user.id) && (
                     <button
                       className="secondary-button"
                       disabled={busy}
@@ -389,7 +390,7 @@ export default function TaskDetail({
                     작업 설명
                   </h2>
                   <p className="preserve-lines">{task.description}</p>
-                  {!canViewAi && (
+                  {!readOnly && !canViewAi && (
                     <p className="task-ai-access-note">
                       <Sparkles size={16} aria-hidden="true" />
                       AI 피드백은 이 작업의 담당자에게만 제공됩니다.
@@ -411,7 +412,7 @@ export default function TaskDetail({
                     onChanged={reload}
                   />
                 </div>
-                {isAssignee(task, user.id) ? (
+                {!readOnly && isAssignee(task, user.id) ? (
                   <div
                     id="task-ai-review-section"
                     {...panelProps('task-ai-review-section')}
@@ -464,7 +465,7 @@ export default function TaskDetail({
                               : '미작성'}
                           </span>
                         </div>
-                        {contribution.userId === user.id ? (
+                        {!readOnly && contribution.userId === user.id ? (
                           <OwnContribution
                             key={`${task.id}-${contribution.contributionDescription || ''}`}
                             task={task}
@@ -494,7 +495,7 @@ export default function TaskDetail({
                 className="stack task-progress-sidebar"
                 aria-label="작업 진행 및 담당"
               >
-                {isAssignee(task, user.id) && (
+                {!readOnly && isAssignee(task, user.id) && (
                   <section className="panel stack task-next-action">
                     <h2>
                       {task.status === 'DONE' ? '완료된 작업' : '작업 진행'}
@@ -682,15 +683,15 @@ export default function TaskDetail({
                     ))}
                   </ul>
                 </section>
-                <TaskComments
+                {!readOnly && <TaskComments
                   key={`${team.id}-${task.id}-${user.id}`}
                   taskId={task.id}
                   team={team}
                   user={user}
-                />
+                />}
               </aside>
             </div>
-            {isMutable(task) && isTeamEditor(team, user.id) && (
+            {!readOnly && isMutable(task) && isTeamEditor(team, user.id) && (
               <div className="task-detail-footer">
                 <button
                   className="secondary-button danger"

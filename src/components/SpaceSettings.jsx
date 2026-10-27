@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router';
+import SectionTabs from './SectionTabs.jsx';
 import RefreshButton from './RefreshButton.jsx';
 import DateTimeInput from './DateTimeInput.jsx';
 import { currentDateTime } from '../lib/dateTime.js';
@@ -26,14 +28,20 @@ import {
 } from '../lib/formValidation.js';
 
 export default function SpaceSettings({ space, onChanged }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const tabsId = useId();
+  const activeTab = location.hash === '#join-code' ? 'join-code' : 'team-building';
+  const selectTab = (tab) => navigate({ pathname: location.pathname, search: location.search, hash: tab === 'join-code' ? '#join-code' : '' }, { preventScrollReset: true });
   const codes = useResource(async () => {
+    if (activeTab !== 'join-code') return null;
     try {
       return await getJoinCode(space.id);
     } catch (error) {
       if (error.code === 'JOIN_CODE_NOT_FOUND') return null;
       throw error;
     }
-  }, [space.id]);
+  }, [space.id, activeTab === 'join-code']);
   const [defaultDateTime] = useState(currentDateTime);
   const initialOpensAt =
     toDateInput(space.teamBuildingOpensAt) || defaultDateTime;
@@ -55,7 +63,8 @@ export default function SpaceSettings({ space, onChanged }) {
   useEffect(() => {
     setOpensAt(toDateInput(space.teamBuildingOpensAt) || defaultDateTime);
     setClosesAt(toDateInput(space.teamBuildingClosesAt) || defaultDateTime);
-  }, [space.version, space.teamBuildingOpensAt, space.teamBuildingClosesAt]);
+  }, [space.teamBuildingOpensAt, space.teamBuildingClosesAt]);
+  useEffect(() => { setError(null); setNotice(''); }, [activeTab]);
   const run = async (action, message) => {
     setBusy(true);
     setError(null);
@@ -95,15 +104,16 @@ export default function SpaceSettings({ space, onChanged }) {
     );
   };
   return (
-    <section className="stack space-settings">
+    <section className="stack space-operation-page space-settings">
       <div className="page-heading page-heading--compact">
         <div>
           <h1>스페이스 관리</h1>
         </div>
-        <span className="status-badge">
-          {buildingLabels[space.teamBuildingStatus]}
-        </span>
+        {activeTab === 'team-building' && <span className="status-badge">{buildingLabels[space.teamBuildingStatus]}</span>}
       </div>
+      <SectionTabs id={tabsId} label="스페이스 관리 항목"
+        tabs={[["team-building", "팀 빌딩 기간"], ["join-code", "참여 코드"]]}
+        activeTab={activeTab} onSelect={selectTab} />
       <dl className="settings-space-overview">
         <div>
           <dt>스페이스</dt>
@@ -122,7 +132,7 @@ export default function SpaceSettings({ space, onChanged }) {
           {notice}
         </p>
       )}
-      <div className="settings-grid">
+      <div className="settings-tab-panel" role="tabpanel" id={`${tabsId}-team-building-panel`} aria-labelledby={`${tabsId}-team-building-tab`} hidden={activeTab !== 'team-building'}>
         <section className="panel settings-section">
           <div className="settings-section-heading">
             <h2>팀 빌딩 기간</h2>
@@ -193,6 +203,8 @@ export default function SpaceSettings({ space, onChanged }) {
             )}
           </div>
         </section>
+      </div>
+      <div className="settings-tab-panel" role="tabpanel" id={`${tabsId}-join-code-panel`} aria-labelledby={`${tabsId}-join-code-tab`} hidden={activeTab !== 'join-code'}>
         <section className="panel settings-section">
           <div className="settings-section-heading">
             <h2>참여 코드</h2>
