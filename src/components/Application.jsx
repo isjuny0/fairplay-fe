@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Monitor, X } from 'lucide-react';
+import { BookOpen, Monitor, X } from 'lucide-react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 import { getCurrentUser, loginWithGoogle, logout } from '../api/auth.js';
 import AppRoutes from './AppRoutes.jsx';
@@ -240,7 +240,9 @@ export default function Application({ previewRuntime }) {
             </div>
           </div>
           <div className="profile-area">
-            {preview && <button className="preview-toggle" onClick={guide?.open}>사용자 가이드</button>}
+            {preview && <button className="preview-toggle preview-guide-entry" aria-label="사용자 가이드" title="사용자 가이드" onClick={guide?.open}>
+              <BookOpen size={15} aria-hidden="true" /><span>사용자 가이드</span>
+            </button>}
             {preview && (
               <div
                 className="preview-toolbar"
