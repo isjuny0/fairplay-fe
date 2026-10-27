@@ -45,36 +45,6 @@
   flex-wrap: wrap;
   margin-bottom: 16px;
 }
-.dashboard-summary .metric-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0;
-}
-.dashboard-summary .metric-card {
-  padding: 4px 20px;
-  border: 0;
-  border-left: 1px solid var(--border);
-  border-radius: 0;
-  background: var(--surface);
-}
-.dashboard-summary .metric-card:first-child {
-  padding-left: 0;
-  border-left: 0;
-}
-.dashboard-summary .metric-card > span {
-  margin-bottom: 8px;
-  font-size: var(--text-support);
-}
-.dashboard-summary .metric-card > strong {
-  font-size: 24px;
-  font-weight: 600;
-  line-height: 1.4;
-  font-variant-numeric: tabular-nums;
-}
-.dashboard-summary .metric-card > p {
-  margin: 6px 0 0;
-  font-size: var(--text-caption);
-  line-height: 1.6;
-}
 .dashboard-attention-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(280px, 1fr);
@@ -279,9 +249,6 @@
   color: #805b15;
   font-weight: 500;
 }
-.manager-dashboard .data-table thead th:nth-child(n + 2):not(:last-child) {
-  text-align: right;
-}
 .main-content
   .manager-dashboard
   > .panel:is(.dashboard-team-overview, .dashboard-member-overview) {
@@ -312,7 +279,7 @@
   font-weight: 500;
 }
 .manager-dashboard .data-table tbody td {
-  text-align: right;
+  text-align: left;
 }
 .manager-dashboard .data-table tbody td:last-child {
   text-align: left;
@@ -350,16 +317,6 @@
   font-size: var(--text-support);
   color: var(--text-muted);
 }
-.dashboard-reading-guide > summary {
-  cursor: pointer;
-  padding-block: 8px;
-  font-size: var(--text-support);
-  font-weight: 500;
-}
-.dashboard-reading-guide .field-help {
-  max-width: 84ch;
-  margin: 8px 0;
-}
 .settings-space-overview {
   display: flex;
   flex-wrap: wrap;
@@ -385,10 +342,6 @@
   margin: 0;
   font-size: var(--text-support);
   font-variant-numeric: tabular-nums;
-}
-.space-settings .settings-grid {
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0;
 }
 .main-content :is(.space-settings, .team-settings) .panel.settings-section {
   display: grid;
@@ -543,14 +496,6 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 24px;
   }
-  .dashboard-summary .metric-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 20px 0;
-  }
-  .dashboard-summary .metric-card:nth-child(odd) {
-    padding-left: 0;
-    border-left: 0;
-  }
   .main-content :is(.space-settings, .team-settings) .panel.settings-section {
     grid-template-columns: 160px minmax(0, 1fr);
     gap: 24px;
@@ -575,9 +520,6 @@
   }
   .dashboard-summary .section-heading {
     gap: 4px;
-  }
-  .dashboard-summary .metric-card {
-    padding-inline: 12px;
   }
   .dashboard-team-link {
     grid-template-columns: minmax(0, 1fr) 16px;
@@ -625,22 +567,6 @@
 .round-management-page .heading-actions {
   flex-wrap: wrap;
 }
-.round-operation-context {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px 20px;
-  padding-block: 16px;
-  border-block: 1px solid var(--border);
-  font-size: var(--text-support);
-}
-.round-operation-context p {
-  margin: 0;
-}
-.round-operation-context > span:last-child {
-  margin-left: auto;
-  color: var(--text-muted);
-}
 .round-operation-guide > summary {
   cursor: pointer;
   font-size: var(--text-support);
@@ -651,98 +577,6 @@
   color: var(--text-muted);
   font-size: var(--text-support);
   margin: 12px 0 0;
-}
-.round-management-list {
-  display: grid;
-  gap: 0;
-}
-.round-management-list .round-card {
-  padding: 24px 0;
-  border: 0;
-  border-top: 1px solid var(--border);
-  border-radius: 0;
-  box-shadow: none;
-}
-.round-card > .page-heading {
-  padding: 0;
-  margin: 0 0 20px;
-  border: 0;
-}
-.round-card h2 {
-  font-size: var(--text-section);
-  margin: 0;
-}
-.round-card-body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 1fr);
-  gap: 32px;
-  align-items: start;
-}
-.round-schedule-facts {
-  margin: 0;
-}
-.round-schedule-facts > div {
-  display: grid;
-  grid-template-columns: 110px minmax(0, 1fr);
-  gap: 12px;
-  padding-block: 10px;
-  border: 0;
-}
-.round-schedule-facts :is(dt, dd) {
-  font-size: var(--text-support);
-  line-height: 1.6;
-  margin: 0;
-}
-.round-schedule-facts dd {
-  font-weight: 500;
-}
-.round-schedule-facts dt {
-  color: var(--text-muted);
-}
-.round-team-submissions h3 {
-  margin: 0 0 4px;
-  font-size: var(--text-support);
-  font-weight: 500;
-}
-.round-team-submission {
-  display: grid;
-  gap: 8px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border);
-  font-size: var(--text-support);
-  font-variant-numeric: tabular-nums;
-}
-.round-team-submission:last-child {
-  border-bottom: 0;
-}
-.round-team-submission-heading {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 8px 16px;
-}
-.round-team-submission-heading strong {
-  font-weight: 500;
-  overflow-wrap: anywhere;
-}
-.round-team-submission > span {
-  justify-self: end;
-  margin: 0;
-  font-size: var(--text-caption);
-}
-.round-team-submission > .dashboard-count-attention {
-  color: #805b15;
-  font-weight: 500;
-}
-.round-team-submission .progress-track {
-  height: 4px;
-  border-radius: 2px;
-}
-.round-management-list .round-card > .heading-actions {
-  margin-top: 20px;
-}
-.round-management-list .round-card > .field-help {
-  margin-bottom: 0;
 }
 .report-team-toolbar {
   display: flex;
@@ -864,7 +698,6 @@
   font-size: var(--text-subheading);
 }
 @media (max-width: 1000px) {
-  .round-card-body,
   .member-task-materials {
     grid-template-columns: minmax(0, 1fr);
     gap: 20px;
@@ -878,12 +711,6 @@
   }
 }
 @media (max-width: 720px) {
-  .round-operation-context > span:last-child {
-    margin-left: 0;
-  }
-  .round-schedule-facts > div {
-    grid-template-columns: 92px minmax(0, 1fr);
-  }
   .report-team-toolbar .form-field {
     width: 100%;
     display: grid;
@@ -909,24 +736,6 @@
 }
 .report-review-page .team-report > .panel > .page-heading {
   margin-top: 24px;
-}
-.report-review-page .process-steps {
-  gap: 24px;
-  border-bottom: 1px solid var(--border);
-}
-.report-review-page .process-steps li {
-  padding: 10px 0;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-  background: transparent;
-  font-size: var(--text-support);
-  font-weight: 400;
-}
-.report-review-page .process-steps li.active {
-  color: var(--brand-dark);
-  border-bottom-color: var(--brand);
-  font-weight: 500;
 }
 .member-evaluation-results > h2 {
   margin: 0 0 8px;

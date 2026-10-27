@@ -1,6 +1,6 @@
 .main-content .space-participants-page {
   min-width: 0;
-  gap: 16px;
+  gap: var(--space-section);
 }
 .space-participants-page > .page-heading {
   align-items: center;

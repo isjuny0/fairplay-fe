@@ -10,6 +10,7 @@ import {
   createTeam,
   cancelTeamJoin,
   getTeam,
+  getTeamMembers,
   listTeams,
   requestTeamJoin,
 } from '../api/teams.js';
@@ -22,6 +23,7 @@ import UnavailablePage from './UnavailablePage.jsx';
 import { spacePath, teamMenuPath } from '../lib/routes.js';
 
 import WorkspaceNavigation from './WorkspaceNavigation.jsx';
+import '../space-operation.css';
 import {
   ErrorNotice,
   Field,
@@ -36,15 +38,15 @@ const SpaceAnnouncements = deferScreen(screenLoaders.SpaceAnnouncements, '공지
 const TeamWorkspace = deferScreen(screenLoaders.TeamWorkspace, '팀 화면');
 const ManagerDashboard = deferScreen(
   screenLoaders.ManagerDashboard,
-  '관리자 대시보드',
+  '팀 관리',
 );
 const RoundManagement = deferScreen(
   screenLoaders.RoundManagement,
-  '평가 회차 관리',
+  '동료 평가 관리',
 );
 const ReportReview = deferScreen(
   screenLoaders.ReportReview,
-  '리포트 검토·공개',
+  '리포트 관리',
 );
 const MemberContributions = deferScreen(
   screenLoaders.MemberContributions,
@@ -74,6 +76,10 @@ export default function SpaceWorkspace({
     ]);
     return { space, teams };
   }, [spaceId]);
+  const dashboardTeamId = view === 'dashboard'
+    ? new URLSearchParams(location.search).get('teamId')
+    : null;
+  const dashboardTeam = resource.data?.teams.find((entry) => String(entry.id) === dashboardTeamId);
   const directoryResource = useResource(
     () =>
       view === 'teams' && resource.data
@@ -134,6 +140,13 @@ export default function SpaceWorkspace({
           reload: reloadWorkspace,
         };
   const isManager = space?.myRole === 'MANAGER';
+  const contributionMembers = useResource(
+    () => view === 'contributions' && isManager && teamId != null
+      ? getTeamMembers(teamId)
+      : Promise.resolve(null),
+    [view === 'contributions', isManager, teamId],
+  );
+  const contributionMemberName = contributionMembers.data?.find((member) => member.userId === targetUserId)?.name;
   const managerContext = {
     space,
     user,
@@ -149,14 +162,15 @@ export default function SpaceWorkspace({
     'contributions',
   ].includes(view);
   const team = selectedTeamResource.data;
+  const managerTeamReadOnly = isManager && view === 'team' && team && !isApprovedMember(team);
   useEffect(() => {
     if (!setHeaderContext || !space) return;
     const titles = {
       settings: '스페이스 관리',
-      dashboard: '스페이스 대시보드',
+      dashboard: '팀 관리',
       participants: '참여자 관리',
-      rounds: '평가 회차 관리',
-      reports: '리포트 검토·공개',
+      rounds: '동료 평가 관리',
+      reports: '리포트 관리',
       contributions: '팀원 수행 상세',
       teams: '스페이스 홈',
       announcements: announcementId ? '공지 상세' : '공지사항',
@@ -173,7 +187,7 @@ export default function SpaceWorkspace({
         view === 'team'
           ? taskId
             ? '작업 상세'
-            : teamMenu
+            : managerTeamReadOnly && teamMenu === '팀원 관리' ? '팀원 보기' : teamMenu
           : titles[view] || '스페이스 홈',
       detail: [space.name, team?.name].filter(Boolean).join(' / '),
       manager: managerView,
@@ -194,6 +208,7 @@ export default function SpaceWorkspace({
     taskId,
     announcementId,
     managerView,
+    managerTeamReadOnly,
     teamId,
     user.id,
     selectedTeamResource.error,
@@ -323,7 +338,7 @@ export default function SpaceWorkspace({
                   aria-label="모바일 관리자 메뉴"
                 >
                   {[
-                    ['dashboard', '대시보드'],
+                    ['dashboard', '팀 관리'],
                     ['participants', '참여자'],
                     ['rounds', '평가'],
                     ['reports', '리포트'],
@@ -331,15 +346,16 @@ export default function SpaceWorkspace({
                   ].map(([segment, label]) => (
                     <button
                       key={segment}
+                      aria-label={segment === 'dashboard' ? '팀 관리' : undefined}
                       className={
                         view === segment ||
-                        (segment === 'dashboard' && view === 'contributions')
+                        (segment === 'dashboard' && (view === 'contributions' || managerTeamReadOnly))
                           ? 'active'
                           : ''
                       }
                       aria-current={
                         view === segment ||
-                        (segment === 'dashboard' && view === 'contributions')
+                        (segment === 'dashboard' && (view === 'contributions' || managerTeamReadOnly))
                           ? 'page'
                           : undefined
                       }
@@ -353,16 +369,33 @@ export default function SpaceWorkspace({
                 </nav>
               )}
               {view !== 'teams' && !(view === 'team' && teamMenu === '팀 홈') && !(view === 'announcements' && announcementId != null) && <nav className="workspace-breadcrumb" aria-label="현재 위치">
+                {(view === 'contributions' || dashboardTeamId || managerTeamReadOnly) && <>
+                  <button onClick={() => {
+                    const query = new URLSearchParams(view === 'dashboard' ? location.search : location.state?.dashboardSearch);
+                    query.delete('teamId');
+                    query.delete('tab');
+                    navigate(`${spacePath(spaceId)}/dashboard${query.size ? `?${query}` : ''}`, {
+                      state: { restoreScrollY: location.state?.dashboardListScrollY || 0 },
+                    });
+                  }}>팀 관리</button>
+                  <span aria-hidden="true">/</span>
+                </>}
                 {team && (
                   <>
                     <button
                       onClick={() =>
                         navigate(
-                          teamMenuPath(
+                          (view === 'contributions' || managerTeamReadOnly)
+                            ? `${spacePath(spaceId)}/dashboard?${location.state?.dashboardSearch || `teamId=${team.id}`}`
+                            : teamMenuPath(
                             spaceId,
                             team.id,
                             isApprovedMember(team) ? '팀 홈' : '팀원 관리',
                           ),
+                          (view === 'contributions' || managerTeamReadOnly) ? { state: {
+                            dashboardListScrollY: location.state?.dashboardListScrollY || 0,
+                            restoreScrollY: location.state?.dashboardScrollY || 0,
+                          } } : undefined,
                         )
                       }
                     >
@@ -372,19 +405,21 @@ export default function SpaceWorkspace({
                   </>
                 )}
                 <span aria-current="page">
-                  {view === 'team'
+                  {view === 'dashboard' && dashboardTeamId
+                    ? dashboardTeam?.name || '팀 현황'
+                    : view === 'team'
                     ? taskId
                       ? '작업 상세'
-                      : teamMenu
+                      : managerTeamReadOnly && teamMenu === '팀원 관리' ? '팀원 보기' : teamMenu
                     : {
                         teams: '스페이스 홈',
                         announcements: announcementId ? '공지 상세' : '공지사항',
-                        dashboard: '관리자 대시보드',
+                        dashboard: '팀 관리',
                         participants: '참여자 관리',
-                        rounds: '평가 회차 관리',
-                        reports: '리포트 검토·공개',
+                        rounds: '동료 평가 관리',
+                        reports: '리포트 관리',
                         settings: '스페이스 관리',
-                        contributions: '팀원 수행 상세',
+                        contributions: contributionMemberName ? `${contributionMemberName}님의 수행 상세` : '팀원 수행 상세',
                       }[view]}
                 </span>
                 {team && teamRole !== '리더' && (
@@ -417,9 +452,11 @@ export default function SpaceWorkspace({
                     team,
                   }}
                   targetUserId={targetUserId}
+                  members={contributionMembers}
                   onBack={() =>
                     navigate(
-                      `${spacePath(spaceId)}/dashboard?teamId=${team.id}`,
+                      `${spacePath(spaceId)}/dashboard?${location.state?.dashboardSearch || `teamId=${team.id}`}`,
+                      { state: { dashboardListScrollY: location.state?.dashboardListScrollY || 0, restoreScrollY: location.state?.dashboardScrollY || 0 } },
                     )
                   }
                 />
@@ -481,7 +518,9 @@ export default function SpaceWorkspace({
                   }}
                   onOpenTeam={(item) =>
                     navigate(
-                      teamMenuPath(
+                      isManager
+                        ? `${spacePath(spaceId)}/dashboard?teamId=${item.id}`
+                        : teamMenuPath(
                         spaceId,
                         item.id,
                         isApprovedMember(item) ? '팀 홈' : '팀원 관리',

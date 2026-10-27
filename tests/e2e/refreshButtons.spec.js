@@ -14,15 +14,15 @@ const screens = [
   ['/spaces/1/teams/1/peer-evaluations', '동료 평가', '평가 상태 새로고침'],
   ['/spaces/1/teams/1/mid-feedback', '중간 피드백', '피드백 새로고침'],
   ['/spaces/1/teams/1/reports', '기여도 리포트', '리포트 새로고침'],
-  ['/spaces/1/dashboard', '관리자 대시보드', '현황 새로고침', 'manager'],
-  ['/spaces/1/rounds', '평가 회차 관리', '회차·제출 현황 새로고침', 'manager'],
+  ['/spaces/1/dashboard', '팀 관리', '현황 새로고침', 'manager'],
+  ['/spaces/1/rounds', '동료 평가 관리', '회차·제출 현황 새로고침', 'manager'],
   [
     '/spaces/1/reports',
-    '리포트 검토·공개',
-    '리포트·준비 상태 새로고침',
+    '리포트 관리',
+    '리포트 새로고침',
     'manager',
   ],
-  ['/spaces/1/settings', '스페이스 관리', '코드 새로고침', 'manager'],
+  ['/spaces/1/settings#join-code', '스페이스 관리', '코드 새로고침', 'manager'],
   [
     '/spaces/1/manager/teams/1/members/00000000-0000-4000-8000-000000000001',
     '김하늘님의 수행 상세',
@@ -99,12 +99,8 @@ test('작업 상세의 산출물과 댓글 새로고침은 모두 아이콘만 �
   for (const button of await buttons.all()) await assertIconButton(button);
 });
 
-test('접힌 관리자 평가 원문의 두 새로고침도 아이콘만 표시한다', async ({
-  page,
-}) => {
-  await page.addInitScript(() =>
-    localStorage.setItem('fairplay:preview-role', 'manager'),
-  );
+test('평가 결과 새로고침은 전용 결과 탭에서 제공한다', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('fairplay:preview-role', 'manager'));
   await page.goto('/preview/spaces/1/rounds');
   await page.evaluate(async () => {
     const { resetMockState } = await import('/src/mock/planned.js');
@@ -112,14 +108,9 @@ test('접힌 관리자 평가 원문의 두 새로고침도 아이콘만 표시�
     resetMockState(previewContext(), 'review');
   });
   await page.reload();
-  await page.getByText('동료 평가 원문 보기', { exact: true }).click();
-  await page.getByLabel('평가 원문 대상 팀', { exact: true }).selectOption('1');
-  await assertIconButton(
-    page.getByRole('button', { name: '원문 조회 회차 새로고침', exact: true }),
-  );
-  await assertIconButton(
-    page.getByRole('button', { name: '평가 원문 새로고침', exact: true }),
-  );
+  await page.getByRole('tab', { name: '동료 평가 결과', exact: true }).click();
+  await assertIconButton(page.getByRole('button', { name: '평가 결과 새로고침', exact: true }));
+  await expect(page.getByRole('button', { name: /새로고침/, exact: false })).toHaveCount(1);
 });
 
 test('공통 새로고침은 키보드와 비활성화를 지원하고 폼을 제출하지 않는다', async ({

@@ -127,10 +127,10 @@ for (const [path, heading, role = 'leader'] of [
   ['/spaces/1/teams/1/peer-evaluations', '동료 평가'],
   ['/spaces/1/teams/1/mid-feedback', '중간 피드백'],
   ['/spaces/1/teams/1/reports', '기여도 리포트'],
-  ['/spaces/1/dashboard', '관리자 대시보드', 'manager'],
+  ['/spaces/1/dashboard', '팀 관리', 'manager'],
   ['/spaces/1/participants', '참여자 관리', 'manager'],
-  ['/spaces/1/rounds', '평가 회차 관리', 'manager'],
-  ['/spaces/1/reports', '리포트 검토·공개', 'manager'],
+  ['/spaces/1/rounds', '동료 평가 관리', 'manager'],
+  ['/spaces/1/reports', '리포트 관리', 'manager'],
   ['/spaces/1/settings', '스페이스 관리', 'manager'],
   [
     '/spaces/1/manager/teams/1/members/00000000-0000-4000-8000-000000000001',
@@ -167,15 +167,17 @@ test('리포트·관리자 원문 제목 위 문구를 제거하고 상태 표�
   });
   await page.reload();
   await expect(
-    page.getByRole('heading', { name: '팀 기여도 리포트', exact: true }),
+    page.getByRole('heading', { name: '팀원별 최종 기여율', exact: true }),
   ).toBeVisible();
   await expect(page.locator('.report-team-result .eyebrow')).toHaveCount(0);
   await expect(
-    page.locator('.report-team-result > .section-heading > .status-badge'),
-  ).toHaveText('공개');
-  await page.getByText('동료 평가 원문 보기', { exact: true }).click();
+    page.locator('.report-metadata > .status-badge'),
+  ).toHaveText('공개 완료');
+  await page.goto('/preview/spaces/1/rounds?tab=peer-responses');
   await expect(
-    page.getByRole('heading', { name: '동료 평가 원문', exact: true }),
+    page.getByRole('heading', { name: '동료 평가 관리', exact: true }),
   ).toBeVisible();
+  await expect(page.getByRole('tab', { name: '동료 평가 결과', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('region', { name: '관리자 동료 평가 상세', exact: true })).toBeVisible();
   await expect(page.locator('.manager-peer-heading .eyebrow')).toHaveCount(0);
 });

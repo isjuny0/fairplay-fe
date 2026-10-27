@@ -417,60 +417,6 @@
 .team-report > .report-refresh {
   justify-self: end;
 }
-.report-result .report-own-result {
-  border: 0;
-  border-left: 3px solid var(--brand);
-  border-radius: 0;
-  background: var(--brand-light);
-  padding: 20px 24px;
-}
-.report-result .report-own-result strong {
-  font-size: 32px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-.report-team-result .section-heading h2 {
-  margin-bottom: 8px;
-}
-.report-results-table {
-  table-layout: fixed;
-  min-width: 380px;
-  margin-bottom: 16px;
-}
-.report-results-table th {
-  width: 40%;
-  font-weight: 500;
-}
-.report-results-table :is(th, td) {
-  padding: 14px 12px;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-.report-results-table th:nth-child(2) {
-  width: 23%;
-}
-.report-results-table td:nth-child(2) {
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-.report-results-table .report-current-member {
-  background: #f5f9f6;
-}
-.report-self-label {
-  display: inline-block;
-  margin-left: 8px;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background: var(--brand-light);
-  color: var(--brand-dark);
-  font-size: var(--text-caption);
-  font-weight: 500;
-}
-.report-result :is(.report-method, .report-calculation) > summary {
-  cursor: pointer;
-  padding-block: 8px;
-  font-weight: 500;
-}
 @media (max-width: 900px) {
   .peer-response-layout {
     grid-template-columns: 150px minmax(0, 1fr);
@@ -536,20 +482,7 @@
   .peer-evaluation-page .peer-submit-bar {
     padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
-  .report-result .report-own-result {
-    padding: 16px;
-  }
   .team-report > .report-refresh {
     justify-self: start;
   }
-}
-
-.report-result .report-own-result :is(h2, p) {
-  margin-bottom: 0;
-}
-.report-result .report-own-result .eyebrow {
-  margin-bottom: 6px;
-}
-.report-result .report-own-result h2 {
-  margin-bottom: 8px;
 }

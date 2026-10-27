@@ -421,15 +421,12 @@
   margin-top: 20px;
 }
 .dashboard-contribution-composition > span:nth-child(1) {
-  flex: 7;
   background: #79a38d;
 }
 .dashboard-contribution-composition > span:nth-child(2) {
-  flex: 1;
   background: #c3cfb1;
 }
 .dashboard-contribution-composition > span:nth-child(3) {
-  flex: 2;
   background: #a9bdb0;
 }
 .dashboard-contribution > .dashboard-caption {

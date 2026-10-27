@@ -93,7 +93,7 @@ export default function SpaceParticipants({ space, user, onChanged }) {
   };
 
   return (
-    <section className="stack space-participants-page" aria-label="참여자 관리">
+    <section className="stack space-operation-page space-participants-page" aria-label="참여자 관리">
       <div className="page-heading">
         <h1>참여자 관리</h1>
         <RefreshButton

@@ -6,7 +6,7 @@ import DeliverableContent from "./DeliverableContent.jsx";
 import MarkdownEditor from "./MarkdownEditor.jsx";
 import { FileText, Upload, ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router";
+import { useLocation, useSearchParams } from "react-router";
 import { parseRouteId, teamMenuPath } from "../lib/routes.js";
 import {
   createDeliverable,
@@ -509,6 +509,7 @@ export default function Deliverables({
       !tasksResource.error);
   const navigateToMaterials = useAppNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   const requestedPage = Number(searchParams.get("page") || 0);
   const page =
     Number.isSafeInteger(requestedPage) && requestedPage >= 0
@@ -548,7 +549,7 @@ export default function Deliverables({
       if (value) next.set(key, value);
       else next.delete(key);
       return next;
-    });
+    }, { state: location.state });
   const clearSearch = () => {
     searchToolbar.current?.querySelector("input")?.focus();
     setQueryInput("");
@@ -566,7 +567,7 @@ export default function Deliverables({
       ])
         next.delete(key);
       return next;
-    });
+    }, { state: location.state });
   };
   const hasSearch =
     isCollection &&
@@ -580,7 +581,7 @@ export default function Deliverables({
       if (value === 0) next.delete("page");
       else next.set("page", String(value));
       return next;
-    });
+    }, { state: location.state });
   const setScope = (value) =>
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
@@ -590,7 +591,7 @@ export default function Deliverables({
       if (value === "COMMON") next.set("unlinkedOnly", "true");
       else if (value !== "ALL") next.set("taskId", value);
       return next;
-    });
+    }, { state: location.state });
   const appliedFilters = [
     sort && {
       key: "sort",

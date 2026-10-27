@@ -8,6 +8,7 @@ import { previewMeetingMinutes } from './meetingMinutes.js';
 import { isRemovedSpaceParticipant, previewSpaceParticipants } from './spaceParticipants.js';
 import { searchPreviewDeliverables } from './deliverableSearch.js';
 import { previewAiReview, invalidateReview } from './aiReviews.js';
+import { previewAssigneeRecommendations } from './taskAssigneeRecommendations.js';
 import {
   previewUsers,
   previewMembers,
@@ -150,11 +151,12 @@ function previewTaskResponse(state, context, entry, task) {
 
 export async function previewRequest(
   path,
-  { method = 'GET', body = {}, responseType } = {},
+  { method = 'GET', body, responseType } = {},
 ) {
   const context = previewContext();
   const state = getMockState(context);
   Object.assign(context.space, state.spaceOverrides || {});
+  context.space.reportWeights = state.reportWeights ?? null;
   const url = new URL(path, 'https://preview.local');
   const parts = url.pathname.split('/').filter(Boolean);
   const id = Number(parts[2]);
@@ -393,6 +395,10 @@ export async function previewRequest(
       if (existing) Object.assign(existing, application);
       else state.applications.push(application);
       result = application;
+    } else if (parts[3] === 'task-assignee-recommendations' && method === 'GET') {
+      return previewAssigneeRecommendations(
+        context, state, entry, url.searchParams.get('count'),
+      );
     } else if (parts[3] === 'tasks') {
       if (method === 'GET')
         return entry.tasks.map((task) =>

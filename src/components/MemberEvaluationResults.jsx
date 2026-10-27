@@ -88,10 +88,6 @@ export default function MemberEvaluationResults({
       aria-label="팀원의 동료 평가 결과"
     >
       <h2>동료 평가 결과</h2>
-      <p className="field-help">
-        이 팀원이 받은 최종 제출 응답의 항목별 평균입니다. 마감된 회차만
-        조회하며 최종 기여율과는 다른 지표입니다.
-      </p>
       <ResourceState resource={resource}>
         {resource.data && (
           <div className="member-evaluation-rounds">
