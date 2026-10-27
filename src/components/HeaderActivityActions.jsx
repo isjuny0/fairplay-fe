@@ -73,9 +73,7 @@ export default function HeaderActivityActions() {
     });
   };
 
-  const taskCountLabel = taskPreview?.length === 8
-    ? '할 일·평가 8개 이상'
-    : `할 일·평가 ${taskPreview?.length ?? 0}개`;
+  const taskCountLabel = `할 일·평가 ${taskPreview?.totalCount ?? 0}개`;
 
   const openTodo = (todo) => {
     setTaskPopoverOpen(false);
@@ -103,8 +101,8 @@ export default function HeaderActivityActions() {
         </button>
         {taskPopoverOpen && <section className="notification-popover header-task-popover" id="header-task-popover" aria-label="할 일 미리보기">
           <header className="notification-popover-heading"><strong>{taskPreviewError ? '할 일을 불러오지 못했습니다' : taskPreview === null ? '할 일을 불러오는 중…' : taskCountLabel}</strong><button type="button" onClick={() => { setTaskPopoverOpen(false); navigate('/my/tasks'); }}>전체 보기</button></header>
-          {taskPreviewError ? <p className="notification-popover-state">잠시 후 다시 확인해 주세요.</p> : taskPreview === null ? <p className="notification-popover-state" role="status">담당 중인 작업과 동료 평가를 확인하고 있습니다.</p> : taskPreview.length ? <>
-            <div className="header-task-preview-cards">{taskPreview.slice(0, 4).map((item) => {
+          {taskPreviewError ? <p className="notification-popover-state">잠시 후 다시 확인해 주세요.</p> : taskPreview === null ? <p className="notification-popover-state" role="status">담당 중인 작업과 동료 평가를 확인하고 있습니다.</p> : taskPreview.items.length ? <>
+            <div className="header-task-preview-cards">{taskPreview.items.slice(0, 4).map((item) => {
               const isEvaluation = item.type === 'PEER_EVALUATION';
               const task = item.task;
               const label = isEvaluation ? (item.evaluation.roundType === 'MID' ? '중간 동료 평가' : '최종 동료 평가') : (statusLabels[task.status] || task.status);
@@ -113,7 +111,6 @@ export default function HeaderActivityActions() {
               <strong>{item.title}</strong>
               <span className="header-task-preview-meta">{item.teamName} · 마감 {formatDate(item.dueAt)}</span>
             </button>})}</div>
-            {taskPreview.length > 4 && <span className="header-task-preview-more">+{taskPreview.length - 4}{taskPreview.length === 8 ? '개 이상' : '개'} 더</span>}
           </> : <p className="notification-popover-state">현재 할 일이나 진행 중인 동료 평가가 없습니다.</p>}
           <button type="button" className="notification-popover-all" onClick={() => { setTaskPopoverOpen(false); navigate('/my/tasks'); }}><ListTodo size={16} /> 할 일 전체 보기</button>
         </section>}
@@ -128,7 +125,6 @@ export default function HeaderActivityActions() {
             <strong>{item.title}</strong>
             {item.message && <span className="header-notification-preview-message">{item.message}</span>}
           </button>)}</div>
-          {recent.data.items.length > 3 && <span className="header-notification-preview-more">+{recent.data.items.length - 3}{recent.data.nextCursor ? '개 이상' : '개'} 더</span>}
         </> : <p className="notification-popover-state">최근 알림이 없습니다.</p>}
         <button type="button" className="notification-popover-all" onClick={() => { setOpen(false); navigate('/notifications'); }}><CheckCheck size={16} /> 알림함 열기</button>
       </section>}

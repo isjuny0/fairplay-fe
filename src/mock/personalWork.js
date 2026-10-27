@@ -23,6 +23,7 @@ const initialNotifications = (context, state) => {
       readAt: null,
     }] : []),
     { id: 202, type: null, title: '더 이상 접근할 수 없는 항목입니다', message: null, spaceId: null, teamId: null, target: null, accessible: false, createdAt: koreanDateTime(now - 172800000), readAt: koreanDateTime(now - 160000000) },
+    { id: 201, type: 'TASK_ASSIGNED', title: '작업 마감일이 변경되었습니다', message: '프로토타입 사용성 검증', spaceId: 1, teamId: 1, target: { type: 'TASK', id: 104, taskId: null }, accessible: true, createdAt: koreanDateTime(now - 108000000), readAt: koreanDateTime(now - 100000000) },
   ];
 };
 const notificationStore = new Map();
@@ -86,7 +87,7 @@ export function previewPersonalWork(context, state, parts, url, method) {
       }));
       return [...tasks, ...evaluations];
     }).sort((a, b) => a.dueAt.localeCompare(b.dueAt) || (a.type === b.type ? a.id - b.id : a.type === 'TASK' ? -1 : 1));
-    return structuredClone(todos.slice(page * size, (page + 1) * size));
+    return { items: structuredClone(todos.slice(page * size, (page + 1) * size)), totalCount: todos.length };
   }
   return undefined;
 }

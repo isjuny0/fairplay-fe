@@ -31,10 +31,13 @@ export const markAllNotificationsRead = () =>
   apiRequest('/api/me/notifications/read-all', { method: 'POST' });
 
 export async function listMyTodos(page = 0, size = 20) {
-  const items = await apiRequest(
+  const result = await apiRequest(
     `/api/me/todos?${new URLSearchParams({ page, size })}`,
   );
-  if (!Array.isArray(items) || items.some((item) =>
+  if (!result || !Array.isArray(result.items) ||
+    !Number.isSafeInteger(result.totalCount) || result.totalCount < 0 ||
+    result.totalCount < result.items.length ||
+    result.items.some((item) =>
     !['TASK', 'PEER_EVALUATION'].includes(item?.type) ||
     !Number.isInteger(item.id) || !Number.isInteger(item.spaceId) ||
     !Number.isInteger(item.teamId) || typeof item.title !== 'string' ||
@@ -42,5 +45,5 @@ export async function listMyTodos(page = 0, size = 20) {
     (item.type === 'TASK' ? !item.task || item.evaluation !== null : !item.evaluation || item.task !== null)
   ))
     throw new Error('내 할 일 목록 응답 형식을 확인해 주세요.');
-  return items;
+  return result;
 }
