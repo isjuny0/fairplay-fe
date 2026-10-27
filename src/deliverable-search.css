@@ -225,6 +225,12 @@
   padding: 12px;
   vertical-align: middle;
 }
+.deliverable-table :is(th, td):not(:first-child) {
+  text-align: center;
+}
+.deliverable-table td:last-child .collection-actions {
+  justify-content: center;
+}
 .deliverable-table .collection-title-button {
   align-items: center;
   min-height: 28px;
