@@ -17,11 +17,13 @@ function WorkspaceRoute({ user, view = 'teams', teamMenu = '팀 홈' }) {
   const teamId = params.teamId == null ? null : parseRouteId(params.teamId);
   const taskId = params.taskId == null ? null : parseRouteId(params.taskId);
   const announcementId = params.announcementId == null ? null : parseRouteId(params.announcementId);
+  const meetingMinuteId = params.meetingMinuteId == null ? null : parseRouteId(params.meetingMinuteId);
   if (
     spaceId == null ||
     (params.teamId != null && teamId == null) ||
     (params.taskId != null && taskId == null) ||
-    (params.announcementId != null && announcementId == null)
+    (params.announcementId != null && announcementId == null) ||
+    (params.meetingMinuteId != null && meetingMinuteId == null)
   )
     return (
       <main className="main-content">
@@ -35,6 +37,7 @@ function WorkspaceRoute({ user, view = 'teams', teamMenu = '팀 홈' }) {
       teamId={teamId}
       taskId={taskId}
       announcementId={announcementId}
+      meetingMinuteId={meetingMinuteId}
       user={user}
       view={view}
       teamMenu={teamMenu}
@@ -89,6 +92,10 @@ export default function AppRoutes({ user, prefix = '' }) {
       <Route
         path={`${prefix}/spaces/:spaceId/teams/:teamId/tasks/:taskId`}
         element={<WorkspaceRoute user={user} view="team" teamMenu="작업" />}
+      />
+      <Route
+        path={`${prefix}/spaces/:spaceId/teams/:teamId/meeting-minutes/:meetingMinuteId`}
+        element={<WorkspaceRoute user={user} view="team" teamMenu="팀 회의록" />}
       />
       {['dashboard', 'participants', 'rounds', 'reports'].map((view) => (
         <Route

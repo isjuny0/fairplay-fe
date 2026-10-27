@@ -58,6 +58,7 @@ export default function SpaceWorkspace({
   teamId,
   taskId,
   announcementId,
+  meetingMinuteId,
   user,
   view,
   teamMenu,
@@ -483,6 +484,7 @@ export default function SpaceWorkspace({
                   user={user}
                   menu={teamMenu}
                   taskId={taskId}
+                  meetingMinuteId={meetingMinuteId}
                   onChanged={reloadWorkspace}
                   onRemoved={() => {
                     navigate(spacePath(spaceId), { replace: true });

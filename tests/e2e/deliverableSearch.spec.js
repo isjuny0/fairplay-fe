@@ -132,7 +132,9 @@ test("적용된 조건을 개별 해제해도 다른 조건·정렬을 유지하
     await expect(page.getByText("1 페이지", { exact: true })).toBeVisible();
   }
   await expect(filters.getByRole("button")).toHaveCount(1);
-  await filters.getByRole("button", { name: "정렬: 이름 순 조건 해제", exact: true }).click();
+  await filters
+    .getByRole("button", { name: "정렬: 이름 순 조건 해제", exact: true })
+    .click();
   await expect(page.getByLabel("산출물 정렬", { exact: true })).toBeFocused();
   await expect(page.getByLabel("산출물 정렬", { exact: true })).toHaveValue("");
   await expect(filters).toHaveCount(0);
@@ -231,6 +233,21 @@ test("웹과 좁은 화면에서 모든 탐색 제어를 사용할 수 있고 �
       "산출물 정렬",
     ])
       await expect(page.getByLabel(label)).toBeEnabled();
+    const table = page.getByRole("region", {
+      name: "산출물 목록",
+      exact: true,
+    });
+    await expect(table.getByRole("columnheader").first()).toHaveCSS(
+      "text-align",
+      "left",
+    );
+    await expect(table.getByRole("columnheader").nth(1)).toHaveCSS(
+      "text-align",
+      "center",
+    );
+    await expect(
+      table.locator("tbody tr").first().locator("td").first(),
+    ).toHaveCSS("text-align", "center");
     expect(
       await page
         .getByRole("button", { name: "검색", exact: true })
@@ -242,10 +259,6 @@ test("웹과 좁은 화면에서 모든 탐색 제어를 사용할 수 있고 �
       ),
     ).toBe(true);
     if (width >= 1280) {
-      const table = page.getByRole("region", {
-        name: "산출물 목록",
-        exact: true,
-      });
       expect(
         await table.evaluate(
           (element) => element.scrollWidth <= element.clientWidth + 1,
