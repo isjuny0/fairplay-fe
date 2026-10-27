@@ -4,6 +4,7 @@ import {
   publishReport,
 } from '../src/api/reports.js';
 import { getMemberContributions } from '../src/api/dashboard.js';
+import { listMeetingMinutes, getMeetingMinute, createMeetingMinute, updateMeetingMinute, deleteMeetingMinute } from '../src/api/meetingMinutes.js';
 import { listSpaceParticipants, removeSpaceParticipant } from '../src/api/spaceParticipants.js';
 import { getManagerPeerResponses } from '../src/api/evaluations.js';
 import { getAiReview, requestAiReview } from '../src/api/aiReviews.js';
@@ -24,6 +25,7 @@ import assert from 'node:assert/strict';
 import { apiRequest, clearCsrfToken } from '../src/api/client.js';
 import { listSpaceAnnouncements, getSpaceAnnouncement, createSpaceAnnouncement, updateSpaceAnnouncement, deleteSpaceAnnouncement } from '../src/api/spaceAnnouncements.js';
 import { updateTask, recommendTaskAssignees } from '../src/api/tasks.js';
+import { getMyNotificationUnreadCount, listMyNotifications, listMyTodos, markAllNotificationsRead, markNotificationRead } from '../src/api/personalWork.js';
 import {
   listTaskComments,
   createTaskComment,
@@ -65,6 +67,72 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
   clearCsrfToken();
   delete globalThis.window;
+});
+
+test('회의록 5개 API는 페이지 배열·부분 수정·쿼리 버전 삭제 및 세션·CSRF 계약을 사용한다', async () => {
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, ...options });
+    if (url.endsWith('/csrf')) return jsonResponse({ headerName: 'X-CSRF-TOKEN', token: 'token' });
+    if (options.method === 'DELETE') return new Response(null, { status: 204 });
+    return jsonResponse(url.includes('?page=') ? [] : { id: 7 });
+  };
+  const input = { title: '주간 회의', meetingAt: '2026-10-27T19:00:00', attendeeIds: [], agenda: ' 안건\n', content: '', decisions: '' };
+  assert.deepEqual(await listMeetingMinutes(1, 2, 20), []);
+  assert.equal((await getMeetingMinute(7)).id, 7);
+  await createMeetingMinute(1, input);
+  await updateMeetingMinute(7, { expectedVersion: 0, content: '논의\n ' });
+  assert.equal(await deleteMeetingMinute(7, 1), null);
+  assert.deepEqual(calls.map((call) => [call.url, call.method || 'GET']), [
+    ['/api/teams/1/meeting-minutes?page=2&size=20', 'GET'], ['/api/meeting-minutes/7', 'GET'],
+    ['/api/auth/csrf', 'GET'], ['/api/teams/1/meeting-minutes', 'POST'],
+    ['/api/meeting-minutes/7', 'PATCH'], ['/api/meeting-minutes/7?expectedVersion=1', 'DELETE'],
+  ]);
+  assert.deepEqual(JSON.parse(calls[3].body), input);
+  assert.deepEqual(JSON.parse(calls[4].body), { expectedVersion: 0, content: '논의\n ' });
+  assert.equal(calls[5].body, undefined);
+  for (const call of calls) assert.equal(call.credentials, 'include');
+  for (const call of calls.slice(3)) assert.equal(call.headers['X-CSRF-TOKEN'], 'token');
+  assert.equal(calls[0].headers['X-CSRF-TOKEN'], undefined);
+  globalThis.fetch = async () => jsonResponse({ content: [] });
+  await assert.rejects(listMeetingMinutes(1), /응답 형식/);
+});
+
+test('개인 알림과 통합 할 일은 명세의 응답 모양·커서·CSRF 계약을 따른다', async () => {
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, ...options });
+    if (url.endsWith('/csrf')) return jsonResponse({ headerName: 'X-CSRF-TOKEN', token: 'token' });
+    if (url.endsWith('/unread-count')) return jsonResponse({ unreadCount: 4 });
+    if (options.method === 'PATCH' || options.method === 'POST') return new Response(null, { status: 204 });
+    if (url.includes('/notifications?')) return jsonResponse({ items: [{ id: 'n1' }], nextCursor: 'opaque-next' });
+    if (url.includes('/api/me/todos?')) return jsonResponse({ items: [{ type: 'PEER_EVALUATION', id: 12, spaceId: 1, spaceName: '공간', teamId: 3, teamName: '팀', title: '최종 동료 평가', dueAt: '2026-10-30T00:00:00+09:00', isOverdue: false, task: null, evaluation: { roundId: 12, roundType: 'FINAL', opensAt: '2026-10-20T00:00:00+09:00', closesAt: '2026-10-30T00:00:00+09:00' } }], totalCount: 13 });
+    return jsonResponse([]);
+  };
+  assert.deepEqual(await listMyNotifications({ filter: 'ALL', accessibleOnly: true, size: 5 }), { items: [{ id: 'n1' }], nextCursor: 'opaque-next' });
+  assert.deepEqual(await listMyNotifications({ filter: 'UNREAD', cursor: 'cursor/a+b', size: 20 }), { items: [{ id: 'n1' }], nextCursor: 'opaque-next' });
+  assert.equal(await getMyNotificationUnreadCount(), 4);
+  const evaluation = { type: 'PEER_EVALUATION', id: 12, spaceId: 1, spaceName: '공간', teamId: 3, teamName: '팀', title: '최종 동료 평가', dueAt: '2026-10-30T00:00:00+09:00', isOverdue: false, task: null, evaluation: { roundId: 12, roundType: 'FINAL', opensAt: '2026-10-20T00:00:00+09:00', closesAt: '2026-10-30T00:00:00+09:00' } };
+  assert.deepEqual(await listMyTodos(1, 8), { items: [evaluation], totalCount: 13 });
+  await markNotificationRead('notice/a');
+  await markAllNotificationsRead();
+  assert.deepEqual(calls.filter((call) => !call.url.endsWith('/csrf')).map((call) => [call.url, call.method || 'GET', call.body]), [
+    ['/api/me/notifications?filter=ALL&accessibleOnly=true&size=5', 'GET', undefined],
+    ['/api/me/notifications?filter=UNREAD&accessibleOnly=false&size=20&cursor=cursor%2Fa%2Bb', 'GET', undefined],
+    ['/api/me/notifications/unread-count', 'GET', undefined],
+    ['/api/me/todos?page=1&size=8', 'GET', undefined],
+    ['/api/me/notifications/notice%2Fa/read', 'PATCH', undefined],
+    ['/api/me/notifications/read-all', 'POST', undefined],
+  ]);
+  assert.equal(calls.find((call) => call.method === 'PATCH').headers['X-CSRF-TOKEN'], 'token');
+  assert.equal(calls.find((call) => call.method === 'POST').headers['X-CSRF-TOKEN'], 'token');
+  for (const call of calls) assert.equal(call.credentials, 'include');
+  globalThis.fetch = async () => jsonResponse({ items: [] });
+  await assert.rejects(listMyNotifications(), /응답 형식/);
+  globalThis.fetch = async () => jsonResponse({ items: [{ type: 'UNKNOWN' }], totalCount: 0 });
+  await assert.rejects(listMyTodos(), /응답 형식/);
+  globalThis.fetch = async () => jsonResponse({ items: [], totalCount: -1 });
+  await assert.rejects(listMyTodos(), /응답 형식/);
+  globalThis.fetch = async () => jsonResponse({ items: [{ type: 'TASK' }], totalCount: 0 });
+  await assert.rejects(listMyTodos(), /응답 형식/);
 });
 
 test('담당자 추천은 인원 쿼리와 세션으로 조회하며 본문·CSRF 요청 없이 선택 목록을 받는다', async () => {

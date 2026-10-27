@@ -8,6 +8,7 @@ import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
 import './design-tokens.css';
 import './styles.css';
 import './workspace-theme.css';
+import './personal-work.css';
 import './workspace-components.css';
 import './member-workspace.css';
 import './admin-workspace.css';

@@ -15,11 +15,14 @@ const imports = {
   TaskDetail: () => import('../components/TaskDetail.jsx'),
   TaskForm: () => import('../components/TaskForm.jsx'),
   Deliverables: () => import('../components/Deliverables.jsx'),
+  MeetingMinutes: () => import('../components/MeetingMinutes.jsx'),
   TeamMembers: () => import('../components/TeamMembers.jsx'),
   TeamSettings: () => import('../components/TeamSettings.jsx'),
   PeerEvaluation: () => import('../components/PeerEvaluation.jsx'),
   MidFeedback: () => import('../components/MidFeedback.jsx'),
   ContributionReport: () => import('../components/ContributionReport.jsx'),
+  PersonalNotifications: () => import('../components/PersonalNotifications.jsx'),
+  MyTasks: () => import('../components/MyTasks.jsx'),
 };
 
 // Reuse preloaded modules on first render instead of suspending again at every nested screen.
@@ -38,6 +41,8 @@ export const screenLoaders = Object.fromEntries(Object.entries(imports).map(([na
 export function preloadRoute(pathname) {
   const path = pathname.replace(/^\/preview(?=\/|$)/, '');
   if (path === '/main') return screenLoaders.Spaces();
+  if (path === '/notifications') return screenLoaders.PersonalNotifications();
+  if (path === '/my/tasks') return screenLoaders.MyTasks();
   if (!path.startsWith('/spaces/')) return Promise.resolve();
   const loaders = [screenLoaders.SpaceWorkspace];
   if (/\/teams\/\d+(?:\/|$)/.test(path) && !path.includes('/manager/')) {
@@ -45,6 +50,7 @@ export function preloadRoute(pathname) {
     const menu = path.split('/')[5] || '';
     const screen = {
       'materials-search': 'TeamRagSearch',
+      'meeting-minutes': 'MeetingMinutes',
       '': 'TeamHome', tasks: 'TaskBoard', deliverables: 'Deliverables',
       members: 'TeamMembers', settings: 'TeamSettings',
       'peer-evaluations': 'PeerEvaluation', 'mid-feedback': 'MidFeedback',

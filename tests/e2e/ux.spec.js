@@ -281,7 +281,7 @@ test('데스크톱 팀 메뉴는 왼쪽에 묶이고 메뉴 이동과 새로고�
     name: '팀 메뉴',
     exact: true,
   });
-  await expect(teamMenus.getByRole('button')).toHaveCount(9);
+  await expect(teamMenus.getByRole('button')).toHaveCount(10);
   await expect(
     teamMenus.getByRole('paragraph').filter({ hasText: /^팀 작업$/ }),
   ).toBeVisible();

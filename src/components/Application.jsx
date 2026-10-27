@@ -11,6 +11,7 @@ import { invalidateSharedReads } from '../api/sharedReads.js';
 import googleLogo from '../assets/google-g.svg';
 import BrandLogo from './BrandLogo.jsx';
 import { usePreviewGuide } from '../lib/previewGuideContext.js';
+import HeaderActivityActions from './HeaderActivityActions.jsx';
 import '../preview-controls.css';
 import '../header-profile.css';
 
@@ -372,17 +373,20 @@ export default function Application({ previewRuntime }) {
                 </section>
               </div>
             )}
-            <span className="profile-avatar" aria-hidden="true">
-              {user.name?.slice(0, 1)}
-            </span>
-            <span className="profile-identity">
-              <span className="profile-name">{user.name}</span>
-              {currentHeader.isTeamLeader && (
-                <span className="role-badge profile-leader-badge" title="현재 팀 리더">
-                  리더
-                </span>
-              )}
-            </span>
+            <div className="profile-account-group">
+              <HeaderActivityActions />
+              <span className="profile-avatar" aria-hidden="true">
+                {user.name?.slice(0, 1)}
+              </span>
+              <span className="profile-identity">
+                <span className="profile-name">{user.name}</span>
+                {currentHeader.isTeamLeader && (
+                  <span className="role-badge profile-leader-badge" title="현재 팀 리더">
+                    리더
+                  </span>
+                )}
+              </span>
+            </div>
             <button className="logout-button" disabled={busy} onClick={signOut}>
               {preview ? '미리보기 종료' : '로그아웃'}
             </button>

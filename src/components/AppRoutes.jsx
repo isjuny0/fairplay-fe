@@ -9,6 +9,8 @@ import useAppNavigate from '../hooks/useAppNavigate.js';
 
 const Spaces = deferScreen(screenLoaders.Spaces, '스페이스 목록');
 const SpaceWorkspace = deferScreen(screenLoaders.SpaceWorkspace, '스페이스 화면');
+const PersonalNotifications = deferScreen(screenLoaders.PersonalNotifications, '알림함');
+const MyTasks = deferScreen(screenLoaders.MyTasks, '내 할 일');
 
 function WorkspaceRoute({ user, view = 'teams', teamMenu = '팀 홈' }) {
   const params = useParams();
@@ -17,11 +19,13 @@ function WorkspaceRoute({ user, view = 'teams', teamMenu = '팀 홈' }) {
   const teamId = params.teamId == null ? null : parseRouteId(params.teamId);
   const taskId = params.taskId == null ? null : parseRouteId(params.taskId);
   const announcementId = params.announcementId == null ? null : parseRouteId(params.announcementId);
+  const meetingMinuteId = params.meetingMinuteId == null ? null : parseRouteId(params.meetingMinuteId);
   if (
     spaceId == null ||
     (params.teamId != null && teamId == null) ||
     (params.taskId != null && taskId == null) ||
-    (params.announcementId != null && announcementId == null)
+    (params.announcementId != null && announcementId == null) ||
+    (params.meetingMinuteId != null && meetingMinuteId == null)
   )
     return (
       <main className="main-content">
@@ -35,6 +39,7 @@ function WorkspaceRoute({ user, view = 'teams', teamMenu = '팀 홈' }) {
       teamId={teamId}
       taskId={taskId}
       announcementId={announcementId}
+      meetingMinuteId={meetingMinuteId}
       user={user}
       view={view}
       teamMenu={teamMenu}
@@ -69,6 +74,8 @@ export default function AppRoutes({ user, prefix = '' }) {
         element={<Navigate to={`${prefix}/main`} replace />}
       />
       <Route path={`${prefix}/main`} element={<SpacesRoute user={user} />} />
+      <Route path={`${prefix}/notifications`} element={<PersonalNotifications />} />
+      <Route path={`${prefix}/my/tasks`} element={<MyTasks />} />
       <Route
         path={`${prefix}/spaces/:spaceId`}
         element={<WorkspaceRoute user={user} />}
@@ -89,6 +96,10 @@ export default function AppRoutes({ user, prefix = '' }) {
       <Route
         path={`${prefix}/spaces/:spaceId/teams/:teamId/tasks/:taskId`}
         element={<WorkspaceRoute user={user} view="team" teamMenu="작업" />}
+      />
+      <Route
+        path={`${prefix}/spaces/:spaceId/teams/:teamId/meeting-minutes/:meetingMinuteId`}
+        element={<WorkspaceRoute user={user} view="team" teamMenu="팀 회의록" />}
       />
       {['dashboard', 'participants', 'rounds', 'reports'].map((view) => (
         <Route

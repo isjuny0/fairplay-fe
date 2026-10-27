@@ -7,6 +7,7 @@ export const teamNavigationGroups = [
       ['팀 홈', 'team'],
       ['작업', 'board'],
       ['산출물', 'file'],
+      ['팀 회의록', 'review'],
       ['팀 자료 검색', 'search'],
     ],
   },
