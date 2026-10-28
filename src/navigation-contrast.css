@@ -418,3 +418,7 @@
     height: 17px;
   }
 }
+
+@media (min-width: 721px) {
+  .workspace-sidebar .workspace-navigation-context > .nav-item.workspace-back-link { margin-top: 0; }
+}
