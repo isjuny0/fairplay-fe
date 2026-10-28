@@ -174,3 +174,8 @@
   .preview-guide-completion-actions > .primary-button { width: 100%; }
   .preview-guide-completion-actions > :not(.primary-button) { flex: 1; }
 }
+
+/* Keep read-area borders inside scrollable tables and form fields. */
+:is(tr, fieldset, textarea, input).preview-guide-highlight { outline-offset: -2px; }
+.preview-guide-callout-host.is-page-intro { margin-top: 0; }
+.peer-card > .preview-guide-callout-host { margin-bottom: 12px; }

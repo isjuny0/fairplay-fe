@@ -14,9 +14,9 @@ export const ragFailureLabels = {
   INVALID_EMBEDDING_RESPONSE: '자료 준비 결과를 확인하지 못했습니다.',
 };
 export const ragExamples = [
-  '회원 탈퇴 시 작성한 게시글은 어떻게 처리하기로 했지?',
-  '사용자 테스트에서 확인한 주요 개선점은 무엇이야?',
-  '이번 프로젝트에서 합의한 기능 범위를 알려줘.',
+  '팀 자료에 정리된 프로젝트 목표와 범위를 알려줘.',
+  '팀 자료에 기록된 주요 결정 사항을 정리해줘.',
+  '팀 자료에서 일정과 마감일을 찾아줘.',
 ];
 export function ragQuestionError(question) {
   if (!question.trim()) return '팀 자료에서 찾고 싶은 내용을 입력해 주세요.';

@@ -4,14 +4,6 @@ import { fillDateTime } from './helpers/dateTime.js';
 import { addDashboardWidgets } from './helpers/teamDashboard.js';
 import { test, expect } from '@playwright/test';
 
-async function selectWorkspaceOption(page, label, value) {
-  await page.getByRole('combobox', { name: label, exact: true }).click();
-  await page
-    .getByRole('listbox', { name: label, exact: true })
-    .locator(`[role="option"][data-value="${value}"]`)
-    .click();
-}
-
 async function openPreview(page, path, role = 'leader', scenario = 'active') {
   await page.goto('/preview/main');
   await page.locator('.preview-toolbar').waitFor({ state: 'visible' });
@@ -59,7 +51,7 @@ test('저장 후 바꾼 평가는 제출을 막고 다시 저장한 최신 점�
     .getByRole('button', { name: '이지원 저장됨', exact: true })
     .click();
   await page.getByLabel('이지원 작업 수행 5점', { exact: true }).check();
-  await expect(page.getByText('미저장 변경', { exact: true })).toBeVisible();
+  await expect(page.getByRole('group', { name: '평가할 팀원 선택', exact: true }).getByRole('button', { name: '이지원 미저장', exact: true })).toBeVisible();
   await expect(
     page.getByRole('button', { name: '최종 제출', exact: true }),
   ).toBeDisabled();
@@ -75,12 +67,8 @@ test('저장 후 바꾼 평가는 제출을 막고 다시 저장한 최신 점�
     page.getByRole('heading', { name: '최종 제출 완료' }),
   ).toBeVisible();
   await page.reload();
-  await expect(
-    page.getByLabel('이지원 작업 수행 5점', { exact: true }),
-  ).toBeChecked();
-  await expect(
-    page.getByLabel('이지원 작업 수행 5점', { exact: true }),
-  ).toBeDisabled();
+  await expect(page.getByRole('region', { name: '이지원 저장된 평가', exact: true }).getByRole('row', { name: '작업 수행 매우 우수 5 / 5' })).toBeVisible();
+  await expect(page.getByRole('radio')).toHaveCount(0);
 });
 
 test('미저장 평가의 메뉴 이동과 브라우저 뒤로가기를 취소하면 입력을 유지한다', async ({
@@ -106,9 +94,7 @@ test('미저장 평가의 메뉴 이동과 브라우저 뒤로가기를 취소�
     .getByRole('button', { name: '변경 사항 버리고 이동', exact: true })
     .click();
   await expect(page).toHaveURL(/roundId=11$/);
-  await expect(
-    page.getByLabel('이지원 작업 수행 5점', { exact: true }),
-  ).toBeDisabled();
+  await expect(page.getByRole('radio')).toHaveCount(0);
 });
 
 test('작업 입력창의 Escape와 취소는 미저장 내용을 확인하고 입력을 보존한다', async ({
@@ -301,7 +287,7 @@ test('데스크톱 팀 메뉴는 왼쪽에 묶이고 메뉴 이동과 새로고�
   ).toHaveAttribute('aria-current', 'page');
 });
 
-test('스페이스 선택은 현재 공간을 전환하고 뒤로가기로 이전 공간을 복원한다', async ({
+test('내 스페이스에서 공간을 전환하고 뒤로가기로 목록과 이전 공간을 복원한다', async ({
   page,
 }) => {
   await openPreview(page, '/main');
@@ -319,7 +305,9 @@ test('스페이스 선택은 현재 공간을 전환하고 뒤로가기로 이�
   await expect(
     page.getByRole('heading', { name: '두 번째 프로젝트', exact: true }),
   ).toBeVisible();
-  await selectWorkspaceOption(page, '스페이스 선택', '1');
+  await page.getByRole('button', { name: '내 스페이스', exact: true }).click();
+  await expect(page).toHaveURL(/preview\/main$/);
+  await page.locator('.space-list > li').filter({ hasText: '2026 서비스 디자인 프로젝트' }).getByRole('button').click();
   await expect(page).toHaveURL(/spaces\/1$/);
   await expect(
     page.getByRole('heading', {
@@ -328,13 +316,15 @@ test('스페이스 선택은 현재 공간을 전환하고 뒤로가기로 이�
     }),
   ).toBeVisible();
   await page.goBack();
+  await expect(page).toHaveURL(/preview\/main$/);
+  await page.goBack();
   await expect(page).toHaveURL(/spaces\/3$/);
   await expect(
     page.getByRole('heading', { name: '두 번째 프로젝트', exact: true }),
   ).toBeVisible();
   await expect(
     page.getByLabel('스페이스 선택', { exact: true }),
-  ).toHaveAttribute('data-value', '3');
+  ).toHaveCount(0);
 });
 
 test('관리자는 다른 팀 목록으로 자료 조회에 진입하고 팀 작업 메뉴는 제공하지 않는다', async ({
@@ -379,7 +369,8 @@ test('모바일 스페이스 메뉴는 하나의 접힌 영역에 있고 작업 
   await openPreview(page, '/spaces/1');
   await expect(page.getByLabel('팀 선택', { exact: true })).toBeHidden();
   await page.getByRole('button', { name: /스페이스 메뉴/ }).click();
-  await expect(page.getByLabel('스페이스 선택', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('스페이스 선택', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '내 스페이스', exact: true })).toBeVisible();
   await page.getByRole('button', { name: '내 팀 · 삼위일체', exact: true }).click();
   await expect(page).toHaveURL(/teams\/1$/);
   await expect(page.getByLabel('팀 선택', { exact: true })).toBeHidden();
@@ -1013,7 +1004,8 @@ test('평가 마감 시각이 지나면 열린 작성 화면도 조회 전용으
   await page
     .getByRole('button', { name: '이지원 저장됨', exact: true })
     .click();
-  await expect(score).toBeDisabled();
+  await expect(score).toHaveCount(0);
+  await expect(page.getByRole('region', { name: '이지원 저장된 평가', exact: true })).toBeVisible();
   await expect(
     page.getByText(
       '평가 시간이 마감되어 저장·제출할 수 없습니다. 저장한 응답을 확인하세요.',

@@ -1,6 +1,7 @@
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { guideCalloutPosition } from '../lib/guideCallout.js';
+import { isReportGuideDrawer } from '../lib/guideLocation.js';
 
 export default function PreviewGuideCallout({ guide, step, stepCount, action, reveal, progress }) {
   const titleId = useId();
@@ -35,7 +36,8 @@ export default function PreviewGuideCallout({ guide, step, stepCount, action, re
     const measure = () => {
       frame = null;
       const dialog = [...document.querySelectorAll('[role="dialog"]')].at(-1);
-      if (dialog && dialog.querySelector('h2')?.textContent !== step.dialogTitle) {
+      const reportDrawer = isReportGuideDrawer(dialog, step);
+      if (dialog && !reportDrawer && dialog.querySelector('h2')?.textContent !== step.dialogTitle) {
         clearTimeout(revealTimer);
         setMount(null);
         removeHost();
@@ -43,7 +45,7 @@ export default function PreviewGuideCallout({ guide, step, stepCount, action, re
         return;
       }
       const root = dialog || document;
-      const selectors = dialog ? [step.dialogActionTarget, step.dialogTarget] : [step.calloutTarget, step.actionTarget, step.target];
+      const selectors = dialog && !reportDrawer ? [step.dialogActionTarget, step.dialogTarget] : [step.calloutTarget, step.actionTarget, step.target];
       const target = selectors.filter(Boolean).map((selector) => [...root.querySelectorAll(selector)].find(visible)).find(Boolean);
       if (!target) { clearTimeout(revealTimer); setMount(null); removeHost(); currentTarget = null; return; }
       const bounds = viewport();
@@ -56,7 +58,7 @@ export default function PreviewGuideCallout({ guide, step, stepCount, action, re
       }
       // Put the balloon in dialog flow to preserve scroll and keyboard access.
       // Elsewhere keep fixed-size dashboard widgets and tables unchanged.
-      const mode = dialog ? 'inline' : fallbackTarget === target ? 'flow' : 'floating';
+      const mode = dialog ? 'inline' : step.calloutPlacement === 'flow' || fallbackTarget === target ? 'flow' : 'floating';
       if (target !== currentTarget || dialog !== currentDialog || mode !== currentMode) {
         clearTimeout(revealTimer);
         removeHost();
@@ -68,7 +70,9 @@ export default function PreviewGuideCallout({ guide, step, stepCount, action, re
           inlineHost = document.createElement('div');
           inlineHost.dataset.previewGuideCalloutHost = '';
           inlineHost.className = 'preview-guide-callout-host';
-          const content = dialog && step.dialogCalloutContainer && dialog.querySelector(step.dialogCalloutContainer);
+          const content = reportDrawer ? target.closest('.report-drawer-footer') || target.closest('.report-member-evidence') || dialog.querySelector('.report-team-result')
+            : dialog ? step.dialogCalloutContainer && dialog.querySelector(step.dialogCalloutContainer)
+              : step.calloutContainer && document.querySelector(step.calloutContainer);
           const actions = dialog && target.closest('.modal-actions, .heading-actions');
           const table = target.closest('table');
           const pageContainer = !table && !protectedElement ? target.closest('section, article, form') : null;
@@ -92,7 +96,7 @@ export default function PreviewGuideCallout({ guide, step, stepCount, action, re
             header?.insertBefore(dialogLocateHost, header.querySelector('button'));
           }
         }
-        setMount({ container: inlineHost || document.body, mode, dialog: Boolean(dialog), dialogLocateHost });
+        setMount({ container: inlineHost || document.body, mode, dialog: Boolean(dialog), detailDialog: Boolean(dialog && !reportDrawer), dialogLocateHost });
         schedule();
         return;
       }
@@ -187,7 +191,7 @@ export default function PreviewGuideCallout({ guide, step, stepCount, action, re
           <span>{guide.step + 1} / {stepCount}</span>
           <strong id={titleId} aria-live="polite">{step.title}</strong>
         </div>
-          <p id={descriptionId}>{(mount.dialog ? step.dialogDescription || step.description : step.description)
+          <p id={descriptionId}>{(mount.detailDialog ? step.dialogDescription || step.description : step.description)
             .split(/(‘[^’]+’)/g).map((part, index) => part.startsWith('‘')
               ? <strong key={index}>{part}</strong> : part)}</p>
           {progress != null && <p className="preview-guide-callout-progress">팀 진행률 {guide.initialProgress.toFixed(1)}% → {progress.toFixed(1)}%</p>}

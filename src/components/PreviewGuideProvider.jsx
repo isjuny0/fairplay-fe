@@ -2,11 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { BookOpen, X } from 'lucide-react';
 import { PreviewGuideContext } from '../lib/previewGuideContext.js';
-import { completedGuideStep, guideTaskId, getGuideSteps, materialsGuideReady, materialsSourceGuideStep, contributionGuideReady, managerGuideReady, managerGuidePath, managerGuideMemberId, managerGuideMemberPath, managerGuideTaskId, managerGuideDeliverableId, evaluationGuideReady, evaluationGuideSchedule, reportManagementGuideReady, guideScenarios, nextGuideScenario, guideExamples, prepareGuide, readGuideSession, storeGuideSession, guideScopeKey, guideStorageKey } from '../mock/guide.js';
+import { completedGuideStep, peerResponseGuideStep, guideTaskId, getGuideSteps, materialsGuideReady, materialsSourceGuideStep, contributionGuideReady, managerGuideReady, managerGuidePath, managerGuideMemberId, managerGuideMemberPath, managerGuideTaskId, managerGuideDeliverableId, evaluationGuideReady, evaluationGuideSchedule, reportManagementGuideReady, guideScenarios, nextGuideScenario, guideExamples, prepareGuide, readGuideSession, storeGuideSession, guideScopeKey, guideStorageKey } from '../mock/guide.js';
 import { getMockState } from '../mock/planned.js';
 import { previewContext, previewRole, setPreviewRole } from '../mock/preview.js';
 import { workSummary } from '../lib/evaluation.js';
-import { guideLocationMatches } from '../lib/guideLocation.js';
+import { guideLocationMatches, isReportGuideDrawer } from '../lib/guideLocation.js';
 import { useInteractions } from '../hooks/useInteractions.js';
 import { Modal } from './ui.jsx';
 import PreviewGuideLauncher from './PreviewGuideLauncher.jsx';
@@ -24,8 +24,8 @@ export default function PreviewGuideProvider({ children }) {
   const [aiFeedbackReady, setAiFeedbackReady] = useState(false);
   const [materialsState, setMaterialsState] = useState(null);
   const [materialsSource, setMaterialsSource] = useState(null);
+  const [peerGuideState, setPeerGuideState] = useState(null);
   const [reportState, setReportState] = useState(null);
-  const [reportCalculationOpen, setReportCalculationOpen] = useState(false);
   const [managerState, setManagerState] = useState(null);
   const [managerSource, setManagerSource] = useState(null);
   const [evaluationState, setEvaluationState] = useState(null);
@@ -50,12 +50,13 @@ export default function PreviewGuideProvider({ children }) {
       member: managerState, source: managerSource, reportResult: managedReportResult,
       reportReviewReady: reportManagementGuideReady('management-report-review', managedReportBatch, managedReportResult, managedReportReview),
     });
+    if (current.id === 'peer-responses') return peerResponseGuideStep(current, peerGuideState);
     if (current.id === 'materials-source') return materialsSourceGuideStep(current, { answer: materialsState?.answer, source: materialsSource });
     return current.id === 'ai-feedback' && aiFeedbackReady
       ? { ...current, description: current.readyDescription, target: current.readyTarget, actionTarget: current.readyActionTarget }
       : current;
   }, [steps, guide?.step, aiFeedbackReady, materialsState?.answer, materialsSource, managerState, managerSource,
-    managedReportBatch, managedReportResult, managedReportReview]);
+    managedReportBatch, managedReportResult, managedReportReview, peerGuideState]);
   // Step definitions contain only copy and selectors. Keep their identity when
   // background state changes without changing the instructions (e.g. typing
   // report weights), so guidance does not scroll or restart its pulse each time.
@@ -94,7 +95,7 @@ export default function PreviewGuideProvider({ children }) {
   const stop = useCallback(() => update((current) => current ? { ...current, status: 'paused' } : null), [update]);
   const focusTarget = useCallback(() => {
     const dialog = [...document.querySelectorAll('[role="dialog"]')].at(-1);
-    const inStepDialog = atLocation && dialog?.querySelector('h2')?.textContent === step.dialogTitle;
+    const inStepDialog = atLocation && (dialog?.querySelector('h2')?.textContent === step.dialogTitle || (atGuideSelection && isReportGuideDrawer(dialog, step)));
     setRevealRequest({ scope: guide?.scope, stepId: step.id, inStepDialog });
     // Locating an open form should scroll that form, not navigate away from it.
     if (!atGuideSelection && !inStepDialog) navigate(step.path, { preventScrollReset: true, state: location.state });
@@ -113,14 +114,19 @@ export default function PreviewGuideProvider({ children }) {
     let sectionRequested = false;
     const reveal = () => {
       const dialog = [...document.querySelectorAll('[role="dialog"]')].at(-1);
-      if (dialog && dialog.querySelector('h2')?.textContent !== step.dialogTitle) return false;
+      const reportDrawer = isReportGuideDrawer(dialog, step);
+      if (dialog && !reportDrawer && dialog.querySelector('h2')?.textContent !== step.dialogTitle) return false;
       if (!dialog && !atGuideSelection) return false;
+      if (dialog && !reportDrawer && step.dialogSection) {
+        window.dispatchEvent(new CustomEvent('fairplay:guide-focus', { detail: step.dialogSection }));
+        if (!sectionRequested) { sectionRequested = true; return false; }
+      }
       if (!dialog && step.section) {
         window.dispatchEvent(new CustomEvent('fairplay:guide-focus', { detail: step.section }));
         if (!sectionRequested) { sectionRequested = true; return false; }
       }
       const root = dialog || document;
-      const selectors = dialog ? [step.dialogActionTarget, step.dialogTarget] : [step.calloutTarget, step.actionTarget, step.target];
+      const selectors = dialog && !reportDrawer ? [step.dialogActionTarget, step.dialogTarget] : [step.calloutTarget, step.actionTarget, step.target];
       const target = selectors.filter(Boolean)
         .map((selector) => [...root.querySelectorAll(selector)].find((element) =>
           element.getClientRects().length && !element.disabled && !element.closest('[hidden]')
@@ -187,9 +193,10 @@ export default function PreviewGuideProvider({ children }) {
     const highlight = () => {
       const dialog = [...document.querySelectorAll('[role="dialog"]')].at(-1);
       const isStepDialog = dialog?.querySelector('h2')?.textContent === step.dialogTitle;
+      const reportDrawer = isReportGuideDrawer(dialog, step);
       const root = dialog || document;
-      const readSelector = dialog ? (isStepDialog ? step.dialogTarget : null) : step.target;
-      const actionSelector = dialog ? (isStepDialog ? step.dialogActionTarget : null) : step.actionTarget;
+      const readSelector = dialog && !reportDrawer ? (isStepDialog ? step.dialogTarget : null) : step.target;
+      const actionSelector = dialog && !reportDrawer ? (isStepDialog ? step.dialogActionTarget : null) : step.actionTarget;
       const next = new Map();
       for (const [selector, className] of [[readSelector, 'preview-guide-highlight'], [actionSelector, 'preview-guide-action-highlight']]) {
         if (!selector) continue;
@@ -231,8 +238,8 @@ export default function PreviewGuideProvider({ children }) {
       setAiFeedbackReady(false);
       setMaterialsState(null);
       setMaterialsSource(null);
+      setPeerGuideState(null);
       setReportState(null);
-      setReportCalculationOpen(false);
       setManagerState(null);
       setManagerSource(null);
       setEvaluationState(null);
@@ -309,11 +316,10 @@ export default function PreviewGuideProvider({ children }) {
   };
   const confirmReportStep = (stepId) => {
     if (!guiding || !atLocation || guide.scenarioId !== 'contribution-report' || step.id !== stepId || !reportReady) return;
-    if (stepId === 'report-calculation') {
-      if (!reportCalculationOpen) return;
+    if (stepId === 'report-components') {
       update((current) => ({ ...current, status: 'completed' }));
-      notify('나의 최종 기여율과 계산 근거를 확인했습니다.');
-    } else if (stepId === 'report-overview' || stepId === 'report-components') {
+      notify('나의 최종 기여율과 항목별 반영 크기를 확인했습니다.');
+    } else if (stepId === 'report-overview') {
       update((current) => current?.step === guide.step ? { ...current, step: current.step + 1 } : current);
     }
   };
@@ -368,7 +374,7 @@ export default function PreviewGuideProvider({ children }) {
       onNext={() => start(nextScenario.id)} onList={open} onExplore={freeExplore}
       onDismiss={() => update((current) => ({ ...current, status: 'paused' }))} />}
   </>;
-  return <PreviewGuideContext.Provider value={{ open, stop, endForSettings, guiding, scope: guide?.scope, scenarioId: guide?.scenarioId, reportManagementReady: reportManagementGuideReady(step.id, managedReportBatch, managedReportResult, managedReportReview), reportManagementTeamId: 1, reportManagementMemberId: managerGuideMemberId, setManagedReportBatch, setManagedReportResult, setManagedReportReview, confirmReportManagementStep, evaluationSchedule, evaluationReady: evaluationGuideReady(step.id, evaluationState), setEvaluationState, confirmEvaluationStep, managerTaskId: managerGuideTaskId, managerDeliverableId: managerGuideDeliverableId, setManagerState, setManagerSource, confirmManagerStep, reportReady, setReportState, setReportCalculationOpen, confirmReportStep, confirmPeerStep, setMaterialsState, setMaterialsSource, confirmMaterialsStep, step: guide?.step, stepId: step.id, section: step.section, aiFeedbackReady, setAiFeedbackReady, confirmAiFeedback, taskId: guideTaskId, examples: guideExamples, panel }}>
+  return <PreviewGuideContext.Provider value={{ open, stop, endForSettings, guiding, scope: guide?.scope, scenarioId: guide?.scenarioId, reportManagementReady: reportManagementGuideReady(step.id, managedReportBatch, managedReportResult, managedReportReview), reportManagementTeamId: 1, reportManagementMemberId: managerGuideMemberId, setManagedReportBatch, setManagedReportResult, setManagedReportReview, confirmReportManagementStep, evaluationSchedule, evaluationReady: evaluationGuideReady(step.id, evaluationState), setEvaluationState, confirmEvaluationStep, managerTaskId: managerGuideTaskId, managerDeliverableId: managerGuideDeliverableId, setManagerState, setManagerSource, confirmManagerStep, reportReady, setReportState, setPeerGuideState, confirmReportStep, confirmPeerStep, setMaterialsState, setMaterialsSource, confirmMaterialsStep, step: guide?.step, stepId: step.id, section: step.section, aiFeedbackReady, setAiFeedbackReady, confirmAiFeedback, taskId: guideTaskId, examples: guideExamples, panel }}>
     {children}
     {guiding && (atLocation || step.id === 'result') && <PreviewGuideCallout key={guide.scope} guide={guide} step={calloutStep} stepCount={steps.length} action={action} reveal={atLocation ? focusTarget : action} progress={progress} />}
     {launcher && <Modal title="사용자 가이드" className="preview-guide-launcher" onClose={() => { setLauncher(false); toggle.current?.focus(); }}>

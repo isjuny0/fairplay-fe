@@ -67,7 +67,6 @@ for (const width of [1440, 768, 390, 320]) {
             '.space-page-header',
             '.space-page-header h1',
             '.space-page-eyebrow',
-            '.space-page-description',
           ].map((selector) => {
             const el = document.querySelector(selector),
               box = el.getBoundingClientRect(),
@@ -93,13 +92,15 @@ for (const width of [1440, 768, 390, 320]) {
     ).toBeVisible();
     const myHeader = await headerSnapshot();
     for (const selector of Object.keys(spaceHeader)) {
-      for (const key of ['x', 'y', 'width', 'height'])
-        expect(
-          Math.abs(myHeader[selector][key] - spaceHeader[selector][key]),
-        ).toBeLessThanOrEqual(1);
       expect(myHeader[selector].font).toBe(spaceHeader[selector].font);
       expect(myHeader[selector].weight).toBe(spaceHeader[selector].weight);
     }
+    for (const key of ['x', 'width'])
+      expect(Math.abs(myHeader['.space-page-header'][key] - spaceHeader['.space-page-header'][key])).toBeLessThanOrEqual(1);
+    expect(myHeader['.space-page-header'].height).toBeLessThan(spaceHeader['.space-page-header'].height);
+    const toolbarBox = await page.locator('.directory-toolbar').boundingBox();
+    const headerBox = await page.locator('.space-page-header').boundingBox();
+    expect(toolbarBox.y - headerBox.y - headerBox.height).toBeLessThanOrEqual(24);
     const myRefresh = page
       .getByRole('main')
       .getByRole('button', { name: '새로고침', exact: true });

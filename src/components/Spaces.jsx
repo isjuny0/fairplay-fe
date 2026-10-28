@@ -192,12 +192,11 @@ export default function Spaces({ onSelect, user }) {
               </span>
               <h1>내 스페이스</h1>
             </div>
-            <p className="space-page-description" aria-hidden="true" />
             <div className="heading-actions">
-              <button className="secondary-button" onClick={() => open('join')}>
+              <button className="ghost-button" onClick={() => open('join')}>
                 코드로 참여
               </button>
-              <button className="primary-button" onClick={() => open('create')}>
+              <button className="secondary-button" onClick={() => open('create')}>
                 <Icon name="plus" />
                 새 스페이스
               </button>

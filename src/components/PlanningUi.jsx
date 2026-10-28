@@ -99,7 +99,6 @@ export function FeedbackSummary({ member }) {
                 </span>
               </dt>
               <dd>
-                <span className="feedback-score-value">{score == null ? '집계 정보 없음' : `${score.toFixed(2)} / 5`}</span>
                 {score != null && (
                   <div className="feedback-score-meter" role="meter" aria-label={`${label} 평균`} aria-valuemin={0} aria-valuemax={5} aria-valuenow={score} aria-valuetext={`5점 만점에 ${score.toFixed(2)}점`}>
                     {Array.from({ length: 5 }, (_, index) => (
@@ -107,15 +106,14 @@ export function FeedbackSummary({ member }) {
                     ))}
                   </div>
                 )}
+                <span className={`feedback-score-value${score == null ? ' is-unavailable' : ''}`}>
+                  {score == null ? '집계 정보 없음' : <><strong>{score.toFixed(2)}</strong><small> / 5</small></>}
+                </span>
               </dd>
             </div>
           ))}
         </dl>
       </section>
-      <div className="feedback-calculation-note">
-        <p>동료에게 받은 평균이며 최종 기여율과는 별개입니다. ‘확인할 항목’은 평균 3점 미만인 항목입니다.</p>
-        <p>중간 평가 마감과 팀 전원 제출 후 조회할 수 있습니다. 평가자·개별 점수·사유 원문은 제공하지 않으며, 소규모 팀의 익명성을 보장하지 않습니다.</p>
-      </div>
     </div>
   );
 }

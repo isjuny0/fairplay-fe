@@ -496,7 +496,8 @@ test('동료 평가는 실제 PUT과 POST로 저장·제출하고 새로고침 �
   await page.getByRole('button', { name: '제출 확정' }).click();
   await expect(page.getByText('최종 제출 완료', { exact: true })).toBeVisible();
   await page.reload();
-  await expect(page.getByLabel('리더 작업 수행 4점')).toBeDisabled();
+  await expect(page.getByLabel('리더 작업 수행 4점', { exact: true })).toBeChecked();
+  await expect(page.getByLabel('리더 작업 수행 4점', { exact: true })).toBeDisabled();
   const save = requests.find((request) => request.method === 'PUT');
   expect(JSON.parse(save.body)).toEqual({
     scores: {
@@ -518,7 +519,8 @@ test('마감된 회차는 대상 조회 없이 본인 저장 응답만 읽고 �
   const { requests } = await backend(page, { roundStatus: 'CLOSED' });
   await page.goto('/spaces/1/teams/1/peer-evaluations');
   await expect(page.getByText('마감된 내 응답', { exact: true })).toBeVisible();
-  await expect(page.getByLabel('리더 작업 수행 4점')).toBeDisabled();
+  await expect(page.getByLabel('리더 작업 수행 4점', { exact: true })).toBeChecked();
+  await expect(page.getByLabel('리더 작업 수행 4점', { exact: true })).toBeDisabled();
   expect(
     requests.some((request) => request.path.endsWith('/targets')),
   ).toBeFalsy();
@@ -535,7 +537,7 @@ test('평가 비참여 상태는 대상·응답 조회를 요청하지 않는다
     requests.some((request) => /targets|responses/.test(request.path)),
   ).toBeFalsy();
 });
-test('중간 피드백은 서버 평균을 네 항목으로 표시하고 집계 안내를 제공한다', async ({
+test('중간 피드백은 설명 문구 없이 서버 평균과 항목별 도움말을 표시한다', async ({
   page,
 }) => {
   await backend(page);
@@ -551,7 +553,7 @@ test('중간 피드백은 서버 평균을 네 항목으로 표시하고 집계 
   await expect(page.getByText('목업', { exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: '내 담당 작업 보기', exact: true })).toHaveCount(0);
   await expect(page.getByText('평가 기준 보기', { exact: true })).toHaveCount(0);
-  await expect(page.locator('.feedback-calculation-note')).toContainText('최종 기여율과는 별개');
+  await expect(page.locator('.feedback-calculation-note')).toHaveCount(0);
   await expect(page.getByRole('tooltip')).toHaveCount(0);
   for (const label of ['작업 수행', '책임감', '적극성', '의사소통']) {
     const help = page.getByRole('button', { name: `${label} 설명`, exact: true });
@@ -568,8 +570,10 @@ test('중간 피드백은 서버 평균을 네 항목으로 표시하고 집계 
   }
   const items = await page.locator('.feedback-score-row').all();
   const boxes = await Promise.all(items.map((item) => item.boundingBox()));
-  expect(Math.abs(boxes[0].y - boxes[1].y)).toBeLessThan(1);
-  expect(boxes[2].y).toBeGreaterThan(boxes[0].y + boxes[0].height - 1);
+  for (let index = 1; index < boxes.length; index++) expect(boxes[index].y).toBeGreaterThanOrEqual(boxes[index - 1].y + boxes[index - 1].height - 1);
+  const meterBoxes = await page.getByRole('meter').all();
+  const meterPositions = await Promise.all(meterBoxes.map((meter) => meter.boundingBox()));
+  for (let index = 1; index < meterPositions.length; index++) expect(meterPositions[index].x).toBeCloseTo(meterPositions[0].x, 0);
   await page.setViewportSize({ width: 390, height: 844 });
   const mobileBoxes = await Promise.all(items.map((item) => item.boundingBox()));
   expect(mobileBoxes[1].y).toBeGreaterThanOrEqual(mobileBoxes[0].y + mobileBoxes[0].height - 1);
@@ -795,13 +799,13 @@ test('AI 상태 자동 재조회는 스페이스 목록을 유지하고 수동 �
   await page.clock.install();
   const { requests, setReview } = await backend(page);
   setReview({ id: 1, taskId: 10, status: 'PENDING', isCurrent: true });
-  const initialSpaceRead = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === '/api/spaces',
-  );
   await page.goto('/spaces/1/teams/1/tasks/10');
   await page.getByRole('tab', { name: 'AI피드백', exact: true }).click();
-  await initialSpaceRead;
   await expect(page.getByText('검토 대기', { exact: true })).toBeVisible();
+  await page.evaluate(async () => {
+    const { listSpaces } = await import('/src/api/spaces.js');
+    await listSpaces();
+  });
   const initialReviewReads = requests.filter((request) =>
     request.path.endsWith('/ai-review'),
   ).length;
@@ -1055,6 +1059,39 @@ function reportResponse(manager, status = 'UNPUBLISHED', weights = defaultWeight
     myDetails: manager ? null : contributionDetails(60, weights),
   };
 }
+function fulfillReportEvidence(route, report, userId) {
+  const member = report?.members.find((item) => item.userId === userId);
+  if (!member) return route.fulfill({ status: 404, json: { code: 'REPORT_MEMBER_NOT_FOUND', message: '리포트에 포함된 팀원이 아닙니다.' } });
+  const details = member.details ?? report.myDetails;
+  return route.fulfill({ json: {
+    reportId: report.id, teamId: report.teamId, userId, memberName: member.name, status: report.status,
+    cutoffAt: report.cutoffAt, createdAt: report.createdAt, publishedAt: report.publishedAt,
+    weights: report.weights, details,
+    workSummary: { memberUnits: details.taskRatioPercent / 20, teamUnits: 5, taskRatioPercent: details.taskRatioPercent, taskWeightPercent: report.weights.taskPercent, taskContributionPercent: details.taskContributionPercent },
+    tasks: details.taskRatioPercent ? [{ taskId: 10, weightAtCutoff: 5, allocationAtCutoff: details.taskRatioPercent,
+      assignedUnits: details.taskRatioPercent / 20, completedAt: report.cutoffAt,
+      current: { availability: 'MISSING', title: null, contributionDescription: null, version: null, updatedAt: null, materials: [] } }] : [],
+  } });
+}
+// Proposed space-level contract fixture; no team-by-team frontend mutations.
+function reportManagementStatus(teams, reports, weights, { missing = false, open = false } = {}) {
+  const rows = teams.map((team) => {
+    const report = reports.get(team.id);
+    const generationBlockReasons = report ? [] : open ? ['ROUNDS_NOT_CLOSED'] : missing ? ['PEER_EVALUATIONS_INCOMPLETE'] : [];
+    const publicationBlockReasons = !report ? ['REPORT_NOT_GENERATED'] : report.status === 'PUBLISHED' ? [] : open ? ['ROUNDS_NOT_CLOSED'] : missing ? ['PEER_EVALUATIONS_INCOMPLETE'] : [];
+    return { teamId: team.id, teamName: team.name, reportId: report?.id ?? null, reportStatus: report?.status ?? null,
+      createdAt: report?.createdAt ?? null, publishedAt: report?.publishedAt ?? null,
+      canGenerate: !generationBlockReasons.length, generationBlockReasons,
+      canPublish: !publicationBlockReasons.length, publicationBlockReasons };
+  });
+  const generationBlockReasons = [...new Set(rows.flatMap((team) => team.generationBlockReasons))];
+  const publicationBlockReasons = [...new Set(rows.flatMap((team) => team.publicationBlockReasons))];
+  return { spaceId: 1, weights: weights ?? defaultWeights, weightsConfirmed: weights != null, totalTeamCount: rows.length,
+    generatedTeamCount: rows.filter((team) => team.reportId != null).length,
+    publishedTeamCount: rows.filter((team) => team.reportStatus === 'PUBLISHED').length, teams: rows,
+    canGenerate: !generationBlockReasons.length, generationBlockReasons,
+    canPublish: !publicationBlockReasons.length, publicationBlockReasons };
+}
 async function reportBackend(
   page,
   {
@@ -1074,6 +1111,20 @@ async function reportBackend(
   await page.route('**/api/**', async (route) => {
     const request = route.request(),
       url = new URL(request.url());
+    if (['/api/spaces/1/reports', '/api/spaces/1/reports/publish'].includes(url.pathname)) {
+      fixture.requests.push({ path: url.pathname, method: request.method(), query: url.search, body: request.postData(), headers: request.headers() });
+      if (request.method() === 'POST') {
+        const error = url.pathname.endsWith('/publish') ? publishError : generateError;
+        if (error) return route.fulfill({ status: error.status || 409, json: { code: error.code, message: error.message || '서버 거절' } });
+        if (url.pathname.endsWith('/publish')) report = { ...report, status: 'PUBLISHED', publishedAt: '2026-10-15T20:00:00' };
+        else report ||= reportResponse(manager, 'UNPUBLISHED', request.postDataJSON() ?? defaultWeights);
+      }
+      return route.fulfill({ json: reportManagementStatus([{ id: 1, name: '실제 API 팀' }], new Map(report ? [[1, report]] : []), report?.weights ?? null) });
+    }
+    if (url.pathname === '/api/teams/1/report/evidence') {
+      fixture.requests.push({ path: url.pathname, method: request.method(), query: url.search });
+      return fulfillReportEvidence(route, report, url.searchParams.get('userId'));
+    }
     if (url.pathname === '/api/spaces/1') return route.fulfill({ json: { id: 1, name: '실제 API 스페이스', myRole: manager ? 'MANAGER' : 'USER', version: 1, teamBuildingStatus: 'CLOSED', teamBuildingOpensAt: '2026-01-01T09:00:00', teamBuildingClosesAt: '2026-01-02T09:00:00', reportWeights: report?.weights ?? null } });
     if (url.pathname === '/api/spaces/1/manager-dashboard') {
       return route.fulfill({ json: {
@@ -1129,50 +1180,46 @@ test('전체 리포트를 생성하고 결과를 확인한 뒤 별도로 공개�
     page.getByRole('button', { name: '전체 리포트 생성', exact: true }),
   ).toBeEnabled();
   await page.getByRole('button', { name: '전체 리포트 생성', exact: true }).click();
+  await page.getByRole('button', { name: '실제 API 팀 리포트 확인', exact: true }).click();
   await expect(page.locator('.report-publication-status')).toHaveText('미공개');
   await expect(page.getByRole('button', { name: '전체 리포트 생성', exact: true })).toHaveCount(0);
   expect(fixture.requests.some((request) => request.path.endsWith('/publish'))).toBe(false);
   await page.reload();
   await expect(page.locator('.report-publication-status')).toHaveText('미공개');
-  await page.getByRole('button', { name: '담당자 계산 근거 보기', exact: true }).click();
-  await page.getByText('담당자님의 계산 근거 보기', { exact: true }).click();
+  await page.getByRole('button', { name: '담당자 수행 근거 확인', exact: true }).click();
+  await page.getByRole('region', { name: '담당자님의 수행 근거', exact: true }).getByText('계산 상세', { exact: true }).click();
   await expect(
     page.getByRole('heading', { name: '담당자님의 계산 근거' }),
   ).toBeVisible();
-  await page.getByRole('dialog', { name: '담당자님의 기여도 상세' }).getByRole('button', { name: '닫기', exact: true }).click();
-  await page.getByRole('button', { name: '리더 계산 근거 보기', exact: true }).click();
+  await page.getByRole('button', { name: '리더 수행 근거 확인', exact: true }).click();
   await expect(page.getByRole('heading', { name: '담당자님의 계산 근거' })).toHaveCount(0);
-  await page.getByText('리더님의 계산 근거 보기', { exact: true }).click();
+  await page.getByRole('region', { name: '리더님의 수행 근거', exact: true }).getByText('계산 상세', { exact: true }).click();
   await expect(
     page.getByRole('heading', { name: '리더님의 계산 근거' }),
   ).toBeVisible();
-  await page.getByRole('dialog', { name: '리더님의 기여도 상세' }).press('Escape');
   await expect(page.getByText('목업', { exact: true })).toHaveCount(0);
   await expect(page.getByText('AI 작업 평가', { exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: '팀원에게 공개', exact: true }).click();
-  await page.getByRole('dialog', { name: '기여도 리포트 공개', exact: true }).getByRole('button', { name: '취소', exact: true }).click();
-  await expect(page.locator('.report-publication-status')).toHaveText('미공개');
+  await page.getByRole('button', { name: '목록으로 돌아가기', exact: true }).click();
+  await page.getByRole('button', { name: '전체 리포트 공개', exact: true }).click();
+  await page.getByRole('dialog', { name: '전체 리포트 공개', exact: true }).getByRole('button', { name: '취소', exact: true }).click();
+  await expect(page.getByRole('region', { name: '팀별 리포트 목록' })).toContainText('미공개');
   expect(fixture.requests.some((request) => request.path.endsWith('/publish'))).toBe(false);
-  await page.getByRole('button', { name: '팀원에게 공개', exact: true }).click();
+  await page.getByRole('button', { name: '전체 리포트 공개', exact: true }).click();
   await page
-    .getByRole('dialog')
-    .getByRole('button', { name: '공개 확정' })
+    .getByRole('dialog', { name: '전체 리포트 공개', exact: true })
+    .getByRole('button', { name: '전체 공개 확정' })
     .click();
-  await expect(
-    page.locator('.report-metadata > .status-badge'),
-  ).toHaveText('공개 완료');
-  for (const path of ['/api/teams/1/report', '/api/reports/40/publish']) {
+  await expect(page.getByRole('heading', { name: '전체 리포트 공개 완료', exact: true })).toBeVisible();
+  for (const path of ['/api/spaces/1/reports', '/api/spaces/1/reports/publish']) {
     const request = fixture.requests.find(
       (request) => request.path === path && request.method === 'POST',
     );
-    expect(request.body).toBe(path === '/api/teams/1/report' ? JSON.stringify(defaultWeights) : null);
+    expect(request.body).toBe(path === '/api/spaces/1/reports' ? JSON.stringify(defaultWeights) : null);
     expect(request.query).toBe('');
     expect(request.headers['x-csrf-token']).toBe('test-token');
   }
   await page.reload();
-  await expect(
-    page.locator('.report-metadata > .status-badge'),
-  ).toHaveText('공개 완료');
+  await expect(page.getByRole('heading', { name: '전체 리포트 공개 완료', exact: true })).toBeVisible();
   await expect(
     page.getByRole('button', { name: '팀원에게 공개', exact: true }),
   ).toHaveCount(0);
@@ -1186,11 +1233,16 @@ test('팀원은 공개 결과와 본인 근거만 보고 관리 API를 호출하
     initialReport: reportResponse(false, 'PUBLISHED'),
   });
   await page.goto('/spaces/1/teams/1/reports');
-  await page.getByText('나의 계산 근거 보기', { exact: true }).click();
+  await expect(page.getByRole('button', { name: '내 기여 근거 보기', exact: true })).toHaveCount(0);
+  await expect(page.getByText('나의 계산 근거 보기', { exact: true })).toHaveCount(0);
+  const completedTasks = page.getByRole('button', { name: '내 완료 작업 보기', exact: true });
+  await expect(completedTasks).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('.report-result-header')).toHaveCount(0);
+  await expect(page.getByText('색상별 길이는 내 기여율 안에서 각 항목이 차지하는 크기입니다.', { exact: true })).toHaveCount(0);
+  await expect(page.locator('.report-completed-tasks')).toHaveCount(0);
   await expect(
     page.getByRole('heading', { name: '나의 계산 근거' }),
-  ).toBeVisible();
-  await expect(page.getByRole('rowheader', { name: '완료 작업', exact: true })).toBeVisible();
+  ).toHaveCount(0);
   await expect(page.getByText('리더님의 계산 근거 보기')).toHaveCount(0);
   await expect(
     page.getByRole('heading', { name: '동료 평가 결과', exact: true }),
@@ -1198,10 +1250,33 @@ test('팀원은 공개 결과와 본인 근거만 보고 관리 API를 호출하
   expect(
     fixture.requests.some(
       (request) =>
-        request.path.endsWith('/manager-dashboard') ||
+        request.path.endsWith('/manager-dashboard') || request.path.endsWith('/report/evidence') ||
         /teams\/1\/responses$/.test(request.path),
     ),
   ).toBe(false);
+  await completedTasks.click();
+  const evidence = page.getByRole('region', { name: '리포트에 반영된 내 완료 작업', exact: true });
+  await expect(evidence).toBeVisible();
+  await expect(evidence).toContainText('60.0%');
+  await evidence.getByRole('button', { name: /작업 #10/ }).click();
+  await expect(evidence).toContainText('현재 작업을 조회할 수 없습니다.');
+  await expect(evidence.getByText('이 작업의 60%를 담당했습니다.', { exact: true })).toHaveCount(0);
+  await expect(evidence.locator('.evidence-task-summary')).toContainText('작업량 ·');
+  await expect(evidence.locator('.evidence-task-summary')).not.toContainText('확정 작업량');
+  const allocationHelp = evidence.getByRole('button', { name: '담당 비율의 기여도 반영 방식', exact: true });
+  await allocationHelp.focus();
+  await expect(evidence.getByRole('tooltip')).toContainText('5점 × 60% = 3점 반영');
+  await expect(evidence.getByRole('tooltip')).toContainText('실제 소요 시간을 의미하지 않습니다.');
+  await allocationHelp.press('Escape');
+  await expect(evidence.getByRole('tooltip')).toHaveCount(0);
+  await expect(evidence.getByRole('link', { name: '현재 내 완료 작업 목록' })).toHaveAttribute('href', '/spaces/1/teams/1/tasks?view=list&status=DONE&mine=1');
+  const reads = fixture.requests.filter((request) => request.path.endsWith('/report/evidence'));
+  expect(reads.length).toBeGreaterThan(0);
+  expect(reads.every((request) => new URLSearchParams(request.query).get('userId') === members[0].userId)).toBe(true);
+  expect(fixture.requests.some((request) => request.path.endsWith('/manager-dashboard') || /teams\/1\/responses$/.test(request.path))).toBe(false);
+  await evidence.getByRole('button', { name: '내 완료 작업 닫기' }).click();
+  await expect(evidence).toHaveCount(0);
+  await expect(completedTasks).toBeFocused();
 });
 
 test('리포트의 작업 반영분 0을 누락 값으로 취급하거나 다른 수치로 대체하지 않는다', async ({ page }) => {
@@ -1222,6 +1297,8 @@ test('리포트의 작업 반영분 0을 누락 값으로 취급하거나 다른
   await summary.getByRole('button', { name: '완료 작업 반영분 설명' }).focus();
   await expect(summary.getByRole('tooltip')).toContainText('0.0% × 반영 비중 70% = 0.0%p');
   await expect(page.getByRole('button', { name: /계산 근거 보기/ })).toHaveCount(0);
+  await summary.getByRole('button', { name: '내 완료 작업 보기', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '반영된 완료 작업이 없습니다.', exact: true })).toBeVisible();
 });
 
 test('미공개 리포트 null과 실제 404를 구분하고 오류를 목업으로 바꾸지 않는다', async ({
@@ -1260,15 +1337,15 @@ test('표시상 마감 후에도 서버 마감 정리와 완료 작업 부족 �
   await page.getByRole('button', { name: '전체 리포트 생성', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('서버의 마감 정리');
   await expect(
-    page.getByRole('list', { name: '회차별 리포트 준비 상태' }),
+    page.getByRole('list', { name: '팀별 리포트 준비 상태' }),
   ).toBeVisible();
   expect(
     fixture.requests.filter(
       (request) =>
-        request.path === '/api/teams/1/report' && request.method === 'POST',
+        request.path === '/api/spaces/1/reports' && request.method === 'POST',
     ),
   ).toHaveLength(1);
-  await page.route('**/api/teams/1/report', (route) =>
+  await page.route('**/api/spaces/1/reports', (route) =>
     route.request().method() === 'POST'
       ? route.fulfill({
           status: 409,
@@ -1290,17 +1367,17 @@ test('리포트 공개 실패는 비공개 결과를 유지하고 자동 재요�
     publishError: { code: 'REPORT_PUBLICATION_BLOCKED' },
   });
   await page.goto('/spaces/1/reports');
-  await page.getByRole('button', { name: '팀원에게 공개', exact: true }).click();
+  await page.getByRole('button', { name: '전체 리포트 공개', exact: true }).click();
   await page
-    .getByRole('dialog')
-    .getByRole('button', { name: '공개 확정' })
+    .getByRole('dialog', { name: '전체 리포트 공개', exact: true })
+    .getByRole('button', { name: '전체 공개 확정' })
     .click();
-  await expect(page.getByRole('dialog').getByRole('alert')).toContainText(
-    '해당 팀의 두 회차 마감',
+  await expect(page.getByRole('dialog', { name: '전체 리포트 공개', exact: true }).getByRole('alert')).toContainText(
+    '전체 팀의 리포트 생성',
   );
   await expect(
-    page.locator('.report-metadata > .status-badge'),
-  ).toHaveText('미공개');
+    page.getByRole('region', { name: '팀별 리포트 목록' }),
+  ).toContainText('미공개');
   expect(
     fixture.requests.filter((request) => request.path.endsWith('/publish')),
   ).toHaveLength(1);
@@ -1511,12 +1588,14 @@ test('평가 미마감 상태에서는 리포트 생성을 막는다', async ({ 
   await page.route('**/api/teams/1/report', (route) =>
     route.fulfill({ json: null }),
   );
+  await page.route('**/api/spaces/1/reports', (route) => route.fulfill({ json:
+    reportManagementStatus([{ id: 1, name: '실제 API 팀' }], new Map(), null, { open: true }) }));
   await page.goto('/spaces/1/reports');
   await expect(
     page.getByRole('button', { name: '전체 리포트 생성', exact: true }),
   ).toBeDisabled();
   await expect(
-    page.getByRole('list', { name: '회차별 리포트 준비 상태' }),
+    page.getByRole('list', { name: '팀별 리포트 준비 상태' }),
   ).toBeVisible();
   expect(fixture.requests.some((request) => request.method === 'POST')).toBe(
     false,
@@ -1893,32 +1972,53 @@ test('리포트 관리는 이전 결과 탭 주소에서도 생성·공개만 �
   await page.goto('/spaces/1/reports?teamId=1&tab=peer-responses&peerRoundId=11');
   await expect(page.getByRole('heading', { name: '리포트 관리', exact: true })).toBeVisible();
   await expect(page.getByRole('tab')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: '팀원에게 공개', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '팀원에게 공개', exact: true })).toHaveCount(0);
   await expect(page.getByRole('region', { name: '팀 최종 기여율', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: '리포트 새로고침', exact: true }).click();
+  await page.getByRole('dialog', { name: '실제 API 팀 리포트', exact: true }).press('Escape');
+  await page.getByRole('button', { name: '리포트 관리 새로고침', exact: true }).click();
+  await page.getByRole('button', { name: '실제 API 팀 리포트 확인', exact: true }).click();
   await expect(page.getByRole('region', { name: '팀 최종 기여율', exact: true })).toBeVisible();
   expect(fixture.requests.some((request) => /teams\/1\/responses$/.test(request.path))).toBe(false);
 });
 
-async function batchReportBackend(page, { missing = false, open = false, failSecondOnce = false, lockedWeights = null } = {}) {
+async function batchReportBackend(page, { missing = false, open = false, failSecondOnce = false, lockedWeights = null, partial = false } = {}) {
   await reportBackend(page);
   const reports = new Map();
+  if (partial) { lockedWeights ??= defaultWeights; reports.set(1, { ...reportResponse(true, 'UNPUBLISHED', lockedWeights), id: 41, teamId: 1 }); }
   const generatedTeams = [];
   const generationWeights = [];
   const teams = [1, 2].map((id) => ({ id, spaceId: 1, name: `테스트 ${id}팀`, approvedMemberCount: 2 }));
   await page.route('**/api/**', async (route) => {
     const request = route.request(), path = new URL(request.url()).pathname;
+    if (path === '/api/spaces/1/reports') {
+      if (request.method() === 'POST') {
+        const weights = request.postDataJSON();
+        if (failSecondOnce) {
+          failSecondOnce = false;
+          generatedTeams.push(1, 2); generationWeights.push(weights, weights);
+          return route.fulfill({ status: 409, json: { code: 'REPORT_UNCALCULABLE', message: '계산 불가' } });
+        }
+        for (const team of teams.filter((team) => !reports.has(team.id))) {
+          generatedTeams.push(team.id); generationWeights.push(weights);
+          lockedWeights ??= weights;
+          reports.set(team.id, { ...reportResponse(true, 'UNPUBLISHED', weights), id: 40 + team.id, teamId: team.id });
+        }
+      }
+      return route.fulfill({ json: reportManagementStatus(teams, reports, lockedWeights, { missing, open }) });
+    }
     if (path === '/api/spaces/1') return route.fulfill({ json: { id: 1, name: '실제 API 스페이스', myRole: 'MANAGER', version: 1, teamBuildingStatus: 'CLOSED', reportWeights: lockedWeights } });
     if (path === '/api/spaces/1/teams') return route.fulfill({ json: teams });
     if (path === '/api/teams/2') return route.fulfill({ json: teams[1] });
     if (path === '/api/spaces/1/evaluation-rounds') return route.fulfill({ json: ['MID', 'FINAL'].map((type, index) => ({ id: 11 + index, type, status: open && type === 'FINAL' ? 'OPEN' : 'CLOSED' })) });
     if (path === '/api/spaces/1/manager-dashboard') return route.fulfill({ json: {
       totalTeamCount: 2,
-      teams: teams.map((team) => ({ teamId: team.id, teamName: team.name, approvedMemberCount: 2, reportId: reports.get(team.id)?.id ?? null })),
+      teams: teams.map((team) => ({ teamId: team.id, teamName: team.name, approvedMemberCount: 2, reportId: reports.get(team.id)?.id ?? null, reportStatus: reports.get(team.id)?.status ?? null })),
       missingPeerSubmissions: ['MID', 'FINAL'].map((type, index) => ({ roundId: 11 + index, type, missingCount: missing ? 1 : 0,
         teams: teams.map((team) => ({ teamId: team.id, requiredCount: 2, submittedCount: missing && team.id === 2 ? 1 : 2, missingCount: missing && team.id === 2 ? 1 : 0 })),
       })),
     } });
+    const evidenceMatch = path.match(/^\/api\/teams\/(\d+)\/report\/evidence$/);
+    if (evidenceMatch) return fulfillReportEvidence(route, reports.get(Number(evidenceMatch[1])), new URL(request.url()).searchParams.get('userId'));
     const match = path.match(/^\/api\/teams\/(\d+)\/report$/);
     if (!match) return route.fallback();
     const teamId = Number(match[1]);
@@ -1943,13 +2043,13 @@ test('전체 팀의 필수 제출과 두 회차 마감이 모두 완료돼야 �
   await page.goto('/spaces/1/reports');
   const generate = page.getByRole('button', { name: '전체 리포트 생성', exact: true });
   await expect(generate).toBeDisabled();
-  await expect(page.getByRole('list', { name: '회차별 리포트 준비 상태' })).toContainText('1/2팀 제출 완료');
+  await expect(page.getByRole('list', { name: '팀별 리포트 준비 상태' })).toContainText('필수 동료 평가 제출이 완료되지 않았습니다.');
   fixture.setMissing(false);
   fixture.setOpen(true);
-  await page.getByRole('button', { name: '전체 리포트 생성 조건 새로고침', exact: true }).click();
+  await page.getByRole('button', { name: '리포트 관리 새로고침', exact: true }).click();
   await expect(generate).toBeDisabled();
   fixture.setOpen(false);
-  await page.getByRole('button', { name: '전체 리포트 생성 조건 새로고침', exact: true }).click();
+  await page.getByRole('button', { name: '리포트 관리 새로고침', exact: true }).click();
   await expect(generate).toBeEnabled();
   expect(fixture.generatedTeams).toEqual([]);
   await generate.click();
@@ -1958,19 +2058,15 @@ test('전체 팀의 필수 제출과 두 회차 마감이 모두 완료돼야 �
   expect([...fixture.reports.values()].every((report) => report.status === 'UNPUBLISHED')).toBe(true);
 });
 
-test('일부 팀 생성 실패 후 재시도는 이미 생성된 리포트를 건너뛰고 결과를 공개하지 않는다', async ({ page }) => {
+test('일괄 생성 실패는 전체 결과를 취소하며 재시도에서 전체 팀을 생성한다', async ({ page }) => {
   const fixture = await batchReportBackend(page, { failSecondOnce: true });
   await page.goto('/spaces/1/reports');
   await page.getByRole('button', { name: '전체 리포트 생성', exact: true }).click();
-  await expect(page.getByText('일부 리포트를 생성하지 못했습니다.', { exact: false })).toBeVisible();
-  await expect(page.locator('.report-generation-failures')).toContainText('테스트 2팀');
-  await expect(page.locator('.report-publication-status')).toHaveText('미공개');
-  expect(fixture.generatedTeams).toEqual([1, 2]);
+  await expect(page.getByRole('alert')).toContainText('완료 작업 또는 평가 입력이 부족');
+  expect(fixture.reports.size).toBe(0);
   await page.getByRole('button', { name: '전체 리포트 생성', exact: true }).click();
   await expect(page.getByRole('heading', { name: '전체 리포트 생성 완료', exact: true })).toBeVisible();
-  expect(fixture.generatedTeams).toEqual([1, 2, 2]);
-  await page.getByLabel('리포트 대상 팀', { exact: true }).selectOption('2');
-  await expect(page.locator('.report-publication-status')).toHaveText('미공개');
+  expect(fixture.generatedTeams).toEqual([1, 2, 1, 2]);
   expect([...fixture.reports.values()].every((report) => report.status === 'UNPUBLISHED')).toBe(true);
 });
 
@@ -1981,11 +2077,13 @@ test('생성 직전 전체 제출 조건을 다시 확인하고 변경되면 생
   await expect(generate).toBeEnabled();
   fixture.setMissing(true);
   await generate.click();
-  await expect(page.getByRole('alert')).toContainText('전체 팀의 중간·최종 평가 마감');
+  await expect(page.getByRole('alert')).toContainText('필수 동료 평가 제출');
   expect(fixture.generatedTeams).toEqual([]);
 });
 
 async function fillReportWeights(page, values) {
+  const disclosure = page.locator('.report-weights-disclosure');
+  if (!(await disclosure.evaluate((element) => element.open))) await disclosure.locator('summary').click();
   for (const [label, value] of Object.entries(values))
     await page.getByRole('spinbutton', { name: `${label} 반영 비율`, exact: true }).fill(String(value));
 }
@@ -2011,34 +2109,32 @@ test('관리자는 0을 포함한 정수 비율만 합계 100으로 설정하고
   await page.locator('.report-weights-disclosure > summary').click();
   await expect(page.getByRole('spinbutton', { name: '완료 작업 반영 비율', exact: true })).toBeDisabled();
   await expect(page.getByRole('spinbutton', { name: '완료 작업 반영 비율', exact: true })).toHaveValue('0');
-  await page.getByRole('button', { name: '담당자 계산 근거 보기', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: '담당자님의 기여도 상세', exact: true });
-  await expect(dialog).toContainText('반영 비중 0%');
+  await page.getByRole('button', { name: '테스트 1팀 리포트 확인', exact: true }).click();
+  await page.getByRole('button', { name: '담당자 수행 근거 확인', exact: true }).click();
+  const dialog = page.getByRole('region', { name: '담당자님의 수행 근거', exact: true });
+  await expect(dialog).toContainText('적용 비중 0%');
   const help = dialog.getByRole('button', { name: '최종 동료 평가 반영분 설명', exact: true });
   await help.focus();
   await expect(dialog.getByRole('tooltip')).toContainText('반영 비중 100% = 60.0%p');
-  await dialog.getByRole('button', { name: '닫기', exact: true }).click();
-  await page.getByText('집계 기준과 계산 방식', { exact: true }).click();
-  await expect(page.getByRole('heading', { name: '완료 작업 0% · 중간 동료 평가 0% · 최종 동료 평가 100%', exact: true })).toBeVisible();
+  await page.getByRole('dialog', { name: '테스트 1팀 리포트', exact: true }).press('Escape');
+  await expect(page.getByText('집계 기준과 계산 방식', { exact: true })).toHaveCount(0);
   await page.reload();
   await page.locator('.report-weights-disclosure > summary').click();
   await expect(page.getByRole('spinbutton', { name: '최종 동료 평가 반영 비율', exact: true })).toHaveValue('100');
   await expect(page.getByRole('spinbutton', { name: '최종 동료 평가 반영 비율', exact: true })).toBeDisabled();
 });
 
-test('일부 생성 후 비율은 고정되고 미생성 팀 재시도에도 같은 비율을 사용한다', async ({ page }) => {
-  const fixture = await batchReportBackend(page, { failSecondOnce: true });
+test('기존 개별 생성 결과가 있으면 비율을 유지하고 미생성 팀만 채운다', async ({ page }) => {
+  const weights = { taskPercent: 50, midPercent: 20, finalPercent: 30 };
+  const fixture = await batchReportBackend(page, { partial: true, lockedWeights: weights });
   await page.goto('/spaces/1/reports');
-  await fillReportWeights(page, { '완료 작업': 50, '중간 동료 평가': 20, '최종 동료 평가': 30 });
-  await page.getByRole('button', { name: '전체 리포트 생성', exact: true }).click();
-  await expect(page.locator('.report-generation-failures')).toBeVisible();
-  await expect(page.getByRole('spinbutton', { name: '완료 작업 반영 비율', exact: true })).toBeDisabled();
-  await page.reload();
+  await page.locator('.report-weights-disclosure > summary').click();
   await expect(page.getByRole('spinbutton', { name: '완료 작업 반영 비율', exact: true })).toHaveValue('50');
-  await page.getByRole('button', { name: '전체 리포트 생성', exact: true }).click();
+  await expect(page.getByRole('spinbutton', { name: '완료 작업 반영 비율', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: '미생성 팀 다시 생성', exact: true }).click();
   await expect(page.getByRole('heading', { name: '전체 리포트 생성 완료', exact: true })).toBeVisible();
-  expect(fixture.generatedTeams).toEqual([1, 2, 2]);
-  expect(fixture.generationWeights).toEqual(Array(3).fill({ taskPercent: 50, midPercent: 20, finalPercent: 30 }));
+  expect(fixture.generatedTeams).toEqual([2]);
+  expect(fixture.generationWeights).toEqual([weights]);
 });
 
 test('다른 관리자가 먼저 확정한 비율을 생성 직전에 다시 확인하고 이전 입력을 전송하지 않는다', async ({ page }) => {
@@ -2050,14 +2146,15 @@ test('다른 관리자가 먼저 확정한 비율을 생성 직전에 다시 확
   await generate.click();
   await expect(page.getByRole('alert')).toContainText('반영 비율이 이미 확정');
   expect(fixture.generatedTeams).toEqual([]);
+  await page.locator('.report-weights-disclosure > summary').click();
   await expect(page.getByRole('spinbutton', { name: '완료 작업 반영 비율', exact: true })).toHaveValue('60');
   await expect(page.getByRole('spinbutton', { name: '완료 작업 반영 비율', exact: true })).toBeDisabled();
 });
 
-test('생성 중 비율 확정 충돌이 발생하면 다음 팀 요청을 중단하고 확정 비율을 갱신한다', async ({ page }) => {
+test('일괄 생성 중 비율 충돌이 발생하면 재전송하지 않고 확정 비율을 갱신한다', async ({ page }) => {
   const fixture = await batchReportBackend(page);
   const attempts = [];
-  await page.route('**/api/teams/*/report', async (route) => {
+  await page.route('**/api/spaces/1/reports', async (route) => {
     if (route.request().method() !== 'POST') return route.fallback();
     attempts.push(route.request().postDataJSON());
     fixture.setLockedWeights({ taskPercent: 80, midPercent: 0, finalPercent: 20 });
@@ -2067,6 +2164,67 @@ test('생성 중 비율 확정 충돌이 발생하면 다음 팀 요청을 중�
   await page.getByRole('button', { name: '전체 리포트 생성', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('스페이스 공통 반영 비율이 이미 확정');
   expect(attempts).toEqual([{ taskPercent: 70, midPercent: 10, finalPercent: 20 }]);
+  await page.locator('.report-weights-disclosure > summary').click();
   await expect(page.getByRole('spinbutton', { name: '완료 작업 반영 비율', exact: true })).toHaveValue('80');
   await expect(page.getByRole('spinbutton', { name: '완료 작업 반영 비율', exact: true })).toBeDisabled();
 });
+
+
+test('기여 근거 조회의 권한 오류와 다른 리포트 응답을 계산 요약으로 대체하지 않는다', async ({ page }) => {
+  await reportBackend(page, { initialReport: reportResponse(true, 'PUBLISHED') });
+  await page.route('**/api/teams/1/report/evidence?*', (route) => route.fulfill({ status: 403, json: { code: 'FORBIDDEN', message: '기여 근거 조회 권한이 없습니다.' } }));
+  await page.goto('/spaces/1/reports');
+  await page.getByRole('button', { name: '실제 API 팀 리포트 확인', exact: true }).click();
+  await page.getByRole('button', { name: '담당자 수행 근거 확인', exact: true }).click();
+  const dialog = page.getByRole('region', { name: '담당자님의 수행 근거', exact: true });
+  await expect(dialog.getByRole('alert')).toContainText('기여 근거 조회 권한이 없습니다.');
+  await expect(dialog.getByRole('tab')).toHaveCount(0);
+  await expect(dialog.getByText('나의 계산 근거 보기', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('dialog')).toHaveCount(1);
+  await page.getByRole('button', { name: '리더 수행 근거 확인', exact: true }).click();
+  await page.route('**/api/teams/1/report/evidence?*', (route) => route.fulfill({ json: { reportId: 999, teamId: 1, userId: members[0].userId, tasks: [] } }));
+  await page.getByRole('button', { name: '담당자 수행 근거 확인', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toContainText('선택한 리포트의 기여 근거를 확인하지 못했습니다.');
+  await expect(dialog.getByRole('tab')).toHaveCount(0);
+});
+
+
+test('본인 완료 작업 근거가 거절되면 현재 작업이나 계산값으로 대체하지 않는다', async ({ page }) => {
+  await reportBackend(page, { manager: false, initialReport: reportResponse(false, 'PUBLISHED') });
+  await page.route('**/api/teams/1/report/evidence?*', (route) => route.fulfill({ status: 403, json: { code: 'FORBIDDEN', message: '기여 근거 조회 권한이 없습니다.' } }));
+  await page.goto('/spaces/1/teams/1/reports');
+  await page.getByRole('button', { name: '내 완료 작업 보기', exact: true }).click();
+  const evidence = page.getByRole('region', { name: '리포트에 반영된 내 완료 작업', exact: true });
+  await expect(evidence.getByRole('alert')).toContainText('기여 근거 조회 권한이 없습니다.');
+  await expect(evidence.locator('.evidence-task')).toHaveCount(0);
+  await expect(evidence.locator('.report-completed-share')).toHaveCount(0);
+});
+
+
+test('전체 공개 확인 뒤 대상이 바뀌면 공개 요청 없이 최신 목록으로 돌아간다', async ({ page }) => {
+  const fixture = await reportBackend(page, { initialReport: reportResponse(true) });
+  await page.goto('/spaces/1/reports');
+  await page.getByRole('button', { name: '전체 리포트 공개', exact: true }).click();
+  const confirm = page.getByRole('dialog', { name: '전체 리포트 공개', exact: true });
+  await expect(confirm).toContainText('미공개 1개 팀');
+  const changedReport = { ...reportResponse(true), id: 99 };
+  await page.route('**/api/spaces/1/reports', (route) => route.fulfill({ json:
+    reportManagementStatus([{ id: 1, name: '실제 API 팀' }], new Map([[1, changedReport]]), changedReport.weights) }));
+  await confirm.getByRole('button', { name: '전체 공개 확정', exact: true }).click();
+  await expect(confirm).toHaveCount(0);
+  await expect(page.getByRole('alert')).toContainText('공개 대상 또는 상태가 변경');
+  expect(fixture.requests.filter((request) => request.method === 'POST')).toHaveLength(0);
+});
+
+for (const status of [404, 500]) {
+  test(`관리 현황 API ${status}는 기존 팀 API로 우회하거나 생성·공개를 허용하지 않는다`, async ({ page }) => {
+    const fixture = await reportBackend(page, { initialReport: reportResponse(true) });
+    await page.route('**/api/spaces/1/reports', (route) => route.fulfill({ status, json: { code: 'STATUS_UNAVAILABLE', message: '관리 현황을 불러올 수 없습니다.' } }));
+    await page.goto('/spaces/1/reports');
+    await expect(page.getByRole('alert')).toContainText('관리 현황을 불러올 수 없습니다.');
+    await expect(page.getByRole('button', { name: '전체 리포트 생성', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '전체 리포트 공개', exact: true })).toHaveCount(0);
+    expect(fixture.requests.filter((request) => request.method === 'POST')).toHaveLength(0);
+    expect(fixture.requests.some((request) => /teams\/\d+\/report$|manager-dashboard$/.test(request.path))).toBe(false);
+  });
+}

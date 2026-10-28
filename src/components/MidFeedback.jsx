@@ -18,7 +18,6 @@ export default function MidFeedback({ context }) {
       <div className="page-heading page-heading--compact">
         <div>
           <h1>중간 피드백</h1>
-          <p>팀원에게 받은 평가를 네 가지 협업 항목으로 확인하세요.</p>
         </div>
         <RefreshButton
           label="피드백 새로고침"

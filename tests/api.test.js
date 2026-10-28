@@ -706,3 +706,29 @@ test('리포트 생성 비율은 최상위 JSON 본문과 CSRF로 전송한다',
   assert.equal(request.headers['Content-Type'], 'application/json');
   assert.equal(request.headers['X-CSRF-TOKEN'], 'token');
 });
+
+test('스페이스 리포트는 백엔드 확정 DTO와 비율 확정 여부를 사용하며 세션·CSRF로 일괄 요청한다', async () => {
+  const { getSpaceReports, generateSpaceReports, publishSpaceReports } = await import('../src/api/spaceReports.js');
+  const weights = { taskPercent: 70, midPercent: 10, finalPercent: 20 };
+  const response = { spaceId: 7, totalTeamCount: 1, generatedTeamCount: 0, publishedTeamCount: 0,
+    weights, weightsConfirmed: false, canGenerate: false, generationBlockReasons: ['ROUNDS_NOT_CLOSED'],
+    canPublish: false, publicationBlockReasons: ['REPORT_NOT_GENERATED'],
+    teams: [{ teamId: 3, teamName: '팀', reportId: null, reportStatus: null, createdAt: null, publishedAt: null,
+      canGenerate: false, generationBlockReasons: ['ROUNDS_NOT_CLOSED'], canPublish: false, publicationBlockReasons: ['REPORT_NOT_GENERATED'] }] };
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, ...options });
+    return url.endsWith('/csrf') ? jsonResponse({ headerName: 'X-CSRF-TOKEN', token: 'token' }) : jsonResponse(response);
+  };
+  assert.deepEqual(await getSpaceReports(7), response);
+  await generateSpaceReports(7, weights);
+  await publishSpaceReports(7);
+  const posts = calls.filter((call) => call.method === 'POST');
+  assert.deepEqual(posts.map((call) => call.url), ['/api/spaces/7/reports', '/api/spaces/7/reports/publish']);
+  assert.equal(posts[0].body, JSON.stringify(weights));
+  assert.equal(posts[1].body, undefined);
+  assert.ok(posts.every((call) => call.credentials === 'include' && call.headers['X-CSRF-TOKEN'] === 'token'));
+  for (const change of [{ weightsConfirmed: undefined }, { weights: null }, { generatedTeamCount: 1 }, { teams: [{ ...response.teams[0], generationBlockReasons: null }] }, { spaceId: 8 }]) {
+    globalThis.fetch = async () => jsonResponse({ ...response, ...change });
+    await assert.rejects(getSpaceReports(7), { code: 'REPORT_MANAGEMENT_INVALID' });
+  }
+});

@@ -14,8 +14,7 @@ for (const width of [1440, 390]) {
     await expect(breadcrumb.locator('button')).toHaveText('삼위일체');
     await expect(breadcrumb.locator('[aria-current="page"]')).toHaveText('작업');
     await expect(breadcrumb).not.toContainText('2026 서비스 디자인 프로젝트');
-    if (width > 720) await expect(header).toBeVisible();
-    else await expect(header).toBeHidden();
+    await expect(header).toBeVisible();
     await page.goto('/preview/spaces/1/teams/1/deliverables');
     await expect(header.locator('strong')).toHaveText('2026 서비스 디자인 프로젝트');
     await expect(breadcrumb.locator('button')).toHaveText('삼위일체');
@@ -36,18 +35,24 @@ for (const width of [1440, 390]) {
   });
 }
 
-for (const width of [1920, 1440, 1024, 768]) {
-  test(`헤더 중앙 정렬 ${width}px: 로고·프로필 폭과 무관하게 스페이스 이름 중앙 유지`, async ({ page }) => {
+for (const width of [1920, 1440, 1100, 1024, 1006, 901, 768, 721]) {
+  test(`헤더 ${width}px: 스페이스명은 남은 공간 안에서 표시하고 로고·버튼과 겹치지 않는다`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/preview/spaces/1/teams/1/deliverables');
     const label = page.getByLabel('현재 화면 정보').locator('strong');
     await expect(label).toHaveText('2026 서비스 디자인 프로젝트');
     const bounds = await label.boundingBox();
-    expect(Math.abs(bounds.x + bounds.width / 2 - width / 2)).toBeLessThanOrEqual(1);
     const brand = await page.locator('.topbar-brand').boundingBox();
     const profile = await page.locator('.profile-area').boundingBox();
     expect(bounds.x).toBeGreaterThanOrEqual(brand.x + brand.width);
     expect(bounds.x + bounds.width).toBeLessThanOrEqual(profile.x);
+    const header = page.locator('.topbar');
+    const visibleControls = await header.locator('.preview-guide-entry, .preview-toolbar > .preview-toggle, .profile-account-group, .logout-button').evaluateAll((elements) => elements.map((element) => {
+      const rect = element.getBoundingClientRect();
+      return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+    }));
+    for (let index = 1; index < visibleControls.length; index++) expect(visibleControls[index].left).toBeGreaterThanOrEqual(visibleControls[index - 1].right);
+    await expect(page.getByRole('button', { name: '미리보기 종료', exact: true })).toHaveCSS('white-space', 'nowrap');
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   });
 }
@@ -91,7 +96,7 @@ for (const width of [1440, 390]) {
       heading: parseFloat(getComputedStyle(document.querySelector('h1')).fontSize),
       overflowing: document.documentElement.scrollWidth > window.innerWidth,
     }));
-    expect(layout.heading).toBeLessThanOrEqual(27);
+    expect(layout.heading).toBeLessThanOrEqual(30);
     expect(layout.overflowing).toBe(false);
   });
 }
@@ -144,7 +149,7 @@ for (const width of [1440, 768, 390, 320]) {
     await expect(page.getByLabel('내 역할 필터')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
     await page.goto('/preview/login');
-    await expect(page.getByRole('button', { name: '로그인 없이 화면 미리보기' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '로그인 없이 사용자 가이드' })).toBeVisible();
     const intro = await page.locator('.login-introduction').boundingBox();
     const actions = await page.locator('.login-actions').boundingBox();
     if (width > 720) {

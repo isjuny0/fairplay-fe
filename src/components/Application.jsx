@@ -236,7 +236,12 @@ export default function Application({ previewRuntime }) {
           <div className="context-info" aria-label="현재 화면 정보">
             <span className="context-dot" aria-hidden="true" />
             <div className="header-context-copy">
-              <strong>{currentHeader.spaceName || currentHeader.title}</strong>
+              <strong title={currentHeader.spaceName || currentHeader.title}>{currentHeader.spaceName || currentHeader.title}</strong>
+              {currentHeader.roleLabel && (
+                <span className="header-context-role" title={`현재 화면 역할: ${currentHeader.roleLabel}`}>
+                  {currentHeader.roleLabel}
+                </span>
+              )}
             </div>
           </div>
           <div className="profile-area">
@@ -334,6 +339,7 @@ export default function Application({ previewRuntime }) {
                         <option value="active">평가 진행 중</option>
                         <option value="setup">평가 시작 전</option>
                         <option value="building">팀 빌딩 진행 중</option>
+                        <option value="evaluated">평가 완료·리포트 미생성</option>
                         <option value="review">리포트 검토</option>
                         <option value="published">리포트 공개 완료</option>
                       </select>
@@ -382,11 +388,6 @@ export default function Application({ previewRuntime }) {
               </span>
               <span className="profile-identity">
                 <span className="profile-name">{user.name}</span>
-                {currentHeader.isTeamLeader && (
-                  <span className="role-badge profile-leader-badge" title="현재 팀 리더">
-                    리더
-                  </span>
-                )}
               </span>
             </div>
             <button className="logout-button" disabled={busy} onClick={signOut}>

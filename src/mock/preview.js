@@ -219,7 +219,7 @@ async function executePreviewRequest(
   }
   if (
     (parts[1] === 'spaces' &&
-      ['evaluation-rounds', 'manager-dashboard'].includes(parts[3])) ||
+      ['evaluation-rounds', 'manager-dashboard', 'reports'].includes(parts[3])) ||
     parts[1] === 'evaluation-rounds' ||
     (parts[1] === 'teams' &&
       (['my-work-summary', 'mid-feedback'].includes(parts[3]) ||

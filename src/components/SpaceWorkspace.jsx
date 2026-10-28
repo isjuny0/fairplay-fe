@@ -165,6 +165,13 @@ export default function SpaceWorkspace({
   ].includes(view);
   const team = selectedTeamResource.data;
   const managerTeamReadOnly = isManager && view === 'team' && team && !isApprovedMember(team);
+  const headerRole = view === 'team'
+    ? team?.id === teamId && !selectedTeamResource.error
+      ? isApprovedMember(team)
+        ? team.leaderId === user.id ? '리더' : '팀원'
+        : isManager ? '관리자 조회' : ''
+      : ''
+    : isManager ? '관리자' : '';
   useEffect(() => {
     if (!setHeaderContext || !space) return;
     const titles = {
@@ -193,12 +200,7 @@ export default function SpaceWorkspace({
           : titles[view] || '스페이스 홈',
       detail: [space.name, team?.name].filter(Boolean).join(' / '),
       manager: managerView,
-      isTeamLeader:
-        view === 'team' &&
-        team?.id === teamId &&
-        !selectedTeamResource.error &&
-        isApprovedMember(team) &&
-        team.leaderId === user.id,
+      roleLabel: headerRole,
     });
   }, [
     setHeaderContext,
@@ -211,6 +213,7 @@ export default function SpaceWorkspace({
     announcementId,
     managerView,
     managerTeamReadOnly,
+    headerRole,
     teamId,
     user.id,
     selectedTeamResource.error,
@@ -327,7 +330,6 @@ export default function SpaceWorkspace({
         view={view}
         teamMenu={teamMenu}
         teamRole={teamRole}
-        user={user}
         onBack={onBack}
       />
       <main className="main-content" data-preview-guide-step={guide?.guiding ? guide.stepId : undefined}>
@@ -425,9 +427,6 @@ export default function SpaceWorkspace({
                         contributions: contributionMemberName ? `${contributionMemberName}님의 수행 상세` : '팀원 수행 상세',
                       }[view]}
                 </span>
-                {team && teamRole !== '리더' && (
-                  <span className="role-badge breadcrumb-role">{teamRole}</span>
-                )}
               </nav>}
               {managerView && !isManager ? (
                 <UnavailablePage

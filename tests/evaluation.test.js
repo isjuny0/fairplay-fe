@@ -726,7 +726,7 @@ test('기여도 가이드는 공개된 본인 근거만 사용하고 누락·미
     const { prepareGuide, contributionGuideReady, readGuideSession, getGuideSteps } = await import('../src/mock/guide.js');
     const guide = prepareGuide('contribution-report');
     const userId = previewContext().user.id;
-    assert.equal(getGuideSteps(guide.scenarioId).length, 3);
+    assert.equal(getGuideSteps(guide.scenarioId).length, 2);
     assert.equal(readGuideSession().scenarioId, 'contribution-report');
     const report = await previewRequest('/api/teams/1/report');
     assert.equal(report.status, 'PUBLISHED');
@@ -839,7 +839,7 @@ test('관리자 평가 시작 가이드는 일정 저장과 개방 성공을 구
   } finally { delete globalThis.sessionStorage; }
 });
 
-test('관리자 리포트 가이드는 전체 생성·계산 근거 검토·선택 팀 공개를 구분하며 재시작 시 초기화한다', async () => {
+test('관리자 리포트 가이드는 전체 생성·계산 근거 검토·전체 공개를 구분하며 재시작 시 초기화한다', async () => {
   const session = new Map();
   globalThis.sessionStorage = { getItem: (key) => session.get(key) ?? null, setItem: (key, value) => session.set(key, value), removeItem: (key) => session.delete(key) };
   try {
@@ -851,17 +851,14 @@ test('관리자 리포트 가이드는 전체 생성·계산 근거 검토·선�
     assert.equal(readGuideSession().scenarioId, 'report-management');
     assert.equal(getGuideSteps(guide.scenarioId).length, 5);
     const weights = { taskPercent: 60, midPercent: 20, finalPercent: 20 };
-    const batch = async () => ({
-      space: await previewRequest('/api/spaces/1'), rounds: await previewRequest('/api/spaces/1/evaluation-rounds'),
-      dashboard: await previewRequest('/api/spaces/1/manager-dashboard'), weights, canGenerate: true,
-    });
+    const batch = async () => ({ ...await previewRequest('/api/spaces/1/reports'), weights });
     const initial = await batch();
-    assert.equal(initial.rounds.every((round) => round.status === 'CLOSED'), true);
-    assert.equal(initial.dashboard.teams.every((team) => team.reportId == null), true);
-    assert.equal(initial.space.reportWeights, null);
+    assert.deepEqual(initial.generationBlockReasons, []);
+    assert.equal(initial.teams.every((team) => team.reportId == null), true);
+    assert.equal(initial.weightsConfirmed, false);
     assert.equal(reportManagementGuideReady('management-report-weights', initial), true);
     assert.equal(reportManagementGuideReady('management-report-weights', { ...initial, weights: { ...weights, taskPercent: 70 } }), false);
-    assert.equal(reportManagementGuideReady('management-report-weights', { ...initial, rounds: [{ ...initial.rounds[0], status: 'OPEN' }] }), false);
+    assert.equal(reportManagementGuideReady('management-report-weights', { ...initial, canGenerate: false, generationBlockReasons: ['ROUNDS_NOT_CLOSED'] }), false);
     assert.equal(reportManagementGuideReady('management-report-generate', initial), false);
     await assert.rejects(previewRequest('/api/teams/1/report', { method: 'POST', body: { ...weights, taskPercent: 70 } }), { code: 'INVALID_REQUEST' });
     assert.equal(reportManagementGuideReady('management-report-generate', await batch()), false);
@@ -870,7 +867,7 @@ test('관리자 리포트 가이드는 전체 생성·계산 근거 검토·선�
     assert.equal(reportManagementGuideReady('management-report-generate', await batch()), false);
     await previewRequest('/api/teams/2/report', { method: 'POST', body: weights });
     const generated = await batch();
-    assert.deepEqual(generated.space.reportWeights, weights);
+    assert.deepEqual(generated.weights, weights);
     assert.equal(reportManagementGuideReady('management-report-generate', generated), true);
     const result = { teamId: 1, report: await previewRequest('/api/teams/1/report') };
     const review = { reportId: first.id, memberId: managerGuideMemberId, open: true };
@@ -886,15 +883,16 @@ test('관리자 리포트 가이드는 전체 생성·계산 근거 검토·선�
     const savedSubmission = state.submitted[`12:${managerGuideMemberId}`];
     delete state.submitted[`12:${managerGuideMemberId}`];
     saveMockState(previewContext(), state);
-    await assert.rejects(previewRequest(`/api/reports/${first.id}/publish`, { method: 'POST' }), { code: 'REPORT_PUBLICATION_BLOCKED' });
+    await assert.rejects(previewRequest('/api/spaces/1/reports/publish', { method: 'POST' }), { code: 'REPORT_PUBLICATION_BLOCKED' });
     assert.equal(reportManagementGuideReady('management-report-publish', await batch(), { teamId: 1, report: await previewRequest('/api/teams/1/report') }), false);
     const restored = getMockState(previewContext());
     restored.submitted[`12:${managerGuideMemberId}`] = savedSubmission;
     saveMockState(previewContext(), restored);
-    const published = await previewRequest(`/api/reports/${first.id}/publish`, { method: 'POST' });
+    await previewRequest('/api/spaces/1/reports/publish', { method: 'POST' });
+    const published = await previewRequest('/api/teams/1/report');
     assert.equal(reportManagementGuideReady('management-report-publish', await batch(), { teamId: 1, report: published }), true);
     assert.equal(reportManagementGuideReady('management-report-result', await batch(), { teamId: 1, report: published }), true);
-    assert.equal((await previewRequest('/api/teams/2/report')).status, 'UNPUBLISHED');
+    assert.equal((await previewRequest('/api/teams/2/report')).status, 'PUBLISHED');
     setPreviewRole('member');
     const memberReport = await previewRequest('/api/teams/1/report');
     assert.equal(memberReport.status, 'PUBLISHED');
@@ -964,9 +962,9 @@ test('다른 작업이나 팀을 선택하면 해당 결과를 확인하도록 �
     assert.equal(resolved.target, null);
     assert.doesNotMatch(resolved.actionTarget, /confirm-manager/);
   }
-  for (const step of reportManagementGuideSteps.slice(2)) {
+  for (const step of reportManagementGuideSteps.filter((step) => step.id === 'management-report-review')) {
     const resolved = managerGuideStep(step, { reportResult: { teamId: 2 }, reportReviewReady: true });
-    assert.match(resolved.title, /삼위일체로 선택/);
+    assert.match(resolved.title, /삼위일체의 리포트/);
     assert.equal(resolved.target, null);
     assert.match(resolved.actionTarget, /choose-report-guide-team/);
   }
@@ -975,9 +973,139 @@ test('다른 작업이나 팀을 선택하면 해당 결과를 확인하도록 �
 test('리포트 계산 근거를 확인하기 전과 후의 안내를 구분한다', async () => {
   const { managerGuideStep, reportManagementGuideSteps } = await import('../src/mock/guide.js');
   const step = reportManagementGuideSteps.find((entry) => entry.id === 'management-report-review');
-  assert.match(managerGuideStep(step).dialogDescription, /펼쳐/);
+  const initial = managerGuideStep(step, { reportResult: { teamId: 1 } });
+  assert.match(initial.description, /완료 작업/);
   const ready = managerGuideStep(step, { reportResult: { teamId: 1 }, reportReviewReady: true });
-  assert.doesNotMatch(ready.dialogDescription, /펼쳐/);
-  assert.match(ready.dialogDescription, /반올림 보정/);
-  assert.equal(ready.dialogActionTarget, '[data-guide="confirm-management-report-review"]');
+  assert.match(ready.description, /현재 자료/);
+  assert.equal(ready.actionTarget, '[data-guide="confirm-management-report-review"]');
+  assert.match(ready.target, /contribution-evidence-list/);
+});
+
+
+test('작업 근거는 관리자 또는 공개 후 본인만 조회하고 현재 작업 변경으로 계산값을 바꾸지 않는다', async () => {
+  const leader = context('leader');
+  resetMockState(leader, 'review');
+  const manager = context('manager');
+  const report = await plannedRequest(manager, '/api/teams/1/report', { method: 'POST' });
+  const endpoint = `/api/teams/1/report/evidence?userId=${leader.user.id}`;
+  await assert.rejects(plannedRequest(leader, endpoint), { status: 404, code: 'REPORT_NOT_FOUND' });
+  const before = await plannedRequest(manager, endpoint);
+  assert.ok(before.tasks.length > 0);
+  const state = getMockState(manager);
+  const current = state.teams[1].tasks.find((task) => task.id === before.tasks[0].taskId);
+  current.title = '변경된 현재 작업 제목';
+  current.weight = 8;
+  current.assignees = [];
+  saveMockState(manager, state);
+  const after = await plannedRequest(manager, endpoint);
+  assert.deepEqual(after.workSummary, before.workSummary);
+  assert.deepEqual(after.details, before.details);
+  assert.equal(after.tasks[0].weightAtCutoff, before.tasks[0].weightAtCutoff);
+  assert.equal(after.tasks[0].allocationAtCutoff, before.tasks[0].allocationAtCutoff);
+  assert.equal(after.tasks[0].current.title, current.title);
+  assert.equal(after.tasks[0].current.contributionDescription, null);
+  assert.equal(after.reportId, report.id);
+  assert.ok(after.tasks.every((task) => task.current.materials.every((material) => !Object.hasOwn(material, 'text'))));
+  await plannedRequest(manager, `/api/reports/${report.id}/publish`, { method: 'POST' });
+  assert.deepEqual((await plannedRequest(leader, endpoint)).details, before.details);
+  const other = report.members.find((member) => member.userId !== leader.user.id);
+  await assert.rejects(plannedRequest(leader, `/api/teams/1/report/evidence?userId=${other.userId}`), { status: 403 });
+  await assert.rejects(plannedRequest(manager, '/api/teams/1/report/evidence?userId=not-in-snapshot'), { status: 404, code: 'REPORT_MEMBER_NOT_FOUND' });
+  const deleted = getMockState(manager);
+  deleted.teams[1].tasks = deleted.teams[1].tasks.filter((task) => task.id !== current.id);
+  saveMockState(manager, deleted);
+  const missing = await plannedRequest(manager, endpoint);
+  assert.equal(missing.tasks[0].current.availability, 'MISSING');
+  assert.equal(missing.tasks[0].assignedUnits, before.tasks[0].assignedUnits);
+});
+
+test('기여 근거를 저장하지 않은 이전 미리보기 리포트는 현재 작업으로 근거를 추정하지 않는다', async () => {
+  const manager = context('manager');
+  resetMockState(manager, 'published');
+  const state = getMockState(manager);
+  delete state.reports[0].evidenceTasks;
+  saveMockState(manager, state);
+  await assert.rejects(plannedRequest(manager, `/api/teams/1/report/evidence?userId=${state.reports[0].members[0].userId}`), { code: 'REPORT_EVIDENCE_UNAVAILABLE' });
+});
+
+
+test('평가 완료 미리보기는 전원 제출·리포트 미생성 상태에서 비율을 정해 생성·공개할 수 있다', async () => {
+  const manager = context('manager');
+  resetMockState(manager, 'evaluated');
+  const state = getMockState(manager);
+  assert.equal(state.scenario, 'evaluated');
+  assert.equal(state.rounds.length, 2);
+  assert.ok(state.rounds.every((round) => round.status === 'CLOSED'));
+  assert.deepEqual(state.reports, []);
+  assert.equal(state.reportWeights, null);
+  for (const round of state.rounds) {
+    for (const entry of Object.values(state.teams)) {
+      for (const member of entry.members) {
+        const key = `${round.id}:${member.userId}`;
+        assert.ok(state.submitted[key]);
+        assert.equal(Object.keys(state.responses[key]).length, entry.members.length - 1);
+      }
+    }
+  }
+  const weights = { taskPercent: 50, midPercent: 20, finalPercent: 30 };
+  for (const entry of Object.values(state.teams)) {
+    const report = await plannedRequest(manager, `/api/teams/${entry.team.id}/report`, { method: 'POST', body: weights });
+    assert.equal(report.status, 'UNPUBLISHED');
+    assert.deepEqual(report.weights, weights);
+  }
+  const report = getMockState(manager).reports[0];
+  const member = context('member');
+  assert.equal(await plannedRequest(member, '/api/teams/1/report'), null);
+  await plannedRequest(manager, `/api/reports/${report.id}/publish`, { method: 'POST' });
+  assert.equal((await plannedRequest(member, '/api/teams/1/report')).status, 'PUBLISHED');
+  resetMockState(manager, 'evaluated');
+  assert.deepEqual(getMockState(manager).reports, []);
+  assert.equal(getMockState(manager).reportWeights, null);
+});
+
+
+test('스페이스 단위 생성·공개는 전체 팀에 적용되며 반복해도 기존 결과와 공개일을 유지한다', async () => {
+  const manager = context('manager');
+  resetMockState(manager, 'evaluated');
+  const weights = { taskPercent: 50, midPercent: 20, finalPercent: 30 };
+  const initial = await previewRequest('/api/spaces/1/reports');
+  assert.equal(initial.canGenerate, true);
+  assert.equal(initial.canPublish, false);
+  const generated = await previewRequest('/api/spaces/1/reports', { method: 'POST', body: weights });
+  assert.equal(generated.generatedTeamCount, initial.totalTeamCount);
+  assert.equal(generated.canPublish, true);
+  const before = getMockState(manager).reports;
+  await previewRequest('/api/spaces/1/reports', { method: 'POST', body: weights });
+  assert.deepEqual(getMockState(manager).reports, before);
+  assert.ok(before.every((report) => report.status === 'UNPUBLISHED'));
+  await previewRequest('/api/spaces/1/reports/publish', { method: 'POST' });
+  const published = getMockState(manager).reports;
+  assert.ok(published.every((report) => report.status === 'PUBLISHED'));
+  assert.equal(new Set(published.map((report) => report.publishedAt)).size, 1);
+  await previewRequest('/api/spaces/1/reports/publish', { method: 'POST' });
+  assert.deepEqual(getMockState(manager).reports, published);
+});
+
+test('미생성 팀이 있거나 제출 조건이 바뀌면 일괄 공개는 아무 팀도 공개하지 않는다', async () => {
+  const manager = context('manager');
+  resetMockState(manager, 'evaluated');
+  await plannedRequest(manager, '/api/teams/1/report', { method: 'POST' });
+  await assert.rejects(previewRequest('/api/spaces/1/reports/publish', { method: 'POST' }), { code: 'REPORT_PUBLICATION_BLOCKED' });
+  assert.ok(getMockState(manager).reports.every((report) => report.status === 'UNPUBLISHED'));
+  await previewRequest('/api/spaces/1/reports', { method: 'POST' });
+  const state = getMockState(manager);
+  delete state.submitted[Object.keys(state.submitted)[0]];
+  saveMockState(manager, state);
+  await assert.rejects(previewRequest('/api/spaces/1/reports/publish', { method: 'POST' }), { code: 'REPORT_PUBLICATION_BLOCKED' });
+  assert.ok(getMockState(manager).reports.every((report) => report.status === 'UNPUBLISHED'));
+});
+
+test('스페이스 리포트 관리 API는 팀원과 다른 스페이스 접근을 거절한다', async () => {
+  for (const role of ['member', 'leader']) {
+    const member = context(role);
+    for (const [path, method] of [['/api/spaces/1/reports', 'GET'], ['/api/spaces/1/reports', 'POST'], ['/api/spaces/1/reports/publish', 'POST']]) {
+      await assert.rejects(plannedRequest(member, path, { method }), { code: 'FORBIDDEN' });
+    }
+  }
+  await assert.rejects(plannedRequest(context('manager'), '/api/spaces/99/reports'), { code: 'FORBIDDEN' });
 });

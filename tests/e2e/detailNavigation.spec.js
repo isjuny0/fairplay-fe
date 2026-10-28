@@ -57,9 +57,9 @@ for (const width of [1440, 320]) {
     await expect(navigation.getByRole('tab')).toHaveCount(4);
     await expect(navigation.getByRole('tab')).toHaveText([
       '작업내용',
-      '수행설명',
       '산출물',
       'AI피드백',
+      '수행설명',
     ]);
     await expect(
       navigation.getByRole('tab', { name: '댓글', exact: true }),
@@ -155,14 +155,14 @@ test('상세 탭은 방향키·Home·End로 이동하고 댓글과 수행 설명
     .getByRole('tab', { name: '작업내용', exact: true })
     .press('ArrowRight');
   await expect(
-    tabs.getByRole('tab', { name: '수행설명', exact: true }),
+    tabs.getByRole('tab', { name: '산출물', exact: true }),
   ).toBeFocused();
   await expect(
-    page.getByRole('tabpanel', { name: '수행설명', exact: true }),
+    page.getByRole('tabpanel', { name: '산출물', exact: true }),
   ).toBeVisible();
   await page.keyboard.press('End');
   await expect(
-    tabs.getByRole('tab', { name: 'AI피드백', exact: true }),
+    tabs.getByRole('tab', { name: '수행설명', exact: true }),
   ).toBeFocused();
   await page
     .getByLabel('댓글 내용', { exact: true })
@@ -182,7 +182,7 @@ test('상세 탭은 방향키·Home·End로 이동하고 댓글과 수행 설명
   ).toBeFocused();
   await page.keyboard.press('ArrowLeft');
   await expect(
-    tabs.getByRole('tab', { name: 'AI피드백', exact: true }),
+    tabs.getByRole('tab', { name: '수행설명', exact: true }),
   ).toBeFocused();
   await page
     .getByRole('button', { name: 'AI 피드백 보기', exact: true })
