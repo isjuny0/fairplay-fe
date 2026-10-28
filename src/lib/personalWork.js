@@ -2,6 +2,7 @@ import { teamMenuPath } from './routes.js';
 
 export const notificationTypeLabels = {
   TASK_ASSIGNED: '작업 배정', TASK_UPDATED: '작업 변경', TASK_UNASSIGNED: '작업 배정 해제',
+  TASK_COMPLETED: '작업 완료', TASK_REVISING: '작업 재수정',
   TASK_COMMENT_CREATED: '새 댓글', EVALUATION_ROUND_OPENED: '평가 시작',
   EVALUATION_DEADLINE_APPROACHING: '평가 마감 안내', CONTRIBUTION_REPORT_PUBLISHED: '리포트 공개',
   TEAM_APPLICATION_APPROVED: '팀 가입 승인', TEAM_APPLICATION_REJECTED: '팀 가입 결과',
