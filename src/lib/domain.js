@@ -108,11 +108,13 @@ export const toDateInput = (value) => value ? value.slice(0, 16) : '';
 export const fromDateInput = (value) => `${value}:00`;
 export function errorMessage(error) {
   if (error.code === 'REPORT_INPUT_INCOMPLETE')
-    return '해당 팀의 중간·최종 평가 마감과 필수 제출을 확인해 주세요. 목록에 마감으로 표시되어도 서버의 마감 정리가 끝날 때까지 기다린 뒤 다시 시도해야 합니다.';
+    return '대상 팀의 중간·최종 평가 마감과 필수 제출을 확인해 주세요. 목록에 마감으로 표시되어도 서버의 마감 정리가 끝날 때까지 기다린 뒤 다시 시도해야 합니다.';
   if (error.code === 'REPORT_UNCALCULABLE')
     return '계산할 완료 작업 또는 평가 입력이 부족합니다. 최종 평가 마감 전 완료된 작업과 팀원의 담당 배분을 확인해 주세요.';
   if (error.code === 'REPORT_PUBLICATION_BLOCKED')
-    return '해당 팀의 두 회차 마감과 필수 평가 제출을 확인한 뒤 공개해 주세요.';
+    return '전체 팀의 리포트 생성, 두 회차 마감과 필수 평가 제출을 확인한 뒤 공개해 주세요.';
+  if (error.code === 'REPORTS_NOT_GENERATED') return '모든 팀의 리포트를 생성한 후 전체 공개할 수 있습니다.';
+  if (error.code === 'REPORT_TEAMS_EMPTY') return '리포트를 생성·공개할 팀이 없습니다.';
   if (error.code === 'REPORT_WEIGHTS_LOCKED')
     return '스페이스 공통 반영 비율이 이미 확정되었습니다. 최신 비율을 확인한 뒤 다시 생성해 주세요.';
   if (error.code === 'TEAM_DELETION_REQUEST_INVALIDATED')

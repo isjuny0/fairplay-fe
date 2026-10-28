@@ -71,8 +71,9 @@ export default function TeamMembers({
   return (
     <section className="stack team-member-directory">
       <div className="page-heading page-heading--compact">
-        <div>
+        <div className="member-directory-title">
           <h1>{readOnly ? '팀원 보기' : '팀원 관리'}</h1>
+          {membersResource.data != null && !membersResource.error && <span className="member-directory-count" aria-label={`현재 팀원 ${members.length}명`}>{members.length}명</span>}
         </div>
         <RefreshButton
           onClick={reload}
@@ -88,43 +89,34 @@ export default function TeamMembers({
       <div className="member-directory-sections">
         <ResourceState resource={membersResource} label="팀원 정보">
           <section className="member-directory-section">
-            <div className="directory-section-heading">
-              <div>
-                <h2>승인된 팀원 · {members.length}명</h2>
-                {!readOnly && <p>가입 신청 검토는 리더가 관리합니다.</p>}
-              </div>
-            </div>
-            <ul className="clean-list">
+            <div className="member-roster-heading" aria-hidden="true"><span>팀원</span><span>역할</span></div>
+            <ul className="clean-list member-roster" aria-label="현재 팀원">
               {members.map((member) => (
-                <li className="row-item" key={member.userId}>
+                <li className={`row-item member-roster-row${member.userId === user.id ? ' is-self' : ''}`} key={member.userId}>
                   <span className="member-identity">
                     <span className="member-avatar" aria-hidden="true">
                       {member.name.slice(0, 1)}
                     </span>
                     <span>
-                      <strong>{member.name}</strong>{' '}
-                      <span className="role-badge">{memberRole(member)}</span>
+                      <strong>{member.name}</strong>
                       {member.userId === user.id && (
                         <span className="member-self">나</span>
                       )}
                     </span>
                   </span>
+                  <span className={`member-roster-role${member.role === 'LEADER' ? ' is-leader' : ''}`}>{memberRole(member)}</span>
                 </li>
               ))}
             </ul>
+            {!readOnly && !isLeader && <p className="member-roster-note">가입 신청 검토는 리더가 관리합니다.</p>}
           </section>
         </ResourceState>
         {isLeader && (
           <section className="member-directory-section application-directory">
             <div className="directory-section-heading">
-              <div>
-                <h2>
-                  가입 신청{resource.data ? ` · ${applications.length}건` : ''}
-                </h2>
-                <p>
-                  승인하면 팀원으로 합류합니다. 가입 승인 조건이 충족되지 않아도
-                  반려할 수 있습니다.
-                </p>
+              <div className="member-directory-title">
+                <h2>가입 신청</h2>
+                {resource.data != null && !resource.error && <span className="member-directory-count">{applications.length}건</span>}
               </div>
             </div>
             <ResourceState resource={resource} label="가입 신청">

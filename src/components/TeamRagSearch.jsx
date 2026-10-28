@@ -183,7 +183,6 @@ function TeamMaterialSearch({ context }) {
       <header className="page-heading page-heading--compact rag-page-heading">
         <div>
           <h1>팀 자료 검색</h1>
-          <p>팀 자료에 질문하고 답변의 근거를 확인합니다.</p>
         </div>
         <div className="rag-page-actions">
           <button

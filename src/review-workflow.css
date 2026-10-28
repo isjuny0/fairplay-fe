@@ -76,22 +76,6 @@ html:has(.review-action-dock) {
   font-size: var(--text-caption);
   line-height: 1.5;
 }
-.peer-score-grid {
-  display: grid;
-  gap: 8px 24px;
-}
-.peer-response-layout .peer-card > .page-heading {
-  margin-bottom: 8px;
-  padding-bottom: 12px;
-}
-.peer-response-layout .peer-score-grid .score-field {
-  margin: 8px 0;
-  padding: 8px 0 0;
-}
-.peer-score-grid .score-field details summary {
-  padding-block: 4px;
-  font-size: var(--text-caption);
-}
 .peer-card :is(input, textarea) {
   scroll-margin-block: 120px 180px;
 }
@@ -100,11 +84,6 @@ html:has(.review-action-dock) {
 }
 .peer-target:focus-within {
   scroll-margin-top: 88px;
-}
-@media (min-width: 1200px) {
-  .peer-score-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 .report-status-toolbar {
   display: flex;

@@ -1,93 +1,54 @@
-.profile-identity {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  white-space: nowrap;
+/* Let context text shrink before any header action; do not reserve equal side columns. */
+.app-shell > .topbar {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  column-gap: 24px;
 }
+.topbar-brand, .topbar .profile-area { min-width: 0; }
+.app-shell > .topbar .context-info { justify-self: center; max-width: 100%; padding-left: 16px; }
+.app-shell > .topbar .context-dot { left: 0; }
+.app-shell > .topbar .header-context-copy { display: flex; align-items: center; gap: 10px; width: 100%; min-width: 0; }
+.app-shell > .topbar .header-context-copy strong { min-width: 0; flex: 0 1 auto; }
+.app-shell > .topbar .header-context-copy .header-context-role { flex: 0 0 auto; padding-left: 10px; border-left: 1px solid var(--border); color: var(--text-muted); font-size: 12px; font-weight: 500; line-height: 16px; }
+.topbar .profile-area { flex-wrap: nowrap; gap: 10px; }
+.topbar .profile-area > * { flex-shrink: 0; }
+.topbar .logout-button { white-space: nowrap; }
+.profile-identity { display: inline-flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; }
 .profile-account-group { display: inline-flex; align-items: center; gap: 10px; min-width: 0; }
-.profile-identity .profile-leader-badge {
-  flex-shrink: 0;
-  padding: 3px 6px;
-  font-size: 11px;
-  line-height: 1.4;
-}
-.profile-identity:has(.profile-leader-badge) .profile-name {
-  display: block;
-}
-.topbar:has(.profile-leader-badge) .preview-popover {
-  top: calc(var(--header-height) + 16px);
+.profile-identity .profile-name { display: block; max-width: 120px; }
+
+@media (min-width: 721px) and (max-width: 1100px) {
+  .app-shell > .topbar { column-gap: 16px; }
+  .topbar-brand .brand-logo { width: 120px; }
+  .topbar .profile-area, .profile-account-group { gap: 8px; }
+  .profile-identity .profile-name { max-width: 80px; }
+  .topbar .preview-guide-entry > span, .topbar .preview-toolbar > .preview-toggle > span { display: none; }
+  .topbar .preview-guide-entry, .topbar .preview-toolbar > .preview-toggle { width: 34px; height: 34px; padding: 8px; justify-content: center; }
 }
 @media (max-width: 720px) {
-  .profile-identity:has(.profile-leader-badge) .profile-name {
-    max-width: 96px;
-  }
-  .profile-identity:not(:has(.profile-leader-badge)) {
-    display: none;
-  }
-  .topbar .profile-area:has(.profile-leader-badge) {
-    display: contents;
-  }
-  .profile-area:has(.profile-leader-badge) .profile-account-group {
-    grid-column: 2;
-    grid-row: 1;
-    justify-self: end;
-    gap: 4px;
-  }
-  .topbar:has(.profile-leader-badge) .topbar-brand {
-    grid-column: 1;
-    grid-row: 1;
-  }
-  .topbar:has(.profile-leader-badge) .brand-logo {
-    flex-shrink: 0;
-  }
-  .profile-area:has(.profile-leader-badge) .profile-avatar {
-    display: none;
-  }
-  .profile-area:has(.profile-leader-badge) .profile-identity {
-    min-width: 0;
-  }
-  .profile-area:has(.profile-leader-badge) .preview-toolbar {
-    position: static;
-    grid-column: 1;
-    grid-row: 2;
-    justify-self: start;
-  }
-  .profile-area:has(.profile-leader-badge) .preview-popover {
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 12px;
-    right: 12px;
-    max-height: 60dvh;
-  }
-  .profile-area:has(.profile-leader-badge) .logout-button {
-    grid-column: 2;
-    grid-row: 2;
-    justify-self: end;
-  }
-}
-@media (max-width: 360px) {
-  .profile-identity:has(.profile-leader-badge) .profile-name { max-width: 56px; }
-}
-
-@media (max-width: 900px) {
+  .app-shell > .topbar { grid-template-columns: minmax(0, 1fr) auto; gap: 10px 8px; }
+  .app-shell:has(.header-context-role) { --header-height: 96px; }
+  .topbar:has(.header-context-role) { grid-template-rows: 38px 24px; }
+  .topbar .context-info { display: none; }
+  .topbar:has(.header-context-role) .context-info { display: flex; grid-column: 1 / -1; grid-row: 2; justify-self: start; width: 100%; }
+  .topbar:has(.header-context-role) .profile-area { grid-column: 2; grid-row: 1; }
+  .topbar .profile-area, .profile-account-group { gap: 4px; }
+  .topbar .profile-avatar, .profile-identity .profile-name { display: none; }
+  .topbar .profile-identity { display: none; }
   .app-shell:has(.preview-guide-entry) { --header-height: 110px; }
-  .topbar:has(.preview-guide-entry) { grid-template-columns: minmax(0, 1fr) auto; }
-  .topbar:has(.preview-guide-entry) .context-info { display: none; }
+  .topbar:has(.preview-guide-entry) { grid-template-rows: 38px 36px; }
+  .app-shell:has(.preview-guide-entry):has(.header-context-role) { --header-height: 144px; }
+  .topbar:has(.preview-guide-entry):has(.header-context-role) { grid-template-rows: 38px 36px 24px; }
+  .topbar:has(.preview-guide-entry):has(.header-context-role) .context-info { grid-row: 3; }
   .topbar .profile-area:has(.preview-guide-entry) { display: contents; }
   .topbar:has(.preview-guide-entry) .topbar-brand { grid-column: 1; grid-row: 1; }
-  .profile-area:has(.preview-guide-entry) .profile-account-group {
-    grid-column: 2; grid-row: 1; justify-self: end;
-  }
-  .profile-area > .preview-guide-entry {
-    grid-column: 1; grid-row: 2; justify-self: start; width: 34px; min-height: 34px; padding: 8px;
-  }
+  .profile-area:has(.preview-guide-entry) .profile-account-group { grid-column: 2; grid-row: 1; justify-self: end; }
+  .topbar .preview-guide-entry { grid-column: 1; grid-row: 2; justify-self: start; width: 34px; height: 34px; min-height: 34px; padding: 8px; }
   .preview-guide-entry > span { display: none; }
-  .profile-area:has(.preview-guide-entry) .preview-toolbar {
-    grid-column: 1; grid-row: 2; justify-self: start; margin-left: 42px; position: static;
-  }
+  .topbar .profile-area:has(.preview-guide-entry) .preview-toolbar { grid-column: 1; grid-row: 2; justify-self: start; margin-left: 42px; position: static; }
   .profile-area:has(.preview-guide-entry) .logout-button { grid-column: 2; grid-row: 2; justify-self: end; }
-  .profile-area:has(.preview-guide-entry) .preview-popover {
-    position: absolute; top: calc(100% + 8px); left: 12px; right: 12px; max-height: 60dvh;
-  }
+  .topbar:has(.preview-guide-entry) .preview-popover { position: absolute; top: calc(100% + 8px); left: 12px; right: 12px; max-height: 60dvh; }
+}
+@media (max-width: 360px) {
+  .app-shell > .topbar { padding-inline: 12px; }
+  .topbar-brand .brand-logo { width: 100px; }
 }

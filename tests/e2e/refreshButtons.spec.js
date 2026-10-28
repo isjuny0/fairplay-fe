@@ -19,7 +19,7 @@ const screens = [
   [
     '/spaces/1/reports',
     '리포트 관리',
-    '리포트 새로고침',
+    '리포트 관리 새로고침',
     'manager',
   ],
   ['/spaces/1/settings#join-code', '스페이스 관리', '코드 새로고침', 'manager'],

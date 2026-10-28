@@ -140,13 +140,9 @@ test('모바일 관리자는 공간 선택을 펼치지 않고 평가와 리포�
     page.getByRole('heading', { name: '동료 평가 관리', level: 1 }),
   ).toBeVisible();
   await navigation.getByRole('button', { name: '리포트', exact: true }).click();
-  const readiness = page.getByRole('list', { name: '회차별 리포트 준비 상태' });
-  await expect(
-    readiness.getByRole('listitem').filter({ hasText: '중간 평가' }),
-  ).toContainText('2/2팀 제출 완료');
-  await expect(
-    readiness.getByRole('listitem').filter({ hasText: '최종 평가' }),
-  ).toContainText('0/2팀 제출 완료');
+  const readiness = page.getByRole('list', { name: '팀별 리포트 준비 상태' });
+  await expect(readiness.getByRole('listitem')).toHaveCount(2);
+  await expect(readiness).toContainText('중간·최종 평가를 모두 마감해 주세요.');
   await expect(
     page.getByRole('button', { name: '전체 리포트 생성', exact: true }),
   ).toBeDisabled();
@@ -204,8 +200,8 @@ for (const width of [1440, 390])
       [3, 3],
       [4, 4],
     ]) {
-      const label = await criterion
-        .locator('.score-scale > span')
+      const label = await card
+        .locator('.peer-score-column-headings > div > span')
         .nth(labelIndex)
         .boundingBox();
       const score = await criterion

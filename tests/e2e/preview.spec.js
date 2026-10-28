@@ -127,12 +127,9 @@ test('대상별 평가를 저장하고 제출하면 새로고침 후에도 수�
     page.getByRole('heading', { name: '최종 제출 완료' }),
   ).toBeVisible();
   await page.reload();
-  await expect(
-    page.getByLabel('이지원 작업 수행 4점', { exact: true }),
-  ).toBeChecked();
-  await expect(
-    page.getByLabel('이지원 작업 수행 4점', { exact: true }),
-  ).toBeDisabled();
+  await expect(page.getByRole('region', { name: '이지원 저장된 평가', exact: true }).getByRole('row', { name: '작업 수행 우수 4 / 5' })).toBeVisible();
+  await expect(page.getByRole('radio')).toHaveCount(0);
+  await expect(page.getByRole('textbox', { name: '평가 사유', exact: true })).toHaveCount(0);
   expect(calls).toEqual([]);
 });
 test('저점 사유 누락을 안내하고 공개 전 리포트는 팀원에게 보이지 않는다', async ({
@@ -155,7 +152,7 @@ test('저점 사유 누락을 안내하고 공개 전 리포트는 팀원에게 
     page.getByRole('heading', { name: '공개된 리포트가 없습니다.' }),
   ).toBeVisible();
 });
-test('관리자가 리포트를 공개하면 팀원은 본인 계산 근거를 볼 수 있다', async ({
+test('관리자가 리포트를 공개하면 팀원은 본인 완료 작업과 연결 자료를 볼 수 있다', async ({
   page,
 }) => {
   const calls = await preview(page, {
@@ -163,26 +160,42 @@ test('관리자가 리포트를 공개하면 팀원은 본인 계산 근거를 �
     scenario: 'review',
     path: '/spaces/1/reports',
   });
+  await page.getByRole('button', { name: '삼위일체 리포트 확인', exact: true }).click();
   await expect(page.getByRole('region', { name: '팀 최종 기여율', exact: true })).toBeVisible();
-  await expect(page.getByRole('list', { name: '회차별 리포트 준비 상태' })).toHaveCount(0);
-  await page.getByRole('button', { name: '팀원에게 공개', exact: true }).click();
+  await expect(page.getByRole('list', { name: '팀별 리포트 준비 상태' })).toHaveCount(0);
+  await page.getByRole('button', { name: '목록으로 돌아가기', exact: true }).click();
+  await page.getByRole('button', { name: '전체 리포트 공개', exact: true }).click();
   await page
-    .getByRole('dialog')
-    .getByRole('button', { name: '공개 확정' })
+    .getByRole('dialog', { name: '전체 리포트 공개', exact: true })
+    .getByRole('button', { name: '전체 공개 확정' })
     .click();
-  await expect(
-    page.locator('.report-metadata > .status-badge'),
-  ).toHaveText('공개 완료');
+  await expect(page.getByRole('heading', { name: '전체 리포트 공개 완료', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '삼위일체 리포트 확인', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: '나의 계산 근거' }),
   ).toHaveCount(0);
+  await page.getByRole('dialog', { name: '삼위일체 리포트', exact: true }).press('Escape');
   await selectPreviewOption(page, '미리보기 역할', 'member');
   await page.goto('/preview/spaces/1/teams/1/reports');
-  await page.getByText('나의 계산 근거 보기', { exact: true }).click();
+  await expect(page.getByRole('button', { name: '내 기여 근거 보기', exact: true })).toHaveCount(0);
+  await expect(page.getByText('나의 계산 근거 보기', { exact: true })).toHaveCount(0);
   await expect(
     page.getByRole('heading', { name: '나의 계산 근거' }),
-  ).toBeVisible();
+  ).toHaveCount(0);
   await expect(page.getByRole('rowheader').filter({ hasText: '이지원' })).toContainText('나');
+  await page.getByRole('button', { name: '내 완료 작업 보기', exact: true }).click();
+  const evidence = page.getByRole('region', { name: '리포트에 반영된 내 완료 작업', exact: true });
+  await expect(evidence).toBeVisible();
+  await evidence.getByRole('button', { name: /조사 결과 요약/ }).click();
+  await expect(evidence).toContainText('본인 수행 설명');
+  await expect(evidence).toContainText('현재 연결 자료');
+  await expect(evidence).toContainText('확정된 계산값');
+  await expect(evidence).toContainText('현재 연결된 자료가 없습니다.');
+  await evidence.getByRole('link', { name: '현재 내 완료 작업 목록' }).click();
+  await expect(page).toHaveURL(/\/preview\/spaces\/1\/teams\/1\/tasks\?view=list&status=DONE&mine=1$/);
+  await expect(page.getByRole('heading', { name: '작업', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '조사 결과 요약', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '사용자 인터뷰 계획', exact: true })).toHaveCount(0);
   expect(calls).toEqual([]);
 });
 test('AI 검토는 담당자만 조회하고 비담당 팀원에게 표시하지 않는다', async ({
@@ -346,7 +359,7 @@ test('팀 빌딩 상황에서는 가입 승인 및 미가입 참여자의 팀 �
   await expect(page.getByText('한지민', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '가입 승인', exact: true }).click();
   await expect(
-    page.getByRole('heading', { name: '승인된 팀원 · 4명' }),
+    page.getByLabel('현재 팀원 4명', { exact: true }),
   ).toBeVisible();
   await selectPreviewOption(page, '미리보기 상황', 'building');
   await selectPreviewOption(page, '미리보기 역할', 'participant');
@@ -401,3 +414,49 @@ for (const width of [320, 768, 1440])
       ),
     ).toBe(true);
   });
+
+
+test('일반 팀원은 이름·본인 표시·역할이 정렬된 목록을 보고 가입 신청 처리를 제공받지 않는다', async ({ page }) => {
+  const calls = await preview(page, { role: 'member', path: '/spaces/1/teams/1/members' });
+  const roster = page.getByRole('list', { name: '현재 팀원', exact: true });
+  await expect(roster.getByRole('listitem')).toHaveCount(3);
+  await expect(roster.locator('.is-self')).toContainText('이지원');
+  await expect(roster.locator('.member-self')).toHaveText('나');
+  await expect(roster.locator('.member-roster-role')).toHaveText(['리더', '팀원', '팀원']);
+  await expect(page.getByRole('button', { name: '가입 승인', exact: true })).toHaveCount(0);
+  for (const width of [1006, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(roster.locator('.member-avatar').first()).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
+  expect(calls).toEqual([]);
+});
+
+
+test('평가 완료 상황에서 관리자가 전체 리포트를 생성하고 공개한 뒤 초기화할 수 있다', async ({ page }) => {
+  const calls = await preview(page, { role: 'manager', scenario: 'evaluated', path: '/spaces/1/reports' });
+  await expect(page.getByRole('region', { name: '팀별 리포트 결과', exact: true })).toHaveCount(0);
+  const generate = page.getByRole('button', { name: '전체 리포트 생성', exact: true });
+  await expect(generate).toBeEnabled();
+  await page.locator('.report-weights-disclosure > summary').click();
+  const taskWeight = page.getByRole('spinbutton', { name: '완료 작업 반영 비율', exact: true });
+  await expect(taskWeight).toBeEnabled();
+  await taskWeight.fill('50');
+  await page.getByRole('spinbutton', { name: '중간 동료 평가 반영 비율', exact: true }).fill('20');
+  await page.getByRole('spinbutton', { name: '최종 동료 평가 반영 비율', exact: true }).fill('30');
+  await generate.click();
+  await expect(page.getByRole('heading', { name: '전체 리포트 생성 완료', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: '팀별 리포트 목록' })).toContainText('미공개');
+  await page.reload();
+  await expect(page.getByRole('heading', { name: '전체 리포트 생성 완료', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '삼위일체 리포트 확인', exact: true }).click();
+  await page.getByRole('button', { name: '목록으로 돌아가기', exact: true }).click();
+  await page.getByRole('button', { name: '전체 리포트 공개', exact: true }).click();
+  await page.getByRole('dialog', { name: '전체 리포트 공개', exact: true }).getByRole('button', { name: '전체 공개 확정', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '전체 리포트 공개 완료', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '미리보기 설정', exact: true }).click();
+  await page.getByRole('button', { name: '예시 초기화', exact: true }).click();
+  await expect(generate).toBeEnabled();
+  await expect(page.getByRole('region', { name: '팀별 리포트 결과', exact: true })).toHaveCount(0);
+  expect(calls).toEqual([]);
+});

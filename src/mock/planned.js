@@ -126,7 +126,7 @@ export function resetMockState(context, scenario = 'active') {
       },
     ];
   }
-  if (scenario === 'published' || scenario === 'review') {
+  if (['evaluated', 'review', 'published'].includes(scenario)) {
     state.rounds.forEach((round) => {
       if (new Date(apiTimeToEpoch(round.closesAt)) > new Date())
         round.closesAt = koreanDateTime(Date.now() - 1000);
@@ -136,16 +136,18 @@ export function resetMockState(context, scenario = 'active') {
 
       seedSubmittedRound(state, round);
     });
-    for (const entry of Object.values(state.teams)) {
-      state.reports.push(
-        makeReport(
-          state,
-          entry,
-          scenario === 'published' ? 'PUBLISHED' : 'UNPUBLISHED',
-        ),
-      );
+    if (scenario !== 'evaluated') {
+      for (const entry of Object.values(state.teams)) {
+        state.reports.push(
+          makeReport(
+            state,
+            entry,
+            scenario === 'published' ? 'PUBLISHED' : 'UNPUBLISHED',
+          ),
+        );
+      }
+      state.reportWeights = { ...defaultReportWeights };
     }
-    state.reportWeights = { ...defaultReportWeights };
   }
   saveMockState(context, state);
 }
@@ -285,6 +287,8 @@ function makeReport(state, entry, status = 'UNPUBLISHED', weights = state.report
     cutoffAt: state.rounds.find((round) => round.type === 'FINAL').closesAt,
     totalPercent: 100,
     weights: { ...weights },
+    evidenceTasks: done.map((task) => ({ taskId: task.id, completedAt: task.completedAt,
+      weightAtCutoff: task.weight, assignments: clone(task.assignees) })),
     createdAt: now(),
     publishedAt: status === 'PUBLISHED' ? now() : null,
     members,
@@ -307,7 +311,7 @@ function makeReport(state, entry, status = 'UNPUBLISHED', weights = state.report
     ),
   };
 }
-const publicReport = ({ details, ...report }, context) => ({
+const publicReport = ({ details, evidenceTasks, ...report }, context) => ({
   ...report,
   members: report.members.map((member) => ({
     ...member,
@@ -465,6 +469,48 @@ function dashboard(state, context, teamFilter) {
   };
 }
 
+function spaceReportStatus(state, context) {
+  const entries = Object.values(state.teams);
+  const overview = dashboard(state, context);
+  const teams = overview.teams.map((team) => {
+    const report = state.reports.find((item) => item.teamId === team.teamId);
+    return { teamId: team.teamId, teamName: team.teamName, approvedMemberCount: team.approvedMemberCount,
+      reportId: report?.id ?? null, reportStatus: report?.status ?? null,
+      createdAt: report?.createdAt ?? null, publishedAt: report?.publishedAt ?? null };
+  });
+  const rounds = ['MID', 'FINAL'].map((type) => {
+    const round = state.rounds.find((item) => item.type === type);
+    const submissions = overview.missingPeerSubmissions.find((item) => item.roundId === round?.id);
+    const missingTeams = teams.filter((team) => {
+      const submission = submissions?.teams.find((item) => item.teamId === team.teamId);
+      return !submission || submission.requiredCount < 2 || submission.missingCount > 0;
+    }).map((team) => ({ ...team, submission: submissions?.teams.find((item) => item.teamId === team.teamId) ?? null }));
+    return { type, roundId: round?.id ?? null, status: round?.status ?? null,
+      completedTeamCount: teams.length - missingTeams.length, missingTeams };
+  });
+  const weights = state.reportWeights ?? defaultReportWeights;
+  const teamReports = teams.map((team) => {
+    const generationBlockReasons = [];
+    if (rounds.some((round) => round.status !== 'CLOSED')) generationBlockReasons.push('ROUNDS_NOT_CLOSED');
+    else {
+      if (team.approvedMemberCount < 2) generationBlockReasons.push('TEAM_TOO_SMALL');
+      if (rounds.some((round) => round.missingTeams.some((missing) => missing.teamId === team.teamId))) generationBlockReasons.push('PEER_EVALUATIONS_INCOMPLETE');
+    }
+    const publicationBlockReasons = team.reportId == null ? ['REPORT_NOT_GENERATED'] : team.reportStatus === 'PUBLISHED' ? [] : [...generationBlockReasons];
+    if (team.reportId != null) generationBlockReasons.length = 0;
+    const { approvedMemberCount, ...report } = team;
+    return { ...report, canGenerate: generationBlockReasons.length === 0, generationBlockReasons,
+      canPublish: publicationBlockReasons.length === 0, publicationBlockReasons };
+  });
+  const generationBlockReasons = entries.length ? [...new Set(teamReports.flatMap((team) => team.generationBlockReasons))] : ['NO_TEAMS'];
+  const publicationBlockReasons = entries.length ? [...new Set(teamReports.flatMap((team) => team.publicationBlockReasons))] : ['NO_TEAMS'];
+  return { spaceId: context.space.id, weights, weightsConfirmed: state.reportWeights != null, totalTeamCount: teams.length,
+    generatedTeamCount: teams.filter((team) => team.reportId != null).length,
+    publishedTeamCount: teams.filter((team) => team.reportStatus === 'PUBLISHED').length,
+    canGenerate: generationBlockReasons.length === 0, generationBlockReasons,
+    canPublish: publicationBlockReasons.length === 0, publicationBlockReasons, teams: teamReports };
+}
+
 export async function plannedRequest(
   context,
   path,
@@ -479,7 +525,31 @@ export async function plannedRequest(
     if (!context.manager)
       fail('FORBIDDEN', '스페이스 관리자만 사용할 수 있습니다.', 403);
   };
-  if (segments[1] === 'spaces' && segments[3] === 'manager-dashboard') {
+  if (segments[1] === 'spaces' && segments[3] === 'reports') {
+    requireManager();
+    if (id !== context.space.id) fail('FORBIDDEN', '다른 스페이스의 리포트는 관리할 수 없습니다.', 403);
+    const status = spaceReportStatus(state, context);
+    if (method === 'GET' && segments.length === 4) return clone(status);
+    if (method === 'POST' && segments.length === 4) {
+      const weights = body ?? state.reportWeights ?? defaultReportWeights;
+      if (!validReportWeights(weights)) fail('INVALID_REQUEST', '각 반영 비율은 0~100 정수이며 합계가 100이어야 합니다.', 400);
+      if (state.reportWeights && !sameReportWeights(state.reportWeights, weights)) fail('REPORT_WEIGHTS_LOCKED', '확정된 반영 비율은 변경할 수 없습니다.');
+      if (status.totalTeamCount > 0 && status.generatedTeamCount === status.totalTeamCount) return clone(status);
+      if (!status.canGenerate) fail('REPORT_INPUT_INCOMPLETE', status.generationBlockReasons.join(' '));
+      // Calculate all pending reports before changing persisted preview state.
+      const pending = Object.values(state.teams).filter((entry) => !state.reports.some((report) => report.teamId === entry.team.id));
+      const reports = pending.map((entry) => makeReport(state, entry, 'UNPUBLISHED', weights));
+      state.reportWeights = { ...weights };
+      state.reports.push(...reports);
+    } else if (method === 'POST' && segments.length === 5 && segments[4] === 'publish') {
+      if (status.totalTeamCount > 0 && status.publishedTeamCount === status.totalTeamCount) return clone(status);
+      if (!status.canPublish) fail('REPORT_PUBLICATION_BLOCKED', status.publicationBlockReasons.join(' '));
+      const publishedAt = now();
+      state.reports.filter((report) => status.teams.some((team) => team.reportId === report.id) && report.status === 'UNPUBLISHED')
+        .forEach((report) => { report.status = 'PUBLISHED'; report.publishedAt = publishedAt; });
+    } else fail('NOT_FOUND', '지원하지 않는 요청입니다.', 404);
+    result = spaceReportStatus(state, context);
+  } else if (segments[1] === 'spaces' && segments[3] === 'manager-dashboard') {
     requireManager();
     result = dashboard(state, context, Number(url.searchParams.get('teamId')));
   } else if (segments[1] === 'spaces' && segments[3] === 'evaluation-rounds') {
@@ -695,6 +765,35 @@ export async function plannedRequest(
         '현재 해당 팀의 승인된 팀원만 조회할 수 있습니다.',
         403,
       );
+    if (segments[3] === 'report' && segments[4] === 'evidence' && segments.length === 5 && method === 'GET') {
+      const targetId = url.searchParams.get('userId') || context.user.id;
+      if (entry.team.spaceId !== context.space.id || (!context.manager && targetId !== context.user.id))
+        fail('FORBIDDEN', '본인의 기여 근거만 조회할 수 있습니다.', 403);
+      const report = state.reports.find((item) => item.teamId === id && (context.manager || item.status === 'PUBLISHED'));
+      if (!report) fail('REPORT_NOT_FOUND', '기여도 리포트를 찾을 수 없습니다.', 404);
+      const member = report.members.find((item) => item.userId === targetId);
+      if (!member) fail('REPORT_MEMBER_NOT_FOUND', '리포트에 포함된 팀원을 찾을 수 없습니다.', 404);
+      if (!report.evidenceTasks) fail('REPORT_EVIDENCE_UNAVAILABLE', '이전 미리보기 리포트입니다. 미리보기 설정에서 예시 데이터를 초기화해 주세요.', 409);
+      const included = report.evidenceTasks.filter((task) => task.assignments.some((assignment) => assignment.userId === targetId));
+      const detail = report.details[targetId];
+      const evidenceTasks = included.map((task) => {
+        const allocation = task.assignments.find((assignment) => assignment.userId === targetId).allocationPercent;
+        const current = entry.tasks.find((item) => item.id === task.taskId);
+        return { taskId: task.taskId, completedAt: task.completedAt, weightAtCutoff: task.weightAtCutoff,
+          allocationAtCutoff: allocation, assignedUnits: task.weightAtCutoff * allocation / 100,
+          current: current ? { availability: 'AVAILABLE', title: current.title,
+            contributionDescription: current.assignees.some((assignment) => assignment.userId === targetId) ? current.contributions?.[targetId] || null : null, version: current.version, updatedAt: current.updatedAt,
+            materials: entry.deliverables.filter((item) => item.taskId === task.taskId).map(({ id, title, type, version, updatedAt }) =>
+              ({ id, title, type, version, updatedAt: updatedAt || current.updatedAt })) }
+            : { availability: 'MISSING', title: null, contributionDescription: null, version: null, updatedAt: null, materials: [] } };
+      });
+      return clone({ reportId: report.id, teamId: id, userId: targetId, memberName: member.name, status: report.status,
+        cutoffAt: report.cutoffAt, createdAt: report.createdAt, publishedAt: report.publishedAt, weights: report.weights, details: detail,
+        workSummary: { memberUnits: evidenceTasks.reduce((sum, task) => sum + task.assignedUnits, 0),
+          teamUnits: report.evidenceTasks.reduce((sum, task) => sum + task.weightAtCutoff, 0),
+          taskRatioPercent: detail.taskRatioPercent, taskWeightPercent: report.weights.taskPercent,
+          taskContributionPercent: detail.taskContributionPercent }, tasks: evidenceTasks });
+    }
     if (segments[3] === 'my-work-summary') {
       if (
         context.manager &&

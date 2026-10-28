@@ -380,7 +380,7 @@
     padding: 20px 14px;
   }
   .workspace-sidebar .nav-item.workspace-back-link {
-    margin-bottom: 12px;
+    margin-bottom: 0;
     padding-inline: 12px;
   }
   .workspace-sidebar .workspace-selectors {

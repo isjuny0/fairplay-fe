@@ -7,7 +7,9 @@ export default function useScreenMotion() {
   const { pathname, search } = useLocation();
   const params = new URLSearchParams(search);
   const view = params.get('view') || '';
-  const teamId = params.get('teamId') || '';
+  // In report management, teamId opens an overlay over the same screen.
+  const reportOverlay = /\/spaces\/[^/]+\/reports\/?$/.test(pathname);
+  const teamId = reportOverlay ? '' : params.get('teamId') || '';
   useLayoutEffect(() => {
     const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
     if (preference.matches) return;

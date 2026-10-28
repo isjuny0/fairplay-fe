@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
 import useAppNavigate from '../hooks/useAppNavigate.js';
-import useSpaceList from '../hooks/useSpaceList.js';
 import { isApprovedMember } from '../lib/domain.js';
 import { announcementsPath, spacePath, teamMenuPath } from '../lib/routes.js';
 import {
@@ -9,8 +8,6 @@ import {
   teamNavigationGroups,
 } from '../lib/teamNavigation.js';
 import Icon from './Icon.jsx';
-import { ErrorNotice } from './ui.jsx';
-import WorkspaceContextSelect from './WorkspaceContextSelect.jsx';
 
 const sidebarPreferenceKey = 'fairplay:workspace-sidebar-collapsed';
 
@@ -30,7 +27,6 @@ export default function WorkspaceNavigation({
   view,
   teamMenu,
   teamRole,
-  user,
   onBack,
 }) {
   const navigate = useAppNavigate();
@@ -55,7 +51,6 @@ export default function WorkspaceNavigation({
       // Keep the control usable when browser storage is unavailable.
     }
   }, [collapsed]);
-  const spaces = useSpaceList(user.id);
   const isManager = space?.myRole === 'MANAGER';
   const selectedTeam = team || teams.find(isApprovedMember);
   const menus = team ? availableTeamMenus(team) : [];
@@ -111,30 +106,6 @@ export default function WorkspaceNavigation({
           >
             <Icon name="back" />내 스페이스
           </button>
-          <div className="workspace-selectors">
-            <WorkspaceContextSelect
-              label="공간"
-              accessibleLabel="스페이스 선택"
-              icon="space"
-              value={spaceId}
-              disabled={spaces.loading && !spaces.data}
-              options={[
-                ...(!(spaces.data || []).some((item) => item.id === spaceId)
-                  ? [{ value: spaceId, label: space?.name || '현재 스페이스' }]
-                  : []),
-                ...(spaces.data || []).map((item) => ({
-                  value: item.id,
-                  label: item.name,
-                })),
-              ]}
-              onChange={(nextValue) => {
-                setOpen(false);
-                navigate(spacePath(Number(nextValue)));
-              }}
-            />
-            <ErrorNotice error={spaces.error} onRetry={spaces.reload} />
-
-          </div>
         </div>
         <div className="workspace-navigation-links">
           {navButton('스페이스 홈', 'home', spacePath(spaceId), view === 'teams')}

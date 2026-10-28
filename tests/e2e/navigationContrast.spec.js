@@ -71,40 +71,13 @@ test('사이드바는 세 그룹의 모든 메뉴를 한 번에 표시하고 현
   await expect(menus.locator('[aria-current="page"]')).toHaveCount(1);
 });
 
-test('목록 선택은 디자인과 선택 표시를 유지하고 취소하면 현재 화면을 보존한다', async ({
-  page,
-}) => {
+test('사이드바는 스페이스 선택 없이 내 스페이스로 돌아간다', async ({ page }) => {
   await page.goto('/preview/spaces/1/teams/1/tasks');
-  const trigger = page.getByRole('combobox', {
-    name: '스페이스 선택',
-    exact: true,
-  });
-  await trigger.click();
-  const list = page.getByRole('listbox', {
-    name: '스페이스 선택',
-    exact: true,
-  });
-  const selected = list.getByRole('option', { selected: true });
-  await expect(selected).toContainText('2026 서비스 디자인 프로젝트');
-  await expect(selected.locator('svg')).toBeVisible();
-  expect(
-    await selected
-      .locator('span')
-      .evaluate((el) => el.scrollWidth <= el.clientWidth),
-  ).toBe(true);
-  await expect(list).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-  await expect(selected).toHaveCSS('color', 'rgb(8, 124, 85)');
-  await expect(page.locator('.workspace-selectors select')).toHaveCount(0);
-  const currentUrl = page.url();
-  await page.keyboard.press('Escape');
-  await expect(list).toBeHidden();
-  await expect(trigger).toBeFocused();
-  await trigger.click();
-  await selected.click();
-  await expect(page).toHaveURL(currentUrl);
-  await trigger.click();
-  await page.getByRole('heading', { name: '작업', exact: true }).click();
-  await expect(list).toBeHidden();
+  await expect(page.getByRole('combobox', { name: '스페이스 선택', exact: true })).toHaveCount(0);
+  await expect(page.locator('.workspace-selectors')).toHaveCount(0);
+  await expect(page.locator('.topbar .header-context-copy strong')).toHaveText('2026 서비스 디자인 프로젝트');
+  await page.getByRole('button', { name: '내 스페이스', exact: true }).click();
+  await expect(page).toHaveURL(/preview\/main$/);
 });
 
 test('공간·팀 선택의 좌우 여백을 유지하고 뒤로가기는 접기 버튼과 겹치지 않는다', async ({
@@ -380,21 +353,8 @@ for (const width of [768, 390, 320]) {
     await page.goto('/preview/spaces/1/teams/1');
     if (width <= 720) {
       await page.getByRole('button', { name: /스페이스 메뉴/ }).click();
-      await expect(page.getByLabel('스페이스 선택', { exact: true })).toBeVisible();
-      await page
-        .getByRole('combobox', { name: '스페이스 선택', exact: true })
-        .click();
-      const list = page.getByRole('listbox', {
-        name: '스페이스 선택',
-        exact: true,
-      });
-      const box = await list.boundingBox();
-      expect(box.x).toBeGreaterThanOrEqual(0);
-      expect(box.x + box.width).toBeLessThanOrEqual(width);
-      await expect(
-        list.getByRole('option', { selected: true }),
-      ).toBeInViewport();
-      await page.keyboard.press('Escape');
+      await expect(page.getByLabel('스페이스 선택', { exact: true })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: '내 스페이스', exact: true })).toBeInViewport();
       await page.getByRole('button', { name: /스페이스 메뉴/ }).click();
       await page
         .getByRole('navigation', { name: '모바일 팀 메뉴', exact: true })

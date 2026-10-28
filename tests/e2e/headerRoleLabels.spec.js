@@ -9,7 +9,7 @@ async function openPreview(page, path, role = 'leader') {
 }
 
 for (const width of [1440, 1024, 768, 390, 320]) {
-  test(`${width}px 리더 표시는 헤더 이름 옆 한 줄에만 표시한다`, async ({
+  test(`${width}px 리더 표시는 스페이스 이름 옆에만 표시한다`, async ({
     page,
   }, testInfo) => {
     await page.setViewportSize({ width, height: 1000 });
@@ -19,8 +19,9 @@ for (const width of [1440, 1024, 768, 390, 320]) {
     ).toBeVisible();
     const identity = page.locator('.topbar .profile-identity');
     const name = identity.locator('.profile-name');
-    const role = identity.locator('.profile-leader-badge');
-    await expect(name).toBeVisible();
+    const role = page.locator('.topbar .header-context-role');
+    if (width > 720) await expect(name).toBeVisible();
+    else await expect(name).toBeHidden();
     await expect(name).toHaveText('김하늘');
     await expect(role).toHaveText('리더');
     await expect(page.locator('.breadcrumb-role')).toHaveCount(0);
@@ -28,12 +29,14 @@ for (const width of [1440, 1024, 768, 390, 320]) {
       '리더',
     );
     await page.evaluate(() => document.fonts.ready);
-    const nameBox = await name.boundingBox(),
-      roleBox = await role.boundingBox();
-    expect(roleBox.x - nameBox.x - nameBox.width).toBeGreaterThanOrEqual(4);
-    expect(
-      Math.abs(nameBox.y + nameBox.height / 2 - roleBox.y - roleBox.height / 2),
-    ).toBeLessThan(1);
+    const roleBox = await role.boundingBox();
+    const spaceName = await page.locator('.header-context-copy strong').boundingBox();
+    expect(spaceName.width).toBeGreaterThan(40);
+    const contextBox = await page.locator('.header-context-copy').boundingBox();
+    expect(roleBox.x + roleBox.width).toBeLessThanOrEqual(contextBox.x + contextBox.width + 1);
+    expect(roleBox.x - spaceName.x - spaceName.width).toBeGreaterThanOrEqual(8);
+    expect(Math.abs(spaceName.y + spaceName.height / 2 - roleBox.y - roleBox.height / 2)).toBeLessThan(1);
+    await expect(page.locator('.profile-identity .header-context-role')).toHaveCount(0);
     expect(roleBox.x + roleBox.width).toBeLessThanOrEqual(width);
     const logoBox = await page
       .locator('.topbar-brand .brand-logo')
@@ -74,7 +77,7 @@ for (const width of [1440, 1024, 768, 390, 320]) {
     await expect(
       page.getByRole('heading', { name: '내 스페이스', exact: true }),
     ).toBeVisible();
-    await expect(page.locator('.profile-leader-badge')).toHaveCount(0);
+    await expect(page.locator('.header-context-role')).toHaveCount(0);
   });
 }
 
@@ -86,20 +89,42 @@ for (const role of ['member', 'teammate', 'manager', 'participant']) {
       role,
     );
     await expect(page.locator('.topbar .profile-name')).not.toHaveText('');
-    await expect(page.locator('.profile-leader-badge')).toHaveCount(0);
+    await expect(page.locator('.header-context-role').filter({ hasText: '리더' })).toHaveCount(0);
   });
+}
+
+for (const width of [1006, 768, 320]) {
+  for (const [role, path, label] of [
+    ['member', '/spaces/1/teams/1/reports', '팀원'],
+    ['manager', '/spaces/1/dashboard', '관리자'],
+    ['manager', '/spaces/1/teams/1/tasks', '관리자 조회'],
+  ]) {
+    test(`${width}px ${label} 역할을 헤더로 옮기고 본문에서 제거한다`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 1024 });
+      await openPreview(page, path, role);
+      const badge = page.locator('.topbar .header-context-role');
+      await expect(page.locator('.header-context-copy strong')).not.toHaveText('');
+      await expect(badge).toBeVisible();
+      await expect(badge).toHaveText(label);
+      await expect(page.locator('.breadcrumb-role')).toHaveCount(0);
+      expect(await page.locator('.topbar').evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.getByRole('button', { name: 'Fairplay', exact: true }).click();
+      await expect(badge).toHaveCount(0);
+    });
+  }
 }
 
 test('다른 팀으로 이동해도 이전 팀의 리더 표시가 남지 않는다', async ({
   page,
 }) => {
   await openPreview(page, '/spaces/1/teams/1');
-  await expect(page.locator('.profile-leader-badge')).toHaveText('리더');
+  await expect(page.locator('.header-context-role').filter({ hasText: '리더' })).toHaveText('리더');
   await page.getByRole('button', { name: '내 스페이스', exact: true }).click();
-  await expect(page.locator('.profile-leader-badge')).toHaveCount(0);
+  await expect(page.locator('.header-context-role').filter({ hasText: '리더' })).toHaveCount(0);
   await page.goto('/preview/spaces/1/teams/2');
   await expect(page.locator('.topbar .profile-name')).toHaveText('김하늘');
-  await expect(page.locator('.profile-leader-badge')).toHaveCount(0);
+  await expect(page.locator('.header-context-role').filter({ hasText: '리더' })).toHaveCount(0);
 });
 
 for (const [path, selector, text] of [
@@ -166,6 +191,7 @@ test('리포트·관리자 원문 제목 위 문구를 제거하고 상태 표�
     resetMockState(previewContext(), 'published');
   });
   await page.reload();
+  await page.getByRole('button', { name: '삼위일체 리포트 확인', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: '팀원별 최종 기여율', exact: true }),
   ).toBeVisible();
