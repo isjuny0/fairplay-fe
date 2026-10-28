@@ -496,8 +496,8 @@ test('동료 평가는 실제 PUT과 POST로 저장·제출하고 새로고침 �
   await page.getByRole('button', { name: '제출 확정' }).click();
   await expect(page.getByText('최종 제출 완료', { exact: true })).toBeVisible();
   await page.reload();
-  await expect(page.getByRole('region', { name: '리더 저장된 평가', exact: true }).getByRole('row', { name: '작업 수행 우수 4 / 5' })).toBeVisible();
-  await expect(page.getByRole('radio')).toHaveCount(0);
+  await expect(page.getByLabel('리더 작업 수행 4점', { exact: true })).toBeChecked();
+  await expect(page.getByLabel('리더 작업 수행 4점', { exact: true })).toBeDisabled();
   const save = requests.find((request) => request.method === 'PUT');
   expect(JSON.parse(save.body)).toEqual({
     scores: {
@@ -519,8 +519,8 @@ test('마감된 회차는 대상 조회 없이 본인 저장 응답만 읽고 �
   const { requests } = await backend(page, { roundStatus: 'CLOSED' });
   await page.goto('/spaces/1/teams/1/peer-evaluations');
   await expect(page.getByText('마감된 내 응답', { exact: true })).toBeVisible();
-  await expect(page.getByRole('region', { name: '리더 저장된 평가', exact: true }).getByRole('row', { name: '작업 수행 우수 4 / 5' })).toBeVisible();
-  await expect(page.getByRole('radio')).toHaveCount(0);
+  await expect(page.getByLabel('리더 작업 수행 4점', { exact: true })).toBeChecked();
+  await expect(page.getByLabel('리더 작업 수행 4점', { exact: true })).toBeDisabled();
   expect(
     requests.some((request) => request.path.endsWith('/targets')),
   ).toBeFalsy();

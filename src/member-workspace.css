@@ -222,9 +222,9 @@
   grid-template-columns: max-content 16px max-content;
   align-items: center;
   justify-content: start;
-  gap: 24px;
-  padding: 16px 0;
-  border-block: 1px solid var(--border);
+  gap: 16px;
+  padding: 0;
+  margin-left: auto;
 }
 .evaluation-schedule-date { display: grid; gap: 5px; min-width: 0; }
 .evaluation-schedule-label { color: var(--text-muted); font-size: 11px; line-height: 1.5; }
@@ -233,60 +233,121 @@
 .evaluation-schedule-date time > span, .evaluation-schedule-unset { font-size: 12px; color: var(--text-muted); }
 .evaluation-schedule-arrow { color: var(--text-muted); margin-top: 18px; }
 .peer-round-overview {
-  display: grid;
-  gap: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
 }
-.peer-evaluation-page .evaluation-progress { padding: 0; border: 0; background: transparent; }
-.peer-evaluation-page .evaluation-progress .page-heading { margin: 0; padding: 0; border: 0; }
-.peer-evaluation-page .evaluation-progress .page-heading > div { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 16px; }
-.peer-evaluation-page .evaluation-progress h2 { font-size: 14px; font-weight: 500; margin: 0; }
-.peer-progress-count { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
-.peer-evaluation-page .peer-response-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: start; max-width: none; }
-.peer-evaluation-page .peer-response-navigation { position: static; display: grid; gap: 14px; min-width: 0; }
-.peer-response-layout .peer-target-picker { display: flex; flex-direction: row; overflow-x: auto; gap: 6px; padding-bottom: 8px; border-bottom: 1px solid var(--border); min-width: 0; }
-.peer-response-layout .peer-target-picker button { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 12px; width: auto; padding: 10px 14px; min-height: 42px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--text-primary); text-align: left; }
-.peer-response-layout .peer-target-picker button:hover { background: var(--surface-secondary); }
-.peer-response-layout .peer-target-picker button.active { background: var(--brand-light); border-color: #d3e3da; color: var(--brand-dark); }
-.peer-response-layout .peer-target-picker button span { font-size: 11px; font-weight: 400; color: var(--text-muted); }
-.peer-response-layout .peer-grid { display: block; min-width: 0; }
-.peer-response-layout .peer-target[hidden] { display: none; }
-.peer-response-layout .peer-target.is-active { display: block; }
-.peer-response-layout .peer-card { padding: 0; border: 0; border-radius: 0; background: var(--surface); }
-.peer-evaluation-page .peer-response-layout .peer-card > .page-heading { padding-bottom: 12px; margin-bottom: 0; border-bottom: 0; }
-.peer-evaluation-page .peer-card > .page-heading h2 { margin: 0; font-size: 18px; line-height: 1.5; }
-.peer-evaluation-page .peer-score-column-headings, .peer-evaluation-page .peer-score-row { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 24px; }
-.peer-score-column-headings { padding: 8px 0; border-block: 1px solid var(--border); color: var(--text-muted); font-size: 12px; }
-.peer-score-column-headings > div { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; text-align: center; line-height: 1.4; }
-.peer-score-column-headings > div > span { display: grid; gap: 3px; }
-.peer-score-column-headings strong { font-size: 12px; font-weight: 500; }
-.peer-evaluation-page .peer-score-grid { display: block; }
-.peer-evaluation-page .peer-score-grid .score-field { padding: 12px 0; margin: 0; border: 0; border-bottom: 1px solid var(--border); min-width: 0; }
-.peer-evaluation-page .peer-score-controls { min-width: 0; }
-.peer-evaluation-page .peer-card .score-options { max-width: none; gap: 8px; margin: 0; }
-.peer-evaluation-page .peer-card .score-scale { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); margin: -1px; }
-.peer-evaluation-page .peer-card .score-options label { height: 40px; }
-.peer-score-criterion { position: relative; align-self: start; padding-top: 2px; }
-.peer-score-criterion > strong { font-size: 14px; font-weight: 500; }
-.peer-score-criterion details { margin: 4px 0 0; font-size: 11px; }
-.peer-score-criterion details > summary { color: var(--text-muted); cursor: pointer; }
-.peer-score-criterion details > .peer-criterion-popover { position: absolute; top: 100%; left: 0; z-index: 10; width: min(360px, calc(100vw - 64px)); padding: 16px; margin-top: 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); box-shadow: 0 6px 20px #20242b12; }
-.peer-score-criterion details p { font-size: 12px; line-height: 1.7; }
-.peer-evaluation-page .peer-card > .field { margin-top: 24px; }
-.peer-response-summary > .page-heading { padding-bottom: 16px; margin-bottom: 0; }
-.peer-response-summary h2 { font-size: 18px; }
-.peer-saved-scores { table-layout: fixed; }
-.peer-saved-scores th:first-child { width: 36%; }
-.peer-saved-scores th:last-child { width: 90px; text-align: right; }
-.peer-saved-scores td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
-.peer-saved-scores tbody th { font-weight: 500; }
-.peer-saved-scores td strong { font-size: 18px; font-weight: 600; }
-.peer-saved-scores td span { color: var(--text-muted); font-size: 12px; }
-.peer-saved-reason { padding-top: 24px; }
-.peer-saved-reason h3 { margin: 0 0 10px; font-size: 14px; font-weight: 500; }
-.peer-saved-reason p { margin: 0; font-size: 14px; line-height: 1.8; overflow-wrap: anywhere; }
-.peer-round-overview { border-bottom: 1px solid var(--border); padding-bottom: 16px; }
-.peer-evaluation-page .peer-round-overview { display: flex; align-items: center; justify-content: space-between; gap: 16px 24px; flex-wrap: wrap; }
-.peer-round-overview .evaluation-round-context { border: 0; padding: 0; gap: 16px; }
+.peer-evaluation-page .evaluation-progress {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}
+.peer-evaluation-page .evaluation-progress .page-heading {
+  padding-bottom: 8px;
+  border: 0;
+}
+.peer-evaluation-page .evaluation-progress h2 {
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+.peer-evaluation-page .evaluation-progress p {
+  margin: 0;
+  font-size: var(--text-support);
+}
+.peer-evaluation-page .evaluation-progress .progress-track {
+  height: 4px;
+}
+.peer-response-layout {
+  max-width: 1040px;
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  align-items: start;
+  gap: 32px;
+}
+.peer-response-sidebar {
+  position: sticky;
+  top: 80px;
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.peer-response-layout .peer-target-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.peer-response-layout .peer-target-picker button {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 12px;
+  min-height: 64px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text-primary);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.peer-response-layout .peer-target-picker button:hover {
+  background: var(--surface-secondary);
+}
+.peer-response-layout .peer-target-picker button.active {
+  background: var(--brand-light);
+  border-color: #d3e3da;
+  color: var(--brand-dark);
+}
+.peer-response-layout .peer-target-picker button span {
+  font-size: var(--text-caption);
+  font-weight: 400;
+  color: var(--text-muted);
+}
+.peer-response-layout .peer-grid {
+  display: block;
+  min-width: 0;
+}
+.peer-response-layout .peer-target[hidden] {
+  display: none;
+}
+.peer-response-layout .peer-target.is-active {
+  display: block;
+}
+.peer-response-layout .peer-card {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--surface);
+}
+.peer-response-layout .peer-card > .page-heading {
+  padding-bottom: 16px;
+}
+.peer-response-layout .score-field {
+  margin-block: 20px;
+  padding-top: 12px;
+}
+.peer-response-layout .peer-card :is(.score-options, .score-scale) {
+  max-width: 400px;
+}
+.peer-response-layout .score-scale {
+  margin-block: 0 4px;
+  font-size: 12px;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+.peer-response-layout .score-options label {
+  height: 40px;
+}
+.peer-response-layout .score-field details summary {
+  cursor: pointer;
+  padding-block: 6px;
+}
+.peer-response-layout .peer-card > .secondary-button {
+  margin-top: 12px;
+}
 .peer-evaluation-page .peer-submit-bar {
   position: static;
   max-width: 1040px;
@@ -393,14 +454,24 @@
   .collaboration-link + .collaboration-link {
     border-top: 0;
   }
-  .peer-response-layout .peer-target-picker button { padding: 10px 12px; }
-  .peer-evaluation-page .peer-score-row { grid-template-columns: 112px minmax(0, 1fr); gap: 12px; }
-  .peer-evaluation-page .peer-score-column-headings { grid-template-columns: 112px minmax(0, 1fr); gap: 12px; }
-  .peer-evaluation-page .peer-score-column-headings > div { gap: 4px; font-size: 10px; }
-  .peer-evaluation-page .peer-card .score-options { gap: 4px; }
-  .peer-score-criterion > strong { font-size: 13px; }
-  .peer-score-column-headings > div > span { word-break: keep-all; }
-  .evaluation-round-context { grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1fr); gap: 12px; }
+  .peer-response-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+  .peer-response-sidebar {
+    position: static;
+    gap: 16px;
+  }
+  .peer-response-layout .peer-target-picker {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+  .peer-response-layout .peer-target-picker button {
+    min-width: 120px;
+    flex: 0 0 auto;
+    width: auto;
+  }
+  .evaluation-round-context { flex-basis: 100%; margin-left: 0; grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1fr); gap: 12px; }
   .evaluation-schedule-date time { flex-direction: column; gap: 2px; }
   .evaluation-schedule-date strong { font-size: 13px; }
   .evaluation-schedule-arrow { margin-top: 0; }
@@ -417,13 +488,7 @@
   .feedback-score-list dd { grid-template-columns: minmax(0, 1fr) 75px; gap: 12px; }
 }
 
-@media (max-width: 540px) {
-  .peer-evaluation-page .peer-round-overview { align-items: stretch; }
-  .peer-round-overview .evaluation-round-context { width: 100%; }
-  .peer-evaluation-page .peer-score-column-headings { grid-template-columns: 82px minmax(0, 1fr); gap: 8px; }
-  .peer-evaluation-page .peer-score-row { grid-template-columns: 82px minmax(0, 1fr); gap: 8px; }
-  .peer-evaluation-page .peer-card .score-options label { height: 38px; font-size: 13px; }
-  .peer-evaluation-page .peer-score-criterion details summary { font-size: 10px; }
-  .peer-saved-scores th:last-child { width: 66px; }
-  .peer-saved-scores th:first-child { width: 34%; }
+
+@media (max-width: 900px) and (min-width: 721px) {
+  .peer-response-layout { grid-template-columns: 150px minmax(0, 1fr); gap: 24px; }
 }

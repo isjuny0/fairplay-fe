@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { BookOpen, X } from 'lucide-react';
 import { PreviewGuideContext } from '../lib/previewGuideContext.js';
-import { completedGuideStep, guideTaskId, getGuideSteps, materialsGuideReady, materialsSourceGuideStep, contributionGuideReady, managerGuideReady, managerGuidePath, managerGuideMemberId, managerGuideMemberPath, managerGuideTaskId, managerGuideDeliverableId, evaluationGuideReady, evaluationGuideSchedule, reportManagementGuideReady, guideScenarios, nextGuideScenario, guideExamples, prepareGuide, readGuideSession, storeGuideSession, guideScopeKey, guideStorageKey } from '../mock/guide.js';
+import { completedGuideStep, peerResponseGuideStep, guideTaskId, getGuideSteps, materialsGuideReady, materialsSourceGuideStep, contributionGuideReady, managerGuideReady, managerGuidePath, managerGuideMemberId, managerGuideMemberPath, managerGuideTaskId, managerGuideDeliverableId, evaluationGuideReady, evaluationGuideSchedule, reportManagementGuideReady, guideScenarios, nextGuideScenario, guideExamples, prepareGuide, readGuideSession, storeGuideSession, guideScopeKey, guideStorageKey } from '../mock/guide.js';
 import { getMockState } from '../mock/planned.js';
 import { previewContext, previewRole, setPreviewRole } from '../mock/preview.js';
 import { workSummary } from '../lib/evaluation.js';
@@ -24,6 +24,7 @@ export default function PreviewGuideProvider({ children }) {
   const [aiFeedbackReady, setAiFeedbackReady] = useState(false);
   const [materialsState, setMaterialsState] = useState(null);
   const [materialsSource, setMaterialsSource] = useState(null);
+  const [peerGuideState, setPeerGuideState] = useState(null);
   const [reportState, setReportState] = useState(null);
   const [managerState, setManagerState] = useState(null);
   const [managerSource, setManagerSource] = useState(null);
@@ -49,12 +50,13 @@ export default function PreviewGuideProvider({ children }) {
       member: managerState, source: managerSource, reportResult: managedReportResult,
       reportReviewReady: reportManagementGuideReady('management-report-review', managedReportBatch, managedReportResult, managedReportReview),
     });
+    if (current.id === 'peer-responses') return peerResponseGuideStep(current, peerGuideState);
     if (current.id === 'materials-source') return materialsSourceGuideStep(current, { answer: materialsState?.answer, source: materialsSource });
     return current.id === 'ai-feedback' && aiFeedbackReady
       ? { ...current, description: current.readyDescription, target: current.readyTarget, actionTarget: current.readyActionTarget }
       : current;
   }, [steps, guide?.step, aiFeedbackReady, materialsState?.answer, materialsSource, managerState, managerSource,
-    managedReportBatch, managedReportResult, managedReportReview]);
+    managedReportBatch, managedReportResult, managedReportReview, peerGuideState]);
   // Step definitions contain only copy and selectors. Keep their identity when
   // background state changes without changing the instructions (e.g. typing
   // report weights), so guidance does not scroll or restart its pulse each time.
@@ -236,6 +238,7 @@ export default function PreviewGuideProvider({ children }) {
       setAiFeedbackReady(false);
       setMaterialsState(null);
       setMaterialsSource(null);
+      setPeerGuideState(null);
       setReportState(null);
       setManagerState(null);
       setManagerSource(null);
@@ -371,7 +374,7 @@ export default function PreviewGuideProvider({ children }) {
       onNext={() => start(nextScenario.id)} onList={open} onExplore={freeExplore}
       onDismiss={() => update((current) => ({ ...current, status: 'paused' }))} />}
   </>;
-  return <PreviewGuideContext.Provider value={{ open, stop, endForSettings, guiding, scope: guide?.scope, scenarioId: guide?.scenarioId, reportManagementReady: reportManagementGuideReady(step.id, managedReportBatch, managedReportResult, managedReportReview), reportManagementTeamId: 1, reportManagementMemberId: managerGuideMemberId, setManagedReportBatch, setManagedReportResult, setManagedReportReview, confirmReportManagementStep, evaluationSchedule, evaluationReady: evaluationGuideReady(step.id, evaluationState), setEvaluationState, confirmEvaluationStep, managerTaskId: managerGuideTaskId, managerDeliverableId: managerGuideDeliverableId, setManagerState, setManagerSource, confirmManagerStep, reportReady, setReportState, confirmReportStep, confirmPeerStep, setMaterialsState, setMaterialsSource, confirmMaterialsStep, step: guide?.step, stepId: step.id, section: step.section, aiFeedbackReady, setAiFeedbackReady, confirmAiFeedback, taskId: guideTaskId, examples: guideExamples, panel }}>
+  return <PreviewGuideContext.Provider value={{ open, stop, endForSettings, guiding, scope: guide?.scope, scenarioId: guide?.scenarioId, reportManagementReady: reportManagementGuideReady(step.id, managedReportBatch, managedReportResult, managedReportReview), reportManagementTeamId: 1, reportManagementMemberId: managerGuideMemberId, setManagedReportBatch, setManagedReportResult, setManagedReportReview, confirmReportManagementStep, evaluationSchedule, evaluationReady: evaluationGuideReady(step.id, evaluationState), setEvaluationState, confirmEvaluationStep, managerTaskId: managerGuideTaskId, managerDeliverableId: managerGuideDeliverableId, setManagerState, setManagerSource, confirmManagerStep, reportReady, setReportState, setPeerGuideState, confirmReportStep, confirmPeerStep, setMaterialsState, setMaterialsSource, confirmMaterialsStep, step: guide?.step, stepId: step.id, section: step.section, aiFeedbackReady, setAiFeedbackReady, confirmAiFeedback, taskId: guideTaskId, examples: guideExamples, panel }}>
     {children}
     {guiding && (atLocation || step.id === 'result') && <PreviewGuideCallout key={guide.scope} guide={guide} step={calloutStep} stepCount={steps.length} action={action} reveal={atLocation ? focusTarget : action} progress={progress} />}
     {launcher && <Modal title="사용자 가이드" className="preview-guide-launcher" onClose={() => { setLauncher(false); toggle.current?.focus(); }}>

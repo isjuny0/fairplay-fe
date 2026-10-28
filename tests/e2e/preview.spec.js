@@ -127,7 +127,8 @@ test('대상별 평가를 저장하고 제출하면 새로고침 후에도 수�
     page.getByRole('heading', { name: '최종 제출 완료' }),
   ).toBeVisible();
   await page.reload();
-  await expect(page.getByRole('region', { name: '이지원 저장된 평가', exact: true }).getByRole('row', { name: '작업 수행 우수 4 / 5' })).toBeVisible();
+  await expect(page.getByLabel('이지원 작업 수행 4점', { exact: true })).toBeChecked();
+  await expect(page.getByLabel('이지원 작업 수행 4점', { exact: true })).toBeDisabled();
   await expect(page.getByRole('radio')).toHaveCount(0);
   await expect(page.getByRole('textbox', { name: '평가 사유', exact: true })).toHaveCount(0);
   expect(calls).toEqual([]);

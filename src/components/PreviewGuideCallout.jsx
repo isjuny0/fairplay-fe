@@ -58,7 +58,7 @@ export default function PreviewGuideCallout({ guide, step, stepCount, action, re
       }
       // Put the balloon in dialog flow to preserve scroll and keyboard access.
       // Elsewhere keep fixed-size dashboard widgets and tables unchanged.
-      const mode = dialog ? 'inline' : fallbackTarget === target ? 'flow' : 'floating';
+      const mode = dialog ? 'inline' : step.calloutPlacement === 'flow' || fallbackTarget === target ? 'flow' : 'floating';
       if (target !== currentTarget || dialog !== currentDialog || mode !== currentMode) {
         clearTimeout(revealTimer);
         removeHost();
@@ -71,7 +71,8 @@ export default function PreviewGuideCallout({ guide, step, stepCount, action, re
           inlineHost.dataset.previewGuideCalloutHost = '';
           inlineHost.className = 'preview-guide-callout-host';
           const content = reportDrawer ? target.closest('.report-drawer-footer') || target.closest('.report-member-evidence') || dialog.querySelector('.report-team-result')
-            : dialog && step.dialogCalloutContainer && dialog.querySelector(step.dialogCalloutContainer);
+            : dialog ? step.dialogCalloutContainer && dialog.querySelector(step.dialogCalloutContainer)
+              : step.calloutContainer && document.querySelector(step.calloutContainer);
           const actions = dialog && target.closest('.modal-actions, .heading-actions');
           const table = target.closest('table');
           const pageContainer = !table && !protectedElement ? target.closest('section, article, form') : null;

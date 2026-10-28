@@ -41,7 +41,7 @@ export const guideSteps = [
   { id: 'task', title: '예시 작업을 열어 보세요', description: '‘예시 작업: 조사 결과 정리’는 내가 단독으로 담당하는 작업입니다. 강조된 작업 제목을 직접 눌러 내용을 확인하세요.', path: `${guideHome}/tasks?view=list&mine=1`, actionTarget: '[data-guide-task-id="109"]', action: '강조 위치 보기' },
   { id: 'deliverable', title: '작업 결과를 문서로 남기세요', description: '강조된 ‘산출물 등록’ 버튼을 눌러 주세요. 자동 입력된 문서 내용을 확인한 뒤 등록 창의 ‘저장’을 직접 누르면 작업에 연결됩니다.', path: guideTask, section: 'task-deliverables-section', target: '#task-deliverables-section', actionTarget: '[data-guide="open-deliverable"]', dialogTitle: '산출물 등록', dialogCalloutContainer: '.deliverable-editor-scroll', dialogDescription: '예시 문서의 제목과 본문이 자동 입력되었습니다. 내용을 확인하거나 수정한 뒤 하단의 ‘저장’을 눌러 작업에 연결하세요.', dialogTarget: 'input[name="title"], textarea[name="text"]', dialogActionTarget: 'button[type="submit"]', action: '강조 위치 보기' },
   { id: 'ai-feedback', title: '산출물의 AI피드백을 확인하세요', description: '‘AI 검토 요청’을 눌러 예시 피드백을 확인하세요. 실제 AI를 호출하지 않습니다. AI 검토는 일반 작업 완료의 필수 조건은 아닙니다.', readyDescription: '예시 피드백의 요약·잘된 점·보완할 내용을 확인한 뒤, 결과 아래의 ‘피드백 확인 완료’를 직접 눌러 주세요.', path: guideTask, section: 'task-ai-review-section', target: '.ai-review-panel', actionTarget: '[data-guide="request-ai-review"]', readyTarget: '.ai-review-result', readyActionTarget: '[data-guide="confirm-ai-feedback"]', action: '강조 위치 보기' },
-  { id: 'contribution', title: '내가 수행한 내용을 기록하세요', description: '예시 수행 설명을 자동으로 채웠습니다. 내용을 확인한 뒤 화면의 ‘수행 설명 저장’ 버튼을 직접 눌러 주세요. 직접 수정해도 됩니다.', path: guideTask, section: 'task-contributions-section', target: '#own-contribution-description', actionTarget: '[data-guide="save-contribution"]', action: '강조 위치 보기' },
+  { id: 'contribution', title: '내가 수행한 내용을 기록하세요', description: '예시 수행 설명을 자동으로 채웠습니다. 내용을 확인한 뒤 화면의 ‘수행 설명 저장’ 버튼을 직접 눌러 주세요. 직접 수정해도 됩니다.', path: guideTask, section: 'task-contributions-section', target: '#own-contribution-description', calloutTarget: '#own-contribution-description', calloutAvoidClosest: 'form', calloutPlacement: 'flow', actionTarget: '[data-guide="save-contribution"]', action: '강조 위치 보기' },
   { id: 'complete', title: '완료 조건을 확인하고 완료하세요', description: '완료하려면 수행 설명과 연결 산출물이 필요합니다. 준비 항목을 확인하고 완료 처리를 확정하세요. 담당 배분은 이 작업 안의 분담이며 최종 기여율과 다릅니다.', path: guideTask, section: 'task-description-section', target: '[aria-label="완료 준비 상태"]', actionTarget: '[data-guide="complete-task"]', dialogTitle: '작업 완료', dialogDescription: '완료하면 팀 진행률에 반영됩니다. 안내를 확인하고 ‘완료 처리’를 직접 눌러 주세요.', dialogActionTarget: '.modal-actions .primary-button', action: '강조 위치 보기' },
   { id: 'result', title: '진행률의 변화를 확인하세요', description: '완료한 작업만 팀 진행률에 포함됩니다. 팀 홈에서 처음 진행률과 현재 값을 비교해 보세요.', path: guideHome, target: '[data-guide="team-progress"]', calloutTarget: '[data-guide="team-progress"] [role="progressbar"]', action: '가이드 마치기' },
 ];
@@ -52,14 +52,23 @@ export const materialsGuideSteps = [
   { id: 'materials-source', title: '근거 원문에서 직접 확인하세요', description: '답변의 ‘원문 확인’을 눌러 인용 위치와 전체 원문을 비교하세요. 원문을 읽은 뒤 ‘원문 확인 완료’를 누르면 가이드가 끝납니다.', path: materialsGuidePath, target: '.rag-original', calloutTarget: '[data-guide="confirm-material-source"]', actionTarget: '[data-guide="confirm-material-source"], [data-guide="open-material-citation"]', action: '강조 위치 보기' },
 ];
 export const peerGuideSteps = [
-  { id: 'peer-overview', title: '평가 회차와 대상을 확인하세요', description: '진행 중인 최종 평가와 같은 팀의 평가 대상을 확인하세요. 본인은 평가 대상에서 제외됩니다. 확인한 뒤 ‘평가 대상 확인 완료’를 눌러 주세요.', path: peerGuidePath, target: '.peer-round-overview, .peer-response-navigation', actionTarget: '[data-guide="confirm-peer-overview"]', action: '강조 위치 보기' },
-  { id: 'peer-responses', title: '팀원별 평가를 저장하세요', description: '예시 점수와 사유가 자동 입력되었습니다. 확인하거나 수정한 뒤 현재 팀원의 ‘평가 저장’을 직접 눌러 주세요. 저장 후 ‘다음 팀원’으로 이동해 나머지 대상도 저장하세요. 저장만으로는 최종 제출되지 않습니다.', path: peerGuidePath, target: '.peer-target.is-active .peer-score-grid', actionTarget: '[data-guide="save-peer-response"], [data-guide="next-peer-target"]', action: '강조 위치 보기' },
+  { id: 'peer-overview', title: '평가 회차와 대상을 확인하세요', description: '진행 중인 최종 평가와 같은 팀의 평가 대상을 확인하세요. 본인은 평가 대상에서 제외됩니다. 확인한 뒤 ‘평가 대상 확인 완료’를 눌러 주세요.', path: peerGuidePath, target: '.peer-round-overview, .peer-target-picker', calloutTarget: '.peer-target-picker', calloutAvoidClosest: '.peer-response-sidebar', calloutPlacement: 'vertical', actionTarget: '[data-guide="confirm-peer-overview"]', action: '강조 위치 보기' },
+  { id: 'peer-responses', title: '팀원별 평가를 저장하세요', description: '예시 점수와 사유가 자동 입력되었습니다. 확인하거나 수정한 뒤 현재 팀원의 ‘평가 저장’을 직접 눌러 주세요. 저장 후 ‘다음 팀원’으로 이동해 나머지 대상도 저장하세요. 저장만으로는 최종 제출되지 않습니다.', path: peerGuidePath, target: '.peer-target.is-active .peer-score-grid', calloutTarget: '.peer-target.is-active .peer-card > .page-heading', calloutPlacement: 'flow', actionTarget: '[data-guide="save-peer-response"], [data-guide="next-peer-target"]', action: '강조 위치 보기' },
   { id: 'peer-submit', title: '저장한 평가를 최종 제출하세요', description: '모든 대상의 응답을 저장했습니다. ‘최종 제출’을 누르고 확인 창에서 ‘제출 확정’을 직접 눌러 주세요. 제출한 응답은 수정할 수 없습니다.', path: peerGuidePath, target: '.peer-submit-bar', actionTarget: '[data-guide="submit-peer-evaluation"]', dialogTitle: '동료 평가 최종 제출', dialogDescription: '제출 후에는 응답을 수정할 수 없습니다. 내용을 확인하고 ‘제출 확정’을 눌러 주세요.', dialogActionTarget: '[data-guide="confirm-peer-submit"]', action: '강조 위치 보기' },
   { id: 'peer-result', title: '제출 완료 상태를 확인하세요', description: '최종 제출 완료 표시와 수정할 수 없게 된 응답을 확인하세요. ‘제출 결과 확인 완료’를 누르면 가이드를 마칩니다. 실제 계정의 평가에는 반영되지 않습니다.', path: peerGuidePath, target: '.evaluation-progress', actionTarget: '[data-guide="confirm-peer-result"]', action: '강조 위치 보기' },
 ];
+export function peerResponseGuideStep(step, state) {
+  if (step.id !== 'peer-responses' || !state?.name) return step;
+  if (state.saved) return { ...step, title: `${state.name}님의 평가를 저장했습니다`,
+    description: '‘다음 팀원’을 눌러 나머지 팀원의 평가도 저장하세요. 저장한 점수나 사유를 바꾸면 다시 저장해야 합니다.',
+    target: '.peer-target-picker', actionTarget: '[data-guide="next-peer-target"]' };
+  return { ...step, title: `${state.name}님의 평가를 확인하고 저장하세요`,
+    description: `예시 점수와 사유가 입력되어 있습니다. 내용을 확인하거나 수정한 뒤 ‘${state.name} 평가 저장’을 누르세요.`,
+    actionTarget: '[data-guide="save-peer-response"]' };
+}
 export const contributionGuideSteps = [
-  { id: 'report-overview', title: '나의 최종 기여율을 확인하세요', description: '공개된 예시 리포트에서 나의 최종 기여율을 확인하세요. 팀 전체 기여율 100% 중 본인의 비율입니다. ‘기여율 확인 완료’를 눌러 다음 단계로 이동하세요.', path: contributionGuidePath, target: '.report-personal-summary .report-score-total', calloutAvoidClosest: '.report-personal-summary', actionTarget: '[data-guide="confirm-report-overview"]', action: '강조 위치 보기' },
-  { id: 'report-components', title: '각 항목이 얼마나 반영됐는지 확인하세요', description: '완료 작업·중간 동료 평가·최종 동료 평가의 반영 비중과 반영분을 비교하세요. %는 반영 비중, %p는 최종 기여율에 더해진 값입니다. 항목별 도움말도 확인한 뒤 ‘내 완료 작업 보기’에서 본인의 완료 목록을 볼 수 있습니다. ‘반영 비중 확인 완료’를 누르면 가이드를 마칩니다.', path: contributionGuidePath, target: '.report-personal-summary .report-score-components', calloutAvoidClosest: '.report-personal-summary', actionTarget: '[data-guide="confirm-report-components"]', action: '강조 위치 보기' },
+  { id: 'report-overview', title: '나의 최종 기여율을 확인하세요', description: '공개된 예시 리포트에서 나의 최종 기여율을 확인하세요. 팀 전체 기여율 100% 중 본인의 비율입니다. ‘기여율 확인 완료’를 눌러 다음 단계로 이동하세요.', path: contributionGuidePath, target: '.report-personal-summary .report-score-total', calloutAvoidClosest: '.report-personal-summary', calloutPlacement: 'flow', actionTarget: '[data-guide="confirm-report-overview"]', action: '강조 위치 보기' },
+  { id: 'report-components', title: '각 항목이 얼마나 반영됐는지 확인하세요', description: '각 항목의 적용 비중과 최종 기여율에 더해진 값(%p)을 비교하세요. 완료 작업의 ‘작업 보기’를 누르면 반영된 작업을 펼칠 수 있습니다. 확인한 뒤 ‘반영 비중 확인 완료’를 누르세요.', path: contributionGuidePath, target: '.report-personal-summary .report-score-components', calloutAvoidClosest: '.report-personal-summary', calloutPlacement: 'flow', actionTarget: '[data-guide="confirm-report-components"]', action: '강조 위치 보기' },
 
 ];
 export function contributionGuideReady(report, userId) {
@@ -151,10 +160,10 @@ export function getGuideSteps(scenarioId = 'task-completion') {
 // a step or relaxes the separate completion checks.
 export function managerGuideStep(step, { member, source, reportResult, reportReviewReady = false } = {}) {
   const placement = {
-    'manager-overview': { calloutAvoidClosest: '.dashboard-member-overview', calloutPlacement: 'vertical' },
+    'manager-overview': { calloutTarget: '.dashboard-work-overview', calloutAvoidClosest: '.dashboard-work-overview', calloutPlacement: 'flow' },
     'manager-member': { calloutAvoidClosest: '.member-task-record', calloutPlacement: 'vertical' },
     'manager-material': { calloutAvoidClosest: '.member-task-materials', calloutPlacement: 'vertical' },
-    'evaluation-overview': { calloutTarget: '[data-guide="evaluation-rounds"]', calloutAvoidClosest: '[data-guide="evaluation-rounds"]', calloutPlacement: 'vertical' },
+    'evaluation-overview': { calloutTarget: '[data-guide="evaluation-rounds"]', calloutAvoidClosest: '[data-guide="evaluation-rounds"]', calloutPlacement: 'flow' },
     'evaluation-schedule': { calloutAvoidClosest: 'tr', calloutPlacement: 'vertical' },
     'evaluation-open': { calloutAvoidClosest: 'tr', calloutPlacement: 'vertical' },
     'evaluation-result': { calloutAvoidClosest: 'tr', calloutPlacement: 'vertical' },
@@ -222,7 +231,8 @@ export function materialsSourceGuideStep(step, { answer, source } = {}) {
     description: '원문이나 인용 위치를 확인하지 못했습니다. 원문 패널의 안내를 확인해 주세요. 정상적으로 조회되기 전에는 원문 확인을 완료할 수 없습니다.',
     target: '.rag-source-meta', calloutTarget: '.rag-source-meta', actionTarget: null };
   return { ...step, title: '강조된 원문과 인용 내용을 비교하세요',
-    description: '원문이 열렸습니다. 강조된 부분과 답변의 인용문·줄 번호를 비교하세요. 확인한 뒤 ‘원문 확인 완료’를 누르면 가이드를 마칩니다.' };
+    description: '원문이 열렸습니다. 강조된 부분과 답변의 인용문·줄 번호를 비교하세요. 확인한 뒤 ‘원문 확인 완료’를 누르면 가이드를 마칩니다.',
+    calloutContainer: '.rag-source-panel', calloutPlacement: 'flow' };
 }
 export const guideScenarios = [
   { id: 'task-completion', audience: 'member', title: '작업 완료하기', purpose: '산출물과 수행 기록을 남기고 작업을 완료합니다.', stepCount: guideSteps.length, available: true },

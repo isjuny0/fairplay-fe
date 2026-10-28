@@ -121,6 +121,15 @@ for (const width of [1440, 1280, 390]) {
   }) => {
     await page.setViewportSize({ width, height: width === 1280 ? 800 : 900 });
     await preview(page, '/spaces/1/teams/1/peer-evaluations', 'leader');
+    const fields = page.locator('.peer-target.is-active .score-field');
+    const firstField = await fields.nth(0).boundingBox();
+    const secondField = await fields.nth(1).boundingBox();
+    if (width >= 1200) {
+      expect(Math.abs(firstField.y - secondField.y)).toBeLessThan(1);
+      expect(secondField.x).toBeGreaterThan(firstField.x);
+    } else expect(secondField.y).toBeGreaterThan(firstField.y);
+    await expect(page.locator('.peer-response-sidebar')).toBeVisible();
+
     const dock = page.getByRole('region', {
       name: '평가 저장 및 제출',
       exact: true,
@@ -163,25 +172,36 @@ for (const width of [1440, 1280, 390]) {
   });
 }
 
-for (const width of [1440, 768, 320]) {
-  test(`제출 응답 ${width}px: 점수·등급·사유를 읽고 상단에서 팀원을 전환한다`, async ({ page }) => {
+for (const width of [1440, 1079, 768, 320]) {
+  test(`제출 응답 ${width}px: 이전 평가 양식에서 점수·사유를 읽고 팀원을 전환한다`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
     await preview(page, '/spaces/1/teams/1/peer-evaluations?roundId=11', 'member', 'published');
-    await expect(page.getByRole('heading', { name: '최종 제출 완료', exact: true })).toBeVisible();
-    const summary = page.getByRole('region', { name: '김하늘 저장된 평가', exact: true });
-    await expect(summary.getByRole('row', { name: '작업 수행 우수 4 / 5' })).toBeVisible();
-    await expect(summary.getByRole('row', { name: '적극성 미흡 2 / 5' })).toBeVisible();
-    await expect(summary.getByRole('heading', { name: '평가 사유', exact: true })).toBeVisible();
-    await expect(page.getByRole('radio')).toHaveCount(0);
-    await expect(page.getByRole('textbox', { name: '평가 사유', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: '마감된 평가 · 내가 저장한 응답', exact: true })).toBeVisible();
+    await expect(page.getByLabel('김하늘 작업 수행 4점', { exact: true })).toBeChecked();
+    await expect(page.getByLabel('김하늘 적극성 2점', { exact: true })).toBeChecked();
+    await expect(page.getByLabel('김하늘 작업 수행 4점', { exact: true })).toBeDisabled();
+    await expect(page.getByRole('textbox', { name: '평가 사유', exact: true }).first()).toBeDisabled();
     await expect(page.getByRole('region', { name: '평가 저장 및 제출', exact: true })).toHaveCount(0);
     const choices = page.getByRole('group', { name: '평가할 팀원 선택', exact: true });
-    const first = await choices.getByRole('button').first().boundingBox();
-    const second = await choices.getByRole('button').nth(1).boundingBox();
-    expect(Math.abs(first.y - second.y)).toBeLessThan(1);
+    if (width > 720) {
+      const first = await choices.getByRole('button').first().boundingBox();
+      const second = await choices.getByRole('button').nth(1).boundingBox();
+      expect(second.y).toBeGreaterThan(first.y);
+    }
     await choices.getByRole('button', { name: /^박서연/ }).click();
     await expect(page.getByRole('heading', { name: '박서연', exact: true })).toBeFocused();
-    await expect(page.getByRole('region', { name: '박서연 저장된 평가', exact: true })).toBeVisible();
+    await expect(page.getByLabel('박서연 작업 수행 4점', { exact: true })).toBeDisabled();
+    const schedule = page.getByRole('region', { name: '선택한 평가 일정', exact: true });
+    await expect(schedule.locator('time')).toHaveCount(2);
+    if (width >= 1079) {
+      const tabs = await page.getByRole('group', { name: '평가 회차 선택', exact: true }).boundingBox();
+      const dates = await schedule.boundingBox();
+      expect(dates.x).toBeGreaterThanOrEqual(tabs.x + tabs.width);
+      expect(Math.abs(dates.y + dates.height / 2 - tabs.y - tabs.height / 2)).toBeLessThan(1);
+    }
+
+    await expect(schedule).not.toContainText('중간 평가');
+    await expect(page.getByText('마감 후 스페이스 관리자가 최종 제출된 점수와 사유를 열람할 수 있습니다.', { exact: true })).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
 }

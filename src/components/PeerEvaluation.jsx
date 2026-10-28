@@ -25,7 +25,7 @@ import {
 } from '../lib/evaluation.js';
 import { peerCriteria, peerCriteriaDescriptions, peerEvaluationNotes, peerGuides, peerScoreOptions } from '../lib/peerCriteria.js';
 import { EmptyState, ErrorNotice, Field, Modal, ResourceState } from './ui.jsx';
-import { RoundPicker } from './PlanningUi.jsx';
+import { ProgressBar, RoundPicker } from './PlanningUi.jsx';
 
 const scheduleDateFormat = new Intl.DateTimeFormat('ko-KR', {
   timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
@@ -46,25 +46,6 @@ function EvaluationScheduleDate({ label, value }) {
   </div>;
 }
 
-function PeerResponseSummary({ target, response }) {
-  return <section className="peer-response-summary" aria-label={`${target.name} 저장된 평가`}>
-    <div className="page-heading"><h2 tabIndex={-1}>{target.name}</h2></div>
-    {response ? <>
-      <table className="data-table peer-saved-scores">
-        <caption className="sr-only">{target.name}에게 작성한 평가</caption>
-        <thead><tr><th scope="col">평가 항목</th><th scope="col">내가 선택한 평가</th><th scope="col">점수</th></tr></thead>
-        <tbody>{Object.entries(peerCriteria).map(([code, label]) => {
-          const option = peerScoreOptions.find((option) => option.score === response.scores?.[code]);
-          return <tr key={code}><th scope="row">{label}</th><td>{option?.label || '확인 불가'}</td>
-            <td>{option ? <><strong>{option.score}</strong><span> / 5</span></> : '—'}</td></tr>;
-        })}</tbody>
-      </table>
-      <section className="peer-saved-reason"><h3>평가 사유</h3>
-        <p className="preserve-lines">{response.reason?.trim() || '작성한 사유가 없습니다.'}</p></section>
-    </> : <EmptyState>이 팀원에게 저장한 평가가 없습니다.</EmptyState>}
-  </section>;
-}
-
 function PeerResponseForm({
   target,
   response,
@@ -73,6 +54,7 @@ function PeerResponseForm({
   context,
   round,
   onStateChanged,
+  submitted,
 }) {
   const guide = usePreviewGuide();
   const example = guide?.guiding && guide.scenarioId === 'peer-evaluation' && guide.stepId === 'peer-responses';
@@ -103,7 +85,6 @@ function PeerResponseForm({
     onStateChanged(target.targetId, !locked && changed, busy);
     return () => onStateChanged(target.targetId, false, false);
   }, [target.targetId, changed, busy, locked, onStateChanged]);
-  if (locked) return <PeerResponseSummary target={target} response={response} />;
   return (
     <form
       className="panel peer-card"
@@ -155,9 +136,6 @@ function PeerResponseForm({
       </div>
       <ErrorNotice error={error} />
       {example && !response && <p className="field-help">가이드용 예시 점수와 사유입니다. 실제 팀원의 행동에 맞춰 평가하는 방식으로 확인하거나 수정한 뒤 저장하세요.</p>}
-      <div className="peer-score-column-headings" aria-hidden="true">
-        <span>평가 항목</span><div>{peerScoreOptions.map(({ score, label }) => <span key={score}><strong>{score}</strong>{label}</span>)}</div>
-      </div>
       <div className="peer-score-grid">
         {Object.entries(peerCriteria).map(([code, label]) => (
           <fieldset
@@ -171,21 +149,7 @@ function PeerResponseForm({
                 : undefined
             }
           >
-            <legend className="sr-only">{label}</legend>
-            <div className="peer-score-row">
-            <div className="peer-score-criterion">
-              <strong aria-hidden="true">{label}</strong>
-              <details>
-                <summary>점수별 행동 기준</summary>
-                <div className="peer-criterion-popover"><p>{peerCriteriaDescriptions[code]}</p>
-                <p>1점 · 매우 미흡 · {peerGuides[code][0]}</p>
-                <p>3점 · 보통 · {peerGuides[code][1]}</p>
-                <p>5점 · 매우 우수 · {peerGuides[code][2]}</p>
-                <p>2·4점은 인접 기준 사이의 수행 행동입니다.</p>
-                <p>{peerEvaluationNotes[code]}</p></div>
-              </details>
-            </div>
-            <div className="peer-score-controls">
+            <legend>{label}</legend>
             <div className="score-options">
               {peerScoreOptions.map(({ score }) => (
                 <label
@@ -225,8 +189,15 @@ function PeerResponseForm({
                 {scoreError.message}
               </p>
             )}
-            </div>
-            </div>
+            <details>
+              <summary>점수별 행동 기준</summary>
+              <p>{peerCriteriaDescriptions[code]}</p>
+              <p>1점 · 매우 미흡 · {peerGuides[code][0]}</p>
+              <p>3점 · 보통 · {peerGuides[code][1]}</p>
+              <p>5점 · 매우 우수 · {peerGuides[code][2]}</p>
+              <p>2·4점은 인접 기준 사이의 수행 행동입니다.</p>
+              <p>{peerEvaluationNotes[code]}</p>
+            </details>
           </fieldset>
         ))}
       </div>
@@ -322,6 +293,13 @@ function RoundResponses({ context, round, onSubmitted }) {
         ?.querySelector('h2')
         ?.focus();
   }, [activeTargetId, round.id]);
+  const updateGuidePeer = guide?.setPeerGuideState;
+  const savedGuideResponse = Boolean(currentResponse && !currentState?.changed && !resource.loading && !saving);
+  useEffect(() => {
+    if (!guidedPeer || !updateGuidePeer) return;
+    updateGuidePeer({ name: currentTarget?.name, saved: savedGuideResponse });
+    return () => updateGuidePeer(null);
+  }, [guidedPeer, updateGuidePeer, currentTarget?.name, savedGuideResponse]);
   const readyToSubmit =
     !locked &&
     targets.length > 0 &&
@@ -348,16 +326,33 @@ function RoundResponses({ context, round, onSubmitted }) {
                 onClick={() => guide.confirmPeerStep('peer-overview')}>평가 대상 확인 완료</button>
             </div>}
             <div className="peer-response-layout">
-              <div className="peer-response-navigation">
+              <aside className="peer-response-sidebar">
                 <section className="evaluation-progress">
                   <div className="page-heading">
                     <div>
                       <h2>
-                        {submitted ? '최종 제출 완료' : locked ? '마감된 내 응답' : '평가 대상'}
+                        {round.status === 'CLOSED'
+                          ? '마감된 평가 · 내가 저장한 응답'
+                          : submitted
+                            ? '최종 제출 완료'
+                            : '평가 저장 현황'}
                       </h2>
-                      <span className="peer-progress-count">{responses.length} / {targets.length}명 저장</span>
+                      <p>
+                        {responses.length} / {targets.length}명 저장 ·{' '}
+                        {submitted
+                          ? '제출한 응답은 수정할 수 없습니다.'
+                          : '저장만으로 최종 제출되지 않습니다.'}
+                      </p>
                     </div>
                   </div>
+                  <ProgressBar
+                    value={
+                      targets.length
+                        ? (responses.length / targets.length) * 100
+                        : 0
+                    }
+                    label="내 평가 작성 진행률"
+                  />
                 </section>
                 <div
                   className="peer-target-picker"
@@ -376,12 +371,19 @@ function RoundResponses({ context, round, onSubmitted }) {
                     >
                       {target.name}
                       <span>
-                        {formStates[target.targetId]?.saving ? '저장 중' : formStates[target.targetId]?.changed ? '미저장' : responses.some((response) => response.targetId === target.targetId) ? '저장됨' : '작성 필요'}
+                        {formStates[target.targetId]?.changed
+                          ? '미저장'
+                          : responses.some(
+                                (response) =>
+                                  response.targetId === target.targetId,
+                              )
+                            ? '저장됨'
+                            : '작성 필요'}
                       </span>
                     </button>
                   ))}
                 </div>
-              </div>
+              </aside>
               <div className="peer-grid">
                 {targets.map((target) => {
                   const response = responses.find(
@@ -403,6 +405,7 @@ function RoundResponses({ context, round, onSubmitted }) {
                         context={context}
                         round={round}
                         onStateChanged={onStateChanged}
+                        submitted={submitted}
                       />
                     </div>
                   );
@@ -577,10 +580,7 @@ function PeerEvaluationScreen({ context }) {
                 selected={round?.id}
                 onSelect={(id) => setParams({ roundId: String(id) })}
               />
-              <section
-                className="evaluation-round-context"
-                aria-label="선택한 평가 일정"
-              >
+              <section className="evaluation-round-context" aria-label="선택한 평가 일정">
                 <EvaluationScheduleDate label="시작" value={round.opensAt} />
                 <ArrowRight className="evaluation-schedule-arrow" size={16} aria-hidden="true" />
                 <EvaluationScheduleDate label="마감" value={round.closesAt} />
