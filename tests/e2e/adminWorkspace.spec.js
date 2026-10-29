@@ -68,29 +68,36 @@ for (const width of [1440, 1280, 390]) {
 }
 
 for (const width of [1440, 1280, 390]) {
-  test(`동료 평가 관리 ${width}px: 두 회차를 비교하고 팀별 제출 현황은 상세창에서 확인한다`, async ({ page }) => {
+  test(`동료 평가 관리 ${width}px: 평가명 아래 기간을 표시하고 팀별 제출 현황은 바로 보여준다`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await openManagerPreview(page, '/spaces/1/rounds');
     const overview = page.getByRole('region', { name: '평가 회차 일정과 제출 현황', exact: true });
-    await expect(overview.getByRole('columnheader')).toHaveText(['평가 회차', '진행 상태', '평가 기간', '제출 현황', '관리']);
-    await expect(overview.locator('tbody > tr')).toHaveCount(2);
-    await expect(overview.getByRole('rowheader')).toHaveText(['중간 평가', '최종 평가']);
+    await expect(overview.getByRole('heading', { level: 2 })).toHaveText(['중간 평가', '최종 평가']);
+    await expect(overview.getByRole('table')).toHaveCount(0);
+    await expect(overview.getByText('마감 시각에 자동 종료됩니다.', { exact: true })).toHaveCount(0);
+    await expect(overview.getByRole('progressbar', { name: /전체 제출률/ })).toHaveCount(0);
+    expect(await overview.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
     await expect(overview.getByRole('button', { name: '최종 평가 마감 시각 수정', exact: true })).toBeEnabled();
     await expect(overview.getByRole('button', { name: '중간 평가 일정 수정', exact: true })).toHaveCount(0);
     await expect(page.getByRole('dialog')).toHaveCount(0);
-    const detail = overview.getByRole('button', { name: '최종 평가 팀별 제출 현황 보기', exact: true });
-    await detail.focus();
-    await detail.press('Enter');
-    const dialog = page.getByRole('dialog', { name: '최종 평가 팀별 제출 현황', exact: true });
-    await expect(dialog.getByRole('rowheader')).toHaveText(['삼위일체', '파도']);
-    await expect(dialog).toContainText('0 / 3명');
-    await expect(dialog.getByRole('progressbar', { name: '최종 평가 삼위일체 제출률' })).toHaveAttribute('aria-valuenow', '0');
-    expect(await dialog.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
-    await dialog.press('Escape');
-    await expect(dialog).toHaveCount(0);
-    await expect(detail).toBeFocused();
+    await expect(overview.getByRole('button', { name: /팀별 제출 현황 보기/ })).toHaveCount(0);
+    const detailRegion = page.getByRole('region', { name: '최종 평가 팀별 제출 현황', exact: true });
+    await expect(detailRegion).toBeVisible();
+    await expect(detailRegion.locator('li > strong')).toHaveText(['삼위일체', '파도']);
+    await expect(detailRegion).toContainText('3명 중 0명 제출');
+    await expect(detailRegion.getByRole('progressbar', { name: '최종 평가 삼위일체 제출률' })).toHaveAttribute('aria-valuenow', '0');
+    expect(await detailRegion.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+    const finalRound = page.getByRole('region', { name: '최종 평가 운영', exact: true });
+    await expect(finalRound.locator('.round-section-heading time')).toHaveCount(2);
+    if (width > 720) {
+      const heading = await finalRound.getByRole('heading', { name: '최종 평가', exact: true }).boundingBox();
+      const period = await finalRound.locator('.round-period').boundingBox();
+      expect(Math.abs(period.x - heading.x)).toBeLessThan(2);
+      expect(period.y).toBeGreaterThan(heading.y + heading.height);
+      expect(period.y - heading.y - heading.height).toBeLessThan(24);
+    }
     await page.getByText('평가 운영 기준', { exact: true }).click();
-    await expect(page.getByText('중간 평가 마감 후 최종 평가를 시작할 수 있습니다.', { exact: false })).toBeVisible();
+    await expect(page.getByText('중간 평가 마감 후 예약된 시각에 최종 평가가 자동으로 시작됩니다.', { exact: false })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
 }
@@ -119,7 +126,7 @@ for (const width of [1440, 1280, 390]) {
     await page.getByLabel('팀 정렬', { exact: true }).selectOption('progress');
     if (width > 720) {
       const table = page.getByRole('table', { name: '팀 관리', exact: true });
-      await expect(table.getByRole('columnheader')).toHaveText(['팀', '팀 진행률', '작업 현황', '확인 사항', '산출물', '리포트']);
+      await expect(table.getByRole('columnheader')).toHaveText(['팀', '팀 진행률', '작업 현황', '확인 사항', '산출물']);
       expect(await table.locator('tbody > tr').first().evaluate((element) => element.getBoundingClientRect().bottom <= innerHeight)).toBe(true);
       expect(await table.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
       await expect(table.locator('tbody').getByRole('button', { name: /집계 기준/ })).toHaveCount(0);
@@ -127,7 +134,18 @@ for (const width of [1440, 1280, 390]) {
       await expect(taskCounts.locator('dt')).toHaveText(['할 일', '진행 중', '수정 중', '완료']);
       await expect(taskCounts.locator('dd')).toHaveText(['1건', '1건', '1건', '3건']);
     }
-    await page.getByRole('button', { name: '삼위일체 현황 보기', exact: true }).click();
+    if (width > 720) {
+      const row = page.getByRole('table', { name: '팀 관리', exact: true }).locator('tbody tr').first();
+      await expect(row.locator('.dashboard-team-meta > span')).toHaveText(['리더 김하늘', '팀원 3명']);
+      await row.locator('.dashboard-team-work-counts').click();
+    } else {
+      const card = page.locator('.mobile-data-cards .dashboard-team-card').filter({ has: page.getByRole('button', { name: '삼위일체 현황 보기', exact: true }) });
+      await expect(card.locator('.dashboard-team-meta > span')).toHaveText(['리더 김하늘', '팀원 3명']);
+      // Expanding the participation details must not activate the card.
+      await card.getByText('산출물·팀 참여 상태', { exact: true }).click();
+      await expect(page.getByRole('heading', { name: '팀 관리', exact: true })).toBeVisible();
+      await card.locator('.dashboard-team-work-counts').click();
+    }
     await expect(page).toHaveURL(/teamId=1/);
     await expect(page.getByRole('heading', { name: '삼위일체', exact: true })).toBeVisible();
     if (width > 720) {

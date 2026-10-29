@@ -21,23 +21,23 @@ export default function DashboardMetricHelp({ title, contribution = false, weigh
             {contribution ? (
               <>
                 <p>
-                  공개된 기여도 리포트에 있는 <strong>내 최종 기여율</strong>
+                  공개된 기여도 리포트에 있는 <strong>내 종합점수</strong>
                   이에요.
                 </p>
                 <dl>
                   <div>
-                    <dt>완료 작업{weights && ` · ${weights.taskPercent}%`}</dt>
+                    <dt>작업 점수{weights && ` · ${weights.taskPercent}%`}</dt>
                     <dd>
-                      최종 평가 마감까지 완료된 작업의 예상 작업량과 담당 배분
+                      팀 평균 완료 작업량을 충족하면 100점이며 담당 비율을 반영합니다.
                     </dd>
                   </div>
                   <div>
                     <dt>중간 동료 평가{weights && ` · ${weights.midPercent}%`}</dt>
-                    <dd>팀 내 중간 동료 평가 비율</dd>
+                    <dd>받은 네 항목의 절대 평균을 100점으로 환산</dd>
                   </div>
                   <div>
                     <dt>최종 동료 평가{weights && ` · ${weights.finalPercent}%`}</dt>
-                    <dd>팀 내 최종 동료 평가 비율</dd>
+                    <dd>받은 네 항목의 절대 평균을 100점으로 환산</dd>
                   </div>
                 </dl>
                 <p>

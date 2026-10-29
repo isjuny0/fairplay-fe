@@ -16,7 +16,7 @@ async function seed(page, role = 'leader') {
   await page.addInitScript(
     ({ state, role }) => {
       localStorage.setItem('fairplay:preview-role', role);
-      localStorage.setItem('fairplay:mock:v7:preview:1', JSON.stringify(state));
+      localStorage.setItem('fairplay:mock:v9:preview:1', JSON.stringify(state));
     },
     { state, role },
   );

@@ -1,7 +1,8 @@
 import { roundLabels, roundStatusLabels } from '../lib/evaluation.js';
-import { peerCriteria, peerCriteriaDescriptions } from '../lib/peerCriteria.js';
+import { peerCriteriaDescriptions } from '../lib/peerCriteria.js';
 import { useId, useState } from 'react';
 import { CircleHelp } from 'lucide-react';
+import PeerCriteriaScores from './PeerCriteriaScores.jsx';
 
 function FeedbackCriterionHelp({ label, description }) {
   const id = useId();
@@ -76,44 +77,11 @@ export function RoundPicker({ rounds, selected, onSelect }) {
   );
 }
 export function FeedbackSummary({ member }) {
-  const criteria = Object.entries(peerCriteria).map(([code, label]) => {
-    const value = member.averageScores?.[code];
-    const score = typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 5 ? value : null;
-    return { code, label, score, needsAttention: score != null && score < 3 };
-  });
-  return (
-    <div className="feedback-layout">
-      <section className="feedback-score-list" aria-label="항목별 협업 평균">
-        <div className="feedback-score-heading">
-          <h2>항목별 평균</h2>
-          <span>5점 척도</span>
-        </div>
-        <dl>
-          {criteria.map(({ code, label, score, needsAttention }) => (
-            <div className={`feedback-score-row${needsAttention ? ' needs-attention' : ''}`} key={code}>
-              <dt>
-                <span className="feedback-criterion-name">
-                  {label}
-                  <FeedbackCriterionHelp label={label} description={peerCriteriaDescriptions[code]} />
-                  {needsAttention && <span className="feedback-attention-label">확인할 항목</span>}
-                </span>
-              </dt>
-              <dd>
-                {score != null && (
-                  <div className="feedback-score-meter" role="meter" aria-label={`${label} 평균`} aria-valuemin={0} aria-valuemax={5} aria-valuenow={score} aria-valuetext={`5점 만점에 ${score.toFixed(2)}점`}>
-                    {Array.from({ length: 5 }, (_, index) => (
-                      <span key={index} aria-hidden="true"><span style={{ width: `${Math.max(0, Math.min(1, score - index)) * 100}%` }} /></span>
-                    ))}
-                  </div>
-                )}
-                <span className={`feedback-score-value${score == null ? ' is-unavailable' : ''}`}>
-                  {score == null ? '집계 정보 없음' : <><strong>{score.toFixed(2)}</strong><small> / 5</small></>}
-                </span>
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </section>
-    </div>
-  );
+  return <div className="feedback-layout">
+    <section className="feedback-criteria" aria-label="항목별 협업 평균">
+      <div className="feedback-score-heading"><h2>항목별 평균</h2><span>5점 만점</span></div>
+      <PeerCriteriaScores averages={member.averageScores}
+        renderHelp={(code, label) => <FeedbackCriterionHelp label={label} description={peerCriteriaDescriptions[code]} />} />
+    </section>
+  </div>;
 }

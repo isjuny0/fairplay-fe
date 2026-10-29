@@ -15,8 +15,6 @@ export const updateEvaluationRound = (roundId, input) =>
     method: 'PATCH',
     body: input,
   });
-export const openEvaluationRound = (roundId) =>
-  apiRequest(`/api/evaluation-rounds/${roundId}/open`, { method: 'POST' });
 export const listPeerTargets = (roundId) =>
   apiRequest(`/api/evaluation-rounds/${roundId}/targets`);
 export const getMyPeerResponses = (roundId) =>

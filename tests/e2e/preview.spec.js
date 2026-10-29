@@ -90,7 +90,7 @@ test('팀 홈과 관리자 현황은 가중치 숫자 대신 비율과 계산 �
     }),
   ).toContainText('80.00%');
   await page.evaluate(() => {
-    const key = 'fairplay:mock:v7:preview:1';
+    const key = 'fairplay:mock:v9:preview:1';
     const state = JSON.parse(localStorage.getItem(key));
     for (const team of Object.values(state.teams))
       for (const task of team.tasks) task.status = 'TODO';
@@ -129,8 +129,9 @@ test('대상별 평가를 저장하고 제출하면 새로고침 후에도 수�
   await page.reload();
   await expect(page.getByLabel('이지원 작업 수행 4점', { exact: true })).toBeChecked();
   await expect(page.getByLabel('이지원 작업 수행 4점', { exact: true })).toBeDisabled();
-  await expect(page.getByRole('radio')).toHaveCount(0);
-  await expect(page.getByRole('textbox', { name: '평가 사유', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('radio')).toHaveCount(20);
+  await expect(page.locator('input[type=radio]:enabled')).toHaveCount(0);
+  await expect(page.getByRole('textbox', { name: '평가 사유', exact: true })).toBeDisabled();
   expect(calls).toEqual([]);
 });
 test('저점 사유 누락을 안내하고 공개 전 리포트는 팀원에게 보이지 않는다', async ({
@@ -162,7 +163,7 @@ test('관리자가 리포트를 공개하면 팀원은 본인 완료 작업과 �
     path: '/spaces/1/reports',
   });
   await page.getByRole('button', { name: '삼위일체 리포트 확인', exact: true }).click();
-  await expect(page.getByRole('region', { name: '팀 최종 기여율', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: '팀원별 종합 평가', exact: true })).toBeVisible();
   await expect(page.getByRole('list', { name: '팀별 리포트 준비 상태' })).toHaveCount(0);
   await page.getByRole('button', { name: '목록으로 돌아가기', exact: true }).click();
   await page.getByRole('button', { name: '전체 리포트 공개', exact: true }).click();
@@ -183,14 +184,14 @@ test('관리자가 리포트를 공개하면 팀원은 본인 완료 작업과 �
   await expect(
     page.getByRole('heading', { name: '나의 계산 근거' }),
   ).toHaveCount(0);
-  await expect(page.getByRole('rowheader').filter({ hasText: '이지원' })).toContainText('나');
-  await page.getByRole('button', { name: '내 완료 작업 보기', exact: true }).click();
-  const evidence = page.getByRole('region', { name: '리포트에 반영된 내 완료 작업', exact: true });
+  await expect(page.getByRole('region', { name: '나의 종합 평가 요약', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: '팀원별 종합 평가', exact: true })).toHaveCount(0);
+  const evidence = page.getByRole('region', { name: '나의 수행 근거', exact: true });
   await expect(evidence).toBeVisible();
   await evidence.getByRole('button', { name: /조사 결과 요약/ }).click();
   await expect(evidence).toContainText('본인 수행 설명');
   await expect(evidence).toContainText('현재 연결 자료');
-  await expect(evidence).toContainText('확정된 계산값');
+  await expect(evidence.locator('.evidence-time-note')).toHaveCount(0);
   await expect(evidence).toContainText('현재 연결된 자료가 없습니다.');
   await evidence.getByRole('link', { name: '현재 내 완료 작업 목록' }).click();
   await expect(page).toHaveURL(/\/preview\/spaces\/1\/teams\/1\/tasks\?view=list&status=DONE&mine=1$/);
@@ -254,7 +255,7 @@ test('미리보기 업로드는 새 파일 형식을 지원하고 URL 새 등록
   await expect(page.getByText('발표.pptx', { exact: true })).toBeVisible();
   expect(calls).toEqual([]);
 });
-test('평가 시작 전 회차 생성·일정 수정·개방 화면을 사용할 수 있다', async ({
+test('평가 일정 저장 시 자동 시작과 팀 구성 고정을 안내하고 자동 시작한다', async ({
   page,
 }) => {
   await preview(page, {
@@ -269,12 +270,12 @@ test('평가 시작 전 회차 생성·일정 수정·개방 화면을 사용할
     '평가 마감 시각',
     toDateInput(koreanDateTime(Date.now() + 7 * 86400000)),
   );
+  await expect(dialog).toContainText('시작 시각에 자동으로 평가가 열립니다.');
+  await expect(dialog).toContainText('팀 구성과 평가 참여자가 고정됩니다.');
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
-  await expect(
-    page.getByRole('button', { name: '중간 평가 일정 수정' }),
-  ).toBeVisible();
-  await page.getByRole('button', { name: '중간 평가 시작' }).click();
-  await expect(page.getByText('작성 중', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '중간 평가 시작', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('region', { name: '중간 평가 운영', exact: true }).getByText('평가 진행 중', { exact: true })).toBeVisible();
 });
 
 test('로그인 미리보기는 Google 요청 없이 화면 미리보기로 이동한다', async ({
@@ -440,11 +441,11 @@ test('평가 완료 상황에서 관리자가 전체 리포트를 생성하고 �
   const generate = page.getByRole('button', { name: '전체 리포트 생성', exact: true });
   await expect(generate).toBeEnabled();
   await page.locator('.report-weights-disclosure > summary').click();
-  const taskWeight = page.getByRole('spinbutton', { name: '완료 작업 반영 비율', exact: true });
+  const taskWeight = page.getByRole('spinbutton', { name: '작업 점수 평가 비중', exact: true });
   await expect(taskWeight).toBeEnabled();
   await taskWeight.fill('50');
-  await page.getByRole('spinbutton', { name: '중간 동료 평가 반영 비율', exact: true }).fill('20');
-  await page.getByRole('spinbutton', { name: '최종 동료 평가 반영 비율', exact: true }).fill('30');
+  await page.getByRole('spinbutton', { name: '중간 동료 평가 평가 비중', exact: true }).fill('20');
+  await page.getByRole('spinbutton', { name: '최종 동료 평가 평가 비중', exact: true }).fill('30');
   await generate.click();
   await expect(page.getByRole('heading', { name: '전체 리포트 생성 완료', exact: true })).toBeVisible();
   await expect(page.getByRole('region', { name: '팀별 리포트 목록' })).toContainText('미공개');

@@ -70,7 +70,7 @@ export default function PreviewGuideCallout({ guide, step, stepCount, action, re
           inlineHost = document.createElement('div');
           inlineHost.dataset.previewGuideCalloutHost = '';
           inlineHost.className = 'preview-guide-callout-host';
-          const content = reportDrawer ? target.closest('.report-drawer-footer') || target.closest('.report-member-evidence') || dialog.querySelector('.report-team-result')
+          const content = reportDrawer ? (step.calloutContainer && dialog.querySelector(step.calloutContainer)) || target.closest('.report-drawer-footer') || target.closest('.report-member-evidence') || dialog.querySelector('.report-team-result')
             : dialog ? step.dialogCalloutContainer && dialog.querySelector(step.dialogCalloutContainer)
               : step.calloutContainer && document.querySelector(step.calloutContainer);
           const actions = dialog && target.closest('.modal-actions, .heading-actions');
@@ -200,7 +200,7 @@ export default function PreviewGuideCallout({ guide, step, stepCount, action, re
           </div>
     </aside>
     {docked && <button type="button" className="preview-guide-callout-return secondary-button" onClick={reveal}>{guide.step + 1} / {stepCount} · {step.returnToGuide ? '팀 홈에서 진행률 확인' : '안내 위치로 이동'}</button>}
-    {mount.dialogLocateHost && offscreen && createPortal(
+    {mount.dialogLocateHost && (offscreen || (!mount.detailDialog && step.section)) && createPortal(
       <button type="button" className="ghost-button preview-guide-locate" onClick={reveal}>가이드 안내 위치</button>,
       mount.dialogLocateHost)}
     </>, mount.container,

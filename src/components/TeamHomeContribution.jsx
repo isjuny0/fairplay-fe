@@ -2,16 +2,14 @@ import { ArrowUpRight } from 'lucide-react';
 import Icon from './Icon.jsx';
 import DashboardMetricHelp from './DashboardMetricHelp.jsx';
 import { ResourceState } from './ui.jsx';
-import { formatPercent } from '../lib/evaluation.js';
+import { formatReportNumber } from '../lib/reportScore.js';
 import { reportWeightFields, validReportWeights } from '../lib/reportWeights.js';
 
 export default function TeamHomeContribution({ resource, userId, onNavigate }) {
   const report = resource.data?.status === 'PUBLISHED' ? resource.data : null;
   const weights = validReportWeights(report?.weights) ? report.weights : null;
   const value =
-    report?.myDetails?.totalPercent ??
-    report?.members?.find((member) => member.userId === userId)
-      ?.contributionPercent;
+    report?.members?.find((member) => member.userId === userId)?.totalScore;
   return (
     <section
       className="dashboard-card dashboard-contribution"
@@ -31,19 +29,19 @@ export default function TeamHomeContribution({ resource, userId, onNavigate }) {
           <span className="dashboard-tag">
             {report ? '공개된 최종 결과' : '공개 대기'}
           </span>
-          <strong>{value == null ? '—' : formatPercent(value)}</strong>
+          <strong>{value == null ? '—' : `${formatReportNumber(value)}점`}</strong>
           <p>
             {report
               ? value == null
-                ? '리포트에 내 기여율이 없습니다.'
-                : '팀에서 함께 만든 결과 속 나의 몫'
+                ? '리포트에 내 종합점수가 없습니다.'
+                : '개인별 100점 만점 종합 평가'
               : '리포트가 공개되면 확인할 수 있어요.'}
           </p>
         </div>
         {weights && <div className="dashboard-contribution-composition" aria-hidden="true">
           {reportWeightFields.map(({ key }) => <span key={key} style={{ flex: weights[key], display: weights[key] === 0 ? 'none' : undefined }} />)}
         </div>}
-        <p className="dashboard-caption">{weights ? `완료 작업 ${weights.taskPercent}% · 동료 평가 ${weights.midPercent + weights.finalPercent}%` : '반영 비율은 공개된 리포트에서 확인할 수 있습니다.'}</p>
+        <p className="dashboard-caption">{weights ? `작업 점수 ${weights.taskPercent}% · 중간 ${weights.midPercent}% · 최종 ${weights.finalPercent}%` : '반영 비율은 공개된 리포트에서 확인할 수 있습니다.'}</p>
         <button
           type="button"
           className="dashboard-shortcut-button"

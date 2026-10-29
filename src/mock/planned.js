@@ -17,7 +17,7 @@ const now = () => koreanDateTime();
 const clone = (value) => structuredClone(value);
 const memoryStates = new Map();
 export function mockKey(context) {
-  const baseKey = `fairplay:mock:v7:${context.preview ? 'preview' : context.user.id}:${context.space.id}`;
+  const baseKey = `fairplay:mock:v9:${context.preview ? 'preview' : context.user.id}:${context.space.id}`;
   if (!context.preview) return baseKey;
   try {
     const guideScope = globalThis.sessionStorage?.getItem('fairplay:preview-guide-scope');
@@ -86,7 +86,16 @@ export function getMockState(context) {
       round.version++;
     }
   }
-  // Earlier preview reports were calculated using the fixed 70/10/20 ratio.
+  for (const round of state.rounds) {
+    if (round.status !== 'DRAFT' || apiTimeToEpoch(round.opensAt) > Date.now() || roundStartBlockReasons(state, round, context).length) continue;
+    round.status = 'OPEN';
+    round.openedAt = now();
+    round.version++;
+    if (round.type === 'MID') state.spaceOverrides = { ...state.spaceOverrides,
+      membershipLockedAt: state.spaceOverrides?.membershipLockedAt || context.space.membershipLockedAt || now(),
+      teamBuildingStatus: 'LOCKED', version: (state.spaceOverrides?.version ?? context.space.version) + 1 };
+  }
+  // Ensure a minimal preview state has report settings.
   state.reports ??= [];
   for (const report of state.reports) report.weights ??= { ...defaultReportWeights };
   state.reportWeights ??= state.reports[0]?.weights ?? null;
@@ -152,6 +161,17 @@ export function resetMockState(context, scenario = 'active') {
   saveMockState(context, state);
 }
 const responseKey = (roundId, userId) => `${roundId}:${userId}`;
+function roundStartBlockReasons(state, round, context) {
+  if (round.status !== 'DRAFT' || Date.now() < apiTimeToEpoch(round.opensAt)) return [];
+  if (Date.now() >= apiTimeToEpoch(round.closesAt)) return ['SCHEDULE_EXPIRED'];
+  if (round.type === 'FINAL') return state.rounds.some((item) => item.type === 'MID' && item.status === 'CLOSED') ? [] : ['MID_ROUND_NOT_CLOSED'];
+  const space = { ...context.space, ...state.spaceOverrides };
+  if (!space.teamBuildingClosesAt) return ['TEAM_BUILDING_NOT_CONFIGURED'];
+  if (Date.now() < apiTimeToEpoch(space.teamBuildingClosesAt)) return ['TEAM_BUILDING_OPEN'];
+  const teams = Object.values(state.teams);
+  if (!teams.length) return ['ROUND_PARTICIPANTS_EMPTY'];
+  return teams.some((entry) => entry.members.length < 2) ? ['TEAM_TOO_SMALL'] : [];
+}
 function roundResponse(state, round, context) {
   const participantCount = Object.values(state.teams).reduce(
     (total, entry) => total + entry.members.length,
@@ -161,6 +181,8 @@ function roundResponse(state, round, context) {
   const { seeded, ...publicRound } = round;
   return {
     ...publicRound,
+    openedAt: round.openedAt ?? null,
+    startBlockReasons: roundStartBlockReasons(state, round, context),
     participantCount: round.status === 'DRAFT' ? 0 : participantCount,
     mySubmissionStatus:
       context.manager || round.status === 'DRAFT'
@@ -234,90 +256,50 @@ function makeReport(state, entry, status = 'UNPUBLISHED', weights = state.report
       0,
     ),
   );
-  const peerRaw = (type) => {
-    const round = state.rounds.find((round) => round.type === type);
-    return entry.members.map((member) =>
-      entry.members
-        .filter((evaluator) => evaluator.userId !== member.userId)
-        .reduce(
-          (sum, evaluator) =>
-            sum +
-            Object.values(
-              state.responses[responseKey(round.id, evaluator.userId)]?.[
-                member.userId
-              ]?.scores || {},
-            ).reduce((a, b) => a + b, 0),
-          0,
-        ),
-    );
+  const totalWork = rawWork.reduce((sum, value) => sum + value, 0);
+  if (!totalWork && weights.taskPercent > 0) fail('REPORT_UNCALCULABLE', '작업 점수를 계산할 완료 작업량이 없습니다.');
+  const roundNumber = (value) => Math.round((value + Number.EPSILON) * 10000) / 10000;
+  const received = (type, member) => {
+    const round = state.rounds.find((item) => item.type === type);
+    const responses = entry.members.filter((other) => other.userId !== member.userId).map((other) =>
+      state.responses[responseKey(round.id, other.userId)]?.[member.userId]?.scores);
+    if (!responses.length || responses.some((scores) => !scores || Object.keys(peerCriteria).some((key) => !Number.isFinite(scores[key]))))
+      fail('REPORT_INPUT_INCOMPLETE', '동료 평가 점수가 누락되었습니다.');
+    const criteria = Object.fromEntries(Object.keys(peerCriteria).map((key) => [key, roundNumber(responses.reduce((sum, scores) => sum + scores[key], 0) / responses.length)]));
+    const average = responses.reduce((sum, scores) => sum + Object.keys(peerCriteria).reduce((part, key) => part + scores[key], 0), 0) / (responses.length * 4);
+    return { criteria, average, score: average / 5 * 100 };
   };
-  const normalize = (values, weight) => {
-    const total = values.reduce((a, b) => a + b, 0);
-    if (!total && weight === 0) return values.map(() => 0);
-    if (!total)
-      fail(
-        'REPORT_UNCALCULABLE',
-        '구성 요소의 합계가 0이라 비율을 계산할 수 없습니다.',
-      );
-    return values.map((value) => (value / total) * 100);
-  };
-  const work = normalize(rawWork, weights.taskPercent),
-    mid = normalize(peerRaw('MID'), weights.midPercent),
-    final = normalize(peerRaw('FINAL'), weights.finalPercent);
-  const taskPart = weights.taskPercent / 100, midPart = weights.midPercent / 100, finalPart = weights.finalPercent / 100;
-  const rounded = entry.members.map(
-    (_, i) =>
-      Math.round((work[i] * taskPart + mid[i] * midPart + final[i] * finalPart) * 10) / 10,
-  );
-  const adjustment =
-    Math.round((100 - rounded.reduce((a, b) => a + b, 0)) * 10) / 10;
-  const firstById = entry.members.map((member) => member.userId).sort()[0];
-  const members = entry.members.map((member, index) => ({
-    userId: member.userId,
-    name: member.name,
-    contributionPercent:
-      Math.round(
-        (rounded[index] + (member.userId === firstById ? adjustment : 0)) * 10,
-      ) / 10,
+  const scores = {};
+  const details = Object.fromEntries(entry.members.map((member, index) => {
+    const taskRatioPercent = totalWork ? rawWork[index] / totalWork * 100 : null;
+    const taskScore = taskRatioPercent === null ? null : Math.min(100, taskRatioPercent * entry.members.length);
+    const mid = received('MID', member), final = received('FINAL', member);
+    const taskWeightedScore = (taskScore ?? 0) * weights.taskPercent / 100;
+    const midWeightedScore = mid.score * weights.midPercent / 100, finalWeightedScore = final.score * weights.finalPercent / 100;
+    scores[member.userId] = Math.round((taskWeightedScore + midWeightedScore + finalWeightedScore) * 10) / 10;
+    return [member.userId, {
+      taskRatioPercent: taskRatioPercent === null ? null : roundNumber(taskRatioPercent), taskScore: taskScore === null ? null : roundNumber(taskScore),
+      midEvaluationAverage: roundNumber(mid.average), midEvaluationScore: roundNumber(mid.score),
+      finalEvaluationAverage: roundNumber(final.average), finalEvaluationScore: roundNumber(final.score),
+      taskWeightedScore: roundNumber(taskWeightedScore), midWeightedScore: roundNumber(midWeightedScore), finalWeightedScore: roundNumber(finalWeightedScore),
+      midCriteriaAverages: mid.criteria, finalCriteriaAverages: final.criteria,
+    }];
   }));
   return {
-    id: entry.team.id * 10000 + 1,
-    teamId: entry.team.id,
-    status,
+    id: entry.team.id * 10000 + 1, teamId: entry.team.id, status,
+    evaluatedMemberCount: entry.members.length,
     cutoffAt: state.rounds.find((round) => round.type === 'FINAL').closesAt,
-    totalPercent: 100,
     weights: { ...weights },
-    evidenceTasks: done.map((task) => ({ taskId: task.id, completedAt: task.completedAt,
-      weightAtCutoff: task.weight, assignments: clone(task.assignees) })),
-    createdAt: now(),
-    publishedAt: status === 'PUBLISHED' ? now() : null,
-    members,
-    details: Object.fromEntries(
-      members.map((member, i) => [
-        member.userId,
-        {
-          taskRatioPercent: work[i],
-          midRatioPercent: mid[i],
-          finalRatioPercent: final[i],
-          taskContributionPercent: work[i] * taskPart,
-          midContributionPercent: mid[i] * midPart,
-          finalContributionPercent: final[i] * finalPart,
-          roundingAdjustmentPercent:
-            member.contributionPercent -
-            (work[i] * taskPart + mid[i] * midPart + final[i] * finalPart),
-          totalPercent: member.contributionPercent,
-        },
-      ]),
-    ),
+    evidenceTasks: done.map((task) => ({ taskId: task.id, completedAt: task.completedAt, weightAtCutoff: task.weight, assignments: clone(task.assignees) })),
+    createdAt: now(), publishedAt: status === 'PUBLISHED' ? now() : null,
+    members: entry.members.map((member) => ({ userId: member.userId, name: member.name, totalScore: scores[member.userId] })),
+    details,
   };
 }
 const publicReport = ({ details, evidenceTasks, ...report }, context) => ({
   ...report,
-  members: report.members.map((member) => ({
-    ...member,
-    ...(context.manager ? { details: details[member.userId] } : {}),
-  })),
-  myDetails: details[context.user.id] || null,
+  members: report.members.filter((member) => context.manager || member.userId === context.user.id)
+    .map((member) => ({ ...member, details: details[member.userId] })),
 });
 function feedback(state, teamId, context) {
   const mid = state.rounds.find((round) => round.type === 'MID');
@@ -708,45 +690,6 @@ export async function plannedRequest(
           opensAt: schedule.opensAt,
           closesAt: schedule.closesAt,
         });
-      } else if (segments[3] === 'open') {
-        if (round.status !== 'DRAFT')
-          fail('INVALID_ROUND_STATE', '일정 대기 회차만 시작할 수 있습니다.');
-        if (
-          new Date(apiTimeToEpoch(round.opensAt)) > new Date() ||
-          new Date(apiTimeToEpoch(round.closesAt)) <= new Date()
-        )
-          fail(
-            'ROUND_OUTSIDE_WINDOW',
-            '시작 시각부터 마감 시각 전까지만 시작할 수 있습니다.',
-          );
-        if (new Date(apiTimeToEpoch(context.space.teamBuildingClosesAt)) > new Date())
-          fail(
-            'TEAM_BUILDING_OPEN',
-            '팀 빌딩 기간 종료 후 시작할 수 있습니다.',
-          );
-        if (!Object.keys(state.teams).length)
-          fail('ROUND_PARTICIPANTS_EMPTY', '평가할 팀이 없습니다.');
-        if (Object.values(state.teams).some((team) => team.members.length < 2))
-          fail(
-            'TEAM_TOO_SMALL',
-            '모든 팀에 승인된 팀원 2명 이상이 필요합니다.',
-          );
-        if (
-          round.type === 'FINAL' &&
-          state.rounds.find((entry) => entry.type === 'MID')?.status !==
-            'CLOSED'
-        )
-          fail(
-            'MID_ROUND_NOT_CLOSED',
-            '중간 평가 마감 후 최종 평가를 시작할 수 있습니다.',
-          );
-        round.status = 'OPEN';
-        if (round.type === 'MID') state.spaceOverrides = {
-          ...state.spaceOverrides,
-          membershipLockedAt: context.space.membershipLockedAt || now(),
-          teamBuildingStatus: 'LOCKED',
-          version: context.space.version + 1,
-        };
       } else {
         fail('NOT_FOUND', '지원하지 않는 요청입니다.', 404);
       }
@@ -773,7 +716,7 @@ export async function plannedRequest(
       if (!report) fail('REPORT_NOT_FOUND', '기여도 리포트를 찾을 수 없습니다.', 404);
       const member = report.members.find((item) => item.userId === targetId);
       if (!member) fail('REPORT_MEMBER_NOT_FOUND', '리포트에 포함된 팀원을 찾을 수 없습니다.', 404);
-      if (!report.evidenceTasks) fail('REPORT_EVIDENCE_UNAVAILABLE', '이전 미리보기 리포트입니다. 미리보기 설정에서 예시 데이터를 초기화해 주세요.', 409);
+      if (!report.evidenceTasks) fail('REPORT_EVIDENCE_UNAVAILABLE', '작업 근거 정보가 누락되었습니다. 미리보기 설정에서 예시 데이터를 초기화해 주세요.', 409);
       const included = report.evidenceTasks.filter((task) => task.assignments.some((assignment) => assignment.userId === targetId));
       const detail = report.details[targetId];
       const evidenceTasks = included.map((task) => {
@@ -788,11 +731,11 @@ export async function plannedRequest(
             : { availability: 'MISSING', title: null, contributionDescription: null, version: null, updatedAt: null, materials: [] } };
       });
       return clone({ reportId: report.id, teamId: id, userId: targetId, memberName: member.name, status: report.status,
-        cutoffAt: report.cutoffAt, createdAt: report.createdAt, publishedAt: report.publishedAt, weights: report.weights, details: detail,
+        cutoffAt: report.cutoffAt, createdAt: report.createdAt, publishedAt: report.publishedAt, weights: report.weights, evaluatedMemberCount: report.evaluatedMemberCount, totalScore: member.totalScore, details: detail,
         workSummary: { memberUnits: evidenceTasks.reduce((sum, task) => sum + task.assignedUnits, 0),
           teamUnits: report.evidenceTasks.reduce((sum, task) => sum + task.weightAtCutoff, 0),
-          taskRatioPercent: detail.taskRatioPercent, taskWeightPercent: report.weights.taskPercent,
-          taskContributionPercent: detail.taskContributionPercent }, tasks: evidenceTasks });
+          taskRatioPercent: detail.taskRatioPercent, taskScore: detail.taskScore, taskWeightPercent: report.weights.taskPercent,
+          taskWeightedScore: detail.taskWeightedScore }, tasks: evidenceTasks });
     }
     if (segments[3] === 'my-work-summary') {
       if (

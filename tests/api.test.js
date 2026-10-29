@@ -13,7 +13,6 @@ import { invalidateSpaceList, listSpaces } from '../src/api/spaces.js';
 import { invalidateSharedReads } from '../src/api/sharedReads.js';
 import {
   listEvaluationRounds,
-  openEvaluationRound,
   getMyPeerResponses,
   savePeerResponse,
   submitPeerEvaluation,
@@ -499,15 +498,13 @@ test('새 조회 API는 실제 경로에 쿠키를 보내며 목업 데이터를
     ),
   );
 });
-test('검토 요청·회차 개방·최종 제출은 본문 없이 CSRF를 전송한다', async () => {
+test('검토 요청·최종 제출은 본문 없이 CSRF를 전송한다', async () => {
   await requestAiReview(10);
-  await openEvaluationRound(12);
   await submitPeerEvaluation(12);
   assert.deepEqual(
     calls.slice(1).map((call) => call.url),
     [
       '/api/tasks/10/ai-review',
-      '/api/evaluation-rounds/12/open',
       '/api/evaluation-rounds/12/submit',
     ],
   );
@@ -559,6 +556,7 @@ test('AI 검토 비활성화는 실제 오류로 반환하고 자동으로 재�
 });
 
 test('추가된 리포트·관리자 조회는 현재 경로에 쿠키를 전송한다', async () => {
+  globalThis.fetch = async (url, options) => { calls.push({ url, ...options }); return jsonResponse(null); };
   await getTeamReport(7);
   await getMemberContributions(7, '00000000-0000-4000-8000-000000000001');
   await getManagerPeerResponses(12, 7);

@@ -95,7 +95,7 @@ for (const width of [1440, 390]) {
     await expect(page).toHaveURL(/\/spaces\/3$/);
     const saved = await page.evaluate(
       () =>
-        JSON.parse(localStorage.getItem('fairplay:mock:v7:preview:1'))
+        JSON.parse(localStorage.getItem('fairplay:mock:v9:preview:1'))
           .extraSpace,
     );
     expect(saved.startAt).toBe('2028-02-29T10:45:00');

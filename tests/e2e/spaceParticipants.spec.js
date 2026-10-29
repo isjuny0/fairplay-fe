@@ -340,9 +340,9 @@ test("미리보기는 서버 호출 없이 참여자를 삭제하고 새로고�
   });
   await page.addInitScript(() => {
     localStorage.setItem("fairplay:preview-role", "manager");
-    if (!localStorage.getItem("fairplay:mock:v7:preview:1"))
+    if (!localStorage.getItem("fairplay:mock:v9:preview:1"))
       localStorage.setItem(
-        "fairplay:mock:v7:preview:1",
+        "fairplay:mock:v9:preview:1",
         JSON.stringify({
           teams: {},
           rounds: [],

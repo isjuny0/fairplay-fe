@@ -932,7 +932,7 @@ test('팀 홈 수행 지연에서 완료 후 수정 중인 작업도 포함한�
   await expect(page.getByRole('button', { name: /내 마감 지연.*1건/ })).toBeVisible();
   const dueAt = koreanDateTime(await page.evaluate(() => Date.now()) - 60000);
   await page.evaluate((dueAt) => {
-    const key = 'fairplay:mock:v7:preview:1';
+    const key = 'fairplay:mock:v9:preview:1';
     const state = JSON.parse(localStorage.getItem(key));
     state.teams[1].tasks.find((task) => task.id === 103).dueAt = dueAt;
     localStorage.setItem(key, JSON.stringify(state));
@@ -974,7 +974,7 @@ test('평가 마감 시각이 지나면 열린 작성 화면도 조회 전용으
   await expect(page.getByLabel('이지원 작업 수행 5점', { exact: true })).toBeEnabled();
   const closesAt = koreanDateTime(await page.evaluate(() => Date.now()) + 30000);
   await page.evaluate((closesAt) => {
-    const key = 'fairplay:mock:v7:preview:1';
+    const key = 'fairplay:mock:v9:preview:1';
     const state = JSON.parse(localStorage.getItem(key));
     state.rounds.find((round) => round.status === 'OPEN').closesAt = closesAt;
     localStorage.setItem(key, JSON.stringify(state));

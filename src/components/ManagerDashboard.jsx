@@ -1,7 +1,7 @@
 import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { useEffect, useId, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowUpRight, CircleHelp } from 'lucide-react';
+import { ArrowUpRight, ChevronRight, CircleHelp } from 'lucide-react';
 import { useLocation, useSearchParams } from 'react-router';
 import '../manager-dashboard.css';
 import RefreshButton from './RefreshButton.jsx';
@@ -20,7 +20,6 @@ const teamFilters = {
 };
 const quickFilterLabels = { all: '전체 팀', overdue: '마감 지연', stale: '장기 정체' };
 const teamSorts = { name: '팀 이름순', overdue: '마감 지연 많은 순', progress: '진행률 낮은 순' };
-const reportStatusLabel = (status) => status === 'PUBLISHED' ? '공개 완료' : status === 'UNPUBLISHED' ? '검토 중' : '미생성';
 const metricDescriptions = {
   progress: '완료된 작업의 예상 작업량을 전체 예상 작업량으로 나눈 비율입니다. 실제 수행 시간이나 최종 기여도 점수가 아닙니다.',
   overdue: '마감 시각이 지난 할 일·진행 중·수정 중 작업입니다. 같은 작업이 지연과 정체에 함께 포함될 수 있습니다.',
@@ -43,6 +42,13 @@ function TeamTaskCounts({ team, compact = false, includeDeliverables = false }) 
     {taskCountFields.map(([field, label]) => <div key={field}><dt>{label}</dt><dd>{team[field]}건</dd></div>)}
     {includeDeliverables && <div><dt>산출물</dt><dd>{team.deliverableCount}개</dd></div>}
   </dl>;
+}
+
+function TeamIdentityMeta({ team }) {
+  return <div className="dashboard-team-meta">
+    <span>리더 {team.leaderName}</span>
+    <span>팀원 {team.approvedMemberCount}명</span>
+  </div>;
 }
 
 function DashboardHelp({ label, description }) {
@@ -118,6 +124,11 @@ export default function ManagerDashboard({ context }) {
     else { next.delete('teamId'); next.delete('tab'); }
     const listScrollY = teamId ? location.state?.dashboardListScrollY || 0 : window.scrollY;
     setParams(next, { state: { dashboardListScrollY: listScrollY, restoreScrollY: nextTeamId ? 0 : listScrollY } });
+  };
+  const openTeamFromRow = (event, id) => {
+    if (event.defaultPrevented || event.target.closest('button, a, input, select, textarea, summary, [role="button"], [role="tooltip"]')
+      || window.getSelection()?.isCollapsed === false) return;
+    selectTeam(id);
   };
   const openMember = (id, userId) => navigate(`${spacePath(context.space.id)}/manager/teams/${id}/members/${userId}`, {
     state: { dashboardSearch: params.toString(), dashboardListScrollY: location.state?.dashboardListScrollY || 0, dashboardScrollY: window.scrollY },
@@ -349,12 +360,11 @@ export default function ManagerDashboard({ context }) {
                             장기 정체: 마지막 활동 후 48시간 이상 지난 진행 중·수정 중 작업입니다.
                           </>} /></th>
                           <th>산출물</th>
-                          <th>리포트</th>
                         </tr>
                       </thead>
                       <tbody>
                         {visibleTeams.map((team) => (
-                          <tr key={team.teamId} data-guide-manager-team-row={team.teamId}>
+                          <tr key={team.teamId} className="dashboard-team-row" data-guide-manager-team-row={team.teamId} onClick={(event) => openTeamFromRow(event, team.teamId)}>
                             <th scope="row">
                               <button
                                 className="table-name-button"
@@ -362,9 +372,9 @@ export default function ManagerDashboard({ context }) {
                                 aria-label={`${team.teamName} 현황 보기`}
                                 onClick={() => selectTeam(team.teamId)}
                               >
-                                <span className="dashboard-team-name" title={team.teamName}>{team.teamName}</span>
+                                <span className="dashboard-team-name" title={team.teamName}>{team.teamName}</span><ChevronRight className="dashboard-team-open-icon" size={14} aria-hidden="true" />
                               </button>
-                              <small>{team.leaderName} · 리더 · {team.approvedMemberCount}명</small>
+                              <TeamIdentityMeta team={team} />
                             </th>
                             <td>
                               <TeamProgress team={team} />
@@ -377,14 +387,6 @@ export default function ManagerDashboard({ context }) {
                               {team.staleTaskCount > 0 && <div className="signal-stale"><dt>장기 정체</dt><dd>{team.staleTaskCount}건</dd></div>}
                             </dl> : <span className="dashboard-no-signal" aria-label="지연·정체 없음">—</span>}</td>
                             <td className="dashboard-numeric-cell">{team.deliverableCount}개</td>
-                            <td>
-                              <button className={`dashboard-report-link dashboard-report-status-link report-${team.reportStatus?.toLowerCase() || 'none'}`}
-                                aria-label={team.reportId == null ? '리포트 생성 화면' : '리포트 검토 화면'}
-                                title={team.reportId == null ? '리포트 생성 화면' : '리포트 검토 화면'}
-                                onClick={() => navigate(`${spacePath(context.space.id)}/reports?teamId=${team.teamId}`)}>
-                                {reportStatusLabel(team.reportStatus)}
-                              </button>
-                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -409,7 +411,7 @@ export default function ManagerDashboard({ context }) {
                 )}
                 <div className="mobile-data-cards">
                   {visibleTeams.map((team) => (
-                    <article key={team.teamId} data-guide-manager-team-row={team.teamId}>
+                    <article key={team.teamId} className="dashboard-team-card" data-guide-manager-team-row={team.teamId} onClick={(event) => openTeamFromRow(event, team.teamId)}>
                       <h3>
                         <button
                           className="table-name-button"
@@ -420,10 +422,7 @@ export default function ManagerDashboard({ context }) {
                           {team.teamName}
                         </button>
                       </h3>
-                      <p className="field-help">
-                        {team.leaderName} · 리더 · 팀원{' '}
-                        {team.approvedMemberCount}명
-                      </p>
+                      <TeamIdentityMeta team={team} />
                       <dl className="card-facts">
                         <div>
                           <dt>팀 진행률 <DashboardHelp label="팀 진행률" description={metricDescriptions.progress} /></dt>
@@ -441,11 +440,6 @@ export default function ManagerDashboard({ context }) {
                         </div>
                       </dl>
                       <TeamTaskCounts team={team} compact />
-                      <button type="button" className={`dashboard-report-link dashboard-report-status-link report-${team.reportStatus?.toLowerCase() || 'none'}`}
-                        aria-label={team.reportId == null ? '리포트 생성 화면' : '리포트 검토 화면'}
-                        onClick={() => navigate(`${spacePath(context.space.id)}/reports?teamId=${team.teamId}`)}>
-                        리포트 · {reportStatusLabel(team.reportStatus)}
-                      </button>
                       <details>
                         <summary>산출물·팀 참여 상태</summary>
                         <p>

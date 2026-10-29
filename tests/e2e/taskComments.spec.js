@@ -309,9 +309,9 @@ for (const width of [390, 1440])
       '2020-01-01T09:00:00';
     await page.addInitScript((state) => {
       localStorage.setItem('fairplay:preview-role', 'teammate');
-      if (!localStorage.getItem('fairplay:mock:v7:preview:1'))
+      if (!localStorage.getItem('fairplay:mock:v9:preview:1'))
         localStorage.setItem(
-          'fairplay:mock:v7:preview:1',
+          'fairplay:mock:v9:preview:1',
           JSON.stringify(state),
         );
     }, state);
