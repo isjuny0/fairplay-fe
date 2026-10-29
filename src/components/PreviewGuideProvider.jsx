@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { BookOpen, X } from 'lucide-react';
 import { PreviewGuideContext } from '../lib/previewGuideContext.js';
-import { completedGuideStep, peerResponseGuideStep, guideTaskId, getGuideSteps, materialsGuideReady, materialsSourceGuideStep, contributionGuideReady, managerGuideReady, managerGuidePath, managerGuideMemberId, managerGuideMemberPath, managerGuideTaskId, managerGuideDeliverableId, evaluationGuideReady, evaluationGuideSchedule, reportManagementGuideReady, guideScenarios, nextGuideScenario, guideExamples, prepareGuide, readGuideSession, storeGuideSession, guideScopeKey, guideStorageKey } from '../mock/guide.js';
+import { completedGuideStep, peerResponseGuideStep, guideTaskId, getGuideSteps, materialsGuideReady, materialsSourceGuideStep, contributionGuideReady, contributionGuideStep, contributionTaskGuideReady, managerGuideReady, managerGuidePath, managerGuideMemberId, managerGuideMemberPath, managerGuideTaskId, managerGuideDeliverableId, evaluationGuideReady, evaluationGuideSchedule, reportManagementGuideReady, guideScenarios, nextGuideScenario, guideExamples, prepareGuide, readGuideSession, storeGuideSession, guideScopeKey, guideStorageKey } from '../mock/guide.js';
 import { getMockState } from '../mock/planned.js';
 import { previewContext, previewRole, setPreviewRole } from '../mock/preview.js';
 import { workSummary } from '../lib/evaluation.js';
@@ -26,6 +26,9 @@ export default function PreviewGuideProvider({ children }) {
   const [materialsSource, setMaterialsSource] = useState(null);
   const [peerGuideState, setPeerGuideState] = useState(null);
   const [reportState, setReportState] = useState(null);
+  const [reportCriteriaRound, setReportCriteriaRound] = useState(null);
+  const [reportOpenedTaskId, setReportOpenedTaskId] = useState(null);
+  const [reportSource, setReportSource] = useState(null);
   const [managerState, setManagerState] = useState(null);
   const [managerSource, setManagerSource] = useState(null);
   const [evaluationState, setEvaluationState] = useState(null);
@@ -47,16 +50,18 @@ export default function PreviewGuideProvider({ children }) {
   const steps = getGuideSteps(guide?.scenarioId);
   const resolvedStep = useMemo(() => {
     const current = managerGuideStep(steps[guide?.step ?? 0], {
-      member: managerState, source: managerSource, reportResult: managedReportResult,
+      member: managerState, source: managerSource, reportResult: managedReportResult, reportReview: managedReportReview,
+      reportEvidence: { openedTaskId: reportOpenedTaskId, source: reportSource },
       reportReviewReady: reportManagementGuideReady('management-report-review', managedReportBatch, managedReportResult, managedReportReview),
     });
+    if (guide?.scenarioId === 'contribution-report') return contributionGuideStep(current, { criteriaRound: reportCriteriaRound, openedTaskId: reportOpenedTaskId, source: reportSource });
     if (current.id === 'peer-responses') return peerResponseGuideStep(current, peerGuideState);
     if (current.id === 'materials-source') return materialsSourceGuideStep(current, { answer: materialsState?.answer, source: materialsSource });
     return current.id === 'ai-feedback' && aiFeedbackReady
       ? { ...current, description: current.readyDescription, target: current.readyTarget, actionTarget: current.readyActionTarget }
       : current;
   }, [steps, guide?.step, aiFeedbackReady, materialsState?.answer, materialsSource, managerState, managerSource,
-    managedReportBatch, managedReportResult, managedReportReview, peerGuideState]);
+    managedReportBatch, managedReportResult, managedReportReview, peerGuideState, guide?.scenarioId, reportCriteriaRound, reportOpenedTaskId, reportSource]);
   // Step definitions contain only copy and selectors. Keep their identity when
   // background state changes without changing the instructions (e.g. typing
   // report weights), so guidance does not scroll or restart its pulse each time.
@@ -121,7 +126,7 @@ export default function PreviewGuideProvider({ children }) {
         window.dispatchEvent(new CustomEvent('fairplay:guide-focus', { detail: step.dialogSection }));
         if (!sectionRequested) { sectionRequested = true; return false; }
       }
-      if (!dialog && step.section) {
+      if ((!dialog || reportDrawer) && step.section) {
         window.dispatchEvent(new CustomEvent('fairplay:guide-focus', { detail: step.section }));
         if (!sectionRequested) { sectionRequested = true; return false; }
       }
@@ -135,7 +140,7 @@ export default function PreviewGuideProvider({ children }) {
       const callout = root.querySelector('.preview-guide-callout:not(.is-docked)');
       const flowHost = callout?.closest('.preview-guide-callout-host');
       (flowHost || target).scrollIntoView({ block: 'center', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
-      if (target.matches('input, textarea, button, summary')) target.focus({ preventScroll: true });
+      if (target.matches('input, textarea, button, summary, select')) target.focus({ preventScroll: true });
       setRevealRequest(null);
       return true;
     };
@@ -170,13 +175,13 @@ export default function PreviewGuideProvider({ children }) {
   }, [guiding, guide?.scenarioId, guide?.step, step.id, location.pathname, location.search, managerState, update]);
   useEffect(() => {
     if (!guiding || !atLocation || guide.scenarioId !== 'evaluation-management'
-      || !['evaluation-schedule', 'evaluation-open'].includes(step.id) || !evaluationGuideReady(step.id, evaluationState)) return;
+      || step.id !== 'evaluation-schedule' || !evaluationGuideReady(step.id, evaluationState)) return;
     update((current) => current?.step === guide.step ? { ...current, step: current.step + 1 } : current);
   }, [guiding, atLocation, guide?.scenarioId, guide?.step, step.id, evaluationState, update]);
   useEffect(() => {
     if (!guiding || !atLocation || guide.scenarioId !== 'report-management'
       || !['management-report-generate', 'management-report-publish'].includes(step.id)
-      || !reportManagementGuideReady(step.id, managedReportBatch, managedReportResult, managedReportReview)) return;
+      || !reportManagementGuideReady(step.id, managedReportBatch, managedReportResult, managedReportReview, { openedTaskId: reportOpenedTaskId, source: reportSource })) return;
     update((current) => current?.step === guide.step ? { ...current, step: current.step + 1 } : current);
   }, [guiding, atLocation, guide?.scenarioId, guide?.step, step.id, managedReportBatch, managedReportResult, managedReportReview, update]);
   useEffect(() => {
@@ -240,6 +245,9 @@ export default function PreviewGuideProvider({ children }) {
       setMaterialsSource(null);
       setPeerGuideState(null);
       setReportState(null);
+      setReportCriteriaRound(null);
+      setReportOpenedTaskId(null);
+      setReportSource(null);
       setManagerState(null);
       setManagerSource(null);
       setEvaluationState(null);
@@ -316,10 +324,12 @@ export default function PreviewGuideProvider({ children }) {
   };
   const confirmReportStep = (stepId) => {
     if (!guiding || !atLocation || guide.scenarioId !== 'contribution-report' || step.id !== stepId || !reportReady) return;
-    if (stepId === 'report-components') {
+    if (stepId === 'report-peer-results' && reportCriteriaRound !== 'final') return;
+    if (stepId === 'report-tasks') {
+      if (!contributionTaskGuideReady(reportState.report, reportState.userId, reportOpenedTaskId, reportSource)) return;
       update((current) => ({ ...current, status: 'completed' }));
-      notify('나의 최종 기여율과 항목별 반영 크기를 확인했습니다.');
-    } else if (stepId === 'report-overview') {
+      notify('본인 종합점수와 동료 평가, 완료 작업과 산출물을 확인했습니다.');
+    } else if (['report-overview', 'report-components', 'report-peer-results'].includes(stepId)) {
       update((current) => current?.step === guide.step ? { ...current, step: current.step + 1 } : current);
     }
   };
@@ -346,12 +356,12 @@ export default function PreviewGuideProvider({ children }) {
   };
   const confirmReportManagementStep = (stepId) => {
     if (!guiding || !atLocation || guide.scenarioId !== 'report-management' || step.id !== stepId
-      || !reportManagementGuideReady(stepId, managedReportBatch, managedReportResult, managedReportReview)) return false;
-    if (stepId === 'management-report-weights' || stepId === 'management-report-review') {
+      || !reportManagementGuideReady(stepId, managedReportBatch, managedReportResult, managedReportReview, { openedTaskId: reportOpenedTaskId, source: reportSource })) return false;
+    if (['management-report-weights', 'management-report-review', 'management-report-evidence'].includes(stepId)) {
       update((current) => current?.step === guide.step ? { ...current, step: current.step + 1 } : current);
     } else if (stepId === 'management-report-result') {
       update((current) => ({ ...current, status: 'completed' }));
-      notify('전체 팀 리포트를 생성하고 검토한 팀의 결과를 공개했습니다.');
+      notify('전체 팀 리포트를 생성하고 예시 팀을 검토한 뒤 전체 공개했습니다.');
     }
     return true;
   };
@@ -374,7 +384,7 @@ export default function PreviewGuideProvider({ children }) {
       onNext={() => start(nextScenario.id)} onList={open} onExplore={freeExplore}
       onDismiss={() => update((current) => ({ ...current, status: 'paused' }))} />}
   </>;
-  return <PreviewGuideContext.Provider value={{ open, stop, endForSettings, guiding, scope: guide?.scope, scenarioId: guide?.scenarioId, reportManagementReady: reportManagementGuideReady(step.id, managedReportBatch, managedReportResult, managedReportReview), reportManagementTeamId: 1, reportManagementMemberId: managerGuideMemberId, setManagedReportBatch, setManagedReportResult, setManagedReportReview, confirmReportManagementStep, evaluationSchedule, evaluationReady: evaluationGuideReady(step.id, evaluationState), setEvaluationState, confirmEvaluationStep, managerTaskId: managerGuideTaskId, managerDeliverableId: managerGuideDeliverableId, setManagerState, setManagerSource, confirmManagerStep, reportReady, setReportState, setPeerGuideState, confirmReportStep, confirmPeerStep, setMaterialsState, setMaterialsSource, confirmMaterialsStep, step: guide?.step, stepId: step.id, section: step.section, aiFeedbackReady, setAiFeedbackReady, confirmAiFeedback, taskId: guideTaskId, examples: guideExamples, panel }}>
+  return <PreviewGuideContext.Provider value={{ open, stop, endForSettings, guiding, scope: guide?.scope, scenarioId: guide?.scenarioId, reportManagementReady: reportManagementGuideReady(step.id, managedReportBatch, managedReportResult, managedReportReview, { openedTaskId: reportOpenedTaskId, source: reportSource }), reportManagementTeamId: 1, reportManagementMemberId: managerGuideMemberId, setManagedReportBatch, setManagedReportResult, setManagedReportReview, confirmReportManagementStep, evaluationSchedule, evaluationReady: evaluationGuideReady(step.id, evaluationState), setEvaluationState, confirmEvaluationStep, managerTaskId: managerGuideTaskId, managerDeliverableId: managerGuideDeliverableId, setManagerState, setManagerSource, confirmManagerStep, reportReady, setReportCriteriaRound, setReportOpenedTaskId, setReportSource, reportTaskReady: contributionTaskGuideReady(reportState?.report, reportState?.userId, reportOpenedTaskId, reportSource), setReportState, setPeerGuideState, confirmReportStep, confirmPeerStep, setMaterialsState, setMaterialsSource, confirmMaterialsStep, step: guide?.step, stepId: step.id, section: step.section, aiFeedbackReady, setAiFeedbackReady, confirmAiFeedback, taskId: guideTaskId, examples: guideExamples, panel }}>
     {children}
     {guiding && (atLocation || step.id === 'result') && <PreviewGuideCallout key={guide.scope} guide={guide} step={calloutStep} stepCount={steps.length} action={action} reveal={atLocation ? focusTarget : action} progress={progress} />}
     {launcher && <Modal title="사용자 가이드" className="preview-guide-launcher" onClose={() => { setLauncher(false); toggle.current?.focus(); }}>

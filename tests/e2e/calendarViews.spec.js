@@ -17,7 +17,7 @@ for (const width of [1440, 390, 320]) {
     await page.getByRole('button', { name: '편집 완료', exact: true }).click();
     await page.evaluate(async () => {
       const key = Object.keys(localStorage).find((key) =>
-        key.startsWith('fairplay:mock:v7:'),
+        key.startsWith('fairplay:mock:v9:'),
       );
       const state = JSON.parse(localStorage.getItem(key));
       state.events = Array.from({ length: 7 }, (_, index) => ({

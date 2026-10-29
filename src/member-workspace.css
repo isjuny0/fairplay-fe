@@ -367,14 +367,9 @@
   gap: 16px;
 }
 .feedback-layout { display: grid; gap: 20px; min-width: 0; }
-.feedback-score-list { min-width: 0; }
 .feedback-score-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.feedback-score-heading h2 { margin: 0; font-size: var(--text-section); }
-.feedback-score-heading > span { color: var(--text-muted); font-size: 12px; }
-.feedback-score-list dl { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; margin: 20px 0 0; border-top: 1px solid var(--border); }
-.feedback-score-list dl > div { display: grid; grid-template-columns: 200px minmax(0, 1fr); align-items: center; gap: 28px; min-width: 0; min-height: 90px; padding: 20px 0; border-bottom: 1px solid var(--border); }
-.feedback-score-list dt { position: relative; color: var(--text-primary); min-width: 0; }
-.feedback-score-list dd { display: grid; grid-template-columns: minmax(0, 1fr) 86px; align-items: center; gap: 24px; margin: 0; min-width: 0; font-weight: 500; font-variant-numeric: tabular-nums; }
+.feedback-score-heading h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.feedback-score-heading > span { color: var(--text-muted); font-size: 11px; }
 .mid-feedback-page .page-heading p {
   margin: 8px 0 0;
   color: var(--text-muted);
@@ -395,31 +390,13 @@
 .feedback-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; color: var(--text-muted); font-size: 12px; }
 .feedback-meta strong { font-weight: 500; color: var(--text-primary); }
 .feedback-meta time { font-variant-numeric: tabular-nums; }
-.feedback-criterion-name { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 14px; font-weight: 500; }
 .feedback-criterion-help { display: inline-flex; align-items: center; }
 .feedback-criterion-help > button { display: inline-grid; place-items: center; width: 24px; height: 24px; min-height: 24px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--text-muted); cursor: help; }
 .feedback-criterion-help > button:hover { background: var(--surface-secondary); color: var(--text-primary); }
 .feedback-criterion-help > button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .feedback-criterion-tooltip { position: absolute; top: calc(100% + 8px); left: 0; z-index: 10; width: min(300px, calc(100vw - 48px)); padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); box-shadow: 0 4px 12px rgb(31 42 35 / 10%); color: var(--text-muted); font-size: 13px; font-weight: 400; line-height: 1.65; word-break: keep-all; overflow-wrap: anywhere; }
-.feedback-attention-label { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 4px; color: #805b15; background: #faf0d8; font-size: 11px; font-weight: 500; }
-.feedback-score-value { grid-column: 2; white-space: nowrap; text-align: right; font-size: 22px; line-height: 1.3; }
-.feedback-score-value strong { font-weight: 600; }
-.feedback-score-value small { color: var(--text-muted); font-size: 13px; font-weight: 400; }
-.feedback-score-value.is-unavailable { font-size: 12px; color: var(--text-muted); }
-.feedback-score-meter { grid-column: 1; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; width: 100%; }
-.feedback-score-meter > span { height: 9px; overflow: hidden; border-radius: 2px; background: #e9eeec; }
-.feedback-score-meter > span > span { display: block; height: 100%; background: #367e65; }
-.needs-attention .feedback-score-meter > span > span { background: #986c24; }
-@media (max-width: 1100px) {
-  .feedback-score-list dl > div { grid-template-columns: 180px minmax(0, 1fr); gap: 20px; }
-  .feedback-score-list dd { gap: 16px; }
-}
-@media (max-width: 720px) {
-  .feedback-score-list dl { margin-top: 12px; }
-  .feedback-score-list dl > div { grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 20px 0; }
-  .feedback-score-list dd { grid-template-columns: minmax(0, 1fr) 80px; gap: 16px; }
-  .feedback-score-value { font-size: 22px; }
-}
+
+
 .team-report > .report-refresh {
   justify-self: end;
 }
@@ -483,10 +460,7 @@
   }
 }
 
-@media (min-width: 721px) and (max-width: 980px) {
-  .feedback-score-list dl > div { grid-template-columns: 150px minmax(0, 1fr); gap: 16px; }
-  .feedback-score-list dd { grid-template-columns: minmax(0, 1fr) 75px; gap: 12px; }
-}
+
 
 
 @media (max-width: 900px) and (min-width: 721px) {

@@ -1,6 +1,6 @@
 export const defaultReportWeights = Object.freeze({ taskPercent: 70, midPercent: 10, finalPercent: 20 });
 export const reportWeightFields = [
-  { key: 'taskPercent', label: '완료 작업' },
+  { key: 'taskPercent', label: '작업 점수' },
   { key: 'midPercent', label: '중간 동료 평가' },
   { key: 'finalPercent', label: '최종 동료 평가' },
 ];

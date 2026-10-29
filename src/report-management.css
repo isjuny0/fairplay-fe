@@ -124,13 +124,6 @@
 .report-member-composition > span { height: 100%; }
 .report-composition-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 12px 0; color: var(--text-muted); font-size: 11px; }
 .report-composition-legend > span { display: inline-flex; align-items: center; gap: 5px; }
-.report-member-evidence { min-width: 0; margin-top: 12px; padding-top: 24px; border-top: 1px solid var(--border); }
-.report-member-evidence-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; }
-.report-member-evidence-heading > h2 { margin: 0; font-size: 16px; font-weight: 600; }
-.report-member-evidence .evidence-section-heading { display: flex; align-items: baseline; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-top: 28px; }
-.report-member-evidence .evidence-section-heading > span { font-size: 12px; color: var(--text-muted); }
-.report-member-evidence .evidence-time-note { font-size: 11px; margin-top: 16px; }
-.report-member-evidence .report-calculation { margin-top: 20px; }
 @media (max-width: 600px) {
   .report-drawer-content .report-results-table--manager th:first-child { width: 40%; }
   .report-drawer-content .report-results-table--manager th:nth-child(2) { width: 60%; }

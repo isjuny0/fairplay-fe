@@ -67,8 +67,9 @@ test('저장 후 바꾼 평가는 제출을 막고 다시 저장한 최신 점�
     page.getByRole('heading', { name: '최종 제출 완료' }),
   ).toBeVisible();
   await page.reload();
-  await expect(page.getByRole('region', { name: '이지원 저장된 평가', exact: true }).getByRole('row', { name: '작업 수행 매우 우수 5 / 5' })).toBeVisible();
-  await expect(page.getByRole('radio')).toHaveCount(0);
+  await expect(page.getByLabel('이지원 작업 수행 5점', { exact: true })).toBeChecked();
+  await expect(page.getByLabel('이지원 작업 수행 5점', { exact: true })).toBeDisabled();
+  await expect(page.locator('input[type=radio]:enabled')).toHaveCount(0);
 });
 
 test('미저장 평가의 메뉴 이동과 브라우저 뒤로가기를 취소하면 입력을 유지한다', async ({
@@ -94,7 +95,8 @@ test('미저장 평가의 메뉴 이동과 브라우저 뒤로가기를 취소�
     .getByRole('button', { name: '변경 사항 버리고 이동', exact: true })
     .click();
   await expect(page).toHaveURL(/roundId=11$/);
-  await expect(page.getByRole('radio')).toHaveCount(0);
+  await expect(page.getByRole('radio')).toHaveCount(20);
+  await expect(page.locator('input[type=radio]:enabled')).toHaveCount(0);
 });
 
 test('작업 입력창의 Escape와 취소는 미저장 내용을 확인하고 입력을 보존한다', async ({
@@ -932,7 +934,7 @@ test('팀 홈 수행 지연에서 완료 후 수정 중인 작업도 포함한�
   await expect(page.getByRole('button', { name: /내 마감 지연.*1건/ })).toBeVisible();
   const dueAt = koreanDateTime(await page.evaluate(() => Date.now()) - 60000);
   await page.evaluate((dueAt) => {
-    const key = 'fairplay:mock:v7:preview:1';
+    const key = 'fairplay:mock:v9:preview:1';
     const state = JSON.parse(localStorage.getItem(key));
     state.teams[1].tasks.find((task) => task.id === 103).dueAt = dueAt;
     localStorage.setItem(key, JSON.stringify(state));
@@ -974,7 +976,7 @@ test('평가 마감 시각이 지나면 열린 작성 화면도 조회 전용으
   await expect(page.getByLabel('이지원 작업 수행 5점', { exact: true })).toBeEnabled();
   const closesAt = koreanDateTime(await page.evaluate(() => Date.now()) + 30000);
   await page.evaluate((closesAt) => {
-    const key = 'fairplay:mock:v7:preview:1';
+    const key = 'fairplay:mock:v9:preview:1';
     const state = JSON.parse(localStorage.getItem(key));
     state.rounds.find((round) => round.status === 'OPEN').closesAt = closesAt;
     localStorage.setItem(key, JSON.stringify(state));
@@ -1004,8 +1006,9 @@ test('평가 마감 시각이 지나면 열린 작성 화면도 조회 전용으
   await page
     .getByRole('button', { name: '이지원 저장됨', exact: true })
     .click();
-  await expect(score).toHaveCount(0);
-  await expect(page.getByRole('region', { name: '이지원 저장된 평가', exact: true })).toBeVisible();
+  await expect(score).toBeDisabled();
+  await expect(page.getByLabel('이지원 작업 수행 4점', { exact: true })).toBeChecked();
+  await expect(page.getByRole('textbox', { name: '평가 사유', exact: true })).toBeDisabled();
   await expect(
     page.getByText(
       '평가 시간이 마감되어 저장·제출할 수 없습니다. 저장한 응답을 확인하세요.',

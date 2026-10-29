@@ -11,9 +11,8 @@ import {
 } from '../api/reports.js';
 import useResource from '../hooks/useResource.js';
 import { formatDate } from '../lib/domain.js';
-import { ResultSummary, formatReportNumber, reportComponents } from './ReportScore.jsx';
+import { formatReportNumber } from './ReportScore.jsx';
 import ContributionEvidence from './ContributionEvidence.jsx';
-import ReportCompletedTasks from './ReportCompletedTasks.jsx';
 import { EmptyState, ResourceState } from './ui.jsx';
 
 function ReportStatus({ report }) {
@@ -25,77 +24,64 @@ function ReportStatus({ report }) {
 function ReportDetail({ context, report, actions, toolbarTarget, guide, managementGuide, onGuideComplete }) {
   const { pathname } = useLocation();
   const completedTasksHref = `${isPreviewPath(pathname) ? '/preview' : ''}${teamPath(context.space.id, context.team.id)}/tasks?view=list&status=DONE&mine=1`;
-  const [completedTasksOpen, setCompletedTasksOpen] = useState(false);
-  const completedTasksId = useId();
-  const completedTasksButton = useRef(null);
   const [selectedMemberId, setSelectedMemberId] = useState(null);
-  const reviewableMembers = context.manager ? report.members.filter((member) => member.details)
-    : [];
+  const reviewableMembers = report.members.filter((member) => member.details && (context.manager || member.userId === context.user.id));
   const selectedMember = reviewableMembers.find((member) => member.userId === selectedMemberId) || reviewableMembers[0];
   const memberEvidenceId = useId();
+  const evidenceAnchor = useRef(null);
+  const switchDetailMember = (userId) => {
+    setSelectedMemberId(userId);
+    evidenceAnchor.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
+  };
+  useEffect(() => {
+    if (!managementGuide) return;
+    const restoreGuideMember = (event) => {
+      if (['report-guide-member', 'report-guide-evidence'].includes(event.detail)) setSelectedMemberId(managementGuide.reportManagementMemberId);
+    };
+    window.addEventListener('fairplay:guide-focus', restoreGuideMember);
+    return () => window.removeEventListener('fairplay:guide-focus', restoreGuideMember);
+  }, [managementGuide?.reportManagementMemberId, Boolean(managementGuide)]);
+  const resultsLabel = '팀원별 종합 평가';
   return (
     <div className="report-result">
       {toolbarTarget ? createPortal(<>
-        <div className="report-metadata" aria-label="리포트 정보"><ReportStatus report={report} /><span>팀원 {report.members.length}명</span>
+        <div className="report-metadata" aria-label="리포트 정보"><ReportStatus report={report} /><span>팀원 {report.evaluatedMemberCount}명</span>
           <span>집계 기준 <time dateTime={report.cutoffAt}>{formatDate(report.cutoffAt)}</time></span>
           {report.publishedAt && <span>공개일 <time dateTime={report.publishedAt}>{formatDate(report.publishedAt)}</time></span>}
         </div>
         {actions}
-      </>, toolbarTarget) : context.manager ? (
+      </>, toolbarTarget) : (
         <div className="report-result-header">
-          <div className="report-metadata" aria-label="리포트 정보"><ReportStatus report={report} /><span>팀원 {report.members.length}명</span>
+          <div className="report-metadata" aria-label="리포트 정보"><ReportStatus report={report} /><span>팀원 {report.evaluatedMemberCount}명</span>
           <span>집계 기준 <time dateTime={report.cutoffAt}>{formatDate(report.cutoffAt)}</time></span>
           {report.publishedAt && <span>공개일 <time dateTime={report.publishedAt}>{formatDate(report.publishedAt)}</time></span>}
         </div>
           {actions}
         </div>
-      ) : null}
-      {!context.manager && report.myDetails && <ResultSummary name="나의" details={report.myDetails} weights={report.weights} own guide={guide}
-        completedTasksControl={{ ref: completedTasksButton, expanded: completedTasksOpen, panelId: completedTasksId, onToggle: () => setCompletedTasksOpen((open) => !open) }}>
-        {completedTasksOpen && <ReportCompletedTasks key={`${report.id}:${context.user.id}`} id={completedTasksId} context={context} report={report} currentTasksHref={completedTasksHref}
-          onClose={() => { setCompletedTasksOpen(false); completedTasksButton.current?.focus(); }} />}
-      </ResultSummary>}
-      <section className="report-team-result">
-        <div className="section-heading">
-          <div><h2>팀원별 최종 기여율</h2><p>팀 전체 합계 {formatReportNumber(report.totalPercent)}%</p></div>
+      )}
+      {context.manager && <section className="report-team-result">
+        <div className="section-heading"><h2>{resultsLabel}</h2></div>
+        <div className="table-scroll" role="region" aria-label={resultsLabel} tabIndex={0}>
+          <table className="data-table composite-results-table"><caption className="sr-only">{resultsLabel}</caption>
+            <thead><tr>{['팀원', '완료 작업량 비율', '작업 점수', '중간 평가', '최종 평가', '종합점수'].map((label) => <th scope="col" key={label}>{label}</th>)}</tr></thead>
+            <tbody>{reviewableMembers.map((member) => <tr key={member.userId} className={member.userId === selectedMember?.userId ? 'report-selected-member' : ''}
+              onClick={() => setSelectedMemberId(member.userId)}>
+              <th scope="row"><button type="button" className="report-member-select" data-guide-report-member={member.userId}
+                aria-label={`${member.name} 수행 근거 확인`} aria-pressed={member.userId === selectedMember?.userId}
+                aria-controls={memberEvidenceId} onClick={() => setSelectedMemberId(member.userId)}>{member.name}<span aria-hidden="true">{member.userId === selectedMember?.userId ? '선택됨' : '확인'}</span></button></th>
+              <td>{member.details.taskRatioPercent === null ? '산정 대상 없음' : `${formatReportNumber(member.details.taskRatioPercent)}%`}</td>
+              <td>{member.details.taskScore === null ? '산정 대상 없음' : `${formatReportNumber(member.details.taskScore)}점`}</td>
+              <td>{formatReportNumber(member.details.midEvaluationAverage)} / 5</td><td>{formatReportNumber(member.details.finalEvaluationAverage)} / 5</td>
+              <td><strong>{formatReportNumber(member.totalScore)}점</strong></td>
+            </tr>)}</tbody>
+          </table>
         </div>
-        {context.manager && <div className="report-composition-legend" aria-label="기여율 구성 범례">{reportComponents.map(({ key, label }) => <span key={key}><i className={`report-component-dot report-component-color--${key}`} aria-hidden="true" />{label}</span>)}</div>}
-        <div className="report-team-layout">
-          <div className="table-scroll" role="region" aria-label="팀 최종 기여율" tabIndex={0}>
-            <table className={`data-table report-results-table${context.manager ? ' report-results-table--manager' : ''}`}>
-              <caption className="sr-only">팀원별 최종 기여율</caption>
-              <thead><tr><th scope="col">팀원</th><th scope="col">{context.manager ? '기여율 구성' : '최종 기여율'}</th></tr></thead>
-              <tbody>
-                {report.members.map((member) => (
-                  <tr className={[
-                    member.userId === context.user.id ? 'report-current-member' : '',
-                    context.manager && member.userId === selectedMember?.userId ? 'report-selected-member' : '',
-                  ].filter(Boolean).join(' ')} key={member.userId}
-                    onClick={context.manager && member.details ? () => setSelectedMemberId(member.userId) : undefined}>
-                    <th scope="row">
-                      {context.manager && member.details ? <button type="button" className="report-member-select" data-guide-report-member={member.userId}
-                        aria-label={`${member.name} 수행 근거 확인`} aria-pressed={member.userId === selectedMember?.userId}
-                        aria-controls={memberEvidenceId} onClick={() => setSelectedMemberId(member.userId)}>{member.name}<span aria-hidden="true">{member.userId === selectedMember?.userId ? '선택됨' : '확인'}</span></button> : member.name}
-                      {member.userId === context.user.id && <span className="report-self-label">나</span>}
-                    </th>
-                    <td><div className="report-member-share">
-                      {context.manager ? <span className="report-member-composition" aria-hidden="true">
-                        {member.details && reportComponents.map(({ key }) => <span key={key} className={`report-component-color--${key}`}
-                          style={{ width: `${Math.min(100, Math.max(0, Number(member.details[`${key}ContributionPercent`]) || 0))}%` }} />)}
-                      </span> : <span className="report-share-track" aria-hidden="true"><span style={{ width: `${Math.min(100, Math.max(0, Number(member.contributionPercent) || 0))}%` }} /></span>}
-                      <strong>{formatReportNumber(member.contributionPercent)}%</strong>
-                    </div></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-        </div>
-      </section>
-      {selectedMember && <ContributionEvidence key={`${report.id}:${selectedMember.userId}`} id={memberEvidenceId}
-        context={context} report={report} member={selectedMember}
-        onReviewConfirmed={onGuideComplete} managementGuide={managementGuide?.stepId === 'management-report-review' && selectedMember.userId === managementGuide.reportManagementMemberId ? managementGuide : null} />}
+      </section>}
+      <div ref={evidenceAnchor} className="report-evidence-anchor" />
+      {selectedMember && <ContributionEvidence id={memberEvidenceId}
+        members={reviewableMembers} onMemberChange={switchDetailMember}
+        context={context} report={report} member={selectedMember} guide={guide} currentTasksHref={!context.manager ? completedTasksHref : undefined}
+        onReviewConfirmed={onGuideComplete} managementGuide={['management-report-review', 'management-report-evidence'].includes(managementGuide?.stepId) ? managementGuide : null} />}
 
     </div>
   );

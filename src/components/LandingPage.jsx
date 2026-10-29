@@ -165,21 +165,20 @@ function ReportExample() {
       </div>
       <div className="showcase-chart">
         <div>
-          <strong>팀원별 최종 기여율</strong>
+          <strong>나의 종합점수 96.0 / 100점</strong>
           <span>리포트 예시</span>
         </div>
         {[
-          ['박선우', 28],
-          ['김준영', 26],
-          ['김영진', 24],
-          ['염승혜', 22],
+          ['작업 점수', 70],
+          ['중간 동료 평가', 8],
+          ['최종 동료 평가', 18],
         ].map(([name, value]) => (
           <div className="showcase-chart-row" key={name}>
             <span>{name}</span>
             <div>
-              <i style={{ width: `${value * 3}%` }} />
+              <i style={{ width: `${value}%` }} />
             </div>
-            <strong>{value}%</strong>
+            <strong>{value.toFixed(1)}점</strong>
           </div>
         ))}
         <small>화면 이해를 위한 예시 수치입니다.</small>

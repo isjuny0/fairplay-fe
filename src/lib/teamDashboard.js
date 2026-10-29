@@ -18,7 +18,7 @@ export const dashboardWidgets = [
   {
     id: 'contribution',
     title: '내 기여도',
-    description: '공개된 리포트의 내 최종 기여율',
+    description: '공개된 리포트의 내 종합점수',
     icon: 'chart',
   },
   {

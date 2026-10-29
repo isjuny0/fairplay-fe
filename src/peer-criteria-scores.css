@@ -1,0 +1,13 @@
+.peer-criteria-scores { margin: 16px 0 0; min-width: 0; }
+.peer-criteria-scores > div { display: grid; grid-template-columns: 120px minmax(0, 1fr); align-items: center; gap: 24px; padding-block: 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.peer-criteria-scores dt { position: relative; display: flex; align-items: center; gap: 6px; min-height: 24px; }
+.peer-criteria-scores dd { margin: 0; display: flex; align-items: center; gap: 24px; min-width: 0; }
+.peer-criteria-scores dd strong { flex-shrink: 0; width: 82px; text-align: right; font-variant-numeric: tabular-nums; font-size: 16px; font-weight: 600; }
+.peer-criteria-scores dd small { color: var(--text-muted); font-size: 11px; font-weight: 400; }
+.peer-criteria-scores dd .is-unavailable { margin-left: auto; width: auto; font-size: 12px; color: var(--text-muted); font-weight: 400; }
+.peer-criteria-track { height: 6px; flex: 1; background: #edf1ef; overflow: hidden; border-radius: 2px; }
+.peer-criteria-track > span { display: block; height: 100%; background: #66869d; }
+@media (max-width: 720px) {
+  .peer-criteria-scores > div { grid-template-columns: 80px minmax(0, 1fr); gap: 16px; }
+  .peer-criteria-scores dd { gap: 12px; }
+}

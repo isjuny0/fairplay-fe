@@ -193,7 +193,7 @@ test('리포트·관리자 원문 제목 위 문구를 제거하고 상태 표�
   await page.reload();
   await page.getByRole('button', { name: '삼위일체 리포트 확인', exact: true }).click();
   await expect(
-    page.getByRole('heading', { name: '팀원별 최종 기여율', exact: true }),
+    page.getByRole('heading', { name: '팀원별 종합 평가', exact: true }),
   ).toBeVisible();
   await expect(page.locator('.report-team-result .eyebrow')).toHaveCount(0);
   await expect(

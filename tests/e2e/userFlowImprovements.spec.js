@@ -200,8 +200,8 @@ for (const width of [1440, 390])
       [3, 3],
       [4, 4],
     ]) {
-      const label = await card
-        .locator('.peer-score-column-headings > div > span')
+      const label = await criterion
+        .locator('.score-scale > span')
         .nth(labelIndex)
         .boundingBox();
       const score = await criterion

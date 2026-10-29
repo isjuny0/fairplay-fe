@@ -145,7 +145,7 @@ test('리포트는 팀당 한 번 생성하고 공개 후 본인 계산만 제�
   });
   assert.equal(report.id, 10001);
   assert.equal(report.status, 'UNPUBLISHED');
-  assert.equal(report.myDetails, null);
+  assert.equal(Object.hasOwn(report, 'myDetails'), false);
   assert.deepEqual(
     await plannedRequest(manager, '/api/teams/1/report', { method: 'POST' }),
     report,
@@ -154,16 +154,17 @@ test('리포트는 팀당 한 번 생성하고 공개 후 본인 계산만 제�
     method: 'POST',
   });
   const result = await plannedRequest(leader, '/api/teams/1/report');
-  assert.equal(result.totalPercent, 100);
-  assert.equal(
-    result.myDetails.totalPercent,
-    result.members.find((member) => member.userId === leader.user.id)
-      .contributionPercent,
-  );
+  assert.equal(result.evaluatedMemberCount, 3);
+  assert.equal(result.members.length, 1);
+  assert.equal(result.members[0].userId, leader.user.id);
+  assert.equal(typeof result.members[0].totalScore, 'number');
+  assert.equal(Object.hasOwn(result.members[0].details, 'totalScore'), false);
+  assert.equal(Object.hasOwn(result, 'totalPercent'), false);
+  assert.equal(Object.hasOwn(result, 'myDetails'), false);
   assert.equal(result.details, undefined);
   assert.equal(
-    (await plannedRequest(manager, '/api/teams/1/report')).myDetails,
-    null,
+    (await plannedRequest(manager, '/api/teams/1/report')).members.length,
+    3,
   );
   assert.equal(
     (await plannedRequest(manager, '/api/teams/1/report', { method: 'POST' }))
@@ -183,7 +184,7 @@ test('리포트 생성과 공개는 해당 팀 제출만 확인하고 AI 점수�
   });
   assert.equal(report.members.length, 3);
   assert.equal(report.members[0].details.taskRatioPercent, 80);
-  assert.equal(report.members[0].details.taskContributionPercent, 56);
+  assert.equal(report.members[0].details.taskWeightedScore, 70);
   assert.equal(report.members[0].details.aiRatioPercent, undefined);
   const current = getMockState(manager);
   delete current.submitted[`12:${current.teams[1].members[0].userId}`];
@@ -303,11 +304,10 @@ test('관리자 생성·공개 요청은 같은 결과를 반환하고 계산 �
       'teamId',
       'status',
       'cutoffAt',
-      'totalPercent',
+      'evaluatedMemberCount',
       'createdAt',
       'publishedAt',
       'members',
-      'myDetails',
       'weights',
     ].sort(),
   );
@@ -603,12 +603,12 @@ test('미리보기는 잘못된 비율이나 생성 실패로 비율을 고정�
   const weights = { taskPercent: 0, midPercent: 0, finalPercent: 100 };
   const report = await previewRequest('/api/teams/1/report', { method: 'POST', body: weights });
   assert.deepEqual(report.weights, weights);
-  for (const member of report.members) assert.equal(member.details.taskContributionPercent, 0);
+  for (const member of report.members) { assert.equal(member.details.taskWeightedScore, 0); assert.equal(member.details.taskRatioPercent, null); assert.equal(member.details.taskScore, null); }
 });
 
 test('팀 빌딩 미리보기의 최소 저장 상태에도 리포트 기본 정보를 복원한다', async () => {
   const manager = context('manager');
-  storage.set('fairplay:mock:v7:preview:1', JSON.stringify({ teams: {}, rounds: [], scenario: 'building', spaceOverrides: { membershipLockedAt: null, teamBuildingStatus: 'OPEN' } }));
+  storage.set('fairplay:mock:v9:preview:1', JSON.stringify({ teams: {}, rounds: [], scenario: 'building', spaceOverrides: { membershipLockedAt: null, teamBuildingStatus: 'OPEN' } }));
   const restored = getMockState(manager);
   assert.deepEqual(restored.reports, []);
   assert.equal(restored.reportWeights, null);
@@ -616,11 +616,14 @@ test('팀 빌딩 미리보기의 최소 저장 상태에도 리포트 기본 정
   assert.equal(await previewRequest('/api/teams/1/report'), null);
 });
 
-test('미리보기 평가 시작은 본문 없는 POST로 호출한다', async () => {
+test('미리보기는 일정에 따라 자동 시작하며 수동 시작 API를 제공하지 않는다', async () => {
   const manager = context('manager');
   resetMockState(manager, 'setup');
   const round = await plannedRequest(manager, '/api/spaces/1/evaluation-rounds', { method: 'POST', body: { type: 'MID', opensAt: koreanDateTime(Date.now() - 60000), closesAt: koreanDateTime(Date.now() + 86400000) } });
-  const opened = await plannedRequest(manager, `/api/evaluation-rounds/${round.id}/open`, { method: 'POST' });
+  const opened = (await plannedRequest(manager, '/api/spaces/1/evaluation-rounds')).find((item) => item.id === round.id);
+  assert.ok(opened.openedAt);
+  assert.deepEqual(opened.startBlockReasons, []);
+  await assert.rejects(plannedRequest(manager, `/api/evaluation-rounds/${round.id}/open`, { method: 'POST' }), { status: 404 });
   assert.equal(opened.status, 'OPEN');
   assert.ok(opened.participantCount >= 2);
 });
@@ -723,20 +726,35 @@ test('기여도 가이드는 공개된 본인 근거만 사용하고 누락·미
   const session = new Map();
   globalThis.sessionStorage = { getItem: (key) => session.get(key) ?? null, setItem: (key, value) => session.set(key, value), removeItem: (key) => session.delete(key) };
   try {
-    const { prepareGuide, contributionGuideReady, readGuideSession, getGuideSteps } = await import('../src/mock/guide.js');
+    const { prepareGuide, contributionGuideReady, contributionTaskGuideReady, contributionGuideStep, reportGuideTaskId, reportGuideMaterialId, readGuideSession, getGuideSteps } = await import('../src/mock/guide.js');
     const guide = prepareGuide('contribution-report');
     const userId = previewContext().user.id;
-    assert.equal(getGuideSteps(guide.scenarioId).length, 2);
+    assert.equal(getGuideSteps(guide.scenarioId).length, 4);
     assert.equal(readGuideSession().scenarioId, 'contribution-report');
     const report = await previewRequest('/api/teams/1/report');
     assert.equal(report.status, 'PUBLISHED');
     assert.equal(contributionGuideReady(report, userId), true);
-    assert.ok(report.members.every((member) => !Object.hasOwn(member, 'details')));
+    assert.equal(report.members.length, 1);
+    assert.equal(report.members[0].userId, userId);
+    assert.ok(report.members[0].details);
     assert.equal(contributionGuideReady(null, userId), false);
-    for (const change of [{ status: 'UNPUBLISHED' }, { teamId: 2 }, { myDetails: null }, { weights: { taskPercent: 70, midPercent: 20, finalPercent: 20 } }, { myDetails: { ...report.myDetails, taskRatioPercent: null } }]) {
+    for (const change of [{ status: 'UNPUBLISHED' }, { teamId: 2 }, { members: [] }, { weights: { taskPercent: 70, midPercent: 20, finalPercent: 20 } }, { members: [{ ...report.members[0], details: { ...report.members[0].details, taskRatioPercent: null } }] }]) {
       assert.equal(contributionGuideReady({ ...report, ...change }, userId), false);
     }
     assert.equal(contributionGuideReady(report, 'unknown-user'), false);
+    const evidence = await previewRequest(`/api/teams/1/report/evidence?userId=${userId}`);
+    const task = evidence.tasks.find((item) => item.taskId === reportGuideTaskId);
+    assert.ok(task.current.materials.some((item) => item.id === reportGuideMaterialId));
+    const source = { reportId: report.id, userId, taskId: reportGuideTaskId, materialId: reportGuideMaterialId, ready: true };
+    assert.equal(contributionTaskGuideReady(report, userId, reportGuideTaskId, source), true);
+    for (const change of [{ ready: false }, { loading: true }, { error: true }, { reportId: 999 }, { userId: 'other' }, { materialId: 1002 }, { taskId: 101 }])
+      assert.equal(contributionTaskGuideReady(report, userId, reportGuideTaskId, { ...source, ...change }), false);
+    assert.equal(contributionTaskGuideReady(report, userId, null, source), false);
+    const steps = getGuideSteps(guide.scenarioId);
+    assert.match(contributionGuideStep(steps[2], { criteriaRound: 'final' }).description, /최종 평가 결과를 열었습니다/);
+    assert.match(contributionGuideStep(steps[3], { openedTaskId: reportGuideTaskId }).description, /조사 결과 요약 문서/);
+    assert.match(contributionGuideStep(steps[3], { openedTaskId: reportGuideTaskId, source }).description, /현재 자료/);
+    assert.equal(contributionGuideStep(steps[3], { openedTaskId: reportGuideTaskId, source: { ...source, ready: false, loading: true } }).actionTarget, null);
     const fresh = prepareGuide('contribution-report');
     assert.notEqual(fresh.scope, guide.scope);
     assert.equal(fresh.step, 0);
@@ -776,7 +794,7 @@ test('관리자 팀 진행 가이드는 조회 데이터와 열린 산출물의 
   } finally { delete globalThis.sessionStorage; }
 });
 
-test('관리자 평가 시작 가이드는 일정 저장과 개방 성공을 구분하고 실제 제출 현황 확인 후에만 완료한다', async () => {
+test('관리자 평가 시작 가이드는 일정 저장과 자동 시작을 구분하고 실제 제출 현황 확인 후에만 완료한다', async () => {
   const session = new Map();
   globalThis.sessionStorage = { getItem: (key) => session.get(key) ?? null, setItem: (key, value) => session.set(key, value), removeItem: (key) => session.delete(key) };
   try {
@@ -786,7 +804,7 @@ test('관리자 평가 시작 가이드는 일정 저장과 개방 성공을 구
     const guide = prepareGuide('evaluation-management');
     assert.equal(previewContext().manager, true);
     assert.equal(readGuideSession().scenarioId, 'evaluation-management');
-    assert.equal(getGuideSteps(guide.scenarioId).length, 4);
+    assert.equal(getGuideSteps(guide.scenarioId).length, 3);
     const observed = async (viewedRoundId) => ({
       space: await previewRequest('/api/spaces/1'),
       rounds: await previewRequest('/api/spaces/1/evaluation-rounds'),
@@ -800,26 +818,29 @@ test('관리자 평가 시작 가이드는 일정 저장과 개방 성공을 구
     const schedule = evaluationGuideSchedule();
     await assert.rejects(previewRequest('/api/spaces/1/evaluation-rounds', { method: 'POST', body: { ...schedule, closesAt: schedule.opensAt } }), { code: 'INVALID_ROUND_WINDOW' });
     assert.equal(evaluationGuideReady('evaluation-schedule', await observed()), false);
-    const round = await previewRequest('/api/spaces/1/evaluation-rounds', { method: 'POST', body: schedule });
+    const round = await previewRequest('/api/spaces/1/evaluation-rounds', { method: 'POST', body: { ...schedule, opensAt: koreanDateTime(Date.now() + 60000) } });
     const scheduled = await observed();
     assert.equal(round.status, 'DRAFT');
     assert.equal(evaluationGuideReady('evaluation-schedule', scheduled), true);
-    assert.equal(evaluationGuideReady('evaluation-open', scheduled), false);
     const state = getMockState(previewContext());
     const teamBuildingClosesAt = state.spaceOverrides.teamBuildingClosesAt;
     state.spaceOverrides.teamBuildingClosesAt = koreanDateTime(Date.now() + 86400000);
+    state.rounds.find((item) => item.id === round.id).opensAt = schedule.opensAt;
     saveMockState(previewContext(), state);
-    await assert.rejects(previewRequest(`/api/evaluation-rounds/${round.id}/open`, { method: 'POST' }), { code: 'TEAM_BUILDING_OPEN' });
-    assert.equal(evaluationGuideReady('evaluation-open', await observed()), false);
+    const blocked = await observed();
+    assert.equal(blocked.rounds[0].status, 'DRAFT');
+    assert.deepEqual(blocked.rounds[0].startBlockReasons, ['TEAM_BUILDING_OPEN']);
+    assert.equal(evaluationGuideReady('evaluation-result', blocked), false);
     const restored = getMockState(previewContext());
     restored.spaceOverrides.teamBuildingClosesAt = teamBuildingClosesAt;
     saveMockState(previewContext(), restored);
-    await previewRequest(`/api/evaluation-rounds/${round.id}/open`, { method: 'POST' });
     const opened = await observed();
     assert.equal(opened.space.teamBuildingStatus, 'LOCKED');
     assert.ok(opened.space.membershipLockedAt);
     assert.equal(opened.rounds[0].participantCount, 5);
-    assert.equal(evaluationGuideReady('evaluation-open', opened), true);
+    assert.equal(opened.rounds[0].status, 'OPEN');
+    assert.ok(opened.rounds[0].openedAt);
+    assert.deepEqual(opened.rounds[0].startBlockReasons, []);
     assert.equal(evaluationGuideReady('evaluation-result', opened), false);
     const viewed = await observed(round.id);
     assert.equal(evaluationGuideReady('evaluation-result', viewed), true);
@@ -849,7 +870,7 @@ test('관리자 리포트 가이드는 전체 생성·계산 근거 검토·전�
     const guide = prepareGuide('report-management');
     assert.equal(previewContext().manager, true);
     assert.equal(readGuideSession().scenarioId, 'report-management');
-    assert.equal(getGuideSteps(guide.scenarioId).length, 5);
+    assert.equal(getGuideSteps(guide.scenarioId).length, 6);
     const weights = { taskPercent: 60, midPercent: 20, finalPercent: 20 };
     const batch = async () => ({ ...await previewRequest('/api/spaces/1/reports'), weights });
     const initial = await batch();
@@ -873,6 +894,12 @@ test('관리자 리포트 가이드는 전체 생성·계산 근거 검토·전�
     const review = { reportId: first.id, memberId: managerGuideMemberId, open: true };
     assert.equal(reportManagementGuideReady('management-report-review', generated, result), false);
     assert.equal(reportManagementGuideReady('management-report-review', generated, result, review), true);
+    const evidence = { openedTaskId: 101, source: { reportId: first.id, userId: managerGuideMemberId, taskId: 101, materialId: 1002, ready: true } };
+    assert.equal(reportManagementGuideReady('management-report-evidence', generated, result, review), false);
+    assert.equal(reportManagementGuideReady('management-report-evidence', generated, result, review, evidence), true);
+    for (const change of [{ ready: false }, { loading: true }, { error: true }, { reportId: 0 }, { taskId: 106 }, { materialId: 1005 }, { userId: 'other' }])
+      assert.equal(reportManagementGuideReady('management-report-evidence', generated, result, review, { ...evidence, source: { ...evidence.source, ...change } }), false);
+    assert.equal(reportManagementGuideReady('management-report-evidence', generated, result, review, { ...evidence, openedTaskId: null }), false);
     for (const change of [{ open: false }, { memberId: 'unknown' }, { reportId: 0 }]) {
       assert.equal(reportManagementGuideReady('management-report-review', generated, result, { ...review, ...change }), false);
     }
@@ -896,8 +923,9 @@ test('관리자 리포트 가이드는 전체 생성·계산 근거 검토·전�
     setPreviewRole('member');
     const memberReport = await previewRequest('/api/teams/1/report');
     assert.equal(memberReport.status, 'PUBLISHED');
-    assert.ok(memberReport.myDetails);
-    assert.equal(memberReport.members.every((member) => !member.details), true);
+    assert.equal(memberReport.members.length, 1);
+    assert.ok(memberReport.members[0].details);
+    assert.equal(memberReport.members[0].userId, previewContext().user.id);
     const fresh = prepareGuide('report-management');
     assert.equal(previewContext().manager, true);
     assert.notEqual(fresh.scope, guide.scope);
@@ -970,15 +998,29 @@ test('다른 작업이나 팀을 선택하면 해당 결과를 확인하도록 �
   }
 });
 
-test('리포트 계산 근거를 확인하기 전과 후의 안내를 구분한다', async () => {
+test('리포트 점수 검토와 원문 조회 상태에 맞는 안내를 구분한다', async () => {
   const { managerGuideStep, reportManagementGuideSteps } = await import('../src/mock/guide.js');
   const step = reportManagementGuideSteps.find((entry) => entry.id === 'management-report-review');
   const initial = managerGuideStep(step, { reportResult: { teamId: 1 } });
-  assert.match(initial.description, /완료 작업/);
+  assert.match(initial.description, /종합점수/);
   const ready = managerGuideStep(step, { reportResult: { teamId: 1 }, reportReviewReady: true });
-  assert.match(ready.description, /현재 자료/);
+  assert.match(ready.description, /점수 검토 완료/);
   assert.equal(ready.actionTarget, '[data-guide="confirm-management-report-review"]');
-  assert.match(ready.target, /contribution-evidence-list/);
+  assert.match(ready.target, /report-score-components/);
+  const evidenceStep = reportManagementGuideSteps.find((entry) => entry.id === 'management-report-evidence');
+  const state = { reportResult: { teamId: 1 }, reportReview: { memberId: '00000000-0000-4000-8000-000000000001' }, reportEvidence: { openedTaskId: 101, source: { taskId: 101, materialId: 1002, ready: true } } };
+  const opened = managerGuideStep(evidenceStep, state);
+  assert.match(opened.description, /문서를 열었습니다/);
+  assert.match(opened.actionTarget, /confirm-management-report-evidence/);
+  const loading = managerGuideStep(evidenceStep, { ...state, reportEvidence: { ...state.reportEvidence, source: { ...state.reportEvidence.source, ready: false, loading: true } } });
+  assert.equal(loading.actionTarget, null);
+  assert.match(loading.description, /잠시 기다려/);
+  const failed = managerGuideStep(evidenceStep, { ...state, reportEvidence: { ...state.reportEvidence, source: { ...state.reportEvidence.source, ready: false, error: true } } });
+  assert.equal(failed.actionTarget, null);
+  assert.match(failed.description, /다시 불러온/);
+  const wrongMember = managerGuideStep(evidenceStep, { ...state, reportReview: { memberId: 'other' } });
+  assert.match(wrongMember.actionTarget, /report-member-selector/);
+  assert.doesNotMatch(wrongMember.description, /문서를 열었습니다/);
 });
 
 
@@ -991,6 +1033,9 @@ test('작업 근거는 관리자 또는 공개 후 본인만 조회하고 현재
   await assert.rejects(plannedRequest(leader, endpoint), { status: 404, code: 'REPORT_NOT_FOUND' });
   const before = await plannedRequest(manager, endpoint);
   assert.ok(before.tasks.length > 0);
+  assert.equal(before.totalScore, report.members.find((member) => member.userId === leader.user.id).totalScore);
+  assert.equal(before.evaluatedMemberCount, report.evaluatedMemberCount);
+  assert.equal(Object.hasOwn(before.details, 'totalScore'), false);
   const state = getMockState(manager);
   const current = state.teams[1].tasks.find((task) => task.id === before.tasks[0].taskId);
   current.title = '변경된 현재 작업 제목';
@@ -1108,4 +1153,36 @@ test('스페이스 리포트 관리 API는 팀원과 다른 스페이스 접근�
     }
   }
   await assert.rejects(plannedRequest(context('manager'), '/api/spaces/99/reports'), { code: 'FORBIDDEN' });
+});
+
+test('종합 평가 예시는 개인별 점수를 계산하며 팀 합계를 100으로 보정하지 않는다', async () => {
+  const manager = context('manager');
+  resetMockState(manager, 'review');
+  const report = await plannedRequest(manager, '/api/teams/1/report');
+  const { validReportScore } = await import('../src/lib/reportScore.js');
+  assert.equal(validReportScore(report), true);
+  assert.equal(report.evaluatedMemberCount, 3);
+  assert.equal(report.members[0].details.taskRatioPercent, 80);
+  assert.equal(report.members[0].details.taskScore, 100);
+  assert.ok(report.members.reduce((sum, member) => sum + member.totalScore, 0) > 100);
+  for (const member of report.members) {
+    assert.ok(member.totalScore >= 0 && member.totalScore <= 100);
+    assert.equal(Object.keys(member.details.midCriteriaAverages).length, 4);
+    assert.equal(Object.hasOwn(member, 'contributionPercent'), false);
+  }
+});
+
+test('산정 대상 없는 작업은 null과 비중 0으로 전달하고 점수 0과 구분한다', async () => {
+  const manager = context('manager');
+  resetMockState(manager, 'evaluated');
+  const state = getMockState(manager);
+  state.teams[1].tasks = [];
+  saveMockState(manager, state);
+  const report = await plannedRequest(manager, '/api/teams/1/report', { method: 'POST', body: { taskPercent: 0, midPercent: 50, finalPercent: 50 } });
+  const { validReportScore } = await import('../src/lib/reportScore.js');
+  assert.equal(validReportScore(report), true);
+  assert.equal(report.members[0].details.taskScore, null);
+  assert.equal(report.members[0].details.taskRatioPercent, null);
+  assert.equal(report.members[0].details.taskWeightedScore, 0);
+  assert.equal(validReportScore({ ...report, weights: { taskPercent: 70, midPercent: 10, finalPercent: 20 } }), false);
 });
