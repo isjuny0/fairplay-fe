@@ -30,3 +30,24 @@ export function announcementPage(search) {
     ? page
     : 0;
 }
+
+export function announcementSearch(search) {
+  return (new URLSearchParams(search).get("q") || "").trim().slice(0, 100);
+}
+
+export function announcementQuery(page, search = "") {
+  const params = new URLSearchParams();
+  if (page > 0) params.set("page", String(page));
+  if (search.trim()) params.set("q", search.trim().slice(0, 100));
+  return params.size ? `?${params}` : "";
+}
+
+// The collection API only provides a page, not a server-wide search endpoint.
+export function filterAnnouncements(items, search) {
+  const query = search.trim().normalize("NFC").toLocaleLowerCase("ko-KR");
+  return query ? items.filter((item) =>
+    [item.title, item.authorName].some((value) =>
+      (value || "").normalize("NFC").toLocaleLowerCase("ko-KR").includes(query),
+    ),
+  ) : items;
+}

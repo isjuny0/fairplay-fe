@@ -160,6 +160,101 @@ async function fillEditor(
   return dialog;
 }
 
+test("현재 페이지 검색은 제목·작성자를 찾고 상세 복귀·새로고침에 조건을 유지한다", async ({ page }) => {
+  const { requests } = await backend(page, { role: "USER", count: 21 });
+  await page.goto(listPath);
+  await expect(page.locator('.announcement-row')).toHaveCount(20);
+  const search = page.getByRole('searchbox', { name: '현재 페이지 공지 검색', exact: true });
+  await search.fill('프로젝트 공지 21');
+  await expect(page.locator('.announcement-row')).toHaveCount(20);
+  await search.press('Enter');
+  await expect(page.locator('.announcement-row')).toHaveCount(1);
+  await expect(page.getByRole('status', { name: '공지 검색 결과' })).toHaveCount(0);
+  await expect(page.getByText(/현재 페이지 \d+건/)).toHaveCount(0);
+  await page.getByRole('button', { name: '프로젝트 공지 21', exact: true }).click();
+  await page.getByRole('button', { name: '← 목록으로', exact: true }).click();
+  await expect(search).toHaveValue('프로젝트 공지 21');
+  await page.reload();
+  await expect(page.locator('.announcement-row')).toHaveCount(1);
+  await search.fill('운영 관리자');
+  await page.getByRole('button', { name: '검색', exact: true }).click();
+  await expect(page.locator('.announcement-row')).toHaveCount(20);
+  await search.fill('없는 공지');
+  await search.press('Enter');
+  await expect(page.getByText('현재 페이지에서 일치하는 공지가 없습니다.', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '검색 초기화', exact: true }).click();
+  await expect(search).toBeFocused();
+  await expect(search).toHaveValue('');
+  await expect(page.locator('.announcement-row')).toHaveCount(20);
+  // Search is deliberately local to a page: no invented server query or write.
+  expect(requests.filter(r => r.path === base).every(r => !new URLSearchParams(r.query).has('q'))).toBe(true);
+  expect(requests.some(r => r.method !== 'GET')).toBe(false);
+});
+
+for (const width of [1440, 320]) {
+  test(`${width}px 긴 공지 제목·작성자·본문도 잘리지 않고 화면 밖으로 넘치지 않는다`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 1000 });
+    const { items } = await backend(page, { role: 'USER', count: 3 });
+    items[0].title = '프로젝트 발표와 제출 일정 변경 안내 '.repeat(5).slice(0, 100);
+    items[0].authorName = '서비스디자인프로젝트 운영 담당 관리자';
+    items[0].content = '긴공지본문'.repeat(300) + '\n두 번째 문단입니다.';
+    await page.goto(listPath);
+    const title = page.getByRole('button', { name: items[0].title, exact: true });
+    await expect(title).toBeVisible();
+    await expect(title).toHaveAttribute('title', items[0].title);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.locator('.announcement-board').screenshot({ path: testInfo.outputPath('long-announcement-list.png') });
+    await title.click();
+    await expect(page.locator('.announcement-content')).toHaveText(items[0].content);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  });
+
+  for (const role of ['participant', 'member', 'leader', 'manager']) {
+    test(`${width}px ${role}도 같은 공지 게시판·요약·상세 디자인을 사용하고 관리 권한을 유지한다`, async ({ page }, testInfo) => {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.addInitScript(role => localStorage.setItem('fairplay:preview-role', role), role);
+      await page.goto('/preview/spaces/1/announcements');
+      const board = page.locator('.announcement-board');
+      await expect(board.locator('.announcement-row')).toHaveCount(2);
+      await expect(page.getByRole('searchbox', { name: '현재 페이지 공지 검색' })).toBeVisible();
+      await expect(board.locator('.announcement-author').first()).toContainText('정민수');
+      await expect(board.locator('.announcement-pin')).toHaveCount(0);
+      await expect(board.getByRole('img', { name: '중요 공지', exact: true })).toHaveCount(1);
+      for (const row of await board.locator('.announcement-row').all()) {
+        await expect(row).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+      }
+      await expect(page.getByRole('button', { name: '공지 작성', exact: true })).toHaveCount(role === 'manager' ? 1 : 0);
+      if (width > 600) {
+        await expect(board.locator('.announcement-columns')).toBeVisible();
+        await expect(board.locator('.announcement-columns')).toHaveText('구분제목작성자등록일');
+        const titleBox = await board.locator('.announcement-row-copy').first().boundingBox();
+        const authorBox = await board.locator('.announcement-author').first().boundingBox();
+        expect(authorBox.x).toBeGreaterThan(titleBox.x + titleBox.width);
+      } else await expect(board.locator('.announcement-columns')).toBeHidden();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.evaluate(() => document.fonts.ready);
+      await page.screenshot({ path: testInfo.outputPath('announcement-board.png'), animations: 'disabled' });
+      await board.getByRole('button', { name: '프로젝트 진행 및 공지 확인 안내', exact: true }).click();
+      await expect(page.locator('.announcement-content')).toContainText('프로젝트 공지');
+      await expect(page.locator('.announcement-metadata')).toContainText('작성자');
+      await expect(page.locator('.announcement-pin')).toHaveText('중요');
+      const actions = page.locator('.announcements-page > .page-heading > .heading-actions');
+      await expect(actions.getByRole('button')).toHaveCount(2);
+      const backBox = await actions.getByRole('button', { name: '← 목록으로', exact: true }).boundingBox();
+      const refreshBox = await actions.getByRole('button', { name: '새로고침', exact: true }).boundingBox();
+      expect(backBox.x + backBox.width).toBeLessThanOrEqual(refreshBox.x);
+      expect(Math.abs(backBox.y + backBox.height / 2 - refreshBox.y - refreshBox.height / 2)).toBeLessThan(1);
+      await expect(page.getByRole('button', { name: '공지 수정', exact: true })).toHaveCount(role === 'manager' ? 1 : 0);
+      await expect(page.getByRole('button', { name: '공지 삭제', exact: true })).toHaveCount(role === 'manager' ? 1 : 0);
+      await page.screenshot({ path: testInfo.outputPath('announcement-detail.png'), animations: 'disabled' });
+      await page.goto('/preview/spaces/1');
+      await expect(page.locator('.space-announcement-summary .announcement-board.is-compact')).toBeVisible();
+      await expect(page.locator('.space-announcement-summary .announcement-author').first()).toContainText('정민수');
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    });
+  }
+}
+
 test("관리자는 홈 요약에서 공지를 작성하고 일반 텍스트로 조회·수정·삭제한다", async ({
   page,
 }, testInfo) => {
@@ -196,7 +291,7 @@ test("관리자는 홈 요약에서 공지를 작성하고 일반 텍스트로 �
     "  새 운영 공지  ",
     "  <b>일반 텍스트</b>\n**그대로 표시**  ",
   );
-  await editor.getByLabel("목록 상단에 고정").check();
+  await editor.getByLabel("중요 공지", { exact: true }).check();
   await editor.getByRole("button", { name: "공지 등록", exact: true }).click();
   await expect(page).toHaveURL(/\/announcements\/5$/);
   await expect(page.locator(".announcement-content")).toHaveText(
@@ -205,7 +300,7 @@ test("관리자는 홈 요약에서 공지를 작성하고 일반 텍스트로 �
   await expect(
     page.locator(".announcement-content b, .announcement-content strong"),
   ).toHaveCount(0);
-  await expect(page.locator(".announcement-pin")).toHaveText("상단 고정");
+  await expect(page.locator(".announcement-pin")).toHaveText("중요");
   await expect(
     page.locator(".announcement-title-group .announcement-pin"),
   ).toHaveCount(1);
@@ -233,21 +328,11 @@ test("관리자는 홈 요약에서 공지를 작성하고 일반 텍스트로 �
     const refreshBox = await page
       .getByRole("button", { name: "새로고침", exact: true })
       .boundingBox();
+    expect(backBox.x + backBox.width).toBeLessThanOrEqual(refreshBox.x);
     expect(
-      Math.abs(backBox.x + backBox.width - refreshBox.x - refreshBox.width),
+      Math.abs(backBox.y + backBox.height / 2 - refreshBox.y - refreshBox.height / 2),
     ).toBeLessThan(1);
-    expect(backBox.y + backBox.height).toBeLessThanOrEqual(refreshBox.y);
-    const breadcrumbBox = await page
-      .getByRole("navigation", { name: "현재 위치", exact: true })
-      .boundingBox();
-    expect(
-      Math.abs(
-        backBox.y +
-          backBox.height / 2 -
-          breadcrumbBox.y -
-          breadcrumbBox.height / 2,
-      ),
-    ).toBeLessThan(1);
+    await expect(page.locator(".page-heading > .heading-actions .announcement-back-button")).toBeVisible();
     const toolbarBox = await page
       .locator(".announcement-detail-toolbar")
       .boundingBox();
@@ -269,7 +354,7 @@ test("관리자는 홈 요약에서 공지를 작성하고 일반 텍스트로 �
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByRole("button", { name: "공지 수정", exact: true }).click();
   editor = await fillEditor(page, "변경된 운영 공지", "수정 본문");
-  await editor.getByLabel("목록 상단에 고정").uncheck();
+  await editor.getByLabel("중요 공지", { exact: true }).uncheck();
   await editor
     .getByRole("button", { name: "공지 수정 저장", exact: true })
     .click();
@@ -346,9 +431,7 @@ for (const width of [1440, 320]) {
     const refreshBox = await heading
       .getByRole("button", { name: "새로고침", exact: true })
       .boundingBox();
-    expect(
-      Math.abs(titleBox.y + titleBox.height / 2 - refreshBox.y - refreshBox.height / 2),
-    ).toBeLessThan(1);
+    expect(Math.abs(titleBox.y + titleBox.height / 2 - refreshBox.y - refreshBox.height / 2)).toBeLessThan(1);
     expect(refreshBox.width).toBe(40);
     expect(refreshBox.height).toBe(40);
     await expect(
@@ -357,7 +440,7 @@ for (const width of [1440, 320]) {
     await heading.screenshot({
       path: testInfo.outputPath("aligned-heading.png"),
     });
-    const list = page.locator(".announcements-page > .announcement-list");
+    const list = page.locator(".announcements-page > .announcement-board");
     await expect(list.locator(".announcement-row")).toHaveCount(2);
     await expect(list.locator(".announcement-title").first()).toHaveCSS(
       "font-weight",
@@ -369,19 +452,17 @@ for (const width of [1440, 320]) {
     );
     const listBox = await list.boundingBox();
     const headingBox = await heading.boundingBox();
-    expect(listBox.y - headingBox.y - headingBox.height).toBeLessThanOrEqual(
-      13,
-    );
+    const searchBox = await page.locator('.announcement-search-toolbar').boundingBox();
+    expect(searchBox.y - headingBox.y - headingBox.height).toBeLessThanOrEqual(13);
+    expect(listBox.y - searchBox.y - searchBox.height).toBeLessThanOrEqual(13);
     await expect(list.locator(".announcement-row").first()).toHaveCSS(
       "padding-top",
-      "8px",
+      "12px",
     );
     const paginationBox = await page
       .locator(".announcement-pagination")
       .boundingBox();
-    expect(paginationBox.y - listBox.y - listBox.height).toBeLessThanOrEqual(
-      17,
-    );
+    expect(paginationBox.y - listBox.y - listBox.height).toBeLessThanOrEqual(17);
     await page
       .locator(".announcements-page")
       .screenshot({ path: testInfo.outputPath("compact-list.png") });

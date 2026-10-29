@@ -12,12 +12,16 @@ import { useInteractions } from "../hooks/useInteractions.js";
 import { announcementPath, announcementsPath } from "../lib/routes.js";
 import {
   announcementPage,
+  announcementQuery,
+  announcementSearch,
+  filterAnnouncements,
   isAnnouncementConflict,
 } from "../lib/spaceAnnouncements.js";
 import { formatDate } from "../lib/domain.js";
 import AnnouncementList from "./AnnouncementList.jsx";
 import AnnouncementEditor from "./AnnouncementEditor.jsx";
 import RefreshButton from "./RefreshButton.jsx";
+import Icon from "./Icon.jsx";
 import { ErrorNotice, ResourceState } from "./ui.jsx";
 import "../space-announcements.css";
 
@@ -27,8 +31,12 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
   const navigate = useAppNavigate();
   const location = useLocation();
   const page = announcementPage(location.search);
+  const search = announcementSearch(location.search);
+  const [searchInput, setSearchInput] = useState(search);
+  const searchField = useRef(null);
+  useEffect(() => setSearchInput(search), [search]);
   const base = announcementsPath(space.id);
-  const query = page ? `?page=${page}` : "";
+  const query = announcementQuery(page, search);
   const isManager = space.myRole === "MANAGER";
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -66,7 +74,7 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
   useEffect(() => {
     if (announcementId == null && page > 0 && resource.data?.length === 0)
       navigate(
-        `${base}${location.state?.announcementDeleted && page > 1 ? `?page=${page - 1}` : ""}`,
+        `${base}${announcementQuery(location.state?.announcementDeleted && page > 1 ? page - 1 : 0, search)}`,
         { replace: true },
       );
   }, [
@@ -75,6 +83,7 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
     resource.data,
     base,
     location.state?.announcementDeleted,
+    search,
   ]);
   const remove = async () => {
     if (busy || !isManager || !resource.data) return;
@@ -121,6 +130,9 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
       navigate(`${announcementPath(space.id, saved.id)}${query}`);
     else resource.reload();
   };
+  const visibleItems = announcementId == null && resource.data
+    ? filterAnnouncements(resource.data, search)
+    : [];
   return (
     <>
       {announcementId != null && (
@@ -141,12 +153,6 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
                   : "공지 상세"}
             </span>
           </nav>
-          <button
-            className="secondary-button announcement-back-button"
-            onClick={() => navigate(`${base}${query}`)}
-          >
-            ← 목록으로
-          </button>
         </div>
       )}
       <section
@@ -166,10 +172,18 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
             {announcementId != null &&
               !accessError &&
               resource.data?.pinned && (
-                <span className="announcement-pin">상단 고정</span>
+                <span className="announcement-pin">중요</span>
               )}
           </div>
           <div className="heading-actions">
+            {announcementId != null && (
+              <button
+                className="secondary-button announcement-back-button"
+                onClick={() => navigate(`${base}${query}`)}
+              >
+                ← 목록으로
+              </button>
+            )}
             <RefreshButton
               disabled={resource.loading || busy}
               onClick={() => {
@@ -196,16 +210,38 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
           {resource.data &&
             (announcementId == null ? (
               <>
-                {resource.data.length ? (
+                <div className="announcement-search-toolbar">
+                  <div className="announcement-search-status">
+                    {search && <button className="text-button" onClick={() => {
+                      navigate(`${base}${announcementQuery(page)}`);
+                      searchField.current?.focus();
+                    }}>검색 초기화 <Icon name="close" /></button>}
+                  </div>
+                  <form role="search" aria-label="공지 검색" onSubmit={(event) => {
+                    event.preventDefault();
+                    navigate(`${base}${announcementQuery(page, searchInput)}`);
+                  }}>
+                    <label className="sr-only" htmlFor="announcement-search">현재 페이지 공지 검색</label>
+                    <div className="announcement-search-input">
+                      <Icon name="search" />
+                      <input id="announcement-search" ref={searchField} type="search" maxLength={100}
+                        placeholder="현재 페이지의 제목·작성자 검색" value={searchInput}
+                        onChange={(event) => setSearchInput(event.target.value)} />
+                    </div>
+                    <button className="secondary-button" type="submit">검색</button>
+                  </form>
+                </div>
+                {visibleItems.length ? (
                   <AnnouncementList
-                    items={resource.data}
+                    items={visibleItems}
                     onOpen={(id) =>
                       navigate(`${announcementPath(space.id, id)}${query}`)
                     }
                   />
                 ) : (
                   <p className="announcement-empty">
-                    등록된 공지사항이 없습니다.
+                    <Icon name="announcement" />
+                    {search && resource.data.length ? "현재 페이지에서 일치하는 공지가 없습니다." : "등록된 공지사항이 없습니다."}
                   </p>
                 )}
                 <ErrorNotice error={next.error} onRetry={next.reload} />
@@ -217,7 +253,7 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
                     className="secondary-button"
                     disabled={page === 0 || resource.loading}
                     onClick={() =>
-                      navigate(`${base}${page > 1 ? `?page=${page - 1}` : ""}`)
+                      navigate(`${base}${announcementQuery(page - 1, search)}`)
                     }
                   >
                     이전
@@ -228,7 +264,7 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
                     disabled={
                       resource.loading || next.loading || !next.data?.length
                     }
-                    onClick={() => navigate(`${base}?page=${page + 1}`)}
+                    onClick={() => navigate(`${base}${announcementQuery(page + 1, search)}`)}
                   >
                     다음
                   </button>
@@ -238,14 +274,14 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
               <article className="announcement-detail">
                 <header className="announcement-detail-heading">
                   <div className="announcement-metadata">
-                    <span>{resource.data.authorName}</span>
-                    <time dateTime={resource.data.createdAt}>
-                      등록 {formatDate(resource.data.createdAt)}
-                    </time>
+                    <div><span>작성자</span><strong>{resource.data.authorName}</strong></div>
+                    <div><span>등록일</span><time dateTime={resource.data.createdAt}>
+                      {formatDate(resource.data.createdAt)}
+                    </time></div>
                     {resource.data.updatedAt !== resource.data.createdAt && (
-                      <time dateTime={resource.data.updatedAt}>
-                        수정 {formatDate(resource.data.updatedAt)}
-                      </time>
+                      <div><span>수정일</span><time dateTime={resource.data.updatedAt}>
+                        {formatDate(resource.data.updatedAt)}
+                      </time></div>
                     )}
                   </div>
                 </header>
