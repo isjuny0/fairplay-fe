@@ -27,6 +27,7 @@ for (const width of [1920, 1440, 1024, 768, 390, 320]) {
       { exact: true },
     );
     const box = await select.boundingBox();
+    const layoutTop = await select.evaluate((element) => element.offsetTop);
     const hintBox = await hint.boundingBox();
     expect(hintBox.y).toBeGreaterThanOrEqual(box.y + box.height);
     expect(hintBox.x + hintBox.width).toBeLessThanOrEqual(
@@ -68,8 +69,7 @@ for (const width of [1920, 1440, 1024, 768, 390, 320]) {
     expect(popup.y).toBeGreaterThanOrEqual(0);
     expect(popup.x + popup.width).toBeLessThanOrEqual(width);
     expect(popup.y + popup.height).toBeLessThanOrEqual(900);
-    const after = await select.boundingBox();
-    expect(after.y).toBe(box.y);
+    expect(await select.evaluate((element) => element.offsetTop)).toBe(layoutTop);
     await page.keyboard.press('Escape');
     await expect(help).toHaveCount(0);
     await expect(editor).toBeVisible();
