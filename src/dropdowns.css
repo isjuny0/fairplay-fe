@@ -1,0 +1,224 @@
+/* One visual contract for native selectors, context menus and picker panels.
+   Native selects keep their labels, validation, keyboard and change events. */
+:root {
+  --dropdown-background: var(--surface);
+  --dropdown-border: var(--border);
+  --dropdown-radius: var(--radius-control);
+  --dropdown-menu-radius: 8px;
+  --dropdown-hover: #f1f6f3;
+  --dropdown-selected: var(--brand-light);
+  --dropdown-shadow: 0 8px 24px #153e2c1a;
+  --dropdown-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='m4 6 4 4 4-4' stroke='%23556170' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+/* Deliberately scoped above individual page rules, including lazy CSS chunks. */
+:root select:not([multiple]):is(:not([size]), [size='1']),
+:root .workspace-context-trigger,
+:root .team-calendar-category-trigger {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  min-height: var(--control-height);
+  padding: 7px 12px;
+  border: 1px solid var(--dropdown-border);
+  border-radius: var(--dropdown-radius);
+  background-color: var(--dropdown-background);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: var(--text-body);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+:root select:not([multiple]):is(:not([size]), [size='1']) {
+  appearance: none;
+  padding-inline-end: 36px;
+  background-image: var(--dropdown-arrow);
+  background-position: right 12px center;
+  background-size: 16px 16px;
+  background-repeat: no-repeat;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+:root select:not([multiple]):hover:not(:disabled),
+:root .workspace-context-trigger:hover:not(:disabled),
+:root .team-calendar-category-trigger:hover:not(:disabled) {
+  border-color: var(--brand);
+}
+
+:root select:not([multiple]):focus-visible,
+:root .workspace-context-trigger:focus-visible,
+:root .team-calendar-category-trigger:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+:root select:not([multiple]):disabled,
+:root .workspace-context-trigger:disabled,
+:root .team-calendar-category-trigger:disabled {
+  background-color: var(--surface-secondary);
+  border-color: var(--dropdown-border);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+/* Keep validation and active-filter meaning rather than painting over it. */
+:root select:not([multiple]):is([aria-invalid='true'], :user-invalid) {
+  border-color: var(--notice-coral-text);
+}
+:root :is(.collection-controls, .deliverable-filter-field)[data-active='true'] > select,
+:root .collection-controls [data-active='true'] > select,
+:root .directory-role-filter .workspace-context-trigger[data-value]:not([data-value='ALL']) {
+  background-color: var(--dropdown-selected);
+  border-color: #adc4b9;
+  color: var(--brand);
+}
+
+:root .workspace-context-copy > strong {
+  font-size: var(--text-body);
+  font-weight: 400;
+  line-height: 1.5;
+}
+:root .workspace-context-trigger:has(.workspace-context-copy > small) {
+  min-height: 54px;
+}
+:root .workspace-context-chevron,
+:root .team-calendar-category-trigger > svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  color: var(--text-muted);
+}
+
+:root .workspace-context-options[class],
+:root .team-calendar-category-dropdown[class],
+:root .team-calendar-inline-picker[class],
+:root .time-picker-panel[class] {
+  box-sizing: border-box;
+  border: 1px solid var(--dropdown-border);
+  border-radius: var(--dropdown-menu-radius);
+  background: var(--dropdown-background);
+  box-shadow: var(--dropdown-shadow);
+}
+:root .workspace-context-options,
+:root .team-calendar-category-dropdown {
+  padding: 5px;
+  scrollbar-width: thin;
+  scrollbar-color: #b7cec0 transparent;
+}
+:root .workspace-context-option,
+:root .team-calendar-category-dropdown .team-calendar-category > span {
+  box-sizing: border-box;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--dropdown-radius);
+  background: var(--dropdown-background);
+  color: var(--text-primary);
+  font-size: var(--text-body);
+  font-weight: 400;
+  line-height: 1.5;
+}
+:root .workspace-context-option.is-highlighted,
+:root .team-calendar-category-dropdown .team-calendar-category:hover > span,
+:root .time-picker-options button:hover {
+  background: var(--dropdown-hover);
+}
+:root .workspace-context-option[aria-selected='true'],
+:root .team-calendar-category-dropdown .team-calendar-category > input:checked + span,
+:root .time-picker-options button[aria-pressed='true'] {
+  background: var(--dropdown-selected);
+  color: var(--brand);
+  font-weight: 600;
+}
+
+/* Progressive enhancement: supported browsers style the actual native popup,
+   so no replacement widgets or synthetic change events are required.
+   Older browsers retain their native accessible option picker. */
+@supports (appearance: base-select) {
+  :root select:not([multiple]):is(:not([size]), [size='1']),
+  :root select:not([multiple]):is(:not([size]), [size='1'])::picker(select) {
+    appearance: base-select;
+  }
+  :root select:not([multiple]):is(:not([size]), [size='1']) {
+    gap: 10px;
+    padding-inline-end: 12px;
+    background-image: none;
+  }
+  :root select:not([multiple])::picker-icon {
+    content: '';
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    margin-inline-start: auto;
+    background: var(--dropdown-arrow) center / 16px no-repeat;
+    transition: rotate 0.15s;
+  }
+  :root select:not([multiple]):open::picker-icon { rotate: 180deg; }
+  :root select:not([multiple])::picker(select) {
+    box-sizing: border-box;
+    max-width: calc(100dvw - 24px);
+    max-height: min(280px, 50dvh);
+    margin-block: 6px;
+    padding: 5px;
+    border: 1px solid var(--dropdown-border);
+    border-radius: var(--dropdown-menu-radius);
+    background: var(--dropdown-background);
+    color: var(--text-primary);
+    box-shadow: var(--dropdown-shadow);
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #b7cec0 transparent;
+  }
+  :root select:not([multiple]) option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 36px;
+    padding: 8px 10px;
+    border-radius: var(--dropdown-radius);
+    background: var(--dropdown-background);
+    color: var(--text-primary);
+    font-size: var(--text-body);
+    font-weight: 400;
+    line-height: 1.5;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  :root select:not([multiple]) option:is(:hover, :focus) {
+    outline: none;
+    background: var(--dropdown-hover);
+  }
+  :root select:not([multiple]) option:checked {
+    background: var(--dropdown-selected);
+    color: var(--brand);
+    font-weight: 600;
+  }
+  :root select:not([multiple]) option:disabled {
+    background: var(--surface-secondary);
+    color: var(--text-muted);
+  }
+  :root select:not([multiple]) option::checkmark {
+    order: 1;
+    margin-inline-start: auto;
+    color: var(--brand);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root select:not([multiple])::picker-icon { transition: none; }
+}
+@media (forced-colors: active) {
+  :root select:not([multiple]),
+  :root .workspace-context-trigger,
+  :root .team-calendar-category-trigger { border-color: ButtonText; }
+  :root select:not([multiple]) option:checked,
+  :root .workspace-context-option[aria-selected='true'] {
+    background: Highlight;
+    color: HighlightText;
+  }
+}
