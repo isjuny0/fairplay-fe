@@ -82,7 +82,7 @@ export default function AnnouncementEditor({
         !(await confirm({
           title: "최신 내용에 내 수정 반영",
           message:
-            "서버의 최신 제목·본문·고정 여부를 작성 중인 내용으로 변경합니다. 비교한 내용을 확인했나요?",
+            "서버의 최신 제목·본문·중요 여부를 작성 중인 내용으로 변경합니다. 비교한 내용을 확인했나요?",
           label: "내 내용으로 저장",
           neutral: true,
         }))
@@ -160,7 +160,7 @@ export default function AnnouncementEditor({
               disabled={busy}
               onChange={(event) => setPinned(event.target.checked)}
             />
-            목록 상단에 고정
+            중요 공지
           </label>
           <span className="field-help">
             {content.length.toLocaleString()} / 5,000자
@@ -183,9 +183,9 @@ export default function AnnouncementEditor({
               input: content.trim(),
             },
             {
-              label: "상단 고정",
-              latest: recovery.latest?.pinned ? "고정" : "고정 안 함",
-              input: pinned ? "고정" : "고정 안 함",
+              label: "중요 여부",
+              latest: recovery.latest?.pinned ? "중요" : "일반",
+              input: pinned ? "중요" : "일반",
             },
           ]}
         />

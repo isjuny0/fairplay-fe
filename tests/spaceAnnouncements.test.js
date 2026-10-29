@@ -13,6 +13,9 @@ import {
 import { previewSpaceAnnouncements } from "../src/mock/spaceAnnouncements.js";
 import {
   announcementPage,
+  announcementQuery,
+  announcementSearch,
+  filterAnnouncements,
   isAnnouncementConflict,
   validateAnnouncement,
 } from "../src/lib/spaceAnnouncements.js";
@@ -29,6 +32,23 @@ const input = {
   content: "  첫 줄\n둘째 줄  ",
   pinned: false,
 };
+
+test("공지 검색은 현재 페이지의 제목·작성자만 비교하고 페이지와 검색어를 주소에 보존한다", () => {
+  const items = [
+    { title: "프로젝트 일정", authorName: "정민수" },
+    { title: "Design 검토", authorName: "이지원" },
+  ];
+  assert.deepEqual(filterAnnouncements(items, "  일정  "), [items[0]]);
+  assert.deepEqual(filterAnnouncements(items, "정민수"), [items[0]]);
+  assert.deepEqual(filterAnnouncements(items, "design"), [items[1]]);
+  assert.deepEqual(filterAnnouncements(items, "없는 글"), []);
+  assert.equal(filterAnnouncements(items, ""), items);
+  const query = announcementQuery(2, " 일정 & 발표 ");
+  assert.equal(announcementPage(query), 2);
+  assert.equal(announcementSearch(query), "일정 & 발표");
+  assert.equal(announcementQuery(0), "");
+  assert.equal(announcementSearch(`?q=${"가".repeat(110)}`).length, 100);
+});
 beforeEach(() => {
   storage.clear();
   setPreviewRole("manager");
