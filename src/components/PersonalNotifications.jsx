@@ -9,6 +9,7 @@ import { formatDate } from '../lib/domain.js';
 import { pageNumbers } from '../lib/pageNumbers.js';
 import { ErrorNotice, EmptyState, ResourceState } from './ui.jsx';
 import { HeaderContext } from './HeaderContext.js';
+import PersonalWorkBackButton from './PersonalWorkBackButton.jsx';
 
 const PAGE_SIZE = 20;
 
@@ -85,7 +86,7 @@ export default function PersonalNotifications() {
   };
   return <main className="main-content personal-work-page">
     <header className="page-heading">
-      <div><h1>알림함</h1><p>내게 도착한 알림을 확인하고 읽음으로 표시합니다.</p></div>
+      <div className="personal-work-heading-group"><PersonalWorkBackButton /><div><h1>알림함</h1><p>내게 도착한 알림을 확인하고 읽음으로 표시합니다.</p></div></div>
       <button type="button" className="secondary-button" disabled={busy || !(unreadCount.data > 0)} onClick={markAll}><CheckCheck size={17} /> 모두 읽음</button>
     </header>
     <nav className="personal-work-tabs" aria-label="알림 필터">
