@@ -29,12 +29,18 @@ test('알림함은 전체·미읽음 커서 목록과 전체 읽음을 제공한
   await page.goto('/preview/notifications');
   await expect(page.getByRole('heading', { name: '알림함', exact: true })).toBeVisible();
   await expect(page.getByText('더 이상 접근할 수 없는 항목입니다')).toBeVisible();
-  await expect(page.getByRole('button', { name: '열기' })).toHaveCount(4);
+  await expect(page.locator('.personal-notification-open')).toHaveCount(4);
+  await expect(page.getByRole('button', { name: '열기' })).toHaveCount(0);
   await page.getByRole('button', { name: '읽지 않음' }).click();
-  await expect(page.getByRole('button', { name: '읽음', exact: true })).toHaveCount(3);
+  await expect(page.locator('.notification-mark-read')).toHaveCount(3);
+  await page.locator('.notification-mark-read').first().click();
+  await expect(page.locator('.notification-mark-read')).toHaveCount(2);
   await page.getByRole('button', { name: '모두 읽음' }).click();
   await expect(page.getByText('읽지 않은 알림이 없습니다.')).toBeVisible();
   await expect(page.getByRole('button', { name: '알림함' })).not.toContainText('3');
+  await page.getByRole('button', { name: '전체', exact: true }).click();
+  await page.getByRole('button', { name: '새 작업에 배정되었습니다 상세 보기' }).click();
+  await expect(page).toHaveURL(/\/preview\/spaces\/1\/teams\/1\/tasks\/102$/);
   expect(calls).toEqual([]);
 });
 
@@ -56,11 +62,11 @@ test('통합 할 일 화면은 작업·미제출 동료 평가와 기존 상세 
   await expect(page.getByRole('table')).toBeVisible();
   await expect(page.getByRole('row')).toHaveCount(4);
   await expect(page.getByRole('row', { name: /최종 동료 평가/ })).toBeVisible();
-  await page.getByRole('button', { name: '최종 동료 평가 상세 보기' }).click();
+  await page.getByRole('row', { name: '최종 동료 평가 상세 보기' }).click();
   await expect(page).toHaveURL(/\/preview\/spaces\/1\/teams\/1\/peer-evaluations\?roundId=12$/);
   await page.goto('/preview/my/tasks');
   await expect(page.getByText('완료', { exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: '설문 결과 분석 상세 보기' }).click();
+  await page.getByRole('row', { name: '설문 결과 분석 상세 보기' }).click();
   await expect(page).toHaveURL(/\/preview\/spaces\/1\/teams\/1\/tasks\/102$/);
   expect(calls).toEqual([]);
 });
