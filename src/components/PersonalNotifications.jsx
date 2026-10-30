@@ -73,7 +73,7 @@ export default function PersonalNotifications() {
   const page = resource.data;
   return <main className="main-content personal-work-page">
     <header className="page-heading">
-      <div><h1>알림함</h1><p>내게 도착한 알림을 확인하고 읽음으로 표시합니다.</p></div>
+      <div><h1>알림함</h1></div>
       <PersonalWorkBackButton />
     </header>
     <div className="personal-work-toolbar">
