@@ -86,13 +86,16 @@ export default function PersonalNotifications() {
   };
   return <main className="main-content personal-work-page">
     <header className="page-heading">
-      <div className="personal-work-heading-group"><PersonalWorkBackButton /><div><h1>알림함</h1><p>내게 도착한 알림을 확인하고 읽음으로 표시합니다.</p></div></div>
-      <button type="button" className="secondary-button" disabled={busy || !(unreadCount.data > 0)} onClick={markAll}><CheckCheck size={17} /> 모두 읽음</button>
+      <div><h1>알림함</h1><p>내게 도착한 알림을 확인하고 읽음으로 표시합니다.</p></div>
+      <PersonalWorkBackButton />
     </header>
-    <nav className="personal-work-tabs" aria-label="알림 필터">
-      <button type="button" aria-pressed={filter === 'ALL'} className={filter === 'ALL' ? 'active' : ''} onClick={() => changeFilter('ALL')}>전체</button>
-      <button type="button" aria-pressed={filter === 'UNREAD'} className={filter === 'UNREAD' ? 'active' : ''} onClick={() => changeFilter('UNREAD')}>읽지 않음</button>
-    </nav>
+    <div className="personal-work-toolbar">
+      <nav className="personal-work-tabs" aria-label="알림 필터">
+        <button type="button" aria-pressed={filter === 'ALL'} className={filter === 'ALL' ? 'active' : ''} onClick={() => changeFilter('ALL')}>전체</button>
+        <button type="button" aria-pressed={filter === 'UNREAD'} className={filter === 'UNREAD' ? 'active' : ''} onClick={() => changeFilter('UNREAD')}>읽지 않음</button>
+      </nav>
+      <button type="button" className="secondary-button personal-work-mark-all" disabled={busy || !(unreadCount.data > 0)} onClick={markAll}><CheckCheck size={17} /> 모두 읽음</button>
+    </div>
     <ResourceState resource={resource} label="알림">
       {page?.items.length ? <ul className="personal-notification-list">
         {page.items.map((item) => {

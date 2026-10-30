@@ -30,7 +30,10 @@ export default function MyTasks() {
     if (resource.data && pageNumber > lastPage) setPageNumber(lastPage);
   }, [pageNumber, resource.data, totalPages]);
   return <main className="main-content personal-work-page">
-    <header className="page-heading"><div className="personal-work-heading-group"><PersonalWorkBackButton /><div><h1>할 일</h1><p>모든 스페이스에서 내 작업과 진행 중인 동료 평가를 확인합니다.</p></div></div></header>
+    <header className="page-heading">
+      <div><h1>할 일</h1><p>모든 스페이스에서 내 작업과 진행 중인 동료 평가를 확인합니다.</p></div>
+      <PersonalWorkBackButton />
+    </header>
     <ResourceState resource={resource} label="할 일">
       {todos.length ? <div className="table-scroll"><table className="data-table personal-task-table">
         <thead><tr><th scope="col">할 일</th><th scope="col">유형·상태</th><th scope="col">시작일</th><th scope="col">마감일</th><th scope="col">내 배분</th><th scope="col">작업 공간</th></tr></thead>

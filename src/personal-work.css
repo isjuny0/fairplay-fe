@@ -44,11 +44,12 @@
 .notification-popover-state { margin: 14px 4px; color: var(--text-muted); font-size: var(--text-support); }
 .notification-popover-all { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 8px; padding: 9px; border: 0; border-radius: 8px; background: #f5f7f8; color: var(--brand-dark); }
 .personal-work-page { max-width: 1440px; overflow-x: clip; contain: layout; }
-.personal-work-heading-group { display: flex; align-items: center; gap: 16px; min-width: 0; }
 .personal-work-back-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex: 0 0 auto; }
-.personal-work-tabs { display: flex; gap: 8px; margin: 22px 0 14px; border-bottom: 1px solid var(--border); }
+.personal-work-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 22px 0 14px; border-bottom: 1px solid var(--border); }
+.personal-work-tabs { display: flex; gap: 8px; margin: 0; border-bottom: 0; }
 .personal-work-tabs button { padding: 10px 14px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--text-muted); }
 .personal-work-tabs button.active { border-bottom-color: var(--brand); color: var(--brand-dark); font-weight: 650; }
+.personal-work-mark-all { flex: 0 0 auto; margin-bottom: 8px; }
 .personal-notification-list { border-top: 1px solid var(--border); }
 .personal-notification { display: flex; align-items: center; gap: 14px; padding: 0 14px; border-bottom: 1px solid var(--border); }
 .personal-notification.is-unread { background: #f7fbf8; }
@@ -96,6 +97,10 @@
   .personal-work-page-numbers { gap: 6px; }
   .personal-work-page-number { min-width: 25px; height: 36px; font-size: 16px; }
   .personal-work-page .page-heading { align-items: flex-start; }
+  .personal-work-toolbar { align-items: center; }
+  .personal-work-tabs { min-width: 0; gap: 2px; }
+  .personal-work-tabs button { padding-inline: 10px; }
+  .personal-work-mark-all { padding: 8px 10px; font-size: 13px; }
   .personal-task-table { min-width: 960px; }
 }
 @media (min-width: 721px) and (max-width: 900px) {
