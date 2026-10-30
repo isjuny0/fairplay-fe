@@ -21,3 +21,44 @@ export const deleteSpaceAnnouncement = (
     `${detail(spaceId, announcementId)}?${new URLSearchParams({ expectedVersion })}`,
     { method: "DELETE" },
   );
+
+export const uploadSpaceAnnouncementAttachment = (
+  spaceId,
+  announcementId,
+  expectedVersion,
+  file,
+) => {
+  const body = new FormData();
+  body.append(
+    "metadata",
+    new Blob([JSON.stringify({ expectedVersion })], {
+      type: "application/json",
+    }),
+  );
+  body.append("file", file);
+  return apiRequest(`${detail(spaceId, announcementId)}/attachments`, {
+    method: "POST",
+    body,
+  });
+};
+
+export const downloadSpaceAnnouncementAttachment = (
+  spaceId,
+  announcementId,
+  attachmentId,
+) =>
+  apiRequest(
+    `${detail(spaceId, announcementId)}/attachments/${attachmentId}/file`,
+    { responseType: "blob" },
+  );
+
+export const deleteSpaceAnnouncementAttachment = (
+  spaceId,
+  announcementId,
+  attachmentId,
+  expectedVersion,
+) =>
+  apiRequest(
+    `${detail(spaceId, announcementId)}/attachments/${attachmentId}?${new URLSearchParams({ expectedVersion })}`,
+    { method: "DELETE" },
+  );

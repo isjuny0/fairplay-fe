@@ -2,7 +2,7 @@ import { koreanDateTime } from "../lib/koreanTime.js";
 import { validateAnnouncement } from "../lib/spaceAnnouncements.js";
 import { MockError } from "./planned.js";
 
-export function previewSpaceAnnouncements(
+export async function previewSpaceAnnouncements(
   context,
   state,
   parts,
@@ -45,6 +45,7 @@ export function previewSpaceAnnouncements(
         "프로젝트 공지는 이곳에서 확인해 주세요.\n팀별 작업과 제출 일정은 각 팀에서 관리합니다.",
       pinned: true,
       version: 0,
+      attachments: [],
       createdAt: "2026-10-20T09:00:00",
       updatedAt: "2026-10-20T09:00:00",
     },
@@ -57,16 +58,84 @@ export function previewSpaceAnnouncements(
       content: "다음 회의 전에 팀별 진행 상황과 확인할 내용을 정리해 주세요.",
       pinned: false,
       version: 0,
+      attachments: [
+        {
+          id: 1,
+          originalFilename: "팀별 진행 상황 안내.txt",
+          contentType: "text/plain",
+          sizeBytes: 84,
+          createdAt: "2026-10-21T14:00:00",
+        },
+        {
+          id: 2,
+          originalFilename: "회의 준비 체크리스트.txt",
+          contentType: "text/plain",
+          sizeBytes: 72,
+          createdAt: "2026-10-21T14:00:00",
+        },
+      ],
       createdAt: "2026-10-21T14:00:00",
       updatedAt: "2026-10-21T14:00:00",
     },
   ];
   const announcements = state.spaceAnnouncements;
-  const hasId = parts.length === 5;
+  if ((state.spaceAnnouncementAttachmentFixtureVersion || 0) < 2) {
+    const sample = announcements.find(
+      (item) =>
+        item.spaceId === context.space.id &&
+        item.title === "팀별 진행 상황을 공유해 주세요",
+    );
+    if (sample) {
+      sample.attachments ??= [];
+      const existingAttachmentIds = announcements.flatMap((item) =>
+        (item.attachments || []).map((attachment) => attachment.id),
+      );
+      let attachmentId = Math.max(0, ...existingAttachmentIds) + 1;
+      const fixtureAttachments = [
+        {
+          originalFilename: "팀별 진행 상황 안내.txt",
+          contentType: "text/plain",
+          sizeBytes: 84,
+        },
+        {
+          originalFilename: "회의 준비 체크리스트.txt",
+          contentType: "text/plain",
+          sizeBytes: 72,
+        },
+      ];
+      for (const fixture of fixtureAttachments) {
+        if (
+          sample.attachments.some(
+            (attachment) => attachment.originalFilename === fixture.originalFilename,
+          )
+        )
+          continue;
+        sample.attachments.push({
+          id: attachmentId++,
+          ...fixture,
+          createdAt: sample.createdAt,
+        });
+      }
+    }
+    state.spaceAnnouncementAttachmentFixtureVersion = 2;
+    const maxAttachmentId = Math.max(
+      0,
+      ...announcements.flatMap((item) =>
+        (item.attachments || []).map((attachment) => attachment.id),
+      ),
+    );
+    state.nextAnnouncementAttachmentId = Math.max(
+      state.nextAnnouncementAttachmentId || 1,
+      maxAttachmentId + 1,
+    );
+  }
+  const hasId = parts.length >= 5;
   const id = Number(parts[4]);
-  if (parts.length > 5 || (hasId && (!Number.isSafeInteger(id) || id <= 0)))
+  const attachmentRoute = parts[5] === "attachments";
+  if ((parts.length > 5 && !attachmentRoute) || (hasId && (!Number.isSafeInteger(id) || id <= 0)))
     throw new MockError("INVALID_REQUEST", "공지 ID를 확인해 주세요.", 400);
   const existing = hasId ? announcements.find((item) => item.id === id) : null;
+  if (existing) existing.attachments ??= [];
   if (hasId && !existing)
     throw new MockError(
       "ANNOUNCEMENT_NOT_FOUND",
@@ -75,6 +144,50 @@ export function previewSpaceAnnouncements(
     );
   if (existing && existing.spaceId !== spaceId)
     throw new MockError("FORBIDDEN", "이 스페이스의 공지가 아닙니다.", 403);
+  if (attachmentRoute) {
+    const attachmentId = Number(parts[6]);
+    existing.attachments ??= [];
+    if (method === "GET" && parts.length === 8 && parts[7] === "file") {
+      const attachment = existing.attachments.find((item) => item.id === attachmentId);
+      if (!attachment) throw new MockError("ANNOUNCEMENT_ATTACHMENT_NOT_FOUND", "첨부파일을 찾을 수 없습니다.", 404);
+      return new Blob([`미리보기용 첨부파일: ${attachment.originalFilename}`], { type: attachment.contentType || "application/octet-stream" });
+    }
+    if (method === "POST" && parts.length === 6) {
+      const metadataPart = body instanceof FormData ? body.get("metadata") : null;
+      const file = body instanceof FormData ? body.get("file") : null;
+      let metadata;
+      try { metadata = JSON.parse(await metadataPart.text()); }
+      catch { throw new MockError("INVALID_REQUEST", "첨부파일 요청 형식을 확인해 주세요.", 400); }
+      if (!file || metadata?.expectedVersion !== existing.version)
+        throw new MockError(metadata?.expectedVersion === existing.version ? "INVALID_REQUEST" : "ANNOUNCEMENT_VERSION_CONFLICT", "공지 버전 또는 첨부파일을 확인해 주세요.");
+      if (existing.attachments.length >= 10)
+        throw new MockError("ANNOUNCEMENT_ATTACHMENT_LIMIT_EXCEEDED", "공지 첨부파일은 최대 10개까지 등록할 수 있습니다.");
+      const attachment = {
+        id: state.nextAnnouncementAttachmentId || 1,
+        originalFilename: file.name,
+        contentType: file.type || "application/octet-stream",
+        sizeBytes: file.size,
+        createdAt: koreanDateTime(),
+      };
+      state.nextAnnouncementAttachmentId = attachment.id + 1;
+      existing.attachments.push(attachment);
+      existing.version++;
+      existing.updatedAt = koreanDateTime();
+      return existing;
+    }
+    if (method === "DELETE" && parts.length === 7) {
+      const expected = Number(url.searchParams.get("expectedVersion"));
+      if (!Number.isSafeInteger(expected) || expected !== existing.version)
+        throw new MockError("ANNOUNCEMENT_VERSION_CONFLICT", "다른 관리자가 공지를 변경했습니다. 최신 내용을 확인해 주세요.");
+      const index = existing.attachments.findIndex((item) => item.id === attachmentId);
+      if (index < 0) throw new MockError("ANNOUNCEMENT_ATTACHMENT_NOT_FOUND", "첨부파일을 찾을 수 없습니다.", 404);
+      existing.attachments.splice(index, 1);
+      existing.version++;
+      existing.updatedAt = koreanDateTime();
+      return null;
+    }
+    throw new MockError("NOT_FOUND", "지원하지 않는 첨부파일 API입니다.", 404);
+  }
   if (method === "GET") {
     if (hasId) return existing;
     const page = Number(url.searchParams.get("page") ?? 0);
@@ -92,7 +205,7 @@ export function previewSpaceAnnouncements(
         "공지 목록 페이지 범위를 확인해 주세요.",
         400,
       );
-    return announcements
+    const all = announcements
       .filter((item) => item.spaceId === spaceId)
       .sort(
         (a, b) =>
@@ -100,7 +213,10 @@ export function previewSpaceAnnouncements(
           b.createdAt.localeCompare(a.createdAt) ||
           b.id - a.id,
       )
-      .slice(page * size, (page + 1) * size);
+    return {
+      items: all.slice(page * size, (page + 1) * size),
+      totalCount: all.length,
+    };
   }
   if (
     (hasId && !["PATCH", "DELETE"].includes(method)) ||
@@ -166,6 +282,7 @@ export function previewSpaceAnnouncements(
     authorId: context.user.id,
     authorName: context.user.name,
     version: 0,
+    attachments: [],
     createdAt: input.updatedAt,
   };
   state.nextAnnouncementId = announcement.id + 1;

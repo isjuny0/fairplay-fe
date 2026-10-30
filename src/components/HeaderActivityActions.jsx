@@ -18,7 +18,7 @@ export default function HeaderActivityActions() {
   const root = useRef(null);
   const taskRequest = useRef(null);
   const count = useResource(getMyNotificationUnreadCount, []);
-  const recent = useResource(() => listMyNotifications({ filter: 'ALL', accessibleOnly: true, size: 5 }), []);
+  const recent = useResource(() => listMyNotifications({ filter: 'UNREAD', accessibleOnly: true, size: 5 }), []);
 
   useEffect(() => {
     const update = () => { count.reload(); recent.reload(); };

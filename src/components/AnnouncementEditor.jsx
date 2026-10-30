@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { ApiError } from "../api/client.js";
 import {
   createSpaceAnnouncement,
+  deleteSpaceAnnouncementAttachment,
   getSpaceAnnouncement,
+  uploadSpaceAnnouncementAttachment,
   updateSpaceAnnouncement,
 } from "../api/spaceAnnouncements.js";
 import {
@@ -23,6 +25,10 @@ export default function AnnouncementEditor({
   const [title, setTitle] = useState(announcement?.title || "");
   const [content, setContent] = useState(announcement?.content || "");
   const [pinned, setPinned] = useState(announcement?.pinned || false);
+  const [workingAnnouncement, setWorkingAnnouncement] = useState(announcement);
+  const [files, setFiles] = useState([]);
+  const [removedAttachmentIds, setRemovedAttachmentIds] = useState([]);
+  const [fileValidation, setFileValidation] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [validation, setValidation] = useState(null);
@@ -36,9 +42,10 @@ export default function AnnouncementEditor({
   const active = useRef(true);
   const { confirm, clearChanges } = useInteractions();
   const dirty =
-    title.trim() !== (announcement?.title || "") ||
-    content.trim() !== (announcement?.content || "") ||
-    pinned !== (announcement?.pinned || false);
+    title.trim() !== (workingAnnouncement?.title || "") ||
+    content.trim() !== (workingAnnouncement?.content || "") ||
+    pinned !== (workingAnnouncement?.pinned || false) ||
+    files.length > 0 || removedAttachmentIds.length > 0;
   const conflict = isAnnouncementConflict(error);
   const blocked =
     [403, 404].includes(error?.status) ||
@@ -53,7 +60,7 @@ export default function AnnouncementEditor({
   const loadLatest = async () => {
     setRecovery((current) => ({ ...current, loading: true, loadError: null }));
     try {
-      const latest = await getSpaceAnnouncement(spaceId, announcement.id);
+      const latest = await getSpaceAnnouncement(spaceId, workingAnnouncement.id);
       if (latest.spaceId !== spaceId)
         throw new ApiError(403, {
           code: "FORBIDDEN",
@@ -88,17 +95,54 @@ export default function AnnouncementEditor({
         }))
       )
         return;
-      const saved = announcement
-        ? await updateSpaceAnnouncement(spaceId, announcement.id, {
-            ...input,
-            expectedVersion: conflict
-              ? recovery.latest.version
-              : announcement.version,
-          })
-        : await createSpaceAnnouncement(spaceId, input);
+      let current = conflict ? recovery.latest : workingAnnouncement;
+      if (conflict) setWorkingAnnouncement(current);
+      if (!current) {
+        current = await createSpaceAnnouncement(spaceId, input);
+        setWorkingAnnouncement(current);
+      } else if (
+        input.title !== current.title ||
+        input.content !== current.content ||
+        input.pinned !== current.pinned
+      ) {
+        current = await updateSpaceAnnouncement(spaceId, current.id, {
+          ...input,
+          expectedVersion: current.version,
+        });
+        setWorkingAnnouncement(current);
+      }
+      for (const attachmentId of removedAttachmentIds) {
+        if (!(current.attachments || []).some((item) => item.id === attachmentId))
+          continue;
+        await deleteSpaceAnnouncementAttachment(
+          spaceId,
+          current.id,
+          attachmentId,
+          current.version,
+        );
+        setRemovedAttachmentIds((items) => items.filter((id) => id !== attachmentId));
+        current = {
+          ...current,
+          version: current.version + 1,
+          attachments: current.attachments.filter((item) => item.id !== attachmentId),
+        };
+        setWorkingAnnouncement(current);
+        current = await getSpaceAnnouncement(spaceId, current.id);
+        setWorkingAnnouncement(current);
+      }
+      for (const file of files) {
+        current = await uploadSpaceAnnouncementAttachment(
+          spaceId,
+          current.id,
+          current.version,
+          file,
+        );
+        setWorkingAnnouncement(current);
+        setFiles((items) => items.filter((item) => item !== file));
+      }
       if (!active.current) return;
       clearChanges();
-      onSaved(saved);
+      onSaved(current);
     } catch (saveError) {
       setError(saveError);
       setRecovery({ latest: null, loading: false, loadError: null });
@@ -106,9 +150,25 @@ export default function AnnouncementEditor({
       setBusy(false);
     }
   };
+  const addFiles = (selection) => {
+    const incoming = Array.from(selection || []);
+    const allowed = /\.(txt|md|pdf|doc|docx|ppt|pptx|xls|xlsx)$/i;
+    const currentCount = (workingAnnouncement?.attachments || []).filter(
+      (item) => !removedAttachmentIds.includes(item.id),
+    ).length;
+    const error = incoming.find((file) => !allowed.test(file.name))
+      ? "TXT, MD, PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX 파일만 첨부할 수 있습니다."
+      : incoming.find((file) => file.size > 10 * 1024 * 1024)
+        ? "첨부파일은 파일당 10MiB 이하여야 합니다."
+        : currentCount + files.length + incoming.length > 10
+          ? "공지 하나에 첨부파일을 최대 10개까지 등록할 수 있습니다."
+          : "";
+    setFileValidation(error);
+    if (!error) setFiles((items) => [...items, ...incoming]);
+  };
   return (
     <Modal
-      title={announcement ? "공지 수정" : "공지 작성"}
+      title={workingAnnouncement ? "공지 수정" : "공지 작성"}
       onClose={onClose}
       busy={busy || recovery.loading}
       dirty={dirty}
@@ -166,6 +226,56 @@ export default function AnnouncementEditor({
             {content.length.toLocaleString()} / 5,000자
           </span>
         </div>
+        <Field
+          label="첨부파일"
+          error={fileValidation || undefined}
+          help="TXT, MD, PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX 파일을 공지당 최대 10개까지 첨부할 수 있습니다. 파일당 최대 10MiB입니다."
+        >
+          <div className="announcement-attachment-picker">
+            <input
+              type="file"
+              multiple
+              accept=".txt,.md,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
+              disabled={busy}
+              onChange={(event) => {
+                addFiles(event.target.files);
+                event.target.value = "";
+              }}
+            />
+            {((workingAnnouncement?.attachments || []).length > 0 || files.length > 0) && (
+              <ul className="announcement-editor-attachments">
+                {(workingAnnouncement?.attachments || []).map((attachment) => {
+                  const marked = removedAttachmentIds.includes(attachment.id);
+                  return (
+                    <li key={attachment.id}>
+                      <span>{attachment.originalFilename}</span>
+                      <button
+                        type="button"
+                        className="text-button"
+                        disabled={busy}
+                        aria-pressed={marked}
+                        onClick={() => setRemovedAttachmentIds((items) => marked
+                          ? items.filter((id) => id !== attachment.id)
+                          : [...items, attachment.id])}
+                      >{marked ? "삭제 취소" : "삭제 예정"}</button>
+                    </li>
+                  );
+                })}
+                {files.map((file, index) => (
+                  <li key={`${file.name}-${file.lastModified}-${index}`}>
+                    <span>{file.name} · 업로드 예정</span>
+                    <button
+                      type="button"
+                      className="text-button"
+                      disabled={busy}
+                      onClick={() => setFiles((items) => items.filter((item) => item !== file))}
+                    >제거</button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </Field>
         <SaveRecovery
           error={error}
           recovery={recovery}
@@ -193,7 +303,7 @@ export default function AnnouncementEditor({
           busy={busy || recovery.loading}
           onCancel={onClose}
           disabled={blocked || !dirty || (conflict && !recovery.latest)}
-          label={announcement ? "공지 수정 저장" : "공지 등록"}
+          label={workingAnnouncement ? "공지 수정 저장" : "공지 등록"}
         />
       </form>
     </Modal>

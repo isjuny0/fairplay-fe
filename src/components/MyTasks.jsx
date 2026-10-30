@@ -31,7 +31,7 @@ export default function MyTasks() {
   }, [pageNumber, resource.data, totalPages]);
   return <main className="main-content personal-work-page">
     <header className="page-heading">
-      <div><h1>할 일</h1><p>모든 스페이스에서 내 작업과 진행 중인 동료 평가를 확인합니다.</p></div>
+      <div><h1>할 일</h1></div>
       <PersonalWorkBackButton />
     </header>
     <ResourceState resource={resource} label="할 일">

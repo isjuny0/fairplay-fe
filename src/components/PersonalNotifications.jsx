@@ -1,12 +1,11 @@
 import { useContext, useEffect, useState } from 'react';
-import { Check, CheckCheck, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Check, CheckCheck } from 'lucide-react';
 import { useLocation } from 'react-router';
 import useResource from '../hooks/useResource.js';
 import useAppNavigate from '../hooks/useAppNavigate.js';
 import { getMyNotificationUnreadCount, listMyNotifications, markAllNotificationsRead, markNotificationRead } from '../api/personalWork.js';
 import { announceNotificationChange, notificationPath, notificationTypeLabels } from '../lib/personalWork.js';
 import { formatDate } from '../lib/domain.js';
-import { pageNumbers } from '../lib/pageNumbers.js';
 import { ErrorNotice, EmptyState, ResourceState } from './ui.jsx';
 import { HeaderContext } from './HeaderContext.js';
 import PersonalWorkBackButton from './PersonalWorkBackButton.jsx';
@@ -72,21 +71,9 @@ export default function PersonalNotifications() {
   };
 
   const page = resource.data;
-  const visibleNotificationPages = pageNumbers(
-    cursors.length,
-    cursors.length + (page?.nextCursor ? 1 : 0),
-    window.matchMedia('(max-width: 600px)').matches ? 7 : 10,
-  );
-  const selectNotificationPage = (pageNumber) => {
-    if (pageNumber <= cursors.length) {
-      setCursors((items) => items.slice(0, pageNumber));
-    } else if (pageNumber === cursors.length + 1 && page?.nextCursor) {
-      setCursors((items) => [...items, page.nextCursor]);
-    }
-  };
   return <main className="main-content personal-work-page">
     <header className="page-heading">
-      <div><h1>알림함</h1><p>내게 도착한 알림을 확인하고 읽음으로 표시합니다.</p></div>
+      <div><h1>알림함</h1></div>
       <PersonalWorkBackButton />
     </header>
     <div className="personal-work-toolbar">
@@ -126,18 +113,10 @@ export default function PersonalNotifications() {
       </ul> : <EmptyState>{filter === 'UNREAD' ? '읽지 않은 알림이 없습니다.' : '표시할 알림이 없습니다.'}</EmptyState>}
     </ResourceState>
     {actionError && <ErrorNotice error={actionError} onRetry={() => setActionError(null)} />}
-    {!resource.error && page && <nav className="personal-work-pagination" aria-label="알림 페이지">
-      <button type="button" className="personal-work-page-arrow" aria-label="이전 페이지" disabled={cursors.length <= 1 || resource.loading} onClick={() => setCursors((items) => items.slice(0, -1))}><ChevronLeft size={20} /></button>
-      <div className="personal-work-page-numbers">{visibleNotificationPages.map((number) => <button
-        type="button"
-        className="personal-work-page-number"
-        aria-label={`알림 ${number}페이지`}
-        aria-current={number === cursors.length ? 'page' : undefined}
-        key={number}
-        disabled={resource.loading}
-        onClick={() => selectNotificationPage(number)}
-      >{number}</button>)}</div>
-      <button type="button" className="personal-work-page-arrow" aria-label="다음 페이지" disabled={!page.nextCursor || resource.loading} onClick={() => setCursors((items) => [...items, page.nextCursor])}><ChevronRight size={20} /></button>
+    {!resource.error && page && <nav className="personal-notification-simple-pagination" aria-label="알림 페이지">
+      <button type="button" className="secondary-button" aria-label="이전 페이지" disabled={cursors.length <= 1 || resource.loading} onClick={() => setCursors((items) => items.slice(0, -1))}>이전</button>
+      <span>{cursors.length}페이지</span>
+      <button type="button" className="secondary-button" aria-label="다음 페이지" disabled={!page.nextCursor || resource.loading} onClick={() => setCursors((items) => [...items, page.nextCursor])}>다음</button>
     </nav>}
   </main>;
 }

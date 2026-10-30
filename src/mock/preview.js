@@ -184,7 +184,7 @@ async function executePreviewRequest(
     return structuredClone(result);
   }
   if (parts[1] === 'spaces' && parts[3] === 'announcements') {
-    const result = previewSpaceAnnouncements(context, state, parts, url, method, body);
+    const result = await previewSpaceAnnouncements(context, state, parts, url, method, body);
     saveMockState(context, state);
     return structuredClone(result);
   }
