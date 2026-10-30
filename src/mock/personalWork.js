@@ -64,7 +64,7 @@ export function previewPersonalWork(context, state, parts, url, method) {
     }
   }
   if (parts[2] === 'todos' && parts.length === 3 && method === 'GET') {
-    if (context.manager) return [];
+    if (context.manager) return { items: [], totalCount: 0 };
     const page = Math.max(0, Number(url.searchParams.get('page') || 0));
     const size = Math.max(1, Math.min(100, Number(url.searchParams.get('size') || 20)));
     const now = Date.now();
