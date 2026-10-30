@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { listSpaceAnnouncements } from "../api/spaceAnnouncements.js";
+import { downloadSpaceAnnouncementAttachment, listSpaceAnnouncements } from "../api/spaceAnnouncements.js";
 import useResource from "../hooks/useResource.js";
 import useAppNavigate from "../hooks/useAppNavigate.js";
 import { useInteractions } from "../hooks/useInteractions.js";
@@ -15,8 +15,30 @@ export default function SpaceAnnouncementSummary({ space }) {
     [space.id],
   );
   const [creating, setCreating] = useState(false);
+  const [error, setError] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
   const navigate = useAppNavigate();
   const { notify } = useInteractions();
+  const downloadAttachment = async (item, attachment) => {
+    const key = `${item.id}/${attachment.id}`;
+    setDownloadingId(key);
+    setError(null);
+    try {
+      const blob = await downloadSpaceAnnouncementAttachment(space.id, item.id, attachment.id);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = attachment.originalFilename;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (downloadError) {
+      setError(downloadError);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
   return (
     <section
       className="space-announcement-summary"
@@ -41,13 +63,18 @@ export default function SpaceAnnouncementSummary({ space }) {
           </button>
         </div>
       </div>
-      <ErrorNotice error={resource.error} onRetry={resource.reload} />
+      <ErrorNotice error={error || resource.error} onRetry={() => {
+        setError(null);
+        resource.reload();
+      }} />
       {!resource.error &&
         (resource.data ? (
-          resource.data.length ? (
+          resource.data.items.length ? (
             <AnnouncementList
               compact
-              items={resource.data}
+              items={resource.data.items}
+              onDownload={downloadAttachment}
+              downloadingId={downloadingId}
               onOpen={(id) => navigate(announcementPath(space.id, id))}
             />
           ) : (
