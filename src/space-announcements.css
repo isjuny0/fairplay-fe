@@ -1,7 +1,5 @@
 .space-announcement-summary {
   min-width: 0;
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--border);
 }
 .announcement-section-heading,
 .announcement-editor-options,
