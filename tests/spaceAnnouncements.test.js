@@ -91,7 +91,7 @@ test("공지 CRUD는 일반 텍스트·작성자·KST와 버전 검사 및 204 �
     }),
     null,
   );
-  assert.deepEqual(await previewRequest(base), []);
+  assert.deepEqual(await previewRequest(base), { items: [], totalCount: 0 });
   await assert.rejects(previewRequest(`${base}/${item.id}`), {
     code: "ANNOUNCEMENT_NOT_FOUND",
     status: 404,
@@ -104,7 +104,10 @@ test("스페이스 USER와 팀 리더는 읽기만 가능하고 PENDING·다른 
   const item = await previewRequest(base, { method: "POST", body: input });
   for (const role of ["leader", "member", "participant"]) {
     setPreviewRole(role);
-    assert.equal((await previewRequest(base)).length, 1);
+    const list = await previewRequest(base);
+    assert.equal(list.items.length, 1);
+    assert.equal(list.items[0].id, item.id);
+    assert.equal(list.totalCount, 1);
     assert.equal((await previewRequest(`${base}/${item.id}`)).id, item.id);
     for (const method of ["POST", "PATCH", "DELETE"]) {
       const path =
@@ -121,7 +124,7 @@ test("스페이스 USER와 팀 리더는 읽기만 가능하고 PENDING·다른 
   const context = previewContext();
   const state = getMockState(context);
   for (const myRole of ["PENDING", null]) {
-    assert.throws(
+    await assert.rejects(
       () =>
         previewSpaceAnnouncements(
           { ...context, space: { ...context.space, myRole } },
@@ -144,7 +147,7 @@ test("스페이스 USER와 팀 리더는 읽기만 가능하고 PENDING·다른 
   });
 });
 
-test("고정 우선·생성일·ID 역순 배열 페이지와 마지막 빈 페이지를 유지한다", async () => {
+test("고정 우선·생성일·ID 역순 목록 페이지와 전체 건수를 유지한다", async () => {
   const context = previewContext();
   const state = getMockState(context);
   state.spaceAnnouncements = Array.from({ length: 21 }, (_, index) => ({
@@ -156,11 +159,18 @@ test("고정 우선·생성일·ID 역순 배열 페이지와 마지막 빈 페�
   }));
   saveMockState(context, state);
   const first = await previewRequest(`${base}?page=0&size=20`);
-  assert.equal(first.length, 20);
-  assert.equal(first[0].id, 1);
-  assert.equal(first[1].id, 21);
-  assert.equal((await previewRequest(`${base}?page=1&size=20`))[0].id, 2);
-  assert.deepEqual(await previewRequest(`${base}?page=2&size=20`), []);
+  assert.equal(first.items.length, 20);
+  assert.equal(first.totalCount, 21);
+  assert.equal(first.items[0].id, 1);
+  assert.equal(first.items[1].id, 21);
+  const second = await previewRequest(`${base}?page=1&size=20`);
+  assert.equal(second.items.length, 1);
+  assert.equal(second.items[0].id, 2);
+  assert.equal(second.totalCount, 21);
+  assert.deepEqual(await previewRequest(`${base}?page=2&size=20`), {
+    items: [],
+    totalCount: 21,
+  });
   for (const query of ["page=-1", "page=0.1", "size=0", "size=101"])
     await assert.rejects(previewRequest(`${base}?${query}`), { status: 400 });
 });
