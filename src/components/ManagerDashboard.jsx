@@ -133,7 +133,7 @@ export default function ManagerDashboard({ context }) {
   const openMember = (id, userId) => navigate(`${spacePath(context.space.id)}/manager/teams/${id}/members/${userId}`, {
     state: { dashboardSearch: params.toString(), dashboardListScrollY: location.state?.dashboardListScrollY || 0, dashboardScrollY: window.scrollY },
   });
-  return <section className="stack space-operation-page manager-dashboard">
+  return <section className={`stack space-operation-page manager-dashboard${teamId ? ' manager-dashboard--team' : ''}`}>
     {teamId && <button type="button" className="ghost-button dashboard-back" onClick={() => selectTeam('')}>← 팀 목록</button>}
     <div className="page-heading page-heading--compact dashboard-page-heading">
       <div><h1>{teamId ? selectedTeamName : '팀 관리'}</h1></div>
