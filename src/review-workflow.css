@@ -80,10 +80,6 @@ html:has(.review-action-dock) {
   display: grid;
   gap: 8px 24px;
 }
-.peer-response-layout .peer-card > .page-heading {
-  margin-bottom: 8px;
-  padding-bottom: 12px;
-}
 .peer-response-layout .peer-score-grid .score-field {
   margin: 8px 0;
   padding: 8px 0 0;

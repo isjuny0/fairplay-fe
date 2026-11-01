@@ -222,16 +222,18 @@
   grid-template-columns: max-content 16px max-content;
   align-items: center;
   justify-content: start;
-  gap: 16px;
-  padding: 0;
-  margin-left: auto;
+  gap: 12px;
+  width: max-content;
+  padding-left: 12px;
+  margin-left: 12px;
+  border-left: 1px solid var(--border);
+  text-align: left;
 }
-.evaluation-schedule-date { display: grid; gap: 5px; min-width: 0; }
-.evaluation-schedule-label { color: var(--text-muted); font-size: 11px; line-height: 1.5; }
+.evaluation-schedule-date { display: inline-flex; align-items: center; min-width: 0; }
 .evaluation-schedule-date time { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; font-variant-numeric: tabular-nums; }
 .evaluation-schedule-date strong { font-size: 14px; font-weight: 500; color: var(--text-primary); line-height: 1.5; white-space: nowrap; }
 .evaluation-schedule-date time > span, .evaluation-schedule-unset { font-size: 12px; color: var(--text-muted); }
-.evaluation-schedule-arrow { color: var(--text-muted); margin-top: 18px; }
+.evaluation-schedule-arrow { color: var(--text-muted); }
 .peer-round-overview {
   display: flex;
   flex-wrap: wrap;
@@ -244,33 +246,56 @@
   border: 0;
   border-radius: 0;
 }
-.peer-evaluation-page .evaluation-progress .page-heading {
-  padding-bottom: 8px;
-  border: 0;
-}
-.peer-evaluation-page .evaluation-progress h2 {
+.peer-workspace-heading h2 {
   font-size: 16px;
-  margin-bottom: 4px;
-}
-.peer-evaluation-page .evaluation-progress p {
+  line-height: 1.5;
   margin: 0;
-  font-size: var(--text-support);
+  overflow-wrap: anywhere;
 }
-.peer-evaluation-page .evaluation-progress .progress-track {
+.peer-workspace-heading p {
+  margin: 6px 0 0;
+  font-size: var(--text-support);
+  color: var(--text-muted);
+  line-height: 1.6;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.peer-response-sidebar .progress-track {
   height: 4px;
 }
 .peer-response-layout {
-  max-width: 1040px;
+  --peer-target-column: 220px;
+  max-width: 1200px;
+  width: 100%;
   display: grid;
-  grid-template-columns: 200px minmax(0, 1fr);
+  grid-template-columns: var(--peer-target-column) minmax(0, 1fr);
   align-items: start;
-  gap: 32px;
+  gap: 20px 24px;
+}
+.peer-workspace-heading {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: var(--peer-target-column) minmax(0, 1fr);
+  align-items: start;
+  gap: 12px 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+}
+.peer-workspace-heading > * { min-width: 0; }
+.peer-target-heading h2:focus { outline: none; }
+.peer-progress-help {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 .peer-response-sidebar {
   position: sticky;
   top: 80px;
   display: grid;
-  gap: 20px;
+  gap: 16px;
   min-width: 0;
 }
 .peer-response-layout .peer-target-picker {
@@ -322,9 +347,6 @@
   border-radius: 0;
   background: var(--surface);
 }
-.peer-response-layout .peer-card > .page-heading {
-  padding-bottom: 16px;
-}
 .peer-response-layout .score-field {
   margin-block: 20px;
   padding-top: 12px;
@@ -362,9 +384,26 @@
   gap: 8px;
 }
 .peer-evaluation-page .round-tabs button {
-  min-height: 40px;
-  padding: 8px 12px;
+  min-height: 36px;
+  padding: 5px 10px;
   gap: 16px;
+}
+.peer-evaluation-page .round-tabs .round-tab-expandable {
+  gap: 0;
+  min-width: 0;
+}
+.peer-evaluation-page .round-tab-summary { flex: 0 0 auto; gap: 16px; }
+.peer-evaluation-page .round-tab-details {
+  display: block;
+  max-width: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transition: max-width 240ms ease, visibility 0s linear 240ms;
+}
+.peer-evaluation-page .is-expanded .round-tab-details {
+  max-width: 440px;
+  visibility: visible;
+  transition: max-width 240ms ease, visibility 0s;
 }
 .feedback-layout { display: grid; gap: 20px; min-width: 0; }
 .feedback-score-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
@@ -435,7 +474,12 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 20px;
   }
+  .peer-workspace-heading { display: contents; }
+  .peer-evaluation-page .evaluation-progress { grid-row: 1; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .peer-target-heading { grid-row: 3; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .peer-response-layout .peer-grid { grid-row: 4; }
   .peer-response-sidebar {
+    grid-row: 2;
     position: static;
     gap: 16px;
   }
@@ -448,7 +492,11 @@
     flex: 0 0 auto;
     width: auto;
   }
-  .evaluation-round-context { flex-basis: 100%; margin-left: 0; grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1fr); gap: 12px; }
+  .peer-evaluation-page .round-tabs { width: 100%; flex-direction: column; align-items: stretch; }
+  .peer-evaluation-page .round-tabs .round-tab-expandable { flex-wrap: wrap; }
+  .peer-evaluation-page .round-tab-details { flex-basis: 100%; max-width: 100%; max-height: 0; clip-path: inset(0 100% 0 0); transition: max-height 240ms ease, clip-path 240ms ease, visibility 0s linear 240ms; }
+  .peer-evaluation-page .is-expanded .round-tab-details { max-width: 100%; max-height: 120px; clip-path: inset(0); transition: max-height 240ms ease, clip-path 240ms ease, visibility 0s; }
+  .evaluation-round-context { width: 100%; box-sizing: border-box; margin: 6px 0 0; padding: 6px 0 0; border-left: 0; border-top: 1px solid var(--border); grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1fr); gap: 12px; }
   .evaluation-schedule-date time { flex-direction: column; gap: 2px; }
   .evaluation-schedule-date strong { font-size: 13px; }
   .evaluation-schedule-arrow { margin-top: 0; }
@@ -460,9 +508,13 @@
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .peer-evaluation-page .round-tabs .round-tab-details { transition: none; }
+}
+
 
 
 
 @media (max-width: 900px) and (min-width: 721px) {
-  .peer-response-layout { grid-template-columns: 150px minmax(0, 1fr); gap: 24px; }
+  .peer-response-layout { --peer-target-column: 180px; }
 }

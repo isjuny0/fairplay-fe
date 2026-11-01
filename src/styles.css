@@ -141,6 +141,15 @@
   color: var(--text-muted);
   font-size: var(--text-support);
 }
+.round-tab-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 20px;
+}
+.round-tabs button .round-tab-summary {
+  color: inherit;
+  font-size: inherit;
+}
 .round-tabs button.active {
   border-color: var(--brand);
   background: var(--brand-light);
