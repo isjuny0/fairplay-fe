@@ -163,6 +163,7 @@ export function Modal({
   fullscreen = false,
   className = '',
   dirty = false,
+  closeLabel = '닫기',
 }) {
   const dialog = useRef(null);
   const titleId = useId();
@@ -176,11 +177,12 @@ export function Modal({
     if (
       dirty &&
       !(await confirm({
-        title: '입력 내용 버리기',
+        title: '저장하지 않은 변경 사항',
         message:
-          '저장하지 않은 변경 사항이 있습니다. 입력 내용을 버리고 닫을까요?',
-        label: '버리고 닫기',
+          '저장하지 않은 변경 사항이 있습니다. 저장하지 않고 닫을까요?',
+        label: '닫기',
         neutral: true,
+        closeAction: true,
       }))
     )
       return;
@@ -247,7 +249,7 @@ export function Modal({
           <button
             type="button"
             className="icon-button"
-            aria-label="닫기"
+            aria-label={closeLabel}
             disabled={busy}
             onClick={() => closeRef.current()}
           >

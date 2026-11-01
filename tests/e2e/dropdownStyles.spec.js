@@ -96,8 +96,8 @@ for (const width of [1440, 390, 320]) {
     await expect(workload).toHaveValue('8');
     await expect(editor).toBeVisible();
     await editor.getByRole('button', { name: '닫기', exact: true }).click();
-    await page.getByRole('dialog', { name: '입력 내용 버리기', exact: true })
-      .getByRole('button', { name: '버리고 닫기', exact: true }).click();
+    await page.getByRole('dialog', { name: '저장하지 않은 변경 사항', exact: true })
+      .getByRole('button', { name: '닫기', exact: true }).click();
     await page.goto(team);
     await openCalendarEventEditor(page);
     const calendar = page.getByRole('dialog', { name: '일정 추가', exact: true });

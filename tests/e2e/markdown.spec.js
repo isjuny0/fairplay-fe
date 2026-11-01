@@ -97,7 +97,7 @@ test('서식 버튼은 선택 영역·초점을 유지하고 입력 길이 및 �
   await expect(dialog.getByRole('alert')).toContainText('20,000자를 초과');
   await expect(body).toHaveValue('가'.repeat(20000));
   await page.keyboard.press('Escape');
-  const confirmation = page.getByRole('dialog', { name: '입력 내용 버리기', exact: true });
+  const confirmation = page.getByRole('dialog', { name: '저장하지 않은 변경 사항', exact: true });
   await confirmation.getByRole('button', { name: '취소', exact: true }).click();
   await expect(body).toHaveValue('가'.repeat(20000));
 });

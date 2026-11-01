@@ -206,6 +206,20 @@
   color: #b24242;
 }
 
+/* Closing an unsaved form is a neutral action, not permanent deletion. */
+.secondary-button.close-confirmation-button,
+.main-content .secondary-button.close-confirmation-button {
+  color: #374151;
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+}
+.secondary-button.close-confirmation-button:hover:not(:disabled),
+.main-content .secondary-button.close-confirmation-button:hover:not(:disabled) {
+  color: #1f2937;
+  background: #e5e7eb;
+  border-color: #d1d5db;
+}
+
 .secondary-button.danger:hover:not(:disabled) {
   background: #fff2f2;
   border-color: #e3b5b5;

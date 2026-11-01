@@ -216,7 +216,7 @@ test('유형 선택 화면으로 돌아가 취소해도 미저장 보호와 문�
   await dialog.getByRole('button', { name: '이전', exact: true }).click();
   await dialog.getByRole('button', { name: '닫기', exact: true }).click();
   const confirmation = page.getByRole('dialog', {
-    name: '입력 내용 버리기',
+    name: '저장하지 않은 변경 사항',
     exact: true,
   });
   await expect(confirmation).toBeVisible();

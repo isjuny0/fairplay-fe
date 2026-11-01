@@ -92,7 +92,7 @@ test('미저장 평가의 메뉴 이동과 브라우저 뒤로가기를 취소�
     .getByRole('button', { name: '중간 평가 마감', exact: true })
     .click();
   await page
-    .getByRole('button', { name: '변경 사항 버리고 이동', exact: true })
+    .getByRole('button', { name: '닫기', exact: true })
     .click();
   await expect(page).toHaveURL(/roundId=11$/);
   await expect(page.getByRole('radio')).toHaveCount(20);
@@ -112,14 +112,14 @@ test('작업 입력창의 Escape와 취소는 미저장 내용을 확인하고 �
     .fill('입력 보존 확인');
   await page.keyboard.press('Escape');
   await page
-    .getByRole('dialog', { name: '입력 내용 버리기' })
+    .getByRole('dialog', { name: '저장하지 않은 변경 사항' })
     .getByRole('button', { name: '취소', exact: true })
     .click();
   await expect(taskDialog.getByLabel('작업 제목', { exact: true })).toHaveValue(
     '입력 보존 확인',
   );
   await taskDialog.getByRole('button', { name: '취소', exact: true }).click();
-  await page.getByRole('button', { name: '버리고 닫기', exact: true }).click();
+  await page.getByRole('dialog', { name: '저장하지 않은 변경 사항', exact: true }).getByRole('button', { name: '닫기', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
