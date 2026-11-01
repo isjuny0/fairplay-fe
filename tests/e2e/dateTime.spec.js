@@ -156,18 +156,18 @@ test('달력 방향키는 다음 달로 이동하고 Escape는 달력만 닫는�
   await expect(trigger).toBeFocused();
 });
 
-test('미저장 입력의 버리고 닫기 버튼은 중립 회색이며 기능은 유지한다', async ({
+test('미저장 입력의 닫기 버튼은 중립 회색이며 기능은 유지한다', async ({
   page,
 }) => {
   const dialog = await openCreate(page);
   await dialog.getByLabel('스페이스 이름', { exact: true }).fill('임시 입력');
   await dialog.getByRole('button', { name: '취소', exact: true }).click();
-  const discard = page.getByRole('button', {
-    name: '버리고 닫기',
+  const discard = page.getByRole('dialog', { name: '저장하지 않은 변경 사항', exact: true }).getByRole('button', {
+    name: '닫기',
     exact: true,
   });
-  await expect(discard).toHaveCSS('background-color', 'rgb(87, 85, 79)');
-  await expect(discard).toHaveCSS('color', 'rgb(255, 255, 255)');
+  await expect(discard).toHaveCSS('background-color', 'rgb(243, 244, 246)');
+  await expect(discard).toHaveCSS('color', 'rgb(55, 65, 81)');
   await expect(discard).not.toHaveClass(/danger/);
   await discard.click();
   await expect(page.getByRole('dialog')).toHaveCount(0);

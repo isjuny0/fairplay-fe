@@ -689,7 +689,7 @@ test("공백 검증·저장 실패·미저장 닫기는 입력을 보존하고 �
   );
   await editor.getByRole("button", { name: "취소", exact: true }).click();
   const discard = page.getByRole("dialog", {
-    name: "입력 내용 버리기",
+    name: "저장하지 않은 변경 사항",
     exact: true,
   });
   await discard.getByRole("button", { name: "취소", exact: true }).click();
@@ -846,8 +846,8 @@ test("모바일 작성 창은 긴 입력과 키보드 초점을 유지하고 버
   ).toBeFocused();
   await page.keyboard.press("Escape");
   await page
-    .getByRole("dialog", { name: "입력 내용 버리기", exact: true })
-    .getByRole("button", { name: "버리고 닫기", exact: true })
+    .getByRole("dialog", { name: "저장하지 않은 변경 사항", exact: true })
+    .getByRole("button", { name: "닫기", exact: true })
     .click();
   await expect(editor).toHaveCount(0);
   expect(requests.some((entry) => entry.method === "POST")).toBe(false);

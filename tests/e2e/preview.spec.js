@@ -147,7 +147,7 @@ test('저점 사유 누락을 안내하고 공개 전 리포트는 팀원에게 
   await selectPreviewOption(page, '미리보기 상황', 'review');
   await page
     .getByRole('dialog')
-    .getByRole('button', { name: '변경 사항 버리기', exact: true })
+    .getByRole('button', { name: '닫기', exact: true })
     .click();
   await page.goto('/preview/spaces/1/teams/1/reports');
   await expect(

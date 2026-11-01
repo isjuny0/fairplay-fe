@@ -391,7 +391,7 @@ test("저장 실패·미저장 닫기 확인 및 빈 본문 등록을 처리한�
   ).toBeVisible();
   await dialog.getByRole("button", { name: "취소", exact: true }).click();
   await page
-    .getByRole("dialog", { name: "입력 내용 버리기" })
+    .getByRole("dialog", { name: "저장하지 않은 변경 사항" })
     .getByRole("button", { name: "취소", exact: true })
     .click();
   await expect(dialog.getByLabel("제목", { exact: true })).toHaveValue(

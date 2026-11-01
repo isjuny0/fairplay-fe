@@ -64,8 +64,9 @@ export default function InteractionProvider({ children }) {
     const accepted = await confirm({
       title: '저장하지 않은 변경 사항',
       message: '저장하지 않은 입력이 있습니다. 변경 사항을 버리고 계속할까요?',
-      label: '변경 사항 버리기',
+      label: '닫기',
       neutral: true,
+      closeAction: true,
     });
     if (accepted) clearChanges();
     return accepted;
@@ -96,7 +97,7 @@ export default function InteractionProvider({ children }) {
         </div>
       )}
       {blocker.state === 'blocked' && !confirmation && (
-        <Modal title="저장하지 않은 변경 사항" onClose={() => blocker.reset()}>
+        <Modal title="저장하지 않은 변경 사항" closeLabel="확인 창 닫기" onClose={() => blocker.reset()}>
           <p>
             저장하지 않은 입력이 있습니다. 이 화면을 떠나면 변경 사항이
             사라집니다.
@@ -109,13 +110,13 @@ export default function InteractionProvider({ children }) {
               계속 작성
             </button>
             <button
-              className="secondary-button discard-button"
+              className="secondary-button close-confirmation-button"
               onClick={() => {
                 clearChanges();
                 blocker.proceed();
               }}
             >
-              변경 사항 버리고 이동
+              닫기
             </button>
           </div>
         </Modal>
@@ -123,6 +124,7 @@ export default function InteractionProvider({ children }) {
       {confirmation && (
         <Modal
           title={confirmation.title}
+          closeLabel={confirmation.closeAction ? '확인 창 닫기' : undefined}
           onClose={() => finishConfirmation(false)}
         >
           <p>{confirmation.message}</p>
@@ -135,7 +137,9 @@ export default function InteractionProvider({ children }) {
             </button>
             <button
               className={
-                confirmation.neutral
+                confirmation.closeAction
+                  ? 'secondary-button close-confirmation-button'
+                  : confirmation.neutral
                   ? 'secondary-button discard-button'
                   : `primary-button ${confirmation.danger ? 'danger' : ''}`
               }

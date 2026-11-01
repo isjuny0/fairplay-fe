@@ -750,7 +750,7 @@ test('모바일·태블릿·데스크톱에서 팀 탐색과 작업 생성 폼�
       ),
     ).toBe(true);
     await dialog.getByRole('button', { name: '닫기', exact: true }).click();
-    if (width <= 600) await page.getByRole('button', { name: '버리고 닫기', exact: true }).click();
+    if (width <= 600) await page.getByRole('dialog', { name: '저장하지 않은 변경 사항', exact: true }).getByRole('button', { name: '닫기', exact: true }).click();
   }
 });
 
@@ -1137,7 +1137,7 @@ test('다른 팀원의 삭제 요청을 확인하면 이미 열린 작업 수정
     ),
   ).toHaveLength(0);
   await dialog.getByRole('button', { name: '취소', exact: true }).click();
-  await page.getByRole('button', { name: '버리고 닫기', exact: true }).click();
+  await page.getByRole('dialog', { name: '저장하지 않은 변경 사항', exact: true }).getByRole('button', { name: '닫기', exact: true }).click();
   await page.getByRole('button', { name: '팀 설정', exact: true }).click();
   await expect(page.getByText('0 / 2명 동의', { exact: true })).toBeVisible();
 });
