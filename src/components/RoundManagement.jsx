@@ -7,7 +7,7 @@ import { useSearchParams } from 'react-router';
 import SectionTabs from './SectionTabs.jsx';
 import ManagerPeerResponses from './ManagerPeerResponses.jsx';
 import DateTimeInput from './DateTimeInput.jsx';
-import { ProgressBar } from './PlanningUi.jsx';
+import RoundTeamSubmissions from './RoundTeamSubmissions.jsx';
 import '../round-management.css';
 import {
   listEvaluationRounds,
@@ -171,12 +171,14 @@ export default function RoundManagement({ context, onChanged }) {
                 </div>}
                 {startBlockReasons.length > 0 && <div className="round-start-block" role="status"><strong>평가를 시작하지 못했습니다.</strong><ul>{startBlockReasons.map((reason) => <li key={reason}>{startBlockMessages[reason] || '시작 조건을 확인하지 못했습니다. 현황을 새로고침해 주세요.'}</li>)}</ul></div>}
                 {hasSubmissions && ['OPEN', 'CLOSED'].includes(status) && <div className="round-submission-detail" id={`round-${round.id}-submissions`} role="region" aria-label={`${roundLabels[type]} 팀별 제출 현황`}>
-                  <ul className="round-team-submissions">{(teamSubmissions || []).map((team) => <li key={team.teamId}>
-                    <strong>{context.teams.find((item) => item.id === team.teamId)?.name || `팀 #${team.teamId}`}</strong>
-                    <span>{team.requiredCount}명 중 {team.submittedCount}명 제출</span>
-                    <ProgressBar value={team.requiredCount > 0 ? team.submittedCount / team.requiredCount * 100 : null} label={`${roundLabels[type]} ${context.teams.find((item) => item.id === team.teamId)?.name || `팀 #${team.teamId}`} 제출률`} />
-                    <span className={team.missingCount > 0 ? 'round-missing-count' : 'round-table-note'}>{team.missingCount > 0 ? `미제출 ${team.missingCount}명` : '전원 제출'}</span>
-                  </li>)}</ul>
+                  <RoundTeamSubmissions round={round} teams={teamSubmissions} directory={context.teams} loading={submissions.loading} onViewResults={(teamId) => {
+                    const next = new URLSearchParams(params);
+                    next.set('tab', 'peer-responses');
+                    next.set('peerTeamId', String(teamId));
+                    next.set('peerRoundId', String(round.id));
+                    next.delete('teamId');
+                    setParams(next);
+                  }} />
                   {guidedEvaluation && guide.stepId === 'evaluation-result' && type === 'MID' && <div className="heading-actions preview-guide-inline-action">
                     <button className="secondary-button" data-guide="confirm-evaluation-result" disabled={!ready || !guide.evaluationReady} onClick={() => guide.confirmEvaluationStep('evaluation-result')}>시작 결과 확인 완료</button>
                   </div>}
