@@ -59,18 +59,36 @@ export function ProgressBar({ value, label }) {
     </div>
   );
 }
-export function RoundPicker({ rounds, selected, onSelect }) {
+export function RoundPicker({ rounds, selected, onSelect, renderDetails }) {
+  const id = useId();
+  const [expandedRoundId, setExpandedRoundId] = useState(null);
   return (
     <div className="round-tabs" role="group" aria-label="평가 회차 선택">
       {rounds.map((round) => (
         <button
           key={round.id}
-          className={selected === round.id ? 'active' : ''}
+          type="button"
+          className={`${selected === round.id ? 'active' : ''}${renderDetails ? ' round-tab-expandable' : ''}${renderDetails && selected === round.id && expandedRoundId === round.id ? ' is-expanded' : ''}`}
+          aria-label={`${roundLabels[round.type]} ${roundStatusLabels[round.status]}`}
           aria-pressed={selected === round.id}
-          onClick={() => onSelect(round.id)}
+          aria-expanded={renderDetails ? selected === round.id && expandedRoundId === round.id : undefined}
+          aria-describedby={renderDetails && selected === round.id && expandedRoundId === round.id ? `${id}-${round.id}-schedule` : undefined}
+          onClick={() => {
+            if (renderDetails) {
+              setExpandedRoundId((current) => selected === round.id && current === round.id ? null : round.id);
+            }
+            if (selected !== round.id) onSelect(round.id);
+          }}
         >
-          <strong>{roundLabels[round.type]}</strong>
-          <span>{roundStatusLabels[round.status]}</span>
+          <span className="round-tab-summary">
+            <strong>{roundLabels[round.type]}</strong>
+            <span>{roundStatusLabels[round.status]}</span>
+          </span>
+          {renderDetails && <span
+            className="round-tab-details"
+            id={`${id}-${round.id}-schedule`}
+            aria-hidden={selected !== round.id || expandedRoundId !== round.id}
+          >{renderDetails(round)}</span>}
         </button>
       ))}
     </div>

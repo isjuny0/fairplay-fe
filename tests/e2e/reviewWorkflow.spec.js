@@ -206,13 +206,17 @@ for (const width of [1440, 1079, 768, 320]) {
     await choices.getByRole('button', { name: /^박서연/ }).click();
     await expect(page.getByRole('heading', { name: '박서연', exact: true })).toBeFocused();
     await expect(page.getByLabel('박서연 작업 수행 4점', { exact: true })).toBeDisabled();
-    const schedule = page.getByRole('region', { name: '선택한 평가 일정', exact: true });
+    const selectedRound = page.getByRole('group', { name: '평가 회차 선택', exact: true })
+      .getByRole('button', { pressed: true });
+    await selectedRound.click();
+    await expect(selectedRound).toHaveAttribute('aria-expanded', 'true');
+    const schedule = selectedRound.locator('.round-tab-details');
     await expect(schedule.locator('time')).toHaveCount(2);
     if (width >= 1079) {
-      const tabs = await page.getByRole('group', { name: '평가 회차 선택', exact: true }).boundingBox();
+      const summary = await selectedRound.locator('.round-tab-summary').boundingBox();
       const dates = await schedule.boundingBox();
-      expect(dates.x).toBeGreaterThanOrEqual(tabs.x + tabs.width);
-      expect(Math.abs(dates.y + dates.height / 2 - tabs.y - tabs.height / 2)).toBeLessThan(1);
+      expect(dates.x).toBeGreaterThanOrEqual(summary.x + summary.width);
+      expect(Math.abs(dates.y + dates.height / 2 - summary.y - summary.height / 2)).toBeLessThan(1);
     }
 
     await expect(schedule).not.toContainText('중간 평가');
