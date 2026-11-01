@@ -7,7 +7,7 @@ import { useSearchParams } from 'react-router';
 import SectionTabs from './SectionTabs.jsx';
 import ManagerPeerResponses from './ManagerPeerResponses.jsx';
 import DateTimeInput from './DateTimeInput.jsx';
-import { ProgressBar } from './PlanningUi.jsx';
+import RoundTeamSubmissions from './RoundTeamSubmissions.jsx';
 import '../round-management.css';
 import {
   listEvaluationRounds,
@@ -48,7 +48,14 @@ export default function RoundManagement({ context, onChanged }) {
   const { notify } = useInteractions();
   const [params, setParams] = useSearchParams();
   const tabsId = useId();
+  const roundTabsId = useId();
   const activeTab = params.get('tab') === 'peer-responses' ? 'peer-responses' : 'operations';
+  const selectedRoundType = params.get('operationRound') === 'FINAL' ? 'FINAL' : 'MID';
+  const selectRoundType = (type) => {
+    const next = new URLSearchParams(params);
+    if (type === 'FINAL') next.set('operationRound', 'FINAL'); else next.delete('operationRound');
+    setParams(next);
+  };
   const resultTeamId = context.teams.find((team) => String(team.id) === params.get('teamId'))?.id;
   const selectTab = (key) => {
     const next = new URLSearchParams(params);
@@ -91,7 +98,7 @@ export default function RoundManagement({ context, onChanged }) {
   const reportEvaluationState = guide?.setEvaluationState;
   const ready = !busy && !resource.loading && !resource.error && !submissions.loading && !submissions.error;
   const midRound = rounds.find((round) => round.type === 'MID' && ['OPEN', 'CLOSED'].includes(round.status));
-  const visibleSubmissionRoundId = ready && midRound
+  const visibleSubmissionRoundId = ready && selectedRoundType === 'MID' && midRound
     && submissions.data?.missingPeerSubmissions.some((item) => item.roundId === midRound.id && item.teams.length > 0)
     ? midRound.id : null;
   useEffect(() => {
@@ -139,6 +146,10 @@ export default function RoundManagement({ context, onChanged }) {
       <ErrorNotice error={submissions.error} onRetry={reload} />
       <ErrorNotice error={error} />
       <ResourceState resource={resource}>
+          <div className="round-type-tabs">
+            <SectionTabs id={roundTabsId} label="평가 회차" tabs={[[ 'MID', '중간 평가' ], [ 'FINAL', '최종 평가' ]]}
+              activeTab={selectedRoundType} onSelect={selectRoundType} />
+          </div>
           <div className="round-operation-sections" data-guide="evaluation-rounds" role="region" aria-label="평가 회차 일정과 제출 현황">
             {['MID', 'FINAL'].map((type) => {
               const round = rounds.find((item) => item.type === type);
@@ -148,45 +159,49 @@ export default function RoundManagement({ context, onChanged }) {
               const startBlockReasons = status === 'DRAFT' && Array.isArray(round.startBlockReasons) ? round.startBlockReasons : [];
               const hasSubmissions = !submissions.error && teamSubmissions?.length > 0;
               const stateLabel = { UNCONFIGURED: '미설정', DRAFT: '시작 예정', OPEN: '평가 진행 중', CLOSED: '평가 종료' }[status];
-              return <section className={`round-operation-section is-${status.toLowerCase()}`} data-guide-round={type} key={type} aria-label={`${roundLabels[type]} 운영`}>
+              return <div role="tabpanel" id={`${roundTabsId}-${type}-panel`} aria-labelledby={`${roundTabsId}-${type}-tab`} hidden={selectedRoundType !== type} key={type}>
+                {selectedRoundType === type && <section className={`round-operation-section is-${status.toLowerCase()}`} data-guide-round={type} aria-label={`${roundLabels[type]} 운영`}>
                 <header className="round-section-heading">
                   <div><h2>{roundLabels[type]}</h2><span className={`status-badge round-lifecycle-${status.toLowerCase()}`}>{stateLabel}</span></div>
-                  <div className="round-management-actions">
-                    {!round && <button className="primary-button" data-guide={type === 'MID' ? 'schedule-mid-evaluation' : undefined} disabled={busy || needsMidSchedule} aria-label={`${roundLabels[type]} 일정 설정`} onClick={() => openForm('create', { type })}>일정 설정</button>}
-                    {startBlockReasons.length > 0 && <button className="secondary-button" disabled={busy} aria-label={`${roundLabels[type]} 일정 수정`} onClick={() => openForm('edit', round)}>일정 수정</button>}
-                    {status === 'OPEN' && <button className="ghost-button" disabled={busy} aria-label={`${roundLabels[type]} 마감 시각 수정`} onClick={() => openForm('edit', round)}>마감 변경</button>}
+                  <div className="round-section-tools">
+                    {round && <dl className="round-period" aria-label="평가 기간">
+                      <div><dt className="sr-only">시작</dt><dd><RoundPeriodDate value={round.opensAt} /></dd></div>
+                      <div><dt className="sr-only">마감</dt><dd><RoundPeriodDate value={round.closesAt} /></dd></div>
+                    </dl>}
+                    <div className="round-management-actions">
+                      {!round && <button className="primary-button" data-guide={type === 'MID' ? 'schedule-mid-evaluation' : undefined} disabled={busy || needsMidSchedule} aria-label={`${roundLabels[type]} 일정 설정`} onClick={() => openForm('create', { type })}>일정 설정</button>}
+                      {startBlockReasons.length > 0 && <button className="secondary-button" disabled={busy} aria-label={`${roundLabels[type]} 일정 수정`} onClick={() => openForm('edit', round)}>일정 수정</button>}
+                      {['OPEN', 'CLOSED'].includes(status) && <button type="button" className="secondary-button round-deadline-button" disabled={busy || status === 'CLOSED'} aria-label={`${roundLabels[type]} 마감 시각 수정`} title={status === 'CLOSED' ? '마감된 평가는 변경할 수 없습니다.' : undefined} onClick={() => openForm('edit', round)}>마감 변경</button>}
+                    </div>
                   </div>
-                  {round && <dl className="round-period" aria-label="평가 기간">
-                    <div><dt className="sr-only">시작</dt><dd><RoundPeriodDate value={round.opensAt} /></dd></div>
-                    <div><dt className="sr-only">마감</dt><dd><RoundPeriodDate value={round.closesAt} /></dd></div>
-                  </dl>}
                 </header>
-                {(!round || status === 'CLOSED' || (status === 'OPEN' && !hasSubmissions)) && <div className="round-section-content">
-                  <div className="round-section-schedule">
+                {(!round || (['OPEN', 'CLOSED'].includes(status) && !hasSubmissions)) && <div className="round-section-content">
+                  {!round && <div className="round-section-schedule">
                     {!round && <p className="round-empty-schedule">평가 일정을 설정해 주세요.</p>}
                     {needsMidSchedule && <p className="round-opening-block">중간 평가 일정을 먼저 설정해 주세요.</p>}
-                    {status === 'CLOSED' && <p className="round-table-note">동료 평가 결과 탭에서 제출된 응답을 확인할 수 있습니다.</p>}
-                  </div>
+                  </div>}
                   {['OPEN', 'CLOSED'].includes(status) && !hasSubmissions && <p className="round-table-note">{submissions.loading ? '제출 현황을 불러오는 중…' : submissions.error || !teamSubmissions ? '제출 현황을 다시 불러와 주세요.' : '참여 팀이 없습니다.'}</p>}
                 </div>}
                 {startBlockReasons.length > 0 && <div className="round-start-block" role="status"><strong>평가를 시작하지 못했습니다.</strong><ul>{startBlockReasons.map((reason) => <li key={reason}>{startBlockMessages[reason] || '시작 조건을 확인하지 못했습니다. 현황을 새로고침해 주세요.'}</li>)}</ul></div>}
                 {hasSubmissions && ['OPEN', 'CLOSED'].includes(status) && <div className="round-submission-detail" id={`round-${round.id}-submissions`} role="region" aria-label={`${roundLabels[type]} 팀별 제출 현황`}>
-                  <ul className="round-team-submissions">{(teamSubmissions || []).map((team) => <li key={team.teamId}>
-                    <strong>{context.teams.find((item) => item.id === team.teamId)?.name || `팀 #${team.teamId}`}</strong>
-                    <span>{team.requiredCount}명 중 {team.submittedCount}명 제출</span>
-                    <ProgressBar value={team.requiredCount > 0 ? team.submittedCount / team.requiredCount * 100 : null} label={`${roundLabels[type]} ${context.teams.find((item) => item.id === team.teamId)?.name || `팀 #${team.teamId}`} 제출률`} />
-                    <span className={team.missingCount > 0 ? 'round-missing-count' : 'round-table-note'}>{team.missingCount > 0 ? `미제출 ${team.missingCount}명` : '전원 제출'}</span>
-                  </li>)}</ul>
+                  <RoundTeamSubmissions round={round} teams={teamSubmissions} directory={context.teams} loading={submissions.loading} onViewResults={(teamId) => {
+                    const next = new URLSearchParams(params);
+                    next.set('tab', 'peer-responses');
+                    next.set('peerTeamId', String(teamId));
+                    next.set('peerRoundId', String(round.id));
+                    next.delete('teamId');
+                    setParams(next);
+                  }} />
                   {guidedEvaluation && guide.stepId === 'evaluation-result' && type === 'MID' && <div className="heading-actions preview-guide-inline-action">
                     <button className="secondary-button" data-guide="confirm-evaluation-result" disabled={!ready || !guide.evaluationReady} onClick={() => guide.confirmEvaluationStep('evaluation-result')}>시작 결과 확인 완료</button>
                   </div>}
                 </div>}
-              </section>;
+              </section>}</div>;
             })}
           </div>
           {guidedEvaluation && guide.stepId === 'evaluation-overview' && <div className="heading-actions preview-guide-inline-action">
             <button className="secondary-button" data-guide="confirm-evaluation-overview" disabled={!ready || !guide.evaluationReady}
-              onClick={() => guide.confirmEvaluationStep('evaluation-overview')}>평가 회차 확인 완료</button>
+              onClick={() => { selectRoundType('MID'); guide.confirmEvaluationStep('evaluation-overview'); }}>평가 회차 확인 완료</button>
           </div>}
       </ResourceState>
       <details className="round-operation-guide">
