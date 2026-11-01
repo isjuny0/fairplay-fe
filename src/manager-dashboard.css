@@ -5,6 +5,9 @@
 .dashboard-heading-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
 .dashboard-detail-panel { display: grid; gap: 24px; min-width: 0; }
 .dashboard-detail-panel > section { min-width: 0; }
+.main-content > .manager-dashboard.manager-dashboard--team { gap: 16px; }
+.manager-dashboard--team .dashboard-back { min-height: 24px; }
+.manager-dashboard--team .dashboard-detail-panel { gap: 16px; }
 .main-content .manager-dashboard .panel.dashboard-team-overview { padding: 0; border: 0; }
 .dashboard-team-list-header { display: grid; gap: 14px; }
 .dashboard-team-list-header .section-heading { margin: 0; }
@@ -43,13 +46,16 @@
 .dashboard-work-signals .signal-overdue { color: #a23e32; }
 .dashboard-work-signals .signal-stale { color: #815d1a; }
 .dashboard-no-signal { color: var(--text-muted); }
-.dashboard-work-overview { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(0, 2.6fr); align-items: center; gap: 32px; padding-block: 4px 20px; border-bottom: 1px solid var(--border); }
-.dashboard-work-progress h2 { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: 10px; }
-.dashboard-work-progress .team-progress-ring--compact { width: 88px; height: 88px; }
-.dashboard-work-progress .team-progress-ring--compact strong { font-size: 16px; }
-.dashboard-work-counts { justify-content: space-between; padding-left: 32px; border-left: 1px solid var(--border); }
-.dashboard-work-counts dd { font-size: 16px; }
-.dashboard-team-notices { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 20px; margin-top: -12px; font-size: 13px; }
+.dashboard-work-overview { display: grid; grid-template-columns: 180px minmax(0, 1fr); align-items: center; gap: 20px; width: 100%; max-width: 980px; padding: 16px 20px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.dashboard-work-progress { display: flex; align-items: center; gap: 12px; min-height: 64px; min-width: 0; }
+.dashboard-work-progress h2 { order: 2; display: flex; align-items: center; gap: 2px; font-size: 12px; font-weight: 500; color: var(--text-muted); margin: 0; white-space: nowrap; }
+.dashboard-work-progress .team-progress-ring--compact { flex: 0 0 64px; width: 64px; height: 64px; }
+.dashboard-work-progress .team-progress-ring--compact strong { font-size: 14px; }
+.dashboard-work-counts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; padding: 0; border: 0; }
+.dashboard-work-counts > div { min-width: 0; padding-inline: 12px; border-left: 1px solid var(--border); text-align: center; }
+.dashboard-work-counts dt { white-space: nowrap; }
+.dashboard-work-counts dd { font-size: 18px; font-weight: 500; }
+.dashboard-team-notices { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; margin: 0; font-size: 13px; }
 .dashboard-work-notices, .dashboard-membership-notices { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; color: var(--text-muted); }
 .dashboard-work-notices .dashboard-signal { display: inline-flex; align-items: center; gap: 4px; }
 .dashboard-work-notices .signal-overdue { color: #a23e32; }
@@ -84,17 +90,23 @@
 @media (max-width: 1100px) and (min-width: 721px) {
   .dashboard-task-counts { gap: 8px 12px; }
   .manager-dashboard .data-table :is(th, td) { padding-inline: 8px; }
-  .dashboard-work-overview { gap: 20px; }
-  .dashboard-work-counts { padding-left: 20px; }
+}
+@media (max-width: 1000px) {
+  .dashboard-work-overview { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .dashboard-work-counts { padding-top: 12px; border-top: 1px solid var(--border); }
+  .dashboard-work-counts > div:first-child { border-left: 0; }
 }
 @media (max-width: 720px) {
   .manager-dashboard .dashboard-page-heading { align-items: flex-start; flex-wrap: wrap; }
   .dashboard-heading-actions { width: 100%; justify-content: space-between; }
+  .main-content > .manager-dashboard.manager-dashboard--team > .dashboard-page-heading > .dashboard-heading-actions { width: 100%; flex-wrap: nowrap; align-items: center; gap: 8px; }
+  .manager-dashboard--team .dashboard-heading-actions .manager-team-links { width: auto; flex: 1; flex-wrap: nowrap; gap: 8px; }
   .manager-dashboard .dashboard-list-toolbar .form-field { flex: 1 1 130px; }
   .manager-dashboard .dashboard-list-toolbar .form-field:first-child { flex-basis: 100%; max-width: none; }
-  .dashboard-work-overview { grid-template-columns: minmax(0, 1fr); gap: 20px; }
-  .dashboard-work-counts { border-left: 0; padding-left: 0; gap: 12px; }
-  .dashboard-work-counts > div { flex: 1 1 65px; }
+  .dashboard-work-overview { padding: 14px; }
+  .dashboard-work-counts { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 0; }
+  .dashboard-work-counts > div { padding-inline: 6px; }
+  .dashboard-work-counts > div:last-child { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; border-left: 0; border-top: 1px solid var(--border); padding: 12px 0 0; }
 }
 
 /* Keep labels and their counts together, with a shared layout in each table row. */
