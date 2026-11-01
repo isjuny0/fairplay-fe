@@ -68,11 +68,23 @@ for (const width of [1440, 1280, 390]) {
 }
 
 for (const width of [1440, 1280, 390]) {
-  test(`동료 평가 관리 ${width}px: 평가명 아래 기간을 표시하고 팀별 제출 현황은 바로 보여준다`, async ({ page }) => {
+  test(`동료 평가 관리 ${width}px: 기간은 마감 변경 왼쪽에 표시하고 종료된 버튼도 유지한다`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 900 });
     await openManagerPreview(page, '/spaces/1/rounds');
     const overview = page.getByRole('region', { name: '평가 회차 일정과 제출 현황', exact: true });
-    await expect(overview.getByRole('heading', { level: 2 })).toHaveText(['중간 평가', '최종 평가']);
+    await expect(overview.getByRole('heading', { level: 2 })).toHaveText(['중간 평가']);
+    const midRound = page.getByRole('region', { name: '중간 평가 운영', exact: true });
+    const closedButton = midRound.getByRole('button', { name: '중간 평가 마감 시각 수정', exact: true });
+    await expect(closedButton).toBeVisible();
+    await expect(closedButton).toBeDisabled();
+    await expect(closedButton).toHaveText('마감 변경');
+    await expect(midRound.getByText('동료 평가 결과 탭에서 제출된 응답을 확인할 수 있습니다.', { exact: true })).toHaveCount(0);
+    await expect(midRound.locator('.round-section-content')).toHaveCount(0);
+    await closedButton.evaluate((button) => button.click());
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await page.screenshot({ path: testInfo.outputPath('closed-round-deadline.png'), animations: 'disabled' });
+    await page.getByRole('tab', { name: '최종 평가', exact: true }).click();
+    await expect(overview.getByRole('heading', { level: 2 })).toHaveText(['최종 평가']);
     await expect(overview.getByRole('table')).toHaveCount(0);
     await expect(overview.getByText('마감 시각에 자동 종료됩니다.', { exact: true })).toHaveCount(0);
     await expect(overview.getByRole('progressbar', { name: /전체 제출률/ })).toHaveCount(0);
@@ -89,13 +101,22 @@ for (const width of [1440, 1280, 390]) {
     expect(await detailRegion.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
     const finalRound = page.getByRole('region', { name: '최종 평가 운영', exact: true });
     await expect(finalRound.locator('.round-section-heading time')).toHaveCount(2);
-    if (width > 720) {
-      const heading = await finalRound.getByRole('heading', { name: '최종 평가', exact: true }).boundingBox();
-      const period = await finalRound.locator('.round-period').boundingBox();
-      expect(Math.abs(period.x - heading.x)).toBeLessThan(2);
-      expect(period.y).toBeGreaterThan(heading.y + heading.height);
-      expect(period.y - heading.y - heading.height).toBeLessThan(24);
-    }
+    const period = await finalRound.locator('.round-period').boundingBox();
+    const deadline = finalRound.getByRole('button', { name: '최종 평가 마감 시각 수정', exact: true });
+    const buttonBox = await deadline.boundingBox();
+    expect(period.x + period.width).toBeLessThanOrEqual(buttonBox.x);
+    expect(Math.abs(period.y + period.height / 2 - buttonBox.y - buttonBox.height / 2)).toBeLessThan(2);
+    const buttonStyle = await deadline.evaluate((button) => {
+      const style = getComputedStyle(button);
+      return { border: style.borderTopWidth, background: style.backgroundColor };
+    });
+    expect(buttonStyle.border).toBe('1px');
+    expect(buttonStyle.background).not.toBe('rgba(0, 0, 0, 0)');
+    await deadline.click();
+    await expect(page.getByRole('dialog', { name: '최종 평가 마감 변경', exact: true })).toBeVisible();
+    await page.getByRole('dialog').getByRole('button', { name: '취소', exact: true }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await page.screenshot({ path: testInfo.outputPath('open-round-deadline.png'), animations: 'disabled' });
     await page.getByText('평가 운영 기준', { exact: true }).click();
     await expect(page.getByText('중간 평가 마감 후 예약된 시각에 최종 평가가 자동으로 시작됩니다.', { exact: false })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -162,6 +183,22 @@ for (const width of [1440, 1280, 390]) {
     await expect(page.getByRole('tablist', { name: '팀 상세 보기', exact: true })).toHaveCount(0);
     await expect(page.getByRole('heading', { name: '평가 제출 현황', exact: true })).toHaveCount(0);
     await expect(page.getByRole('heading', { name: '팀원 수행 현황', exact: true })).toBeVisible();
+    const teamSummary = page.getByRole('region', { name: '선택한 팀 정보', exact: true });
+    const summaryLayout = await teamSummary.evaluate((element) => {
+      const ring = element.querySelector('.team-progress-ring--compact');
+      const title = element.querySelector('.dashboard-work-progress h2');
+      const style = getComputedStyle(element);
+      return {
+        ringWidth: ring.getBoundingClientRect().width,
+        titleBesideRing: title.getBoundingClientRect().left >= ring.getBoundingClientRect().right,
+        borderTop: style.borderTopWidth,
+        borderBottom: style.borderBottomWidth,
+      };
+    });
+    expect(summaryLayout.ringWidth).toBe(64);
+    expect(summaryLayout.titleBesideRing).toBe(true);
+    expect(summaryLayout.borderTop).toBe('1px');
+    expect(summaryLayout.borderBottom).toBe('1px');
     const help = page.getByRole('button', { name: '장기 정체 집계 기준', exact: true });
     await help.focus();
     await expect(page.getByRole('tooltip')).toContainText('48시간');

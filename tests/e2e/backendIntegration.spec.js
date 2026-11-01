@@ -884,12 +884,15 @@ for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/spaces/1/rounds');
     const table = page.getByRole('region', { name: '평가 회차 일정과 제출 현황', exact: true });
-    await expect(table.getByRole('heading', { level: 2 })).toHaveText(['중간 평가', '최종 평가']);
-    await expect(table.getByText('미설정', { exact: true })).toHaveCount(2);
+    await expect(table.getByRole('heading', { level: 2 })).toHaveText(['중간 평가']);
+    await expect(table.getByText('미설정', { exact: true })).toHaveCount(1);
     await expect(table.getByText('준비 중', { exact: true })).toHaveCount(0);
+    await page.getByRole('tab', { name: '최종 평가', exact: true }).click();
+    await expect(table.getByRole('heading', { level: 2 })).toHaveText(['최종 평가']);
     await expect(table.getByRole('button', { name: '최종 평가 일정 설정', exact: true })).toBeDisabled();
     await expect(table.getByText('중간 평가 일정을 먼저 설정해 주세요.', { exact: true })).toBeVisible();
     expect(creationBodies).toEqual([]);
+    await page.getByRole('tab', { name: '중간 평가', exact: true }).click();
     await table.getByRole('button', { name: `${label} 일정 설정`, exact: true }).click();
     const dialog = page.getByRole('dialog', { name: `${label} 일정 설정`, exact: true });
     await expect(dialog.getByRole('combobox', { name: '평가 종류', exact: true })).toHaveCount(0);
@@ -902,10 +905,12 @@ for (const width of [1440, 390]) {
     await expect(createdRow.getByText('시작 예정', { exact: true })).toBeVisible();
     await expect(createdRow.getByRole('button', { name: `${label} 일정 수정`, exact: true })).toHaveCount(0);
     await expect(createdRow.getByRole('button', { name: `${label} 시작`, exact: true })).toHaveCount(0);
+    await expect(table.getByText('미설정', { exact: true })).toHaveCount(0);
+    await page.getByRole('tab', { name: '최종 평가', exact: true }).click();
     await expect(table.getByText('미설정', { exact: true })).toHaveCount(1);
     await expect(table.getByRole('button', { name: '최종 평가 일정 설정', exact: true })).toBeEnabled();
     await page.reload();
-    await expect(table.getByRole('heading', { level: 2 })).toHaveText(['중간 평가', '최종 평가']);
+    await expect(table.getByRole('heading', { level: 2 })).toHaveText(['최종 평가']);
     await expect(table.getByText('미설정', { exact: true })).toHaveCount(1);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
@@ -931,8 +936,11 @@ test('서버의 자동 시작 상태를 조회하고 팀 구성 변경을 다시
   await page.clock.install();
   await page.goto('/spaces/1/rounds');
   const table = page.getByRole('region', { name: '평가 회차 일정과 제출 현황', exact: true });
-  await expect(table.getByRole('heading', { level: 2 })).toHaveText(['중간 평가', '최종 평가']);
+  await expect(table.getByRole('heading', { level: 2 })).toHaveText(['중간 평가']);
+  await expect(table.getByText('미설정', { exact: true })).toHaveCount(0);
+  await page.getByRole('tab', { name: '최종 평가', exact: true }).click();
   await expect(table.getByText('미설정', { exact: true })).toHaveCount(1);
+  await page.getByRole('tab', { name: '중간 평가', exact: true }).click();
   await expect(table.getByRole('button', { name: '중간 평가 시작', exact: true })).toHaveCount(0);
   await expect(table.getByText('평가를 시작하지 못했습니다.', { exact: true })).toBeVisible();
   await expect(table.getByText('모든 팀에 승인된 팀원 2명 이상이 필요합니다.', { exact: true })).toBeVisible();
@@ -947,6 +955,7 @@ test('서버의 자동 시작 상태를 조회하고 팀 구성 변경을 다시
   expect(
     requests.filter((request) => request.path === '/api/spaces/1').length,
   ).toBeGreaterThan(1);
+  await page.getByRole('tab', { name: '최종 평가', exact: true }).click();
   await page
     .getByRole('button', { name: '최종 평가 일정 설정', exact: true })
     .click();

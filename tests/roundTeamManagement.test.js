@@ -10,6 +10,7 @@ const teams = Array.from({ length: 27 }, (_, index) => ({
 test('다수 팀은 10개씩 표시하고 전체 요약은 페이지와 필터에 영향받지 않는다', () => {
   const view = getRoundTeamView(teams);
   assert.equal(view.teams.length, 10);
+  assert.equal(view.matchingTeams.length, 27);
   assert.equal(view.pageCount, 3);
   assert.equal(view.summary.total, 27);
   assert.equal(view.summary.complete, 5);
@@ -33,6 +34,7 @@ test('검색과 제출 상태를 함께 적용하고 빈 결과를 안전하게 
   assert.ok(pending.teams.every((team) => team.name.includes('팀 1') && team.missingCount > 0));
   const empty = getRoundTeamView(teams, { query: '없는 팀', page: 999 });
   assert.equal(empty.count, 0);
+  assert.deepEqual(empty.matchingTeams, []);
   assert.equal(empty.page, 1);
   assert.deepEqual(empty.teams, []);
 });

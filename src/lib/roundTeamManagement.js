@@ -16,6 +16,7 @@ export function getRoundTeamView(teams, { query = '', status = 'all', sort = 'mi
   const pageCount = Math.max(1, Math.ceil(ordered.length / ROUND_TEAM_PAGE_SIZE));
   const currentPage = Math.min(pageCount, Math.max(1, Number.isSafeInteger(Number(page)) ? Number(page) : 1));
   return {
+    matchingTeams: ordered,
     teams: ordered.slice((currentPage - 1) * ROUND_TEAM_PAGE_SIZE, currentPage * ROUND_TEAM_PAGE_SIZE),
     count: ordered.length,
     page: currentPage,
