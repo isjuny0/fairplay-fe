@@ -5,8 +5,8 @@ export default function BrandLogo({ symbolOnly = false, inverse = false, decorat
     <img
       className={`brand-logo${symbolOnly ? ' brand-logo--symbol' : ''}${inverse ? ' brand-logo--inverse' : ''} ${className}`}
       src={symbolOnly ? '/branding/fairplay-symbol.webp' : '/branding/fairplay-logo.webp'}
-      width={symbolOnly ? 256 : 530}
-      height={symbolOnly ? 256 : 160}
+      width={symbolOnly ? 256 : 1060}
+      height={symbolOnly ? 256 : 255}
       alt={decorative ? '' : 'Fairplay'}
       draggable="false"
     />
