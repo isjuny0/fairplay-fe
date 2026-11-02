@@ -1,6 +1,6 @@
-/* Let context text shrink before any header action; do not reserve equal side columns. */
+/* Keep the workspace context centered on the viewport despite unequal side content. */
 .app-shell > .topbar {
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   column-gap: 24px;
 }
 .topbar-brand, .topbar .profile-area { min-width: 0; }
@@ -23,6 +23,10 @@
   .profile-identity .profile-name { max-width: 80px; }
   .topbar .preview-guide-entry > span, .topbar .preview-toolbar > .preview-toggle > span { display: none; }
   .topbar .preview-guide-entry, .topbar .preview-toolbar > .preview-toggle { width: 34px; height: 34px; padding: 8px; justify-content: center; }
+}
+@media (min-width: 721px) and (max-width: 800px) {
+  .topbar .profile-area, .profile-account-group { gap: 4px; }
+  .topbar .profile-identity { display: none; }
 }
 @media (max-width: 720px) {
   .app-shell > .topbar { grid-template-columns: minmax(0, 1fr) auto; gap: 10px 8px; }

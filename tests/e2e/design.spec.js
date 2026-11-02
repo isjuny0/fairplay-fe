@@ -35,8 +35,8 @@ for (const width of [1440, 390]) {
   });
 }
 
-for (const width of [1920, 1440, 1100, 1024, 1006, 901, 768, 721]) {
-  test(`헤더 ${width}px: 스페이스명은 남은 공간 안에서 표시하고 로고·버튼과 겹치지 않는다`, async ({ page }) => {
+for (const width of [3840, 1920, 1440, 1100, 1024, 1006, 901, 768, 721]) {
+  test(`헤더 ${width}px: 스페이스 정보를 화면 중앙에 표시하고 로고·버튼과 겹치지 않는다`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/preview/spaces/1/teams/1/deliverables');
     const label = page.getByLabel('현재 화면 정보').locator('strong');
@@ -44,10 +44,13 @@ for (const width of [1920, 1440, 1100, 1024, 1006, 901, 768, 721]) {
     const bounds = await label.boundingBox();
     const brand = await page.locator('.topbar-brand').boundingBox();
     const profile = await page.locator('.profile-area').boundingBox();
+    const header = await page.locator('.topbar').boundingBox();
+    const context = await page.getByLabel('현재 화면 정보').boundingBox();
     expect(bounds.x).toBeGreaterThanOrEqual(brand.x + brand.width);
     expect(bounds.x + bounds.width).toBeLessThanOrEqual(profile.x);
-    const header = page.locator('.topbar');
-    const visibleControls = await header.locator('.preview-guide-entry, .preview-toolbar > .preview-toggle, .profile-account-group, .logout-button').evaluateAll((elements) => elements.map((element) => {
+    expect(Math.abs(context.x + context.width / 2 - header.x - header.width / 2)).toBeLessThan(1);
+    const topbar = page.locator('.topbar');
+    const visibleControls = await topbar.locator('.preview-guide-entry, .preview-toolbar > .preview-toggle, .profile-account-group, .logout-button').evaluateAll((elements) => elements.map((element) => {
       const rect = element.getBoundingClientRect();
       return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
     }));
