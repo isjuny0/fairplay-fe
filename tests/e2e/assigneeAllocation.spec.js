@@ -44,10 +44,7 @@ for (const width of [1440, 390]) {
     await dialog
       .getByLabel('작업 설명', { exact: true })
       .fill('선택한 담당자에게 자동으로 배분합니다.');
-    if (width <= 600)
-      await dialog
-        .getByRole('button', { name: '다음: 담당·배분', exact: true })
-        .click();
+    await dialog.getByRole('button', { name: '다음', exact: true }).click();
 
     await person(dialog, 0).check();
     await expectAllocation(dialog, [100, null, null]);
@@ -72,10 +69,6 @@ for (const width of [1440, 390]) {
     await person(dialog, 0).check();
     await expectAllocation(dialog, [50, 50, null]);
 
-    if (width <= 600)
-      await dialog
-        .getByRole('button', { name: '다음: 저장 전 확인', exact: true })
-        .click();
     await dialog.getByRole('button', { name: '저장', exact: true }).click();
     await expect(dialog).toHaveCount(0);
     await page.getByRole('button', { name: '작업 수정', exact: true }).click();

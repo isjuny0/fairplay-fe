@@ -9,40 +9,41 @@ const scenarios = [
   { name: '회의록', path: `${team}/meeting-minutes`, button: '회의록 등록', dialog: '팀 회의록 등록', field: '제목' },
 ];
 
-async function assertLightClose(dialog) {
+async function assertRedClose(dialog) {
   const close = dialog.getByRole('button', { name: '닫기', exact: true });
-  await expect(close).toHaveCSS('background-color', 'rgb(243, 244, 246)');
-  await expect(close).toHaveCSS('color', 'rgb(55, 65, 81)');
-  await expect(close).toHaveCSS('border-top-color', 'rgb(229, 231, 235)');
+  await expect(close).toHaveCSS('background-color', 'rgb(229, 36, 52)');
+  await expect(close).toHaveCSS('color', 'rgb(255, 255, 255)');
+  await expect(close).toHaveCSS('border-top-color', 'rgb(229, 36, 52)');
   await expect(close).not.toHaveClass(/danger/);
   return close;
 }
 
 for (const width of [1440, 390]) {
   for (const scenario of scenarios) {
-    test(`${scenario.name} 작성 취소의 닫기 버튼은 연한 회색이며 입력 보존과 종료를 유지한다 (${width}px)`, async ({ page }, testInfo) => {
+    test(`${scenario.name} 작성 취소의 닫기 버튼은 선명한 빨강이며 입력 보존과 종료를 유지한다 (${width}px)`, async ({ page }, testInfo) => {
       await page.setViewportSize({ width, height: 960 });
       await page.addInitScript((role) => localStorage.setItem('fairplay:preview-role', role), scenario.role || 'leader');
       await page.goto(scenario.path);
       await page.getByRole('main').getByRole('button', { name: scenario.button, exact: true }).click();
       const editor = page.getByRole('dialog', { name: scenario.dialog, exact: true });
+      await expect(editor.getByRole('button', { name: '닫기', exact: true })).toHaveCSS('background-color', 'rgb(229, 36, 52)');
       if (scenario.type) await editor.getByRole('button', { name: scenario.type, exact: true }).click();
       const input = editor.getByLabel(scenario.field, { exact: true });
       await input.fill('저장하지 않은 입력 보존 확인');
       await editor.getByRole('button', { name: '닫기', exact: true }).click();
       const confirmation = page.getByRole('dialog', { name: '저장하지 않은 변경 사항', exact: true });
       await expect(confirmation).toContainText('저장하지 않고 닫을까요?');
-      await assertLightClose(confirmation);
+      await assertRedClose(confirmation);
       await expect(confirmation.getByRole('button', { name: '확인 창 닫기', exact: true })).toBeVisible();
       await confirmation.getByRole('button', { name: '취소', exact: true }).click();
       await expect(input).toHaveValue('저장하지 않은 입력 보존 확인');
       await expect(confirmation).toHaveCount(0);
 
       await editor.press('Escape');
-      const close = await assertLightClose(confirmation);
-      await confirmation.screenshot({ path: testInfo.outputPath('light-close-confirmation.png') });
+      const close = await assertRedClose(confirmation);
+      await confirmation.screenshot({ path: testInfo.outputPath('red-close-confirmation.png') });
       await close.hover();
-      await expect(close).toHaveCSS('background-color', 'rgb(229, 231, 235)');
+      await expect(close).toHaveCSS('background-color', 'rgb(220, 32, 48)');
       await close.click();
       await expect(editor).toHaveCount(0);
       await expect(confirmation).toHaveCount(0);
@@ -57,7 +58,7 @@ for (const width of [1440, 390]) {
     await score.check();
     await page.getByRole('button', { name: '작업', exact: true }).first().click();
     const confirmation = page.getByRole('dialog', { name: '저장하지 않은 변경 사항', exact: true });
-    await assertLightClose(confirmation);
+    await assertRedClose(confirmation);
     await confirmation.getByRole('button', { name: '계속 작성', exact: true }).click();
     await expect(score).toBeChecked();
     await expect(page).toHaveURL(/peer-evaluations$/);

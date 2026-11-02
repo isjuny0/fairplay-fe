@@ -177,7 +177,7 @@ for (const height of [844, 500])
       .click();
     const dialog = page.getByRole('dialog');
     const next = dialog.getByRole('button', {
-      name: '다음: 담당·배분',
+      name: '다음',
       exact: true,
     });
     const initialBox = await next.boundingBox();
@@ -196,7 +196,7 @@ for (const height of [844, 500])
       .getByRole('button', {name:'균등 배분',exact:true})
       .boundingBox();
     const nextBox = await dialog
-      .getByRole('button', { name: '다음: 저장 전 확인', exact: true })
+      .getByRole('button', { name: '저장', exact: true })
       .boundingBox();
     expect(inputBox.y + inputBox.height).toBeLessThanOrEqual(nextBox.y);
     expect(nextBox.y + nextBox.height).toBeLessThanOrEqual(height);
@@ -215,6 +215,7 @@ test('세 담당자 균등 배분으로 작업을 생성한다', async ({
     .getByLabel('작업 설명', { exact: true })
     .fill('모든 담당자의 역할과 결과를 함께 확인합니다.');
   await fillDateTime(dialog, '마감', '2030-12-01T18:00');
+  await dialog.getByRole('button', { name: '다음', exact: true }).click();
   for (const member of ['김하늘 · 리더', '이지원 · 팀원', '박서연 · 팀원'])
     await dialog.getByLabel(member, { exact: true }).check();
   await dialog.getByRole('button', { name: '균등 배분', exact: true }).click();
@@ -423,15 +424,11 @@ test('데스크톱 홈은 기본 위젯 다음 추가 위젯을 배치하고 입
     .click();
   const content = page.getByRole('region', { name: '작업 내용 입력' });
   const assignment = page.getByRole('region', { name: '담당·배분 설정 입력' });
-  const contentBox = await content.boundingBox();
-  const assignmentBox = await assignment.boundingBox();
-  expect(assignmentBox.x).toBeGreaterThan(contentBox.x + contentBox.width);
+  await expect(content).toBeVisible();
+  await expect(assignment).not.toBeVisible();
   await page.setViewportSize({ width: 768, height: 900 });
-  const stackedContent = await content.boundingBox();
-  const stackedAssignment = await assignment.boundingBox();
-  expect(stackedAssignment.y).toBeGreaterThanOrEqual(
-    stackedContent.y + stackedContent.height,
-  );
+  await expect(content).toBeVisible();
+  await expect(assignment).not.toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -520,7 +517,7 @@ test('모바일 작업 입력은 첫 오류로 초점을 옮기고 배분을 고
     .click();
   const dialog = page.getByRole('dialog', { name: '새 작업 만들기' });
   await dialog
-    .getByRole('button', { name: '다음: 담당·배분', exact: true })
+    .getByRole('button', { name: '다음', exact: true })
     .click();
   await expect(dialog.getByLabel('작업 제목', { exact: true })).toBeFocused();
   await expect(dialog.getByLabel('작업 제목', { exact: true })).toHaveAttribute(
@@ -535,25 +532,18 @@ test('모바일 작업 입력은 첫 오류로 초점을 옮기고 배분을 고
     .fill('대상과 일정을 확정하고 조사 계획을 공유합니다.');
   await fillDateTime(dialog, '마감', '2030-12-01T18:00');
   await dialog
-    .getByRole('button', { name: '다음: 담당·배분', exact: true })
+    .getByRole('button', { name: '다음', exact: true })
     .click();
   await dialog.getByLabel('김하늘 · 리더', { exact: true }).check();
   await dialog.getByLabel('김하늘 배분율', { exact: true }).fill('90');
   await dialog
-    .getByRole('button', { name: '다음: 저장 전 확인', exact: true })
+    .getByRole('button', { name: '저장', exact: true })
     .click();
   await expect(dialog.getByText(/현재 합계는 90%/)).toBeVisible();
   await expect(
     dialog.getByLabel('김하늘 · 리더', { exact: true }),
   ).toBeFocused();
   await dialog.getByRole('button', { name: '균등 배분', exact: true }).click();
-  await dialog
-    .getByRole('button', { name: '다음: 저장 전 확인', exact: true })
-    .click();
-  await expect(
-    dialog.getByRole('region', { name: '작업 저장 전 요약' }),
-  ).toContainText('현장 조사 일정 확정');
-  await dialog.getByRole('button', { name: '이전', exact: true }).click();
   await expect(dialog.getByLabel('김하늘 배분율', { exact: true })).toHaveValue(
     '100',
   );
@@ -562,10 +552,7 @@ test('모바일 작업 입력은 첫 오류로 초점을 옮기고 배분을 고
     '현장 조사 일정 확정',
   );
   await dialog
-    .getByRole('button', { name: '다음: 담당·배분', exact: true })
-    .click();
-  await dialog
-    .getByRole('button', { name: '다음: 저장 전 확인', exact: true })
+    .getByRole('button', { name: '다음', exact: true })
     .click();
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
   await expect(

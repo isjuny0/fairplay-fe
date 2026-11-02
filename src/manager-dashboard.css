@@ -46,13 +46,14 @@
 .dashboard-work-signals .signal-overdue { color: #a23e32; }
 .dashboard-work-signals .signal-stale { color: #815d1a; }
 .dashboard-no-signal { color: var(--text-muted); }
-.dashboard-work-overview { display: grid; grid-template-columns: 180px minmax(0, 1fr); align-items: center; gap: 20px; width: 100%; max-width: 980px; padding: 16px 20px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
-.dashboard-work-progress { display: flex; align-items: center; gap: 12px; min-height: 64px; min-width: 0; }
-.dashboard-work-progress h2 { order: 2; display: flex; align-items: center; gap: 2px; font-size: 12px; font-weight: 500; color: var(--text-muted); margin: 0; white-space: nowrap; }
-.dashboard-work-progress .team-progress-ring--compact { flex: 0 0 64px; width: 64px; height: 64px; }
-.dashboard-work-progress .team-progress-ring--compact strong { font-size: 14px; }
-.dashboard-work-counts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; padding: 0; border: 0; }
+.dashboard-work-overview { display: grid; grid-template-columns: minmax(0, 1fr) 180px; align-items: center; gap: 24px; width: 100%; padding: 20px 24px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.dashboard-work-progress { display: grid; justify-items: center; align-content: center; gap: 10px; min-width: 0; padding-left: 24px; border-left: 1px solid var(--border); }
+.dashboard-work-progress h2 { display: flex; align-items: center; gap: 2px; font-size: 12px; font-weight: 500; color: var(--text-muted); margin: 0; white-space: nowrap; }
+.dashboard-work-progress .team-progress-ring--compact { width: 112px; height: 112px; }
+.dashboard-work-progress .team-progress-ring--compact strong { font-size: 22px; }
+.dashboard-work-counts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; max-width: 800px; width: 100%; padding: 0; border: 0; }
 .dashboard-work-counts > div { min-width: 0; padding-inline: 12px; border-left: 1px solid var(--border); text-align: center; }
+.dashboard-work-counts > div:first-child { border-left: 0; }
 .dashboard-work-counts dt { white-space: nowrap; }
 .dashboard-work-counts dd { font-size: 18px; font-weight: 500; }
 .dashboard-team-notices { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; margin: 0; font-size: 13px; }
@@ -76,6 +77,9 @@
 .dashboard-member-link:hover > svg { color: currentColor; }
 .dashboard-member-link:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; border-radius: 3px; }
 .dashboard-member-work { display: grid; gap: 8px; }
+.app-shell .manager-dashboard .dashboard-members-table :is(thead th, tbody td):nth-child(2) { text-align: left; }
+.app-shell .manager-dashboard .dashboard-members-table :is(thead th, tbody td):nth-child(3) { text-align: right; }
+.manager-dashboard .dashboard-member-work { justify-items: start; text-align: left; }
 .dashboard-member-assigned { font-size: 13px; color: var(--text-muted); }
 .dashboard-member-assigned strong { margin-left: 3px; font-size: 14px; font-weight: 500; color: var(--text-primary); }
 .manager-dashboard .dashboard-members-table .dashboard-member-task-counts { display: flex; flex-wrap: wrap; gap: 6px 16px; }
@@ -92,8 +96,9 @@
   .manager-dashboard .data-table :is(th, td) { padding-inline: 8px; }
 }
 @media (max-width: 1000px) {
-  .dashboard-work-overview { grid-template-columns: minmax(0, 1fr); gap: 12px; }
-  .dashboard-work-counts { padding-top: 12px; border-top: 1px solid var(--border); }
+  .dashboard-work-overview { grid-template-columns: minmax(0, 1fr) 140px; gap: 16px; }
+  .dashboard-work-progress { padding-left: 16px; }
+  .dashboard-work-counts { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 0; }
   .dashboard-work-counts > div:first-child { border-left: 0; }
 }
 @media (max-width: 720px) {
@@ -103,10 +108,13 @@
   .manager-dashboard--team .dashboard-heading-actions .manager-team-links { width: auto; flex: 1; flex-wrap: nowrap; gap: 8px; }
   .manager-dashboard .dashboard-list-toolbar .form-field { flex: 1 1 130px; }
   .manager-dashboard .dashboard-list-toolbar .form-field:first-child { flex-basis: 100%; max-width: none; }
-  .dashboard-work-overview { padding: 14px; }
-  .dashboard-work-counts { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 0; }
+  .dashboard-work-overview { grid-template-columns: minmax(0, 1fr) 100px; gap: 12px; padding: 14px; }
+  .dashboard-work-progress { padding-left: 12px; }
+  .dashboard-work-progress .team-progress-ring--compact { width: 88px; height: 88px; }
+  .dashboard-work-progress .team-progress-ring--compact strong { font-size: 18px; }
+  .dashboard-work-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 0; }
   .dashboard-work-counts > div { padding-inline: 6px; }
-  .dashboard-work-counts > div:last-child { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; border-left: 0; border-top: 1px solid var(--border); padding: 12px 0 0; }
+  .dashboard-work-counts > div:nth-child(odd) { border-left: 0; }
 }
 
 /* Keep labels and their counts together, with a shared layout in each table row. */

@@ -125,17 +125,10 @@ for (const width of [1440, 390]) {
         .getByRole('textbox', { name: `${label} 날짜`, exact: true })
         .fill(`2030-12-0${index + 1}`);
     }
-    if (width <= 600)
-      await editor
-        .getByRole('button', { name: '다음: 담당·배분', exact: true })
-        .click();
+    await editor.getByRole('button', { name: '다음', exact: true }).click();
     await editor
       .getByRole('checkbox', { name: '김하늘 · 리더', exact: true })
       .check();
-    if (width <= 600)
-      await editor
-        .getByRole('button', { name: '다음: 저장 전 확인', exact: true })
-        .click();
     await editor.getByRole('button', { name: '저장', exact: true }).click();
     await expect(editor).toHaveCount(0);
     await page.getByRole('button', { name: '작업 수정', exact: true }).click();
