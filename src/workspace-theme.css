@@ -1311,10 +1311,6 @@ h1[tabindex="-1"]:focus {
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
-.task-table .is-overdue {
-  display: inline-flex;
-  margin-top: 6px;
-}
 .task-schedule {
   min-width: 0;
 }

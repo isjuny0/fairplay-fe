@@ -8,10 +8,15 @@ import {
   toDateInput,
 } from '../lib/domain.js';
 
-function TaskDateTime({ value }) {
+function TaskDateTime({ value, isOverdue = false }) {
   const [date, time] = toDateInput(value).split('T');
   return (
-    <time dateTime={value} title={formatDate(value)} aria-label={formatDate(value)}>
+    <time
+      className={isOverdue ? 'task-date-is-overdue' : undefined}
+      dateTime={value}
+      title={formatDate(value)}
+      aria-label={formatDate(value)}
+    >
       <span className="task-date-day">{date.replaceAll('-', '.')}</span>{' '}
       <span className="task-date-clock">{time}</span>
     </time>
@@ -70,11 +75,10 @@ export default function TaskTable({ tasks, members, onOpenTask, now }) {
                 <TaskDateTime value={task.startAt} />
               </td>
               <td>
-                <TaskDateTime value={task.dueAt} />
-                {task.status !== 'DONE' &&
-                  apiTimeToEpoch(task.dueAt) < now && (
-                    <span className="is-overdue">마감 지남</span>
-                  )}
+                <TaskDateTime
+                  value={task.dueAt}
+                  isOverdue={task.status !== 'DONE' && apiTimeToEpoch(task.dueAt) < now}
+                />
               </td>
             </tr>
           ))}

@@ -123,9 +123,6 @@
   margin: 0;
   font-size: inherit;
 }
-.task-table .is-overdue {
-  margin-top: 4px;
-}
 @media (min-width: 901px) {
   .task-board-page .toolbar {
     gap: 8px 12px;
