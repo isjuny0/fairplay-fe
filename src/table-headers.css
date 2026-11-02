@@ -1,0 +1,24 @@
+/* Keep task lists and markdown tables unchanged; align other app tables by column. */
+.app-shell .data-table:not(.task-table) thead th,
+.app-shell .participant-table thead th,
+.app-shell .manager-peer-table thead th {
+  text-align: center;
+}
+
+.app-shell .data-table:not(.task-table) thead th:first-child,
+.app-shell .participant-table thead th:first-child,
+.app-shell .manager-peer-table thead th:first-child {
+  text-align: left;
+}
+
+.app-shell .data-table:not(.task-table) tbody :is(th, td),
+.app-shell .participant-table tbody :is(th, td),
+.app-shell .manager-peer-table tbody :is(th, td) {
+  text-align: center;
+}
+
+.app-shell .data-table:not(.task-table) tbody :is(th, td):first-child,
+.app-shell .participant-table tbody :is(th, td):first-child,
+.app-shell .manager-peer-table tbody :is(th, td):first-child {
+  text-align: left;
+}
