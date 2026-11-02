@@ -327,9 +327,9 @@ function feedback(state, teamId, context) {
         receivedEvaluationCount: Math.max(0, entry.members.length - 1),
         averageScores: {
           taskExecution: 4,
-          responsibility: 3.5,
+          responsibility: 2.5,
           collaboration: 2,
-          communication: 4.5,
+          communication: 1,
         },
         improvementGuidance: [
           '적극성: 팀 목표에 필요한 일이나 개선점을 찾아 제안하고, 문제 해결에 먼저 참여해 보세요.',

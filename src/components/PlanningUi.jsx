@@ -98,7 +98,7 @@ export function FeedbackSummary({ member }) {
   return <div className="feedback-layout">
     <section className="feedback-criteria" aria-label="항목별 협업 평균">
       <div className="feedback-score-heading"><h2>항목별 평균</h2><span>5점 만점</span></div>
-      <PeerCriteriaScores averages={member.averageScores}
+      <PeerCriteriaScores averages={member.averageScores} colorLowScores
         renderHelp={(code, label) => <FeedbackCriterionHelp label={label} description={peerCriteriaDescriptions[code]} />} />
     </section>
   </div>;

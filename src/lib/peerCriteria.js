@@ -4,6 +4,14 @@ export const peerCriteria = {
   collaboration: '적극성',
   communication: '의사소통',
 };
+
+const lowScoreColor = 'var(--peer-criteria-low-score-color)';
+
+export function getPeerCriteriaScoreColor(score) {
+  if (!Number.isFinite(score) || score < 0 || score >= 3) return undefined;
+  return lowScoreColor;
+}
+
 export const peerScoreOptions = [
   { score: 1, label: '매우 미흡' },
   { score: 2, label: '미흡' },
