@@ -12,10 +12,19 @@ export default function MarkdownEditor({ value, onValueChange, labelText, inputR
   const panelId = useId();
   const [insertionError, setInsertionError] = useState('');
   const input = useRef(null);
+  const pendingSelection = useRef(null);
   const invalid = inputProps['aria-invalid'];
   useLayoutEffect(() => {
     if (invalid) setMode('write');
   }, [invalid]);
+  useLayoutEffect(() => {
+    const selection = pendingSelection.current;
+    if (!selection || selection.value !== value) return;
+    pendingSelection.current = null;
+    input.current.focus({ preventScroll: true });
+    input.current.setSelectionRange(selection.start, selection.end);
+    input.current.scrollTop = selection.scrollTop;
+  }, [value]);
 
   const insert = (action) => {
     const element = input.current;
@@ -58,13 +67,13 @@ export default function MarkdownEditor({ value, onValueChange, labelText, inputR
       return;
     }
     setInsertionError('');
+    pendingSelection.current = {
+      value: nextValue,
+      start: replaceStart + selectionOffset,
+      end: replaceStart + selectionOffset + selectionLength,
+      scrollTop: element.scrollTop,
+    };
     onValueChange(nextValue);
-    const scrollTop = element.scrollTop;
-    requestAnimationFrame(() => {
-      element.focus({ preventScroll: true });
-      element.setSelectionRange(replaceStart + selectionOffset, replaceStart + selectionOffset + selectionLength);
-      element.scrollTop = scrollTop;
-    });
   };
 
   return (
@@ -89,6 +98,7 @@ export default function MarkdownEditor({ value, onValueChange, labelText, inputR
           }}
           value={value}
           onChange={event => {
+            pendingSelection.current = null;
             setInsertionError('');
             inputProps.onChange?.(event);
           }}

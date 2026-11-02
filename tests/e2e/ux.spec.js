@@ -279,14 +279,14 @@ test('데스크톱 팀 메뉴는 왼쪽에 묶이고 메뉴 이동과 새로고�
   ).toBeVisible();
   await expect(teamMenus.getByText('팀 관리', { exact: true })).toBeVisible();
   await expect(page.locator('.tab-bar')).toHaveCount(0);
-  await teamMenus.getByRole('button', { name: '산출물', exact: true }).click();
+  await teamMenus.getByRole('button', { name: '팀 자료', exact: true }).click();
   await expect(page).toHaveURL(/teams\/1\/deliverables$/);
   await page.reload();
   await expect(
     page.getByRole('navigation', { name: '현재 위치' }),
-  ).toContainText(/삼위일체\s*\/\s*산출물/);
+  ).toContainText(/삼위일체\s*\/\s*팀 자료/);
   await expect(
-    teamMenus.getByRole('button', { name: '산출물', exact: true }),
+    teamMenus.getByRole('button', { name: '팀 자료', exact: true }),
   ).toHaveAttribute('aria-current', 'page');
 });
 
@@ -356,12 +356,12 @@ test('관리자는 다른 팀 목록으로 자료 조회에 진입하고 팀 작
     sidebar.getByRole('button', { name: '팀 설정', exact: true }),
   ).toHaveCount(0);
   await expect(sidebar.getByRole('navigation', { name: '팀 메뉴', exact: true })).toHaveCount(0);
-  await page.getByRole('navigation', { name: '팀 조회 바로가기' }).getByRole('button', { name: '산출물 보기', exact: true }).click();
+  await page.getByRole('navigation', { name: '팀 조회 바로가기' }).getByRole('button', { name: '팀 자료 보기', exact: true }).click();
   await expect(
-    page.getByRole('heading', { name: '산출물 관리', exact: true }),
+    page.getByRole('heading', { name: '팀 자료', exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole('button', { name: '산출물 등록', exact: true }),
+    page.getByRole('button', { name: '팀 자료 등록', exact: true }),
   ).toHaveCount(0);
 });
 
@@ -436,42 +436,19 @@ test('데스크톱 홈은 기본 위젯 다음 추가 위젯을 배치하고 입
   ).toBe(true);
 });
 
-test('데스크톱 작업 상세를 스크롤해도 작업 진행 버튼은 진행 영역에 남는다', async ({
-  page,
-}) => {
+test('작업 기본 정보·진행·담당은 상단 카드에 묶이고 본문과 댓글은 전체 너비로 배치된다', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openPreview(page, '/spaces/1/teams/1/tasks/102');
-  // Sticky positioning is bounded by the detail layout: provide enough real content for a 700px scroll.
-  await page.evaluate(async () => {
-    const { previewContext } = await import('/src/mock/preview.js');
-    const { getMockState, saveMockState } = await import('/src/mock/planned.js');
-    const context = previewContext();
-    const state = getMockState(context);
-    state.teams[1].tasks.find((task) => task.id === 102).description = '설문 응답을 분석하고 구현 및 검증 근거를 기록합니다.\n'.repeat(70);
-    saveMockState(context, state);
-  });
-  await page.reload();
-  const sidebar = page.getByRole('complementary', {
-    name: '작업 진행 및 담당',
-  });
-  await expect(
-    sidebar.getByRole('button', { name: '완료 처리', exact: true }),
-  ).toBeVisible();
-  // Wait for route focus/scroll restoration before measuring a manual scroll.
-  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  await page.evaluate(() => window.scrollTo(0, 700));
-  const navigation = await page
-    .locator('.task-detail-navigation')
-    .boundingBox();
-  await expect
-    .poll(async () => (await sidebar.boundingBox()).y)
-    .toBeLessThanOrEqual(navigation.y + navigation.height + 24);
-  expect((await sidebar.boundingBox()).y).toBeGreaterThanOrEqual(
-    navigation.y + navigation.height,
-  );
-  await expect(
-    sidebar.getByRole('button', { name: '완료 처리', exact: true }),
-  ).toBeInViewport();
+  const header = page.locator('.task-detail-header');
+  await expect(header.getByRole('button', { name: '완료 처리', exact: true })).toBeVisible();
+  await expect(header.getByRole('region', { name: '담당자·담당 비율', exact: true })).toBeVisible();
+  const headerBox = await header.boundingBox();
+  const navigationBox = await page.locator('.task-detail-navigation').boundingBox();
+  expect(headerBox.y + headerBox.height).toBeLessThanOrEqual(navigationBox.y);
+  const main = await page.locator('.task-detail-main').boundingBox();
+  const comments = await page.locator('#task-comments-section').boundingBox();
+  expect(comments.y).toBeGreaterThanOrEqual(main.y + main.height);
+  expect(Math.abs(comments.width - main.width)).toBeLessThanOrEqual(1);
 });
 
 test('작업 제목 검색·정렬은 새로고침과 상세 복귀에도 유지되고 빈 결과에서 초기화한다', async ({
@@ -619,8 +596,8 @@ test('산출물 파일 형식 오류는 파일 항목에 표시하고 교체 선
       requests.push(request.url());
   });
   await openPreview(page, '/spaces/1/teams/1/deliverables');
-  await page.getByRole('button', { name: '산출물 등록', exact: true }).click();
-  await page.getByRole('dialog', { name: '산출물 등록', exact: true }).getByRole('button', { name: '파일 업로드', exact: true }).click();
+  await page.getByRole('button', { name: '팀 자료 등록', exact: true }).click();
+  await page.getByRole('dialog', { name: /^(팀 자료 등록|문서 작성|파일 업로드)$/, exact: true }).getByRole('button', { name: '파일 업로드', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('제목', { exact: true }).fill('현장 조사 기록');
   await dialog.getByLabel('파일', { exact: true }).setInputFiles({
@@ -628,7 +605,7 @@ test('산출물 파일 형식 오류는 파일 항목에 표시하고 교체 선
     mimeType: 'application/octet-stream',
     buffer: Buffer.from('test'),
   });
-  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await dialog.getByRole('button', { name: /^(저장|팀 자료 등록)$/, exact: true }).click();
   await expect(dialog.getByLabel('파일', { exact: true })).toBeFocused();
   await expect(dialog.getByLabel('파일', { exact: true })).toHaveAttribute(
     'aria-invalid',
@@ -639,7 +616,7 @@ test('산출물 파일 형식 오류는 파일 항목에 표시하고 교체 선
     mimeType: 'text/markdown',
     buffer: Buffer.from('# 조사 기록'),
   });
-  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await dialog.getByRole('button', { name: /^(저장|팀 자료 등록)$/, exact: true }).click();
   await expect(
     page.getByRole('heading', { name: '현장 조사 기록', exact: true }),
   ).toBeVisible();
@@ -651,17 +628,17 @@ test('산출물 빈 작업과 마지막 페이지는 범위·페이지를 복구
 }) => {
   await openPreview(page, '/spaces/1/teams/1/deliverables?taskId=104');
   await expect(
-    page.getByText('이 작업에 연결된 산출물이 없습니다.', { exact: true }),
+    page.getByText('아직 결과물이 없습니다.', { exact: true }),
   ).toBeVisible();
   await page
-    .getByRole('button', { name: '전체 산출물 보기', exact: true })
+    .getByRole('button', { name: '전체 팀 자료 보기', exact: true })
     .click();
   await expect(
     page.getByRole('heading', { name: '프로젝트 기획서', exact: true }),
   ).toBeVisible();
   await page.goto('/preview/spaces/1/teams/1/deliverables?page=1');
   await expect(
-    page.getByText('이 페이지에 산출물이 없습니다.', { exact: true }),
+    page.getByText('이 페이지에 자료가 없습니다.', { exact: true }),
   ).toBeVisible();
   await page
     .getByRole('button', { name: '이전 자료 보기', exact: true })
@@ -782,14 +759,14 @@ test('두 창에서 수정한 산출물은 최신 내용을 비교하고 본문 
   page,
 }) => {
   await openPreview(page, '/spaces/1/teams/1/deliverables');
-  await page.getByRole('button', { name: '산출물 등록', exact: true }).click();
-  await page.getByRole('dialog', { name: '산출물 등록', exact: true }).getByRole('button', { name: '문서 작성', exact: true }).click();
+  await page.getByRole('button', { name: '팀 자료 등록', exact: true }).click();
+  await page.getByRole('dialog', { name: /^(팀 자료 등록|문서 작성|파일 업로드)$/, exact: true }).getByRole('button', { name: '문서 작성', exact: true }).click();
   let dialog = page.getByRole('dialog');
   await dialog.getByLabel('제목', { exact: true }).fill('동시 수정 자료');
   await dialog
     .getByLabel('본문', { exact: true })
     .fill('최초에 작성한 프로젝트 자료입니다.');
-  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await dialog.getByRole('button', { name: /^(저장|팀 자료 등록)$/, exact: true }).click();
   await page
     .locator('.deliverable-card')
     .filter({
@@ -797,7 +774,7 @@ test('두 창에서 수정한 산출물은 최신 내용을 비교하고 본문 
     })
     .getByRole('button', { name: '수정', exact: true })
     .click();
-  dialog = page.getByRole('dialog', { name: '산출물 수정' });
+  dialog = page.getByRole('dialog', { name: '팀 자료 수정' });
   await dialog.getByLabel('제목', { exact: true }).fill('내가 수정한 자료');
   await dialog
     .getByLabel('본문', { exact: true })
@@ -828,7 +805,7 @@ test('두 창에서 수정한 산출물은 최신 내용을 비교하고 본문 
       exact: true,
     }),
   ).toBeVisible();
-  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await dialog.getByRole('button', { name: /^(저장|팀 자료 등록)$/, exact: true }).click();
   await expect(
     dialog.getByRole('button', { name: '다시 저장', exact: true }),
   ).toBeDisabled();
@@ -845,7 +822,7 @@ test('두 창에서 수정한 산출물은 최신 내용을 비교하고 본문 
     .getByRole('button', { name: '내 입력으로 다시 저장', exact: true })
     .click();
   await page
-    .getByRole('dialog', { name: '최신 산출물에 내 입력 반영' })
+    .getByRole('dialog', { name: '최신 자료에 내 입력 반영' })
     .getByRole('button', { name: '내 입력으로 저장', exact: true })
     .click();
   await expect(dialog).toHaveCount(0);
@@ -861,7 +838,7 @@ for (const width of [1440, 320]) {
   }) => {
     await page.setViewportSize({ width, height: 900 });
     await openPreview(page, '/spaces/1/teams/1/deliverables?taskId=101');
-    const list = page.getByRole('region', { name: '산출물 목록', exact: true });
+    const list = page.getByRole('region', { name: '팀 자료 목록', exact: true });
     await expect(
       list.getByRole('columnheader', { name: '등록자', exact: true }),
     ).toBeVisible();
@@ -872,11 +849,11 @@ for (const width of [1440, 320]) {
     await title.focus();
     await page.keyboard.press('Enter');
     const dialog = page.getByRole('dialog', {
-      name: '산출물 상세',
+      name: '팀 자료 상세',
       exact: true,
     });
     await expect(
-      dialog.getByRole('region', { name: '산출물 본문', exact: true }),
+      dialog.getByRole('region', { name: '자료 본문', exact: true }),
     ).toBeVisible();
     await expect(
       dialog.getByText('사용자 인터뷰 계획', { exact: true }),

@@ -134,9 +134,8 @@ export default function SpaceParticipants({ space, user, onChanged }) {
                     return (
                       <tr key={member.userId}>
                         <td data-label="이름" className="participant-name">
-                          <strong>
+                          <strong className={member.userId === user.id ? "self-identity" : undefined}>
                             {member.name}
-                            {member.userId === user.id ? " · 나" : ""}
                           </strong>
                           {duplicateName && (
                             <small title={member.userId}>

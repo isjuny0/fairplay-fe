@@ -162,7 +162,7 @@ export default function TaskSchedulePreview({
         </span>
       </div>
       <strong>
-        #{preview.task.id} {preview.task.title}
+        {preview.task.title}
       </strong>
       <dl>
         <div>

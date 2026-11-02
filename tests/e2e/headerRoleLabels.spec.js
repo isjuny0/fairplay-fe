@@ -144,7 +144,7 @@ for (const [path, selector, text] of [
 for (const [path, heading, role = 'leader'] of [
   ['/spaces/1/teams/1/tasks', '작업'],
   ['/spaces/1/teams/1/tasks/103', '서비스 흐름 설계'],
-  ['/spaces/1/teams/1/deliverables', '산출물 관리'],
+  ['/spaces/1/teams/1/deliverables', '팀 자료'],
   ['/spaces/1/teams/1/meeting-minutes', '팀 회의록'],
   ['/spaces/1/teams/1/materials-search', '팀 자료 검색'],
   ['/spaces/1/teams/1/members', '팀원 관리'],
@@ -174,9 +174,9 @@ for (const [path, heading, role = 'leader'] of [
 
 test('AI 제목 위의 장식용 초록 문구도 제거한다', async ({ page }) => {
   await openPreview(page, '/spaces/1/teams/1/tasks/103');
-  await page.getByRole('tab', { name: 'AI피드백', exact: true }).click();
+  await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
   await expect(
-    page.getByRole('heading', { name: 'AI 검토', exact: true }),
+    page.getByRole('heading', { name: 'AI 피드백', exact: true }),
   ).toBeVisible();
   await expect(page.locator('.ai-review-heading .eyebrow')).toHaveCount(0);
 });

@@ -6,7 +6,7 @@ export const teamNavigationGroups = [
     items: [
       ['팀 홈', 'team'],
       ['작업', 'board'],
-      ['산출물', 'file'],
+      ['팀 자료', 'file'],
       ['팀 회의록', 'review'],
       ['팀 자료 검색', 'search'],
     ],
@@ -33,5 +33,5 @@ export function availableTeamMenus(team) {
     ? teamNavigationGroups.flatMap((group) =>
         group.items.map(([label]) => label),
       )
-    : ['팀원 관리', '산출물'];
+    : ['팀원 관리', '팀 자료'];
 }

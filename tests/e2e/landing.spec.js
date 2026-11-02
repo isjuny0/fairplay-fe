@@ -20,7 +20,7 @@ test('예시 창은 맥 창 색상과 작업 상태·파일 종류별 색상을 
       elements.map((element) => getComputedStyle(element).color),
     );
   expect(new Set(colors).size).toBe(4);
-  await page.getByRole('button', { name: '산출물', exact: true }).click();
+  await page.getByRole('button', { name: '팀 자료', exact: true }).click();
   await expect(page.locator('[data-file-type="pdf"] svg').first()).toHaveCSS(
     'color',
     'rgb(209, 92, 88)',
@@ -90,10 +90,10 @@ test('예시는 자동 전환 없이 탭을 선택할 때만 페이드 전환된
   await expect(
     page.getByRole('button', { name: /예시 자동 전환/ }),
   ).toHaveCount(0);
-  await page.getByRole('button', { name: '산출물', exact: true }).click();
+  await page.getByRole('button', { name: '팀 자료', exact: true }).click();
   await expect(activeSlide(page)).toHaveAttribute(
     'aria-label',
-    '2 / 3 · 산출물',
+    '2 / 3 · 팀 자료',
   );
   await expect(activeSlide(page)).toHaveCSS(
     'transition-duration',
@@ -122,10 +122,10 @@ test('모션 감소 설정에서는 자동 전환 없이 수동 선택을 제공
     'aria-label',
     '1 / 3 · 작업보드',
   );
-  await page.getByRole('button', { name: '산출물', exact: true }).click();
+  await page.getByRole('button', { name: '팀 자료', exact: true }).click();
   await expect(activeSlide(page)).toHaveAttribute(
     'aria-label',
-    '2 / 3 · 산출물',
+    '2 / 3 · 팀 자료',
   );
   await expect(activeSlide(page)).toHaveCSS('transition-duration', '0s');
 });
@@ -203,7 +203,7 @@ for (const width of [375, 768, 1440]) {
     });
     expect(spacing.above).toBe(width <= 600 ? 24 : 32);
     expect(spacing.below).toBe(spacing.above);
-    for (const title of ['작업보드', '산출물', '기여도 리포트']) {
+    for (const title of ['작업보드', '팀 자료', '기여도 리포트']) {
       await page.getByRole('button', { name: title, exact: true }).click();
       await expect(activeSlide(page)).toBeVisible();
       expect(
@@ -230,7 +230,7 @@ for (const width of [1440, 1920]) {
     await expect(window).toBeVisible();
     const bounds = await window.boundingBox();
     expect(bounds.width / bounds.height).toBeCloseTo(16 / 9, 2);
-    await page.getByRole('button', { name: '산출물', exact: true }).click();
+    await page.getByRole('button', { name: '팀 자료', exact: true }).click();
     expect((await window.boundingBox()).height).toBe(bounds.height);
   });
 }

@@ -147,7 +147,7 @@ for (const width of [1440, 1280, 390]) {
     await page.getByLabel('팀 정렬', { exact: true }).selectOption('progress');
     if (width > 720) {
       const table = page.getByRole('table', { name: '팀 관리', exact: true });
-      await expect(table.getByRole('columnheader')).toHaveText(['팀', '팀 진행률', '작업 현황', '확인 사항', '산출물']);
+      await expect(table.getByRole('columnheader')).toHaveText(['팀', '팀 진행률', '작업 현황', '확인 사항', '팀 자료']);
       expect(await table.locator('tbody > tr').first().evaluate((element) => element.getBoundingClientRect().bottom <= innerHeight)).toBe(true);
       expect(await table.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
       await expect(table.locator('tbody').getByRole('button', { name: /집계 기준/ })).toHaveCount(0);
@@ -163,7 +163,7 @@ for (const width of [1440, 1280, 390]) {
       const card = page.locator('.mobile-data-cards .dashboard-team-card').filter({ has: page.getByRole('button', { name: '삼위일체 현황 보기', exact: true }) });
       await expect(card.locator('.dashboard-team-meta > span')).toHaveText(['리더 김하늘', '팀원 3명']);
       // Expanding the participation details must not activate the card.
-      await card.getByText('산출물·팀 참여 상태', { exact: true }).click();
+      await card.getByText('자료·팀 참여 상태', { exact: true }).click();
       await expect(page.getByRole('heading', { name: '팀 관리', exact: true })).toBeVisible();
       await card.locator('.dashboard-team-work-counts').click();
     }
@@ -433,15 +433,15 @@ for (const width of [1440, 390, 320]) {
     await expect(page.getByRole('heading', { name: '서비스 흐름 설계', exact: true })).toBeVisible();
     for (const label of ['작업 수정', '작업 삭제', '완료 처리', '수정 중으로 전환', '수행 설명 저장'])
       await expect(page.getByRole('button', { name: label, exact: true })).toHaveCount(0);
-    await expect(page.getByRole('tab', { name: 'AI피드백', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('tab', { name: 'AI 피드백', exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: '← 목록으로', exact: true }).click();
-    await links.getByRole('button', { name: '산출물 보기', exact: true }).click();
+    await links.getByRole('button', { name: '팀 자료 보기', exact: true }).click();
     await expect(page).toHaveURL(/teams\/1\/deliverables$/);
-    await expect(page.getByRole('heading', { name: '산출물 관리', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: '산출물 등록', exact: true })).toHaveCount(0);
-    await page.getByRole('combobox', { name: '산출물 유형', exact: true }).selectOption('TEXT');
+    await expect(page.getByRole('heading', { name: '팀 자료', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: '팀 자료 등록', exact: true })).toHaveCount(0);
+    await page.getByRole('combobox', { name: '자료 유형', exact: true }).selectOption('TEXT');
     await page.reload();
-    await expect(links.getByRole('button', { name: '산출물 보기', exact: true })).toHaveAttribute('aria-current', 'page');
+    await expect(links.getByRole('button', { name: '팀 자료 보기', exact: true })).toHaveAttribute('aria-current', 'page');
     await links.getByRole('button', { name: '← 팀 현황', exact: true }).click();
     await expect(page.getByRole('heading', { name: '삼위일체', exact: true })).toBeVisible();
     await expect(page.getByLabel('조회할 팀')).toHaveCount(0);

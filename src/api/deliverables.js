@@ -7,7 +7,6 @@ export const listDeliverables = (
     size = 20,
     q,
     type,
-    category,
     authorId,
     unlinkedOnly,
     sort,
@@ -18,7 +17,6 @@ export const listDeliverables = (
   for (const [key, value] of Object.entries({
     q,
     type,
-    category,
     authorId,
     sort,
   })) {

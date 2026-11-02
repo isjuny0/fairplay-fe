@@ -34,7 +34,7 @@ test('사이드바는 세 그룹의 모든 메뉴를 한 번에 표시하고 현
   for (const label of [
     '팀 홈',
     '작업',
-    '산출물',
+    '팀 자료',
     '회의록',
     '팀 자료 검색',
     '동료 평가',
@@ -364,7 +364,7 @@ for (const width of [768, 390, 320]) {
     } else {
       await page
         .getByRole('navigation', { name: '팀 메뉴', exact: true })
-        .getByRole('button', { name: '산출물', exact: true })
+        .getByRole('button', { name: '팀 자료', exact: true })
         .click();
       await expect(page).toHaveURL(/\/deliverables$/);
     }

@@ -7,7 +7,7 @@ const screens = [
   ['/spaces/1/teams/1', '삼위일체', '현황 새로고침'],
   ['/spaces/1/teams/1/tasks', '작업', '새로고침'],
   ['/spaces/1/teams/1/tasks/103', '서비스 흐름 설계', '새로고침'],
-  ['/spaces/1/teams/1/deliverables', '산출물 관리', '새로고침'],
+  ['/spaces/1/teams/1/deliverables', '팀 자료', '새로고침'],
   ['/spaces/1/teams/1/materials-search', '팀 자료 검색', '팀 자료 새로고침'],
   ['/spaces/1/teams/1/members', '팀원 관리', '새로고침'],
   ['/spaces/1/teams/1/settings', '팀 설정', '현황 새로고침'],
@@ -93,7 +93,7 @@ test('작업 상세의 산출물과 댓글 새로고침은 모두 아이콘만 �
   page,
 }) => {
   await page.goto('/preview/spaces/1/teams/1/tasks/103');
-  await page.getByRole('tab', { name: '산출물', exact: true }).click();
+  await page.getByRole('tab', { name: '결과물', exact: true }).click();
   const buttons = page.getByRole('button', { name: '새로고침', exact: true });
   await expect(buttons).toHaveCount(2);
   for (const button of await buttons.all()) await assertIconButton(button);

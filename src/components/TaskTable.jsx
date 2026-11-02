@@ -46,7 +46,6 @@ export default function TaskTable({ tasks, members, onOpenTask, now }) {
           {tasks.map((task) => (
             <tr key={task.id}>
               <th scope="row">
-                <span className="task-number">#{task.id}</span>
                 <button
                   className="task-title-button" data-guide-task-id={task.id}
                   title={task.title}

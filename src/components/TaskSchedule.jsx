@@ -269,7 +269,6 @@ export function TaskTimeline({
                       title={statusLabels[task.status]}
                       aria-hidden="true"
                     />
-                    <span className="timeline-task-id">#{task.id}</span>
                     <button
                       className="task-title-button" data-guide-task-id={task.id}
                       {...previewEvents(task)}

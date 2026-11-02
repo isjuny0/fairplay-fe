@@ -44,12 +44,11 @@ function TeamMaterialSearch({ context }) {
   const active = useRef(true);
   const [reference, setReference] = useState(null);
   const [isMaterialsOpen, setMaterialsOpen] = useState(false);
-  const [isDesktop, setDesktop] = useState(
-    () => window.matchMedia('(min-width: 1200px)').matches,
-  );
+  const [isSplitView, setSplitView] = useState(false);
   const [statusPage, setStatusPage] = useState(0);
   const input = useRef(null);
   const conversation = useRef(null);
+  const workspace = useRef(null);
   const sidePanel = useRef(null);
   const materialsToggle = useRef(null);
   const status = useResource(
@@ -73,10 +72,12 @@ function TeamMaterialSearch({ context }) {
     [401, 403, 404].includes(error?.status) ||
     [401, 403, 404].includes(status.error?.status);
   useEffect(() => {
-    const media = window.matchMedia('(min-width: 1200px)');
-    const update = () => setDesktop(media.matches);
-    media.addEventListener('change', update);
-    return () => media.removeEventListener('change', update);
+    // Match the workspace container query, including sidebar width changes.
+    const observer = new ResizeObserver(([entry]) => {
+      setSplitView(entry.contentRect.width >= 720);
+    });
+    observer.observe(workspace.current);
+    return () => observer.disconnect();
   }, []);
   useEffect(() => {
     active.current = true;
@@ -91,7 +92,7 @@ function TeamMaterialSearch({ context }) {
   }, [status.reload]);
   useEffect(() => {
     if (
-      permissionError || !(isDesktop || isMaterialsOpen) || reference ||
+      permissionError || !(isSplitView || isMaterialsOpen) || reference ||
       !data?.enabled || !data.preparingCount || status.error
     ) return;
     const timer = window.setInterval(() => {
@@ -100,7 +101,7 @@ function TeamMaterialSearch({ context }) {
     return () => window.clearInterval(timer);
   }, [
     permissionError,
-    isDesktop,
+    isSplitView,
     isMaterialsOpen,
     reference,
     data?.enabled,
@@ -113,7 +114,7 @@ function TeamMaterialSearch({ context }) {
   }, [submittedQuestion]);
   const openMaterials = (title = '') =>
     navigate(
-      `${teamMenuPath(space.id, team.id, '산출물')}${title ? `?${new URLSearchParams({ q: title })}` : ''}`,
+      `${teamMenuPath(space.id, team.id, '팀 자료')}${title ? `?${new URLSearchParams({ q: title })}` : ''}`,
     );
   const showMaterials = () => {
     setReference(null);
@@ -196,9 +197,9 @@ function TeamMaterialSearch({ context }) {
             <PanelRightOpen size={16} />
             팀 자료
           </button>
-          <button className="secondary-button" aria-label="산출물 보기" title="산출물 보기" onClick={() => openMaterials()}>
+          <button className="secondary-button" aria-label="팀 자료 보기" title="팀 자료 보기" onClick={() => openMaterials()}>
             <FileText size={16} />
-            산출물 보기
+            팀 자료 보기
           </button>
         </div>
       </header>
@@ -210,7 +211,7 @@ function TeamMaterialSearch({ context }) {
       )}
       {data && !data.enabled && (
         <p className="notice" role="status">
-          현재 자료 질문 기능이 비활성화되어 있습니다. 등록된 자료는 산출물에서
+          현재 자료 질문 기능이 비활성화되어 있습니다. 등록된 자료는 팀 자료에서
           확인할 수 있습니다.
         </p>
       )}
@@ -218,13 +219,13 @@ function TeamMaterialSearch({ context }) {
         <p className="notice" role="status">
           {data.preparingCount
             ? '자료를 검색할 수 있도록 준비하고 있습니다. 준비가 완료되면 질문할 수 있습니다.'
-            : '검색 가능한 자료가 없습니다. 산출물에 문서를 작성하거나 UTF-8 TXT·MD 파일을 등록해 주세요.'}
+            : '검색 가능한 자료가 없습니다. 팀 자료에 문서를 작성하거나 UTF-8 TXT·MD 파일을 등록해 주세요.'}
           <button className="rag-inline-link" onClick={showMaterials}>
             팀 자료 확인
           </button>
         </p>
       )}
-      <div className={`rag-workspace ${isMaterialsOpen ? 'is-materials-open' : ''}`}>
+      <div className={`rag-workspace ${isMaterialsOpen ? 'is-materials-open' : ''}`} ref={workspace}>
         <div className="rag-main">
           <div
             className="rag-conversation"
@@ -271,8 +272,11 @@ function TeamMaterialSearch({ context }) {
             )}
             {busy && (
               <div className="rag-loading" role="status">
-                <span className="rag-loading-dot" />
-                관련 자료를 찾아 답변을 작성하고 있습니다. 잠시만 기다려 주세요.
+                <div className="rag-loading-label">
+                  <span className="rag-loading-dot" aria-hidden="true" />
+                  관련 자료를 찾아 답변을 작성하고 있습니다.
+                </div>
+                <div className="rag-loading-lines" aria-hidden="true"><span /><span /><span /></div>
               </div>
             )}
             {error && (
@@ -416,11 +420,13 @@ function TeamMaterialSearch({ context }) {
                 </button>
               </div>
             </div>
-            {submittedQuestion && !busy && !permissionError && (
-              <button type="button" className="rag-reset-question" onClick={() => startQuestion()}>
-                새 질문으로 시작
-              </button>
-            )}
+            <div className="rag-question-tools">
+              {submittedQuestion && !busy && !permissionError && (
+                <button type="button" className="rag-reset-question" onClick={() => startQuestion()}>
+                  새 질문으로 시작
+                </button>
+              )}
+            </div>
           </form>
         </div>
         <div className="rag-side-panel" id="rag-materials-panel" ref={sidePanel}>
@@ -431,7 +437,7 @@ function TeamMaterialSearch({ context }) {
                 : status}
               page={statusPage}
               setPage={setStatusPage}
-              onSelect={(item) => setReference(item)}
+              onSelect={(item) => { setReference(item); setMaterialsOpen(true); }}
               onDismiss={closeMaterials}
               active={!reference}
             />

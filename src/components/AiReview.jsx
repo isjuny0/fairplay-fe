@@ -2,8 +2,9 @@ import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { useEffect, useState } from 'react';
 import { getAiReview, requestAiReview } from '../api/aiReviews.js';
 import useResource from '../hooks/useResource.js';
-import { canModifyTeamWork, isAssignee, isMutable } from '../lib/domain.js';
+import { canModifyTeamWork, formatDate, isAssignee, isMutable } from '../lib/domain.js';
 import { EmptyState, ErrorNotice, ResourceState } from './ui.jsx';
+import AiReviewFeedback from './AiReviewFeedback.jsx';
 
 const statusLabels = {
   PENDING: '검토 대기',
@@ -13,7 +14,7 @@ const statusLabels = {
 };
 const failureMessages = {
   REVIEW_INPUT_CHANGED:
-    '검토 중 작업 설명이나 산출물이 바뀌었습니다. 현재 자료로 다시 요청해 주세요.',
+    '검토 중 작업 설명이나 결과물이 바뀌었습니다. 현재 자료로 다시 요청해 주세요.',
   REVIEW_NOT_EXECUTABLE:
     '작업 상태나 팀 조건이 바뀌어 검토를 진행할 수 없습니다.',
   UNSUPPORTED_REVIEW_FORMAT:
@@ -28,21 +29,6 @@ const failureMessages = {
   REVIEW_INTERRUPTED:
     '검토가 중단됐습니다. 현재 상태를 확인한 뒤 직접 다시 요청해 주세요.',
 };
-function References({ references }) {
-  return references.map((reference, index) => (
-    <blockquote
-      className="ai-evidence"
-      key={`${reference.deliverableId}-${index}`}
-    >
-      <span className="eyebrow">
-        산출물 #{reference.deliverableId} ·{' '}
-        {reference.quote ? '원문 인용' : '내용 관찰'}
-      </span>
-      <p>{reference.quote || reference.observation}</p>
-      {reference.location && <small>자료 위치 · {reference.location}</small>}
-    </blockquote>
-  ));
-}
 export default function AiReview({ context }) {
   const guide = usePreviewGuide();
   const guidedFeedback = Boolean(guide?.guiding && guide.stepId === 'ai-feedback' && context.task.id === guide.taskId);
@@ -52,11 +38,11 @@ export default function AiReview({ context }) {
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
-  const [notice, setNotice] = useState('');
   const review = resource.data;
   const active = review && ['PENDING', 'PROCESSING'].includes(review.status);
+  const hasFeedback = Array.isArray(review?.findings);
   const reportFeedbackReady = guide?.setAiFeedbackReady;
-  const feedbackReady = Boolean(review?.status === 'COMPLETED' && review.isCurrent && !resource.loading && !resource.error);
+  const feedbackReady = Boolean(review?.status === 'COMPLETED' && hasFeedback && review.isCurrent && !resource.loading && !resource.error);
   useEffect(() => {
     if (!guidedFeedback) return;
     reportFeedbackReady(feedbackReady);
@@ -71,6 +57,9 @@ export default function AiReview({ context }) {
     isAssignee(context.task, context.user.id) &&
     isMutable(context.task) &&
     canModifyTeamWork(context.team);
+  const showRequest = canRequest && !active && !resource.loading &&
+    (!resource.error || resource.error.code === 'AI_REVIEW_NOT_FOUND') && !feedbackReady;
+  const requestAgain = Boolean(error || review?.status === 'FAILED' || (review && !review.isCurrent));
   useEffect(() => {
     if (
       !active ||
@@ -102,14 +91,8 @@ export default function AiReview({ context }) {
     if (busy || active || !canRequest) return;
     setBusy(true);
     setError(null);
-    setNotice('');
     try {
-      const submitted = await requestAiReview(context.task.id);
-      setNotice(
-        submitted.status === 'COMPLETED'
-          ? '현재 입력의 검토 결과를 다시 확인합니다.'
-          : 'AI 검토를 요청했습니다. 진행 상태를 확인합니다.',
-      );
+      await requestAiReview(context.task.id);
       resource.reload();
     } catch (failure) {
       setError(failure);
@@ -118,58 +101,31 @@ export default function AiReview({ context }) {
     }
   };
   return (
-    <section className="panel stack ai-review-panel" aria-label="AI 검토">
+    <section className="panel stack ai-review-panel" aria-label="AI 피드백">
       <div className="ai-review-heading">
         <div>
-          <h2>AI 검토</h2>
+          <h2>AI 피드백</h2>
         </div>
-        <div className="ai-review-actions">
-          {canRequest && (
+        {showRequest && <div className="ai-review-actions">
             <button
               className="secondary-button"
-              disabled={
-                busy ||
-                active ||
-                resource.loading ||
-                (review?.isCurrent &&
-                  review.status === 'COMPLETED' &&
-                  !resource.error)
-              }
+              disabled={busy || active || resource.loading}
               data-guide="request-ai-review"
               onClick={requestReview}
             >
-              {busy
-                ? '검토 요청 중…'
-                : active
-                  ? '검토 진행 중'
-                  : review?.isCurrent &&
-                      review.status === 'COMPLETED' &&
-                      !resource.error
-                    ? '현재 입력 검토 완료'
-                    : 'AI 검토 요청'}
+              {busy ? '요청 중…' : requestAgain ? '피드백 다시 받기' : '피드백 받기'}
             </button>
-          )}
-          <button
-            className="secondary-button"
-            disabled={busy || resource.loading}
-            onClick={resource.reload}
-          >
-            검토 상태 확인
-          </button>
-        </div>
+        </div>}
       </div>
       {guidedFeedback && <p className="field-help">사용자 가이드의 예시 피드백입니다. 실제 AI 모델을 호출하지 않습니다.</p>}
       <div className="ai-review-introduction">
         <p>
-          연결된 산출물과 작업 설명을 함께 검토해 잘된 점과 보완할 내용을
-          안내합니다.
+          작업 설명과 결과물을 살펴보고 보완할 점과 개선 방법을 제안합니다.
         </p>
         <details className="ai-review-guide">
           <summary>검토 범위와 이용 안내</summary>
           <p className="field-help">
-            검토 실행과 결과는 완료의 필수 조건이 아닙니다. 담당자가 결과를
-            확인하고 직접 완료합니다. 저장 가능한 파일도 AI 검토에서는 지원하지
-            않을 수 있습니다.
+            피드백은 작업 완료의 필수 조건이 아닙니다. 개선 제안은 필요한 경우 선택해 반영하고, 확인할 질문은 팀에서 판단해 주세요. 일부 파일 형식은 검토를 지원하지 않을 수 있습니다.
           </p>
         </details>
       </div>
@@ -181,14 +137,9 @@ export default function AiReview({ context }) {
         </p>
       )}
       <ErrorNotice error={error} />
-      {notice && (
-        <p className="field-help" role="status">
-          {notice}
-        </p>
-      )}
       {resource.error?.code === 'AI_REVIEW_NOT_FOUND' ? (
         <EmptyState>
-          아직 요청한 AI 검토가 없습니다. 필요할 때 직접 요청해 주세요.
+          {canRequest ? '아직 받은 AI 피드백이 없습니다. 결과물을 추가한 뒤 피드백을 받아보세요.' : '저장된 AI 피드백이 없습니다.'}
         </EmptyState>
       ) : (
         <ResourceState resource={resource}>
@@ -201,19 +152,19 @@ export default function AiReview({ context }) {
                   {statusLabels[review.status]}
                 </span>
                 <span>
-                  {review.isCurrent ? '현재 입력 기준' : '이전 입력 기준'}
+                  {review.isCurrent ? '최신 작업·결과물 기준' : '이전 검토 결과'}
                 </span>
+                {review.status === 'COMPLETED' && review.completedAt && <time dateTime={review.completedAt}>검토 {formatDate(review.completedAt)}</time>}
               </div>
               {!review.isCurrent && (
                 <p className="notice">
-                  검토 접수 후 입력이 변경되었습니다. 아래 결과는 현재 자료의
-                  검토 결과가 아닙니다.
+                  최신 작업·결과물을 기준으로 한 결과가 아닙니다.
+                  {canRequest && ' 현재 자료로 다시 피드백을 받아보세요.'}
                 </p>
               )}
               {active && (
                 <p className="field-help" role="status">
-                  결과를 준비하고 있습니다. 진행 중에만 5초 간격으로 상태를
-                  확인합니다.
+                  작업 설명과 연결된 결과물을 살펴보고 있습니다. 결과가 준비되면 자동으로 표시합니다.
                 </p>
               )}
               {review.status === 'FAILED' && (
@@ -221,79 +172,13 @@ export default function AiReview({ context }) {
                   {failureMessages[review.failureCode] ||
                     '검토를 완료하지 못했습니다.'}
                   {review.failureDeliverableId != null &&
-                    ` 실패 대상 산출물 #${review.failureDeliverableId}`}
+                    ' 연결된 결과물을 확인해 주세요.'}
                 </p>
               )}
               {review.status === 'COMPLETED' && (
                 <>
-                  <section className="ai-review-summary" aria-label="검토 요약">
-                    <h3>검토 요약</h3>
-                    <p>{review.summary}</p>
-                  </section>
-                  <section className="ai-review-findings" aria-label="잘된 점">
-                    <h3>잘된 점</h3>
-                    {review.strengths.length ? (
-                      <ol className="ai-finding-list">
-                        {review.strengths.map((strength, index) => (
-                          <li key={index}>
-                            <p>{strength.message}</p>
-                            <References references={strength.references} />
-                          </li>
-                        ))}
-                      </ol>
-                    ) : (
-                      <p className="field-help">
-                        별도로 제시된 내용이 없습니다.
-                      </p>
-                    )}
-                  </section>
-                  <section
-                    className="ai-review-findings"
-                    aria-label="보완할 내용·확인할 질문"
-                  >
-                    <h3>보완할 내용·확인할 질문</h3>
-                    {review.improvements.length ? (
-                      <ol className="ai-finding-list">
-                        {review.improvements.map((improvement, index) => (
-                          <li key={index}>
-                            <span className="ai-finding-type">
-                              {improvement.type === 'QUESTION'
-                                ? '확인 질문'
-                                : '확인된 문제'}
-                            </span>
-                            <dl className="ai-improvement-facts">
-                              <div>
-                                <dt>확인 내용</dt>
-                                <dd>{improvement.issue}</dd>
-                              </div>
-                              <div>
-                                <dt>제안</dt>
-                                <dd>{improvement.suggestion}</dd>
-                              </div>
-                            </dl>
-                            <References references={improvement.references} />
-                          </li>
-                        ))}
-                      </ol>
-                    ) : (
-                      <p className="field-help">
-                        별도로 제시된 보완 사항이 없습니다.
-                      </p>
-                    )}
-                  </section>
-                  {review.limitations.length > 0 && (
-                    <section
-                      className="ai-review-limitations"
-                      aria-label="검토 한계"
-                    >
-                      <h3>검토 한계</h3>
-                      <ul>
-                        {review.limitations.map((limitation, index) => (
-                          <li key={index}>{limitation}</li>
-                        ))}
-                      </ul>
-                    </section>
-                  )}
+                  {hasFeedback ? <AiReviewFeedback key={review.id} review={review} context={context} />
+                    : <ErrorNotice error={new Error('피드백 내용을 표시하지 못했습니다. 잠시 후 다시 불러와 주세요.')} onRetry={resource.reload} />}
                   {guidedFeedback && (
                     <div className="heading-actions">
                       <button

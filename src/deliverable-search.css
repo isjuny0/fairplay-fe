@@ -80,10 +80,7 @@
 }
 .deliverable-filter-row {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.25fr) minmax(
-      0,
-      1.25fr
-    );
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.25fr);
   align-items: end;
   gap: 12px;
   max-width: 100%;
@@ -201,30 +198,34 @@
 }
 /* Document identity takes precedence over infrequent row actions. */
 .deliverable-table {
-  min-width: 920px;
+  min-width: 760px;
 }
-.deliverable-table th:first-child {
-  width: 30%;
+.deliverable-table-scroll {
+  isolation: isolate;
+  scroll-padding-inline-end: 124px;
 }
-.deliverable-table th:nth-child(2) {
-  width: 11%;
+.deliverable-table th:first-child,
+.deliverable-table .collection-name-cell {
+  width: 26%;
 }
-.deliverable-table th:nth-child(3) {
-  width: 17%;
-}
-.deliverable-table th:nth-child(4) {
-  width: 9%;
-}
-.deliverable-table th:nth-child(5) {
-  width: 18%;
-}
-.deliverable-table th:nth-child(6) {
-  width: 15%;
-}
+.deliverable-table th:nth-child(2) { width: 7%; }
+.deliverable-table th:nth-child(3) { width: 18%; }
+.deliverable-table th:nth-child(4) { width: 10%; }
+.deliverable-table th:nth-child(5) { width: 23%; }
+.deliverable-table th:nth-child(6) { width: 124px; }
 .deliverable-table :is(th, td) {
-  padding: 12px;
+  padding: 12px 10px;
   vertical-align: middle;
 }
+.deliverable-table :is(th, td):last-child {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: var(--surface);
+  box-shadow: -1px 0 var(--border);
+}
+.deliverable-table thead th:last-child { background: var(--surface-secondary); }
+.deliverable-table tbody tr:hover td:last-child { background: var(--surface-secondary); }
 .deliverable-table :is(th, td):not(:first-child) {
   text-align: center;
 }

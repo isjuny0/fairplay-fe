@@ -340,7 +340,9 @@ async function backend(
           isCurrent: true,
           summary: null,
           strengths: [],
-          improvements: [],
+          findings: [],
+          reviewedSources: [],
+          completedAt: null,
           limitations: [],
           failureCode: null,
           failureDeliverableId: null,
@@ -467,7 +469,7 @@ test('실제 작업 상세는 완료 조건을 읽기 전용 체크리스트로 
   await page.goto('/spaces/1/teams/1/tasks/10');
   await expect(page.getByRole('heading', { name: '현재 작업', exact: true })).toBeVisible();
   const readiness = page.getByRole('list', { name: '완료 준비 상태' });
-  await expect(readiness.getByRole('img', { name: '충족', exact: true })).toHaveCount(2);
+  await expect(readiness.getByRole('img', { name: '충족', exact: true })).toHaveCount(1);
   await expect(readiness.getByRole('img', { name: '미충족', exact: true })).toHaveCount(1);
   await expect(readiness.getByRole('checkbox')).toHaveCount(0);
   await readiness.getByRole('img', { name: '미충족', exact: true }).click();
@@ -668,11 +670,12 @@ test('OPEN 회차 일정 수정은 expectedVersion과 마감만 전송한다', a
 test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이 근거·질문을 표시한다', async ({
   page,
 }) => {
+  await page.clock.install();
   const { requests, setReview } = await backend(page);
   await page.goto('/spaces/1/teams/1/tasks/10');
-  await page.getByRole('tab', { name: 'AI피드백', exact: true }).click();
+  await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
   await expect(
-    page.getByText('아직 요청한 AI 검토가 없습니다.', { exact: false }),
+    page.getByText('아직 받은 AI 피드백이 없습니다.', { exact: false }),
   ).toBeVisible();
   expect(
     requests.some(
@@ -680,7 +683,7 @@ test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이
         request.path.endsWith('ai-review') && request.method === 'POST',
     ),
   ).toBeFalsy();
-  await page.getByRole('button', { name: 'AI 검토 요청', exact: true }).click();
+  await page.getByRole('button', { name: '피드백 받기', exact: true }).click();
   await expect(page.getByText('검토 대기', { exact: true })).toBeVisible();
   const post = requests.find(
     (request) =>
@@ -695,6 +698,8 @@ test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이
     status: 'COMPLETED',
     isCurrent: false,
     summary: '실제 응답 검토 요약',
+    completedAt: '2026-10-14T19:01:00',
+    reviewedSources: [{ deliverableId: 40, title: '설문 분석 자료', type: 'TEXT', version: 1 }],
     strengths: [
       {
         message: '요구사항을 설명했습니다.',
@@ -708,11 +713,18 @@ test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이
         ],
       },
     ],
-    improvements: [
+    findings: [
+      { type: 'SUGGESTION', title: '근거를 가까이 배치해 보세요', description: '결론을 이해하는 데 도움이 됩니다.',
+        action: '주요 발견 옆에 근거를 연결하세요.', requirementQuote: null,
+        references: [{ deliverableId: 40, quote: null, observation: '발견과 근거가 분리되어 있습니다.', location: '발견 절' }] },
+      { type: 'ISSUE', title: '약속한 결과를 확인해 주세요', description: '작업 설명의 요구를 확인할 수 없습니다.',
+        action: '결과를 보완해 주세요.', requirementQuote: '요구사항을 정리합니다.', references: [] },
       {
         type: 'QUESTION',
-        issue: '누락된 조건을 확인했나요?',
-        suggestion: '조건을 추가 확인해 주세요.',
+        title: '누락된 조건을 확인했나요?',
+        description: '요구 범위를 판단하기 위해 확인이 필요합니다.',
+        requirementQuote: null,
+        action: '조건을 추가 확인해 주세요.',
         references: [],
       },
     ],
@@ -720,14 +732,33 @@ test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이
     failureCode: null,
     failureDeliverableId: null,
   });
-  await page
-    .getByRole('button', { name: '검토 상태 확인', exact: true })
-    .click();
+  await page.clock.fastForward(5100);
   await expect(page.getByText('실제 응답 검토 요약')).toBeVisible();
+  expect(await page.locator('[data-feedback-type]').evaluateAll((items) => items.map((item) => item.dataset.feedbackType))).toEqual(['SUGGESTION', 'ISSUE', 'QUESTION']);
+  await page.getByText('관련 작업 설명', { exact: true }).click();
+  await expect(page.getByText('요구사항을 정리합니다.', { exact: true })).toBeVisible();
+  let materialDenied = false;
+  await page.route('**/api/teams/1/deliverables?*', (route) => route.fulfill(materialDenied
+    ? { status: 403, json: { code: 'FORBIDDEN', message: '자료 조회 권한이 없습니다.' } }
+    : { json: [{ id: 40, teamId: 1, taskId: 10, title: '설문 분석 자료', type: 'TEXT', version: 2,
+      text: '현재 문서의 내용입니다.', updatedAt: '2026-10-15T10:00:00' }] }));
+  const sourceButton = page.locator('.ai-review-findings').getByRole('button', { name: '설문 분석 자료 보기', exact: true });
+  await sourceButton.click();
+  const sourceDialog = page.getByRole('dialog', { name: '설문 분석 자료', exact: true });
+  await expect(sourceDialog.getByText('현재 문서의 내용입니다.', { exact: true })).toBeVisible();
+  await expect(sourceDialog).toContainText('검토 당시 버전 1에서 변경된 자료입니다. 현재 자료(버전 2)를 표시합니다.');
+  await page.keyboard.press('Escape');
+  await expect(sourceButton).toBeFocused();
+  materialDenied = true;
+  await sourceButton.click();
+  await expect(sourceDialog.getByRole('alert')).toContainText('자료 조회 권한이 없습니다.');
+  await expect(sourceDialog.getByText('현재 문서의 내용입니다.', { exact: true })).toHaveCount(0);
+  await page.keyboard.press('Escape');
+
   await expect(page.getByText('확인할 원문', { exact: true })).toBeVisible();
-  await expect(page.getByText('확인 질문', { exact: true })).toBeVisible();
+  await expect(page.getByText('확인할 질문', { exact: true })).toBeVisible();
   await expect(
-    page.getByText(/아래 결과는 현재 자료의 검토 결과가 아닙니다/),
+    page.getByText(/최신 작업·결과물을 기준으로 한 결과가 아닙니다/),
   ).toBeVisible();
   expect(
     requests.filter(
@@ -742,6 +773,37 @@ test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이
         request.path.endsWith('/rework'),
     ),
   ).toBeFalsy();
+  setReview({ id: 2, taskId: 10, status: 'COMPLETED', isCurrent: true,
+    summary: '이번 자료에서 별도로 제시할 보완 사항이 없습니다.', findings: [], strengths: [], limitations: [], reviewedSources: [], completedAt: null });
+  await page.reload();
+  await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
+  await expect(page.getByText('이번 자료에서 별도로 제시할 보완 사항이 없습니다.')).toBeVisible();
+  await expect(page.locator('.ai-review-heading button')).toHaveCount(0);
+  const completedReadCount = requests.filter((request) => request.path.endsWith('/ai-review')).length;
+  await page.clock.fastForward(30000);
+  expect(requests.filter((request) => request.path.endsWith('/ai-review'))).toHaveLength(completedReadCount);
+  await expect(page.getByRole('region', { name: '중요한 피드백', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: '유지하면 좋은 점', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: '확인하지 못한 범위', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '피드백 받기', exact: true })).toHaveCount(0);
+  // V45 converts previous results without inventing historical source metadata.
+  setReview({ id: 3, taskId: 10, status: 'COMPLETED', isCurrent: false,
+    summary: '이전 검토 내용입니다.', strengths: [], limitations: [], reviewedSources: [], completedAt: null,
+    findings: [{ type: 'QUESTION', title: '이전 결과의 확인할 내용', description: '이전 결과의 확인할 내용',
+      action: '조건을 확인해 주세요.', requirementQuote: null,
+      references: [{ deliverableId: 40, quote: '확인할 원문', observation: null, location: null }] }] });
+  await page.reload();
+  await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
+  await expect(page.getByText('이전 결과의 확인할 내용', { exact: true })).toHaveCount(1);
+  await expect(page.getByText(/검토 당시 자료명·버전과 완료 시각이 저장되지 않은 결과/)).toBeVisible();
+  await expect(page.locator('.ai-review-result-context time')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '피드백 다시 받기', exact: true })).toBeEnabled();
+  materialDenied = false;
+  await page.getByRole('button', { name: '현재 근거 자료 보기', exact: true }).click();
+  const previousSource = page.getByRole('dialog', { name: '근거 자료', exact: true });
+  await expect(previousSource).toContainText('검토 당시 버전을 확인할 수 없어 현재 자료를 표시합니다.');
+  await expect(previousSource).toContainText('현재 제목 · 설문 분석 자료');
+  await page.keyboard.press('Escape');
 });
 
 test('AI 검토는 진행 중에만 조회하고 실패 결과 이후 반복 조회를 멈춘다', async ({
@@ -750,12 +812,12 @@ test('AI 검토는 진행 중에만 조회하고 실패 결과 이후 반복 조
   await page.clock.install();
   const { requests, setReview } = await backend(page);
   await page.goto('/spaces/1/teams/1/tasks/10');
-  await page.getByRole('tab', { name: 'AI피드백', exact: true }).click();
+  await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
   await expect(
-    page.getByRole('button', { name: 'AI 검토 요청', exact: true }),
+    page.getByRole('button', { name: '피드백 받기', exact: true }),
   ).toBeEnabled();
   await expect(
-    page.getByText('아직 요청한 AI 검토가 없습니다.', { exact: false }),
+    page.getByText('아직 받은 AI 피드백이 없습니다.', { exact: false }),
   ).toBeVisible();
   const initialReadCount = requests.filter((request) =>
     request.path.endsWith('/ai-review'),
@@ -764,8 +826,9 @@ test('AI 검토는 진행 중에만 조회하고 실패 결과 이후 반복 조
   expect(
     requests.filter((request) => request.path.endsWith('/ai-review')),
   ).toHaveLength(initialReadCount);
-  await page.getByRole('button', { name: 'AI 검토 요청', exact: true }).click();
+  await page.getByRole('button', { name: '피드백 받기', exact: true }).click();
   await expect(page.getByText('검토 대기', { exact: true })).toBeVisible();
+  await expect(page.locator('.ai-review-heading button')).toHaveCount(0);
   setReview({
     id: 1,
     taskId: 10,
@@ -773,14 +836,14 @@ test('AI 검토는 진행 중에만 조회하고 실패 결과 이후 반복 조
     isCurrent: true,
     summary: null,
     strengths: [],
-    improvements: [],
+    findings: [],
     limitations: [],
     failureCode: 'DOCUMENT_UNREADABLE',
     failureDeliverableId: 40,
   });
   await page.clock.fastForward(5100);
   await expect(page.getByText('검토 실패', { exact: true })).toBeVisible();
-  await expect(page.getByText(/실패 대상 산출물 #40/)).toBeVisible();
+  await expect(page.getByText(/연결된 결과물을 확인해 주세요/)).toBeVisible();
   const terminalRequestCount = requests.filter((request) =>
     request.path.endsWith('/ai-review'),
   ).length;
@@ -788,6 +851,41 @@ test('AI 검토는 진행 중에만 조회하고 실패 결과 이후 반복 조
   expect(
     requests.filter((request) => request.path.endsWith('/ai-review')),
   ).toHaveLength(terminalRequestCount);
+  await page.getByRole('button', { name: '피드백 다시 받기', exact: true }).click();
+  await expect(page.getByText('검토 대기', { exact: true })).toBeVisible();
+  expect(requests.filter((request) => request.path.endsWith('/ai-review') && request.method === 'POST')).toHaveLength(2);
+});
+
+test('AI 상태 조회 오류는 자동 조회를 멈추고 다시 불러오기로 GET만 재시도한다', async ({ page }) => {
+  await page.clock.install();
+  const { requests, setReview } = await backend(page);
+  setReview({ id: 1, taskId: 10, status: 'PENDING', isCurrent: true });
+  await page.goto('/spaces/1/teams/1/tasks/10');
+  await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
+  await expect(page.getByText('검토 대기', { exact: true })).toBeVisible();
+  let failed = true;
+  let reads = 0;
+  await page.route('**/api/tasks/10/ai-review', (route) => {
+    if (route.request().method() !== 'GET') return route.fallback();
+    reads++;
+    return route.fulfill(failed
+      ? { status: 503, json: { code: 'SERVER_ERROR', message: '피드백 상태를 불러오지 못했습니다.' } }
+      : { json: { id: 1, taskId: 10, status: 'COMPLETED', isCurrent: true,
+        summary: '이미 완료된 피드백입니다.', findings: [], strengths: [], limitations: [], reviewedSources: [], completedAt: null } });
+  });
+  await page.clock.fastForward(5100);
+  const panel = page.getByRole('region', { name: 'AI 피드백', exact: true });
+  await expect(panel.getByRole('alert')).toContainText('피드백 상태를 불러오지 못했습니다.');
+  await expect(panel.locator('.ai-review-heading button')).toHaveCount(0);
+  const errorReads = reads;
+  await page.clock.fastForward(30000);
+  expect(reads).toBe(errorReads);
+  failed = false;
+  await panel.getByRole('button', { name: '다시 불러오기', exact: true }).click();
+  await expect(panel.getByText('이미 완료된 피드백입니다.')).toBeVisible();
+  expect(reads).toBe(errorReads + 1);
+  expect(requests.filter((request) => request.path.endsWith('/ai-review') && request.method === 'POST')).toHaveLength(0);
+  await expect(panel.getByRole('button')).toHaveCount(0);
 });
 
 test('AI 상태 자동 재조회는 스페이스 목록을 유지하고 수동 목록 새로고침은 최신 오류를 전달한다', async ({
@@ -797,7 +895,7 @@ test('AI 상태 자동 재조회는 스페이스 목록을 유지하고 수동 �
   const { requests, setReview } = await backend(page);
   setReview({ id: 1, taskId: 10, status: 'PENDING', isCurrent: true });
   await page.goto('/spaces/1/teams/1/tasks/10');
-  await page.getByRole('tab', { name: 'AI피드백', exact: true }).click();
+  await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
   await expect(page.getByText('검토 대기', { exact: true })).toBeVisible();
   await page.evaluate(async () => {
     const { listSpaces } = await import('/src/api/spaces.js');
@@ -853,8 +951,8 @@ test('AI 비활성화·요청 제한 오류는 화면에 유지하고 자동으�
     });
   });
   await page.goto('/spaces/1/teams/1/tasks/10');
-  await page.getByRole('tab', { name: 'AI피드백', exact: true }).click();
-  await page.getByRole('button', { name: 'AI 검토 요청', exact: true }).click();
+  await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
+  await page.getByRole('button', { name: '피드백 받기', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText(
     'AI 검토를 사용할 수 없습니다.',
   );
@@ -991,19 +1089,19 @@ test('FINAL 마감 후 새 AI 검토 버튼을 숨기고 기존 피드백은 읽
     isCurrent: true,
     summary: '마감 후에도 확인할 기존 피드백',
     strengths: [],
-    improvements: [],
+    findings: [],
     limitations: [],
     failureCode: null,
     failureDeliverableId: null,
   });
   await page.goto('/spaces/1/teams/1/tasks/10');
-  await page.getByRole('tab', { name: 'AI피드백', exact: true }).click();
+  await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
   await expect(page.getByText('마감 후에도 확인할 기존 피드백')).toBeVisible();
   await expect(
     page.getByText(/최종 평가 마감 이후에는 새 검토를 요청할 수 없습니다/),
   ).toBeVisible();
   await expect(
-    page.getByRole('button', { name: 'AI 검토 요청', exact: true }),
+    page.getByRole('button', { name: '피드백 받기', exact: true }),
   ).toHaveCount(0);
   expect(
     requests.some(
@@ -1027,7 +1125,7 @@ test('AI 조회의 권한 오류에서는 폴링과 새 검토 요청을 제공�
     });
   });
   await page.goto('/spaces/1/teams/1/tasks/10');
-  await page.getByRole('tab', { name: 'AI피드백', exact: true }).click();
+  await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText(
     '검토 조회 권한이 없습니다.',
   );
@@ -1035,7 +1133,7 @@ test('AI 조회의 권한 오류에서는 폴링과 새 검토 요청을 제공�
   await page.clock.fastForward(30000);
   expect(reads).toBe(initialReads);
   await expect(
-    page.getByRole('button', { name: 'AI 검토 요청', exact: true }),
+    page.getByRole('button', { name: '피드백 받기', exact: true }),
   ).toHaveCount(0);
 });
 
@@ -1237,7 +1335,7 @@ test('팀원은 공개 결과와 본인 근거만 보고 관리 API를 호출하
   const evidence = page.getByRole('region', { name: '나의 수행 근거', exact: true });
   await expect(evidence).toBeVisible();
   await expect(evidence).toContainText('60.0%');
-  await evidence.getByRole('button', { name: /작업 #10/ }).click();
+  await evidence.getByRole('button', { name: /제목을 확인할 수 없는 작업/ }).click();
   await expect(evidence).toContainText('현재 작업을 조회할 수 없습니다.');
   await expect(evidence.getByText('이 작업의 60%를 담당했습니다.', { exact: true })).toHaveCount(0);
   await expect(evidence.locator('.evidence-task-summary')).toContainText('작업량 ·');
@@ -1453,12 +1551,12 @@ test('팀 관리 목록은 서버의 리포트 상태와 바로가기를 표시�
   });
   await page.goto('/spaces/1/dashboard');
   const table = page.locator('.desktop-data-table').first();
-  await expect(table.getByRole('columnheader')).toHaveText(['팀', '팀 진행률', '작업 현황', '확인 사항', '산출물']);
+  await expect(table.getByRole('columnheader')).toHaveText(['팀', '팀 진행률', '작업 현황', '확인 사항', '팀 자료']);
   await expect(page.getByRole('button', { name: '리포트 검토 화면' })).toHaveCount(0);
   await expect(table).not.toContainText('공개 완료');
 });
 
-test('관리자 수행 상세는 요약과 별도 현재 산출물 본문·파일을 실제 API로 읽는다', async ({
+test('관리자 수행 상세는 요약과 별도 현재 자료 본문·파일을 실제 API로 읽는다', async ({
   page,
 }) => {
   const fixture = await backend(page, { manager: true });
@@ -1480,14 +1578,12 @@ test('관리자 수행 상세는 요약과 별도 현재 산출물 본문·파�
             {
               id: 90,
               title: '현재 결과 문서',
-              category: 'OTHER',
               type: 'TEXT',
               version: 1,
             },
             {
               id: 91,
               title: '최종 파일',
-              category: 'OTHER',
               type: 'FILE',
               version: 1,
             },
@@ -1533,7 +1629,7 @@ test('관리자 수행 상세는 요약과 별도 현재 산출물 본문·파�
   await expect(page.getByText('별도 목록 API의 실제 현재 본문')).toBeVisible();
   await page.getByText('최종 파일 · 파일', { exact: true }).click();
   await expect(
-    page.getByText('요약 조회 이후 변경된 최신 산출물입니다.'),
+    page.getByText('요약 조회 이후 변경된 최신 결과물입니다.'),
   ).toBeVisible();
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: '파일 다운로드' }).click();
@@ -1931,7 +2027,7 @@ test('관리자 작업 조회는 서버 권한 오류를 유지하고 허용 응
   await page.getByRole('group', { name: '작업 보기 방식' }).getByRole('button', { name: '목록', exact: true }).click();
   await page.getByRole('button', { name: '현재 작업', exact: true }).click();
   await expect(page.getByRole('heading', { name: '현재 작업', exact: true })).toBeVisible();
-  await page.getByRole('tab', { name: '수행설명', exact: true }).click();
+  await page.getByRole('tab', { name: '수행 설명', exact: true }).click();
   await expect(page.getByRole('textbox')).toHaveCount(0);
   for (const label of ['새 작업 만들기', '작업 수정', '작업 삭제', '완료 처리', '수행 설명 저장'])
     await expect(page.getByRole('button', { name: label, exact: true })).toHaveCount(0);

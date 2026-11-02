@@ -401,7 +401,7 @@ test('팀 삭제와 탈퇴는 본문 없이 쿼리를 전송하고 204를 처리
 test('파일 업로드는 정확한 multipart 필드와 CSRF를 전송한다', async () => {
   await uploadDeliverable(
     1,
-    { taskId: null, title: '자료', description: null, category: 'OTHER' },
+    { taskId: null, title: '자료', description: null },
     new Blob(['text']),
   );
   assert.deepEqual([...calls[1].body.keys()], ['metadata', 'file']);
@@ -410,7 +410,6 @@ test('파일 업로드는 정확한 multipart 필드와 CSRF를 전송한다', a
     taskId: null,
     title: '자료',
     description: null,
-    category: 'OTHER',
   });
   assert.equal(calls[1].headers['Content-Type'], undefined);
   assert.equal(calls[1].headers['X-CSRF-TOKEN'], 'token');

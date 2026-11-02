@@ -152,9 +152,11 @@ export default function TaskDetail({
     setError(null);
   }, [resource.data]);
   const [editing, setEditing] = useState(false);
+  const [showAllAssignees, setShowAllAssignees] = useState(false);
   const [activeTab, setActiveTab] = useState('task-description-section');
   const [sectionToFocus, setSectionToFocus] = useState(null);
   useEffect(() => {
+    setShowAllAssignees(false);
     setActiveTab('task-description-section');
     setSectionToFocus(null);
   }, [taskId]);
@@ -181,10 +183,10 @@ export default function TaskDetail({
   const task = resource.data?.task;
   const canViewAi = Boolean(!readOnly && task && isAssignee(task, user.id));
   const tabs = [
-    ['task-description-section', '작업내용'],
-    ['task-deliverables-section', '산출물'],
-    ...(canViewAi ? [['task-ai-review-section', 'AI피드백']] : []),
-    ['task-contributions-section', '수행설명'],
+    ['task-description-section', '작업 내용'],
+    ['task-deliverables-section', '결과물'],
+    ...(canViewAi ? [['task-ai-review-section', 'AI 피드백']] : []),
+    ['task-contributions-section', '수행 설명'],
   ];
   const visibleTab =
     activeTab === 'task-ai-review-section' && !canViewAi
@@ -204,13 +206,11 @@ export default function TaskDetail({
           .find((entry) => entry.userId === assignment.userId)
           ?.contributionDescription?.trim(),
     ) || [];
+  const visibleAssignees = !task ? [] : showAllAssignees || task.assignees.length <= 4
+    ? task.assignees
+    : [...task.assignees.filter((entry) => entry.userId === user.id),
+      ...task.assignees.filter((entry) => entry.userId !== user.id)].slice(0, 4);
   const hasDeliverables = Boolean(resource.data?.deliverableSummary?.length);
-  const preparedItems =
-    Number(['IN_PROGRESS', 'REVISING'].includes(task?.status)) +
-    Number(hasDeliverables) +
-    (task?.assignees.length || 0) -
-    missingContributions.length;
-  const preparationItems = 2 + (task?.assignees.length || 0);
   const completionReady =
     ['IN_PROGRESS', 'REVISING'].includes(task?.status) &&
     !missingContributions.length &&
@@ -229,7 +229,7 @@ export default function TaskDetail({
       !(await confirm({
         title: '작업 완료',
         message:
-          '완료하면 작업 내용과 수행 설명·연결 산출물은 잠깁니다. 이후 수정하려면 수정 중으로 전환해야 합니다. 완료할까요?',
+          '완료하면 작업 내용과 수행 설명·연결된 결과물은 잠깁니다. 이후 수정하려면 수정 중으로 전환해야 합니다. 완료할까요?',
         label: '완료 처리',
       }))
     )
@@ -239,7 +239,7 @@ export default function TaskDetail({
       !(await confirm({
         title: '완료 후 수정',
         message:
-          '기존 내용과 산출물은 유지되며 수정 중에는 완료 집계에서 제외됩니다. 다시 완료하면 완료 시각이 새로 기록됩니다.',
+          '기존 내용과 결과물은 유지되며 수정 중에는 완료 집계에서 제외됩니다. 다시 완료하면 완료 시각이 새로 기록됩니다.',
         label: '수정 중으로 전환',
       }))
     )
@@ -333,7 +333,6 @@ export default function TaskDetail({
               <div className="page-heading task-detail-title-row">
                 <div>
                   <div className="task-title-context">
-                    <span className="task-detail-number">작업 #{task.id}</span>
                     <span
                       className={`status-badge task-state-${task.status.toLowerCase()}`}
                     >
@@ -372,19 +371,19 @@ export default function TaskDetail({
                     <Clock3 size={14} aria-hidden="true" />
                     예상 작업량
                   </dt>
-                  <dd>{formatExpectedWorkload(task.weight)}</dd>
+                  <dd>{formatExpectedWorkload(task.weight).replace(/의 작업$/, '')}</dd>
                 </div>
                 <div>
                   <dt>
                     <CalendarDays size={14} aria-hidden="true" />
-                    시작일
+                    계획 시작일
                   </dt>
                   <dd>{formatDate(task.startAt)}</dd>
                 </div>
                 <div>
                   <dt>
                     <CalendarDays size={14} aria-hidden="true" />
-                    마감
+                    마감일
                   </dt>
                   <dd>{formatDate(task.dueAt)}</dd>
                 </div>
@@ -398,6 +397,145 @@ export default function TaskDetail({
                   </dd>
                 </div>
               </dl>
+              <div className="task-header-body">
+                <div className="task-header-information">
+                  <section
+                    id="task-assignment-section"
+                    tabIndex={-1}
+                    className="task-assignment-panel task-section-anchor"
+                    aria-label="담당자·담당 비율"
+                  >
+                    <h2>
+                      <UsersRound size={18} aria-hidden="true" />
+                      담당자·담당 비율
+                    </h2>
+                    <p className="field-help">각 담당자가 이 작업에서 맡은 비율입니다.</p>
+                    <table className="task-assignment-table" aria-label="담당자별 수행 상태">
+                      <thead><tr><th scope="col">담당자</th><th scope="col">담당 비율</th><th scope="col">수행 설명</th></tr></thead>
+                      <tbody id="task-assignment-rows">
+                        {visibleAssignees.map((assignment) => {
+                          const missing = missingContributions.some((entry) => entry.userId === assignment.userId);
+                          const ownAssignment = assignment.userId === user.id;
+                          return <tr key={assignment.userId} className={ownAssignment ? 'is-own-assignment' : undefined}>
+                            <th scope="row"><span className="task-assignee-identity">
+                              <span className="task-assignee-avatar" aria-hidden="true">{memberName(members, assignment.userId).slice(0, 1)}</span>
+                              <span>{memberName(members, assignment.userId)}</span>
+                            </span></th>
+                            <td className="task-assignment-percent">{assignment.allocationPercent}%</td>
+                            <td>{missing ? ownAssignment && !readOnly && isMutable(task) && canModifyTeamWork(team) && !workClosed
+                              ? <button className="text-button" aria-label="내 수행 설명 작성" onClick={() => focusTaskSection('own-contribution-description')}>작성하기</button>
+                              : <span className="task-contribution-pending">미작성</span>
+                              : <span className="task-contribution-complete">작성 완료</span>}</td>
+                          </tr>;
+                        })}
+                      </tbody>
+                    </table>
+                    {task.assignees.length > 4 && <button className="text-button task-assignees-toggle"
+                      aria-expanded={showAllAssignees} aria-controls="task-assignment-rows"
+                      onClick={() => setShowAllAssignees((value) => !value)}>
+                      {showAllAssignees ? '담당자 접기' : `전체 담당자 ${task.assignees.length}명 보기`}
+                    </button>}
+                  </section>
+                </div>
+                {!readOnly && isAssignee(task, user.id) && (
+                  <section className="task-next-action" aria-label="작업 상태 변경">
+                    {task.status === 'DONE' ? (
+                      <>
+                        <p className="field-help">
+                          수정하려면 먼저 수정 중으로 전환하세요. 수정 중에는
+                          완료 집계에서 제외됩니다.
+                        </p>
+                        <button
+                          className="secondary-button"
+                          disabled={
+                            busy || !canModifyTeamWork(team) || workClosed
+                          }
+                          onClick={() => changeStatus('REVISING')}
+                        >
+                          수정 중으로 전환
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <ul
+                          className="completion-readiness"
+                          aria-label="완료 준비 상태"
+                        >
+                          <ReadinessItem
+                            complete={['IN_PROGRESS', 'REVISING'].includes(
+                              task.status,
+                            )}
+                          >
+                            {task.status === 'REVISING'
+                              ? '완료 후 수정 중'
+                              : '작업 진행 중'}
+                          </ReadinessItem>
+                          <ReadinessItem complete={hasDeliverables}>
+                            {hasDeliverables
+                              ? '결과물 추가됨'
+                              : '결과물 없음'}
+                            {!hasDeliverables && (
+                              <button
+                                className="text-button readiness-link"
+                                onClick={() =>
+                                  focusTaskSection('task-deliverables-section')
+                                }
+                              >
+                                결과물 확인
+                              </button>
+                            )}
+                          </ReadinessItem>
+
+                        </ul>
+                        <div className="heading-actions">
+                          {['TODO', 'IN_PROGRESS'].includes(task.status) && (
+                            <button
+                              className="secondary-button"
+                              disabled={
+                                busy || !canModifyTeamWork(team) || workClosed
+                              }
+                              onClick={() =>
+                                changeStatus(
+                                  task.status === 'TODO'
+                                    ? 'IN_PROGRESS'
+                                    : 'TODO',
+                                )
+                              }
+                            >
+                              {task.status === 'TODO'
+                                ? '작업 시작'
+                                : '할 일로 되돌리기'}
+                            </button>
+                          )}
+                          <button
+                            className="primary-button"
+                            disabled={
+                              busy ||
+                              !canModifyTeamWork(team) ||
+                              task.completionBlockReason !== null ||
+                              !completionReady
+                            }
+                            data-guide="complete-task"
+                            onClick={() => changeStatus('DONE')}
+                          >
+                            {task.status === 'REVISING'
+                              ? '다시 완료'
+                              : '완료 처리'}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                    {task.completionBlockReason !== null &&
+                      task.completionBlockReason !== 'INVALID_TASK_STATE' && (
+                        <p className="field-help task-completion-reason">
+                          {task.completionBlockReason === 'CONTRIBUTION_DESCRIPTION_REQUIRED'
+                            ? `수행 설명 ${missingContributions.length}명 미작성 · 담당자 표에서 확인해 주세요.`
+                            : completionBlockLabels[task.completionBlockReason]}
+                        </p>
+                      )}
+                  </section>
+                )}
+              </div>
             </header>
             {navigation}
             <div className="task-detail-layout">
@@ -476,9 +614,8 @@ export default function TaskDetail({
                         key={contribution.userId}
                       >
                         <div className="contribution-entry-heading">
-                          <h3>
+                          <h3 className={contribution.userId === user.id ? 'self-identity' : undefined}>
                             {memberName(members, contribution.userId)}
-                            {contribution.userId === user.id && ' · 나'}
                           </h3>
                           <span
                             className={`contribution-description-state ${contribution.contributionDescription?.trim() ? 'is-written' : ''}`}
@@ -514,206 +651,14 @@ export default function TaskDetail({
                     ))}
                 </section>
               </div>
-              <aside
-                className="stack task-progress-sidebar"
-                aria-label="작업 진행 및 담당"
-              >
-                {!readOnly && isAssignee(task, user.id) && (
-                  <section className="panel stack task-next-action">
-                    <h2>
-                      {task.status === 'DONE' ? '완료된 작업' : '작업 진행'}
-                    </h2>
-                    {task.status === 'DONE' ? (
-                      <>
-                        <p className="field-help">
-                          수정하려면 먼저 수정 중으로 전환하세요. 수정 중에는
-                          완료 집계에서 제외됩니다.
-                        </p>
-                        <button
-                          className="secondary-button"
-                          disabled={
-                            busy || !canModifyTeamWork(team) || workClosed
-                          }
-                          onClick={() => changeStatus('REVISING')}
-                        >
-                          수정 중으로 전환
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <div
-                          className="task-preparation-summary"
-                          aria-label="완료 준비 항목"
-                        >
-                          <span>준비 항목</span>
-                          <strong>
-                            {preparedItems}
-                            <span> / {preparationItems}</span>
-                          </strong>
-                          <div
-                            className="task-preparation-track"
-                            aria-hidden="true"
-                          >
-                            <span
-                              style={{
-                                width: `${(preparedItems / preparationItems) * 100}%`,
-                              }}
-                            />
-                          </div>
-                        </div>
-                        <ul
-                          className="completion-readiness"
-                          aria-label="완료 준비 상태"
-                        >
-                          <ReadinessItem
-                            complete={['IN_PROGRESS', 'REVISING'].includes(
-                              task.status,
-                            )}
-                          >
-                            {task.status === 'REVISING'
-                              ? '완료 후 수정 중'
-                              : '작업 진행 중'}
-                          </ReadinessItem>
-                          <ReadinessItem complete={hasDeliverables}>
-                            {hasDeliverables
-                              ? '연결 산출물 등록 완료'
-                              : '연결 산출물 미등록'}
-                            {!hasDeliverables && (
-                              <button
-                                className="text-button readiness-link"
-                                onClick={() =>
-                                  focusTaskSection('task-deliverables-section')
-                                }
-                              >
-                                산출물 확인
-                              </button>
-                            )}
-                          </ReadinessItem>
-                          {task.assignees.map((assignment) => {
-                            const missing = missingContributions.some(
-                              (entry) => entry.userId === assignment.userId,
-                            );
-                            return (
-                              <ReadinessItem
-                                key={assignment.userId}
-                                complete={!missing}
-                              >
-                                {memberName(members, assignment.userId)} 수행
-                                설명 {missing ? '미작성' : '작성 완료'}
-                                {missing &&
-                                  assignment.userId === user.id &&
-                                  canModifyTeamWork(team) && (
-                                    <button
-                                      className="text-button readiness-link"
-                                      onClick={() =>
-                                        focusTaskSection(
-                                          'own-contribution-description',
-                                        )
-                                      }
-                                    >
-                                      내 수행 설명 작성
-                                    </button>
-                                  )}
-                              </ReadinessItem>
-                            );
-                          })}
-                        </ul>
-                        <div className="heading-actions">
-                          {['TODO', 'IN_PROGRESS'].includes(task.status) && (
-                            <button
-                              className="secondary-button"
-                              disabled={
-                                busy || !canModifyTeamWork(team) || workClosed
-                              }
-                              onClick={() =>
-                                changeStatus(
-                                  task.status === 'TODO'
-                                    ? 'IN_PROGRESS'
-                                    : 'TODO',
-                                )
-                              }
-                            >
-                              {task.status === 'TODO'
-                                ? '작업 시작'
-                                : '할 일로 되돌리기'}
-                            </button>
-                          )}
-                          <button
-                            className="primary-button"
-                            disabled={
-                              busy ||
-                              !canModifyTeamWork(team) ||
-                              task.completionBlockReason !== null ||
-                              !completionReady
-                            }
-                            data-guide="complete-task"
-                            onClick={() => changeStatus('DONE')}
-                          >
-                            {task.status === 'REVISING'
-                              ? '다시 완료'
-                              : '완료 처리'}
-                          </button>
-                        </div>
-                      </>
-                    )}
-                    {task.completionBlockReason !== null &&
-                      task.completionBlockReason !== 'INVALID_TASK_STATE' && (
-                        <p className="field-help">
-                          {completionBlockLabels[task.completionBlockReason]}
-                        </p>
-                      )}
-                  </section>
-                )}
-                <section
-                  id="task-assignment-section"
-                  tabIndex={-1}
-                  className="panel task-assignment-panel task-section-anchor"
-                  aria-label="담당자와 배분"
-                >
-                  <h2>
-                    <UsersRound size={18} aria-hidden="true" />
-                    담당자와 배분
-                  </h2>
-                  <p className="field-help">예상 작업량을 나누는 비율입니다.</p>
-                  <ul className="clean-list">
-                    {task.assignees.map((assignment) => (
-                      <li className="row-item" key={assignment.userId}>
-                        <span className="task-assignee-identity">
-                          <span
-                            className="task-assignee-avatar"
-                            aria-hidden="true"
-                          >
-                            {memberName(members, assignment.userId).slice(0, 1)}
-                          </span>
-                          <span>
-                            {memberName(members, assignment.userId)}
-                            {assignment.userId === user.id && (
-                              <small> · 나</small>
-                            )}
-                          </span>
-                        </span>
-                        <strong>{assignment.allocationPercent}%</strong>
-                        <div
-                          className="task-allocation-track"
-                          aria-hidden="true"
-                        >
-                          <span
-                            style={{
-                              width: `${Math.max(0, Math.min(100, assignment.allocationPercent))}%`,
-                            }}
-                          />
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-                {!readOnly && <TaskComments
+              {!readOnly && <div className="task-detail-comments">
+                <TaskComments
                   key={`${team.id}-${task.id}-${user.id}`}
                   taskId={task.id}
                   team={team}
                   user={user}
-                />}
-              </aside>
+                />
+              </div>}
             </div>
             {!readOnly && isMutable(task) && isTeamEditor(team, user.id) && (
               <div className="task-detail-footer">
@@ -725,7 +670,7 @@ export default function TaskDetail({
                       !(await confirm({
                         title: '작업 삭제',
                         message:
-                          '작업과 연결된 산출물을 완전히 삭제합니다. 삭제한 자료는 복구할 수 없습니다.',
+                          '이 작업에 등록된 결과를 완전히 삭제합니다. 삭제한 자료는 복구할 수 없습니다.',
                         label: '작업 삭제',
                         danger: true,
                       }))

@@ -53,7 +53,7 @@ test('작업 수정은 현재 담당자와 팀 리더 역할로 판단한다', (
   for (const status of ['DONE'])
     assert.equal(canEditTask({ ...task, status }, team, 'leader'), false);
 });
-test('공용 자료는 작성자가 관리하며 리더는 제목과 분류만 수정한다', () => {
+test('공용 자료는 작성자가 관리하며 리더는 제목만 수정한다', () => {
   const deliverable = { authorId: 'member', taskId: null };
   assert.deepEqual(deliverablePermissions(deliverable, null, team, 'leader'), {
     metadata: true,

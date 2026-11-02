@@ -233,7 +233,7 @@ export function requireWorkBeforeFinalDeadline(state) {
   )
     fail(
       'TASK_WORK_CLOSED',
-      '최종 평가 마감 이후에는 작업과 산출물을 변경할 수 없습니다.',
+      '최종 평가 마감 이후에는 작업과 자료를 변경할 수 없습니다.',
     );
 }
 
@@ -777,10 +777,9 @@ export async function plannedRequest(
           taskVersion: task.version,
           deliverableSummary: entry.deliverables
             .filter((deliverable) => deliverable.taskId === task.id)
-            .map(({ id, title, category, type, version }) => ({
+            .map(({ id, title, type, version }) => ({
               id,
               title,
-              category,
               type,
               version,
             })),

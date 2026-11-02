@@ -16,7 +16,7 @@ export default function ManagerTeamLinks({ spaceId, teamId, activeMenu, dashboar
       `${spacePath(spaceId)}/dashboard?${dashboardState.dashboardSearch}`,
       { state: { dashboardListScrollY: dashboardState.dashboardListScrollY, restoreScrollY: dashboardState.dashboardScrollY } },
     )}>← 팀 현황</button>}
-    {[[ '작업', '작업 보기' ], [ '산출물', '산출물 보기' ]].map(([menu, label]) => <button
+    {[[ '작업', '작업 보기' ], [ '팀 자료', '팀 자료 보기' ]].map(([menu, label]) => <button
       type="button" key={menu} className="secondary-button" aria-current={activeMenu === menu ? 'page' : undefined}
       onClick={() => { if (activeMenu !== menu) navigate(teamMenuPath(spaceId, teamId, menu), { state: dashboardState }); }}>
       {label}

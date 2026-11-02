@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router";
-import { categoryLabels, formatDate, memberName } from "../lib/domain.js";
+import { formatDate, memberName } from "../lib/domain.js";
 import { isPreviewPath } from "../lib/previewPath.js";
 import Icon from "./Icon.jsx";
 import MarkdownBody from "./MarkdownBody.jsx";
@@ -49,6 +49,7 @@ export default function DeliverableContent({
   task,
   members,
   previewDocument = false,
+  showTaskContext = true,
   onDownload,
 }) {
   const { spaceId, teamId } = useParams();
@@ -64,11 +65,10 @@ export default function DeliverableContent({
           <h3>{deliverable.title}</h3>
         </div>
         <span className="deliverable-kind">
-          {deliverable.type === "FILE" ? "파일" : "문서"} ·{" "}
-          {categoryLabels[deliverable.category] || deliverable.category}
+          {deliverable.type === "FILE" ? "파일" : "문서"}
         </span>
       </header>
-      <div className="deliverable-context">
+      {showTaskContext && <div className="deliverable-context">
         {deliverable.taskId == null ? (
           <span>팀 공용 자료</span>
         ) : (
@@ -77,16 +77,16 @@ export default function DeliverableContent({
             <Link
               to={`${prefix}/spaces/${spaceId}/teams/${teamId}/tasks/${deliverable.taskId}`}
             >
-              {task?.title || `작업 #${deliverable.taskId}`}
+              {task?.title || "작업 정보 확인 불가"}
             </Link>
           </>
         )}
-      </div>
+      </div>}
       {deliverable.description && (
         <p className="deliverable-description">{deliverable.description}</p>
       )}
       {deliverable.type === "TEXT" ? (
-        <section className="deliverable-document" aria-label="산출물 본문">
+        <section className="deliverable-document" aria-label="자료 본문">
           {previewDocument ? (
             <DocumentPreview key={deliverable.id}>
               {deliverable.text}

@@ -440,10 +440,7 @@ function TeamDashboard({
                 <span className="dashboard-avatar">
                   {member.name?.slice(0, 1) || '?'}
                 </span>
-                <strong>{member.name}</strong>
-                {member.userId === context.user.id && (
-                  <span className="dashboard-tag">나</span>
-                )}
+                <strong className={member.userId === context.user.id ? 'self-identity' : undefined}>{member.name}</strong>
                 {member.role === 'LEADER' && (
                   <span className="dashboard-leader">
                     <i />팀 리더

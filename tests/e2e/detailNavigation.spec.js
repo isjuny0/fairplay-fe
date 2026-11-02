@@ -22,7 +22,7 @@ async function seed(page, role = 'leader') {
   );
 }
 
-for (const width of [1440, 320]) {
+for (const width of [1440, 1045, 320]) {
   test(`작업 상세 ${width}px: 긴 본문에서 항목 이동·입력 보존·목록 복귀`, async ({
     page,
   }, testInfo) => {
@@ -40,6 +40,15 @@ for (const width of [1440, 320]) {
       exact: true,
     });
     const headerBox = await page.locator('.task-detail-header').boundingBox();
+    await expect(page.locator('.task-detail-header .task-next-action')).toHaveCount(1);
+    await expect(page.locator('.task-detail-header #task-assignment-section')).toHaveCount(1);
+    await expect(page.locator('.task-detail-layout .task-next-action')).toHaveCount(0);
+    await expect(page.locator('.task-detail-layout #task-assignment-section')).toHaveCount(0);
+    if (width <= 800) {
+      const information = await page.locator('.task-header-information').boundingBox();
+      const progress = await page.locator('.task-next-action').boundingBox();
+      expect(progress.y).toBeGreaterThanOrEqual(information.y + information.height);
+    }
     const backBox = await page
       .getByRole('button', { name: '← 목록으로', exact: true })
       .boundingBox();
@@ -56,50 +65,55 @@ for (const width of [1440, 320]) {
     );
     await expect(navigation.getByRole('tab')).toHaveCount(4);
     await expect(navigation.getByRole('tab')).toHaveText([
-      '작업내용',
-      '산출물',
-      'AI피드백',
-      '수행설명',
+      '작업 내용',
+      '결과물',
+      'AI 피드백',
+      '수행 설명',
     ]);
     await expect(
       navigation.getByRole('tab', { name: '댓글', exact: true }),
     ).toHaveCount(0);
     await expect(
-      page.locator('.task-progress-sidebar #task-comments-section'),
+      page.locator('.task-detail-comments #task-comments-section'),
     ).toBeVisible();
     await expect(
-      navigation.getByRole('tab', { name: '작업내용', exact: true }),
+      navigation.getByRole('tab', { name: '작업 내용', exact: true }),
     ).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByRole('tabpanel')).toHaveCount(1);
     await expect(page.locator('#task-deliverables-section')).toBeHidden();
     await expect(page.locator('#task-contributions-section')).toBeHidden();
     await expect(
-      page.getByRole('region', { name: '담당자와 배분', exact: true }),
+      page.getByRole('region', { name: '담당자·담당 비율', exact: true }),
     ).toHaveCount(1);
     await expect(page.locator('#task-comments-section')).toHaveCount(1);
+    await expect(page.locator('.task-overview-facts')).toContainText('계획 시작일');
+    await expect(page.locator('.task-overview-facts')).toContainText('마감일');
+    await expect(page.locator('.task-next-action h2')).toHaveCount(0);
+    await expect(page.locator('.task-preparation-summary')).toHaveCount(0);
+    await expect(page.locator('.is-own-assignment th')).not.toContainText('· 나');
     const readiness = page.getByRole('list', { name: '완료 준비 상태' });
     await expect(
       readiness.getByRole('img', { name: '충족', exact: true }),
-    ).toHaveCount(3);
+    ).toHaveCount(2);
     await expect(
       readiness.getByRole('img', { name: '미충족', exact: true }),
-    ).toHaveCount(1);
+    ).toHaveCount(0);
     await readiness.screenshot({
       path: testInfo.outputPath('task-readiness-checklist.png'),
     });
     const description = page.getByLabel('내 수행 설명', { exact: true });
     await navigation
-      .getByRole('tab', { name: '수행설명', exact: true })
+      .getByRole('tab', { name: '수행 설명', exact: true })
       .click();
     await expect(
-      page.getByRole('tabpanel', { name: '수행설명', exact: true }),
+      page.getByRole('tabpanel', { name: '수행 설명', exact: true }),
     ).toBeVisible();
     await description.fill(
       '아직 저장하지 않은 분석 수행 내용과 검증 결과입니다.',
     );
     for (const [label, id] of [
-      ['산출물', 'task-deliverables-section'],
-      ['작업내용', 'task-description-section'],
+      ['결과물', 'task-deliverables-section'],
+      ['작업 내용', 'task-description-section'],
     ]) {
       await navigation.getByRole('tab', { name: label, exact: true }).click();
       const target = page.locator(`#${id}`);
@@ -130,7 +144,7 @@ for (const width of [1440, 320]) {
       .getByRole('button', { name: '계속 작성', exact: true })
       .click();
     await navigation
-      .getByRole('tab', { name: '수행설명', exact: true })
+      .getByRole('tab', { name: '수행 설명', exact: true })
       .click();
     await expect(description).toHaveValue(
       '아직 저장하지 않은 분석 수행 내용과 검증 결과입니다.',
@@ -152,49 +166,49 @@ test('상세 탭은 방향키·Home·End로 이동하고 댓글과 수행 설명
   await page.goto('/preview/spaces/1/teams/1/tasks/102');
   const tabs = page.getByRole('tablist', { name: '작업 상세 항목' });
   await tabs
-    .getByRole('tab', { name: '작업내용', exact: true })
+    .getByRole('tab', { name: '작업 내용', exact: true })
     .press('ArrowRight');
   await expect(
-    tabs.getByRole('tab', { name: '산출물', exact: true }),
+    tabs.getByRole('tab', { name: '결과물', exact: true }),
   ).toBeFocused();
   await expect(
-    page.getByRole('tabpanel', { name: '산출물', exact: true }),
+    page.getByRole('tabpanel', { name: '결과물', exact: true }),
   ).toBeVisible();
   await page.keyboard.press('End');
   await expect(
-    tabs.getByRole('tab', { name: '수행설명', exact: true }),
+    tabs.getByRole('tab', { name: '수행 설명', exact: true }),
   ).toBeFocused();
   await page
     .getByLabel('댓글 내용', { exact: true })
     .fill('탭을 이동해도 남아야 하는 의견');
-  await tabs.getByRole('tab', { name: '수행설명', exact: true }).click();
+  await tabs.getByRole('tab', { name: '수행 설명', exact: true }).click();
   await page
     .getByLabel('내 수행 설명', { exact: true })
     .fill('탭을 이동해도 남아야 하는 수행 설명입니다.');
-  await tabs.getByRole('tab', { name: '산출물', exact: true }).click();
+  await tabs.getByRole('tab', { name: '결과물', exact: true }).click();
   await expect(page.getByLabel('댓글 내용', { exact: true })).toHaveValue(
     '탭을 이동해도 남아야 하는 의견',
   );
-  await tabs.getByRole('tab', { name: '산출물', exact: true }).focus();
+  await tabs.getByRole('tab', { name: '결과물', exact: true }).focus();
   await page.keyboard.press('Home');
   await expect(
-    tabs.getByRole('tab', { name: '작업내용', exact: true }),
+    tabs.getByRole('tab', { name: '작업 내용', exact: true }),
   ).toBeFocused();
   await page.keyboard.press('ArrowLeft');
   await expect(
-    tabs.getByRole('tab', { name: '수행설명', exact: true }),
+    tabs.getByRole('tab', { name: '수행 설명', exact: true }),
   ).toBeFocused();
   await page
     .getByRole('button', { name: 'AI 피드백 보기', exact: true })
     .click();
   await expect(
-    tabs.getByRole('tab', { name: 'AI피드백', exact: true }),
+    tabs.getByRole('tab', { name: 'AI 피드백', exact: true }),
   ).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('#task-ai-review-section')).toBeFocused();
   await expect(
-    page.getByRole('heading', { name: 'AI 검토', exact: true }),
+    page.getByRole('heading', { name: 'AI 피드백', exact: true }),
   ).toBeVisible();
-  await tabs.getByRole('tab', { name: '수행설명', exact: true }).click();
+  await tabs.getByRole('tab', { name: '수행 설명', exact: true }).click();
   await expect(page.getByLabel('내 수행 설명', { exact: true })).toHaveValue(
     '탭을 이동해도 남아야 하는 수행 설명입니다.',
   );
@@ -212,7 +226,7 @@ test('비담당 팀 리더에게는 AI 탭과 조회 요청을 제공하지 않�
   await page.goto('/preview/spaces/1/teams/1/tasks/104');
   await expect(page.getByRole('tab')).toHaveCount(3);
   await expect(
-    page.getByRole('tab', { name: 'AI피드백', exact: true }),
+    page.getByRole('tab', { name: 'AI 피드백', exact: true }),
   ).toHaveCount(0);
   await expect(
     page.getByRole('button', { name: 'AI 피드백 보기', exact: true }),
@@ -223,7 +237,7 @@ test('비담당 팀 리더에게는 AI 탭과 조회 요청을 제공하지 않�
   expect(calls).toEqual([]);
 });
 
-test('긴 산출물 상세는 다운로드·닫기와 목록 초점 복귀를 유지한다', async ({
+test('긴 팀 자료 상세는 다운로드·닫기와 목록 초점 복귀를 유지한다', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -234,7 +248,7 @@ test('긴 산출물 상세는 다운로드·닫기와 목록 초점 복귀를 �
     exact: true,
   });
   await title.click();
-  const dialog = page.getByRole('dialog', { name: '산출물 상세', exact: true });
+  const dialog = page.getByRole('dialog', { name: '팀 자료 상세', exact: true });
   const download = dialog.getByRole('button', {
     name: '파일 다운로드',
     exact: true,

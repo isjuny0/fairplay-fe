@@ -15,12 +15,12 @@ async function open(page, target = path, customize = () => {}) {
   await page.goto(target);
 }
 
-test('마크다운 미리보기·저장·수정·연결 산출물에서 원문과 동일한 서식을 유지한다', async ({ page }, testInfo) => {
+test('마크다운 미리보기·저장·수정·연결된 결과물에서 원문과 동일한 서식을 유지한다', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await open(page);
-  await page.getByRole('button', { name: '산출물 등록', exact: true }).click();
-  await page.getByRole('dialog', { name: '산출물 등록', exact: true }).getByRole('button', { name: '문서 작성', exact: true }).click();
-  let dialog = page.getByRole('dialog', { name: '산출물 등록', exact: true });
+  await page.getByRole('button', { name: '팀 자료 등록', exact: true }).click();
+  await page.getByRole('dialog', { name: /^(팀 자료 등록|문서 작성|파일 업로드)$/, exact: true }).getByRole('button', { name: '문서 작성', exact: true }).click();
+  let dialog = page.getByRole('dialog', { name: /^(팀 자료 등록|문서 작성|파일 업로드)$/, exact: true });
   await dialog.getByLabel('제목', { exact: true }).fill('마크다운 조사 기록');
   await dialog.getByLabel('작업 연결', { exact: true }).selectOption('102');
   const body = dialog.getByRole('textbox', { name: '본문', exact: true });
@@ -38,23 +38,23 @@ test('마크다운 미리보기·저장·수정·연결 산출물에서 원문�
   await dialog.getByRole('button', { name: '작성', exact: true }).click();
   await expect(body).toHaveValue(sample);
   await dialog.getByRole('button', { name: '미리보기', exact: true }).click();
-  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await dialog.getByRole('button', { name: /^(저장|팀 자료 등록)$/, exact: true }).click();
   const title = page.getByRole('button', { name: '마크다운 조사 기록', exact: true });
   await title.click();
-  dialog = page.getByRole('dialog', { name: '산출물 상세', exact: true });
+  dialog = page.getByRole('dialog', { name: '팀 자료 상세', exact: true });
   await expect(dialog.getByRole('heading', { name: '조사 결과', exact: true })).toBeVisible();
   await expect(dialog.getByRole('table')).toContainText('12건');
   await page.screenshot({ path: testInfo.outputPath('markdown-detail.png') });
   await dialog.getByRole('button', { name: '닫기', exact: true }).last().click();
   const row = page.getByRole('row').filter({ has: title });
   await row.getByRole('button', { name: '수정', exact: true }).click();
-  dialog = page.getByRole('dialog', { name: '산출물 수정', exact: true });
+  dialog = page.getByRole('dialog', { name: '팀 자료 수정', exact: true });
   await expect(dialog.getByRole('textbox', { name: '본문', exact: true })).toHaveValue(sample);
   await dialog.getByRole('textbox', { name: '본문', exact: true }).fill(`${sample}\n\n수정한 원문`);
-  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await dialog.getByRole('button', { name: /^(저장|팀 자료 등록)$/, exact: true }).click();
   await page.getByRole('button', { name: '작업', exact: true }).click();
   await page.getByRole('button', { name: '설문 결과 분석', exact: true }).click();
-  await page.getByRole('tab', { name: '산출물', exact: true }).click();
+  await page.getByRole('tab', { name: '결과물', exact: true }).click();
   const card = page.getByRole('article').filter({ has: page.getByRole('heading', { name: '마크다운 조사 기록', exact: true }) });
   await expect(card.getByRole('heading', { name: '조사 결과', exact: true })).toBeVisible();
   const expand = card.getByRole('button', { name: '본문 더 보기', exact: true });
@@ -65,9 +65,9 @@ test('마크다운 미리보기·저장·수정·연결 산출물에서 원문�
 
 test('서식 버튼은 선택 영역·초점을 유지하고 입력 길이 및 미저장 보호를 따른다', async ({ page }) => {
   await open(page);
-  await page.getByRole('button', { name: '산출물 등록', exact: true }).click();
-  await page.getByRole('dialog', { name: '산출물 등록', exact: true }).getByRole('button', { name: '문서 작성', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: '산출물 등록', exact: true });
+  await page.getByRole('button', { name: '팀 자료 등록', exact: true }).click();
+  await page.getByRole('dialog', { name: /^(팀 자료 등록|문서 작성|파일 업로드)$/, exact: true }).getByRole('button', { name: '문서 작성', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: /^(팀 자료 등록|문서 작성|파일 업로드)$/, exact: true });
   const body = dialog.getByRole('textbox', { name: '본문', exact: true });
   await body.fill('중요한 발견');
   await body.focus();
@@ -104,12 +104,12 @@ test('서식 버튼은 선택 영역·초점을 유지하고 입력 길이 및 �
 
 test('빈 본문을 미리보기에서 저장하면 작성 화면의 본문 입력에 오류와 초점을 제공한다', async ({ page }) => {
   await open(page);
-  await page.getByRole('button', { name: '산출물 등록', exact: true }).click();
-  await page.getByRole('dialog', { name: '산출물 등록', exact: true }).getByRole('button', { name: '문서 작성', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: '산출물 등록', exact: true });
+  await page.getByRole('button', { name: '팀 자료 등록', exact: true }).click();
+  await page.getByRole('dialog', { name: /^(팀 자료 등록|문서 작성|파일 업로드)$/, exact: true }).getByRole('button', { name: '문서 작성', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: /^(팀 자료 등록|문서 작성|파일 업로드)$/, exact: true });
   await dialog.getByLabel('제목', { exact: true }).fill('입력 검증');
   await dialog.getByRole('button', { name: '미리보기', exact: true }).click();
-  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await dialog.getByRole('button', { name: /^(저장|팀 자료 등록)$/, exact: true }).click();
   const body = dialog.getByRole('textbox', { name: '본문', exact: true });
   await expect(body).toBeFocused();
   await expect(body).toHaveAttribute('aria-invalid', 'true');
@@ -126,7 +126,7 @@ for (const width of [1440, 320]) {
     page.on('request', request => { if (request.url().startsWith('https://example.com')) requests.push(request.url()); });
     await open(page, path, state => { state.teams[1].deliverables[0].text = `${sample}\n\n${malicious}${wideContent}`; });
     await page.getByRole('button', { name: '프로젝트 기획서', exact: true }).click();
-    const dialog = page.getByRole('dialog', { name: '산출물 상세', exact: true });
+    const dialog = page.getByRole('dialog', { name: '팀 자료 상세', exact: true });
     await expect(dialog.getByRole('heading', { name: '조사 결과', exact: true })).toBeVisible();
     await expect(dialog.locator('script, img, iframe')).toHaveCount(0);
     await expect(dialog.getByRole('link', { name: '실행', exact: true })).toHaveCount(0);
@@ -141,9 +141,9 @@ for (const width of [1440, 320]) {
     expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await dialog.getByRole('button', { name: '닫기', exact: true }).last().click();
-    await page.getByRole('button', { name: '산출물 등록', exact: true }).click();
-    await page.getByRole('dialog', { name: '산출물 등록', exact: true }).getByRole('button', { name: '문서 작성', exact: true }).click();
-    const editor = page.getByRole('dialog', { name: '산출물 등록', exact: true });
+    await page.getByRole('button', { name: '팀 자료 등록', exact: true }).click();
+    await page.getByRole('dialog', { name: /^(팀 자료 등록|문서 작성|파일 업로드)$/, exact: true }).getByRole('button', { name: '문서 작성', exact: true }).click();
+    const editor = page.getByRole('dialog', { name: /^(팀 자료 등록|문서 작성|파일 업로드)$/, exact: true });
     await editor.getByLabel('제목', { exact: true }).fill('조사 결과 기록');
     await editor.getByRole('textbox', { name: '본문', exact: true }).fill(sample);
     await editor.getByRole('button', { name: '미리보기', exact: true }).click();

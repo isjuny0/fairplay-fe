@@ -40,7 +40,6 @@ export const deliverables = Array.from({ length: 45 }, (_, index) => ({
   authorId: members[index % 3 === 0 ? 0 : 1].userId,
   title: `산출물 ${String(index + 1).padStart(2, "0")} · ${index % 2 ? "기획 문서" : "디자인 자료"}`,
   description: "현재 팀이 공유하는 최신 자료입니다.",
-  category: index % 2 ? "PLANNING" : "DESIGN",
   type: index % 2 ? "TEXT" : "FILE",
   text: index % 2 ? "자료의 목적과 수행 결과, 검증 내용을 정리합니다." : null,
   file:
@@ -59,7 +58,6 @@ deliverables[0] = {
   ...deliverables[0],
   taskId: null,
   title: "오래된 정책 원본",
-  category: "POLICY",
   updatedAt: "2031-01-01T10:00:00",
   file: { ...deliverables[0].file, originalFilename: "Policy_100%_final.md" },
 };

@@ -40,7 +40,7 @@ export default function RagMaterialList({
       }}
     >
       <header className="rag-panel-heading">
-        <h2>팀 자료 {data && <span>{data.totalElements.toLocaleString()}</span>}</h2>
+        <h2>팀 자료 {data && <span>{data.totalElements.toLocaleString()}개</span>}</h2>
         <div className="rag-panel-actions">
           <RefreshButton
             label="팀 자료 새로고침"
@@ -59,10 +59,10 @@ export default function RagMaterialList({
       </header>
       {data && !resource.error && (
         <div className="rag-material-summary" aria-label="자료 준비 요약">
-          <span>검색 가능 {data.readyCount.toLocaleString()}개</span>
-          {data.preparingCount > 0 && <span>준비 중 {data.preparingCount.toLocaleString()}개</span>}
-          {data.failedCount > 0 && <span className="rag-status-warning">실패 {data.failedCount.toLocaleString()}개</span>}
-          {data.unsupportedCount > 0 && <span>미지원 {data.unsupportedCount.toLocaleString()}개</span>}
+          <span className="rag-summary-status is-ready">검색 가능 {data.readyCount.toLocaleString()}개</span>
+          {data.preparingCount > 0 && <span className="rag-summary-status is-preparing">준비 중 {data.preparingCount.toLocaleString()}개</span>}
+          {data.failedCount > 0 && <span className="rag-summary-status is-failed">실패 {data.failedCount.toLocaleString()}개</span>}
+          {data.unsupportedCount > 0 && <span className="rag-summary-status is-unsupported">미지원 {data.unsupportedCount.toLocaleString()}개</span>}
         </div>
       )}
       <div
@@ -101,7 +101,7 @@ export default function RagMaterialList({
           ) : (
             <div className="rag-empty-materials">
               <strong>{data.totalElements ? '이 페이지의 자료가 변경되었습니다.' : '등록된 팀 자료가 없습니다.'}</strong>
-              <p>산출물에서 문서를 작성하거나 지원하는 파일을 등록해 주세요.</p>
+              <p>자료에서 문서를 작성하거나 지원하는 파일을 등록해 주세요.</p>
               {page > 0 && <button className="rag-inline-link" onClick={() => changePage(0)}>첫 페이지로 이동</button>}
             </div>
           ))}

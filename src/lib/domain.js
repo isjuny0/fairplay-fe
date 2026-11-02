@@ -25,18 +25,10 @@ export const buildingLabels = {
   CLOSED: '기간 종료',
   LOCKED: '팀 구성 고정',
 };
-export const categoryLabels = {
-  PLANNING: '기획',
-  POLICY: '정책',
-  DESIGN: '디자인·설계',
-  DEVELOPMENT: '제작·구현',
-  TEST: '검증',
-  OTHER: '기타',
-};
 export const completionBlockLabels = {
   WORK_PERIOD_CLOSED:
     '최종 평가 마감 이후에는 작업을 변경하거나 완료 처리할 수 없습니다.',
-  DELIVERABLE_REQUIRED: '완료 처리 전에 작업에 연결된 산출물이 필요합니다.',
+  DELIVERABLE_REQUIRED: '완료 처리 전에 결과물을 추가해 주세요.',
   NOT_ASSIGNEE: '현재 담당자만 완료할 수 있습니다.',
   INVALID_TASK_STATE: '진행 중·수정 중인 작업만 완료할 수 있습니다.',
   INSUFFICIENT_TEAM_MEMBERS: '승인된 팀원이 2명 이상 필요합니다.',
@@ -124,7 +116,7 @@ export function errorMessage(error) {
   if (error.code === 'TEAM_DELETION_IN_PROGRESS')
     return '팀 삭제 동의 중에는 작업을 변경할 수 없습니다. 팀 설정에서 동의 현황을 확인해 주세요.';
   if (error.code === 'TEAM_LEAVE_HAS_DEPENDENCIES')
-    return '담당 작업·공용 산출물이 남아 있어 탈퇴할 수 없습니다. 역할을 인계하고 자료를 정리해 주세요.';
+    return '담당 작업·공용 자료가 남아 있어 탈퇴할 수 없습니다. 역할을 인계하고 자료를 정리해 주세요.';
   if (error.code === 'VERSION_CONFLICT')
     return `${error.message} 최신 정보를 다시 불러온 후 변경 내용을 확인해 주세요.`;
   return error.message || '요청을 처리하지 못했습니다.';

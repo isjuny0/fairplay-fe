@@ -1,6 +1,5 @@
 import Icon from "./Icon.jsx";
 import {
-  categoryLabels,
   deliverablePermissions,
   formatDate,
   memberName,
@@ -20,20 +19,20 @@ export default function DeliverableTable({
 }) {
   return (
     <div
-      className="table-scroll collection-table-scroll"
+      className="table-scroll collection-table-scroll deliverable-table-scroll"
       role="region"
-      aria-label="산출물 목록"
+      aria-label="팀 자료 목록"
       tabIndex={0}
     >
       <table className="data-table collection-table deliverable-table">
         <caption className="sr-only">
-          현재 페이지 산출물: 이름, 유형·분류, 연결 작업, 등록자, 최종 수정일,
+          현재 페이지 자료: 이름, 유형, 연결 작업, 등록자, 최종 수정일,
           관리
         </caption>
         <thead>
           <tr>
-            <th scope="col">산출물명</th>
-            <th scope="col">유형·분류</th>
+            <th scope="col">자료명</th>
+            <th scope="col">유형</th>
             <th scope="col">연결 작업</th>
             <th scope="col">등록자</th>
             <th scope="col">최종 수정일</th>
@@ -78,9 +77,6 @@ export default function DeliverableTable({
                   <span className="collection-type">
                     {deliverable.type === "FILE" ? "파일" : "문서"}
                   </span>
-                  <small>
-                    {categoryLabels[deliverable.category] || deliverable.category}
-                  </small>
                 </td>
                 <td className="collection-task-cell">
                   <span
@@ -94,7 +90,7 @@ export default function DeliverableTable({
                     {deliverable.taskId == null
                       ? "팀 공용"
                       : taskMap.get(deliverable.taskId)?.title ||
-                        `작업 #${deliverable.taskId}`}
+                        "작업 정보 확인 불가"}
                   </span>
                 </td>
                 <td>{memberName(members, deliverable.authorId)}</td>

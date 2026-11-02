@@ -136,7 +136,7 @@ export default function TaskForm({
         form.assignees.length &&
         !(await confirm({
           title: '담당자 자동 선택',
-          message: '현재 담당자와 배분을 자동 선택 결과로 바꿀까요?',
+          message: '현재 담당자와 담당 비율을 자동 선택 결과로 바꿀까요?',
           label: '자동 선택',
         }))
       )
@@ -156,7 +156,7 @@ export default function TaskForm({
       }
       update('assignees', selected);
       setRecommendationNotice(
-        `${selected.length}명을 선택했습니다. 담당자와 배분을 조정할 수 있습니다.`,
+        `${selected.length}명을 선택했습니다. 담당자와 담당 비율을 조정할 수 있습니다.`,
       );
     } catch (failure) {
       setRecommendationError(failure);
@@ -413,7 +413,7 @@ export default function TaskForm({
                 data-step-title="1"
                 className="form-section-title"
               >
-                담당자와 배분{' '}
+                담당자·담당 비율{' '}
                 <span className="required-asterisk" aria-hidden="true">
                   *
                 </span>

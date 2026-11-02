@@ -1,7 +1,8 @@
-import { apiTimeToEpoch } from '../lib/koreanTime.js';
+import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
 import { screenLoaders } from '../lib/routeScreens.js';
 import { deferScreen } from './DeferredScreen.jsx';
 import Icon from './Icon.jsx';
+import { ChevronDown } from 'lucide-react';
 import RefreshButton from './RefreshButton.jsx';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router';
@@ -34,6 +35,14 @@ import { normalizeTaskView, readTaskViewPreferences, saveTaskViewPreferences } f
 
 const TaskForm = deferScreen(screenLoaders.TaskForm, '작업 입력');
 const TaskDetail = deferScreen(screenLoaders.TaskDetail, '작업 상세');
+
+function formatBoardDeadline(value, now) {
+  const sameYear = value.slice(0, 4) === koreanDateTime(now).slice(0, 4);
+  return new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul', month: 'long', day: 'numeric',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  }).format(new Date(apiTimeToEpoch(value)));
+}
 
 export default function TaskBoard({
   team,
@@ -503,15 +512,20 @@ export default function TaskBoard({
                         .map((task) => {
                           const detailsExpanded = expandedBoardTaskIds.has(task.id);
                           const detailsId = `board-task-details-${task.id}`;
+                          const assigneeNames = task.assignees
+                            .map((assignment) => memberName(members, assignment.userId))
+                            .join(', ');
+                          const isMyTask = !readOnly && task.assignees.some(
+                            (assignment) => assignment.userId === user.id,
+                          );
                           return (
                             <article
                               key={task.id}
                               className={`board-task-card${detailsExpanded ? ' is-expanded' : ''}`}
                             >
-                              <div className="board-card-top">
+                              <div className={`board-card-top${task.status !== 'DONE' && apiTimeToEpoch(task.dueAt) < now ? ' has-overdue' : ''}`}>
                                 <span className="board-card-heading">
                                   <span className="mobile-task-state">{label}</span>
-                                  <span className="task-number">#{task.id}</span>
                                 </span>
                                 {task.status !== 'DONE' &&
                                   apiTimeToEpoch(task.dueAt) < now && (
@@ -520,26 +534,36 @@ export default function TaskBoard({
                               </div>
                               <button
                                 className="task-title-button" data-guide-task-id={task.id}
+                                title={`${task.title}\n담당자: ${assigneeNames}\n마감 ${formatDate(task.dueAt)}`}
                                 onClick={() => onOpenTask(task.id)}
                               >
                                 <h3>{task.title}</h3>
                               </button>
+                              <div className="board-card-assignees">
+                                <span title={`담당자: ${assigneeNames}`}>
+                                  <span className="sr-only">담당자: </span>{assigneeNames}
+                                </span>
+                                {isMyTask && <small className="board-card-mine">내 담당</small>}
+                              </div>
                               <div className="board-card-footer">
                                 <div className="task-deadline">
                                   <Icon name="calendar" />
-                                  <small>마감 {formatDate(task.dueAt)}</small>
+                                  <time dateTime={task.dueAt} title={`마감 ${formatDate(task.dueAt)}`}
+                                    aria-label={`마감 ${formatDate(task.dueAt)}`}>
+                                    {formatBoardDeadline(task.dueAt, now)} 마감
+                                  </time>
                                 </div>
+                              </div>
                               <button
                                 className="board-card-details-toggle"
                                 aria-expanded={detailsExpanded}
                                 aria-controls={detailsId}
-                                aria-label={`${task.title} 상세 ${detailsExpanded ? '접기' : '보기'}`}
-                                title={detailsExpanded ? '상세 접기' : '상세 보기'}
+                                aria-label={`${task.title} 작업량·담당 비율 ${detailsExpanded ? '접기' : '보기'}`}
                                 onClick={() => toggleBoardTaskDetails(task.id)}
                               >
-                                <span className="board-card-toggle-triangle" aria-hidden="true" />
+                                작업량·담당 비율
+                                <ChevronDown className="board-card-toggle-chevron" size={14} aria-hidden="true" />
                               </button>
-                              </div>
                               {detailsExpanded && (
                                 <div id={detailsId} className="board-task-details">
                                   <p
@@ -551,7 +575,7 @@ export default function TaskBoard({
                                   </p>
                                   <dl className="task-card-meta">
                                     <div>
-                                      <dt>담당</dt>
+                                      <dt>담당 비율</dt>
                                       <dd>
                                         {task.assignees.map((assignment) => (
                                           <span
@@ -592,7 +616,7 @@ export default function TaskBoard({
                 : readOnly
                   ? '팀에서 등록한 작업이 이곳에 표시됩니다.'
                   : canCreate
-                  ? '작업 내용을 정하고 담당자와 배분을 정해 시작하세요.'
+                  ? '작업 내용을 정하고 담당자와 담당 비율을 정해 시작하세요.'
                   : members.length < 2
                     ? '승인된 팀원이 2명 이상 모이면 작업을 만들 수 있습니다.'
                     : '현재 팀 상태에서는 새 작업을 만들 수 없습니다. 팀 설정에서 상태를 확인하세요.'}
