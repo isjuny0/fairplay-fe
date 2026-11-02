@@ -34,6 +34,7 @@ export default function Application({ previewRuntime }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [headerContext, setHeaderContext] = useState(null);
+  const [currentWorkspace, setCurrentWorkspace] = useState(null);
   const currentHeader =
     headerContext?.pathname === location.pathname
       ? headerContext
@@ -400,6 +401,8 @@ export default function Application({ previewRuntime }) {
           key={`${user.id}-${previewRevision}`}
           user={user}
           prefix={prefix}
+          currentWorkspace={currentWorkspace}
+          setCurrentWorkspace={setCurrentWorkspace}
         />
       </div>
     </HeaderContext.Provider>
