@@ -529,6 +529,9 @@
   font-size: var(--text-caption);
   color: var(--text-muted);
 }
+.space-directory-columns > :not(:first-child) {
+  text-align: center;
+}
 .space-directory .space-list {
   display: block;
   margin: 0;
@@ -567,7 +570,13 @@
   line-height: 1.6;
 }
 .space-directory .role-badge {
-  justify-self: start;
+  justify-self: center;
+  text-align: center;
+}
+.space-directory .space-list .building-status,
+.space-directory .space-list button > .ui-icon {
+  justify-self: center;
+  text-align: center;
 }
 .space-directory .space-list .ui-icon {
   color: var(--text-muted);

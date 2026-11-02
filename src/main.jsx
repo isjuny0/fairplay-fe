@@ -30,6 +30,7 @@ import './team-home.css';
 import './navigation-contrast.css';
 import './screen-motion.css';
 import './dropdowns.css';
+import './table-headers.css';
 
 const router = createBrowserRouter([
   {

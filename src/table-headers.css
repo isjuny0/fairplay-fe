@@ -1,0 +1,16 @@
+/* Center app table headings by column while preserving task list and markdown tables. */
+.app-shell .data-table:not(.task-table) thead th,
+.app-shell .participant-table thead th,
+.app-shell .manager-peer-table thead th {
+  text-align: center;
+}
+
+.app-shell .data-table:not(.task-table) thead th:first-child,
+.app-shell .participant-table thead th:first-child,
+.app-shell .manager-peer-table thead th:first-child {
+  text-align: left;
+}
+
+.app-shell .personal-task-table tbody td:not(:first-child) {
+  text-align: center;
+}
