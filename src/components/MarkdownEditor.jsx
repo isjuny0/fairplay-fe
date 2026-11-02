@@ -7,7 +7,7 @@ const tools = [
   ['table', '표'], ['code', '코드'],
 ];
 
-export default function MarkdownEditor({ value, onValueChange, labelText, ...inputProps }) {
+export default function MarkdownEditor({ value, onValueChange, labelText, inputRef, ...inputProps }) {
   const [mode, setMode] = useState('write');
   const panelId = useId();
   const [insertionError, setInsertionError] = useState('');
@@ -82,7 +82,11 @@ export default function MarkdownEditor({ value, onValueChange, labelText, ...inp
         </div>
         <textarea
           {...inputProps}
-          ref={input}
+          ref={(element) => {
+            input.current = element;
+            if (typeof inputRef === 'function') inputRef(element);
+            else if (inputRef) inputRef.current = element;
+          }}
           value={value}
           onChange={event => {
             setInsertionError('');

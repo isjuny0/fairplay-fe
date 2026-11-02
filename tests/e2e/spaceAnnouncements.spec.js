@@ -91,16 +91,15 @@ async function backend(page, { role = "MANAGER", count = 3 } = {}) {
         size = Number(url.searchParams.get("size") || 20);
       if (control.failList || (control.failNext && number === 1))
         return fail("UNAVAILABLE", "공지 목록 조회 실패", 503);
-      return reply(
-        [...items]
+      const pageItems = [...items]
           .sort(
             (a, b) =>
               Number(b.pinned) - Number(a.pinned) ||
               b.createdAt.localeCompare(a.createdAt) ||
               b.id - a.id,
           )
-          .slice(number * size, (number + 1) * size),
-      );
+          .slice(number * size, (number + 1) * size);
+      return reply({ items: pageItems, totalCount: items.length });
     }
     if (control.failWrite) return fail("UNAVAILABLE", "공지 저장 실패", 503);
     const body = request.postDataJSON();
@@ -255,7 +254,7 @@ for (const width of [1440, 320]) {
   }
 }
 
-test("관리자는 홈 요약에서 공지를 작성하고 일반 텍스트로 조회·수정·삭제한다", async ({
+test("관리자는 홈 요약에서 공지를 작성하고 마크다운으로 조회·수정·삭제한다", async ({
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -289,17 +288,19 @@ test("관리자는 홈 요약에서 공지를 작성하고 일반 텍스트로 �
   let editor = await fillEditor(
     page,
     "  새 운영 공지  ",
-    "  <b>일반 텍스트</b>\n**그대로 표시**  ",
+    "  일반 텍스트\n**굵게 표시**  ",
   );
+  await expect(editor.getByRole("button", { name: "굵게 서식 삽입" })).toBeVisible();
+  await editor.getByRole("button", { name: "미리보기", exact: true }).click();
+  await expect(editor.locator(".markdown-editor-preview strong")).toHaveText("굵게 표시");
+  await editor.getByRole("button", { name: "작성", exact: true }).click();
   await editor.getByLabel("중요 공지", { exact: true }).check();
   await editor.getByRole("button", { name: "공지 등록", exact: true }).click();
   await expect(page).toHaveURL(/\/announcements\/5$/);
   await expect(page.locator(".announcement-content")).toHaveText(
-    "<b>일반 텍스트</b>\n**그대로 표시**",
+    "일반 텍스트\n굵게 표시",
   );
-  await expect(
-    page.locator(".announcement-content b, .announcement-content strong"),
-  ).toHaveCount(0);
+  await expect(page.locator(".announcement-content strong")).toHaveText("굵게 표시");
   await expect(page.locator(".announcement-pin")).toHaveText("중요");
   await expect(
     page.locator(".announcement-title-group .announcement-pin"),
@@ -333,9 +334,7 @@ test("관리자는 홈 요약에서 공지를 작성하고 일반 텍스트로 �
       Math.abs(backBox.y + backBox.height / 2 - refreshBox.y - refreshBox.height / 2),
     ).toBeLessThan(1);
     await expect(page.locator(".page-heading > .heading-actions .announcement-back-button")).toBeVisible();
-    const toolbarBox = await page
-      .locator(".announcement-detail-toolbar")
-      .boundingBox();
+    const toolbarBox = await page.locator(".announcement-detail-toolbar").boundingBox();
     const headingBox = await page
       .locator(".announcements-page > .page-heading")
       .boundingBox();
@@ -376,7 +375,7 @@ test("관리자는 홈 요약에서 공지를 작성하고 일반 텍스트로 �
   const create = requests.find((entry) => entry.method === "POST");
   expect(create.body).toEqual({
     title: "새 운영 공지",
-    content: "<b>일반 텍스트</b>\n**그대로 표시**",
+    content: "일반 텍스트\n**굵게 표시**",
     pinned: true,
   });
   const update = requests.find((entry) => entry.method === "PATCH");
@@ -490,18 +489,17 @@ for (const width of [1440, 320]) {
     await expect(page.locator(".announcement-content")).toHaveText(
       "공지 1 본문\n두 번째 줄",
     );
-    const primaryTextColor = await page.locator(".announcements-page h1").evaluate(
-      (element) => getComputedStyle(element).color,
+    await expect(page.locator(".announcement-content .markdown-body")).toHaveCSS(
+      "color",
+      "rgb(17, 17, 17)",
     );
-    await expect(page.locator(".announcement-content")).toHaveCSS("color", primaryTextColor);
-    const breadcrumb = page.getByRole("navigation", {
-      name: "현재 위치",
-      exact: true,
-    });
+    const breadcrumb = page.locator(".announcement-breadcrumb");
     await expect(breadcrumb).toHaveCount(1);
     await expect(breadcrumb.locator('[aria-current="page"]')).toHaveText(
       "프로젝트 공지 1",
     );
+    await expect(breadcrumb.getByRole("button", { name: "공지사항", exact: true })).toHaveCount(0);
+    if (width <= 600) await expect(breadcrumb).toBeHidden();
     await expect(
       page.getByRole("heading", {
         name: "프로젝트 공지 1",
@@ -527,9 +525,7 @@ for (const width of [1440, 320]) {
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
-    await breadcrumb
-      .getByRole("button", { name: "공지사항", exact: true })
-      .click();
+    await page.getByRole("button", { name: "← 목록으로", exact: true }).click();
     await expect(page.locator(".announcement-row")).toHaveCount(3);
     expect(
       requests.some((entry) =>
@@ -568,10 +564,7 @@ test("고정 우선 목록의 페이지를 복원하고 마지막 공지 삭제 
   await expect(pagination).toContainText("2페이지");
   await page.locator(".announcement-title").click();
   await expect(page).toHaveURL(/\/announcements\/2\?page=1$/);
-  await page
-    .getByRole("navigation", { name: "현재 위치", exact: true })
-    .getByRole("button", { name: "공지사항", exact: true })
-    .click();
+  await page.getByRole("button", { name: "← 목록으로", exact: true }).click();
   await expect(pagination).toContainText("2페이지");
   await page.locator(".announcement-title").click();
   await page.getByRole("button", { name: "공지 삭제", exact: true }).click();
@@ -760,10 +753,12 @@ test("삭제된 공지·다른 스페이스 응답을 노출하지 않고 목록
 test("권한 변경과 다음 페이지 조회 실패를 기존 데이터와 구분한다", async ({
   page,
 }) => {
-  const { control } = await backend(page, { count: 20 });
+  const { control } = await backend(page, { count: 21 });
   control.failNext = true;
   await page.goto(listPath);
   await expect(page.locator(".announcement-row")).toHaveCount(20);
+  await page.getByRole("button", { name: "다음", exact: true }).click();
+  await expect(page).toHaveURL(/\?page=1$/);
   await expect(page.getByRole("alert")).toContainText("목록 조회 실패");
   control.failNext = false;
   await page

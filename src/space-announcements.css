@@ -259,30 +259,18 @@
   min-width: 0;
 }
 .announcement-detail-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
   min-width: 0;
   margin-bottom: 16px;
 }
-.announcement-detail-toolbar > .announcement-back-button {
-  flex-shrink: 0;
-}
-.main-content .announcement-breadcrumb {
-  display: flex;
-  flex: 1;
-  flex-wrap: nowrap;
+.announcement-detail-toolbar .announcement-breadcrumb {
   min-width: 0;
   margin: 0;
   padding: 0;
 }
-.announcement-breadcrumb > button {
-  flex-shrink: 0;
-  color: var(--brand-dark);
-  text-decoration: underline;
+.announcement-breadcrumb > span:first-child {
+  color: var(--text-muted);
 }
-.announcement-breadcrumb > [aria-current="page"] {
+.announcement-breadcrumb > [aria-current='page'] {
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -326,26 +314,38 @@
   padding: 8px 18px;
 }
 .announcement-detail {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: 0;
+}
+.announcement-detail-heading {
+  display: grid;
+  gap: 12px;
+  padding: 14px 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-secondary);
+}
+.announcement-detail-body {
   min-width: 0;
   padding: 24px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
 }
-.announcement-detail-heading {
-  display: grid;
-  gap: 12px;
-  padding: 16px 20px;
-  border-radius: 6px;
-  background: var(--surface-secondary);
-  border-bottom: 1px solid var(--border);
-}
 .announcement-metadata {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 16px;
 }
-.announcement-metadata > div { display: grid; min-width: 0; gap: 6px; }
+.announcement-metadata > div {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  gap: 8px;
+}
 .announcement-metadata strong,
 .announcement-metadata time { color: var(--text-primary); font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
 .announcement-content {
@@ -353,10 +353,15 @@
   margin: 0;
   min-height: 200px;
   padding: 32px 4px;
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
   line-height: 1.9;
   font-size: var(--text-body);
+}
+.announcement-detail-body .announcement-content .markdown-body,
+.announcement-detail-body .announcement-content .markdown-body :is(
+  p, h3, h4, h5, h6, li, blockquote, pre, code, th, td, strong, em, del
+) {
+  color: #111;
 }
 .announcement-detail-attachments { padding: 0 4px 24px; }
 .announcement-detail-attachments h2 { margin: 0 0 10px; font-size: var(--text-body); }
@@ -371,11 +376,26 @@
   min-height: 240px;
   resize: vertical;
 }
+.announcement-editor .announcement-editor-options .checkbox-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.5;
+}
+.announcement-editor .announcement-editor-options input[type='checkbox'] {
+  margin: 0;
+}
 .announcement-editor-options .field-help {
   margin: 0;
 }
 .announcement-editor-options { padding: 12px 16px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-secondary); }
 .announcement-editor textarea { font-size: 14px; line-height: 1.8; }
+.announcement-editor .markdown-editor textarea[name='content'] {
+  display: block;
+  margin: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
 .announcement-editor-attachments { margin-top: 10px; }
 .announcement-editor-attachments li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted); font-size: var(--text-support); }
 .announcement-editor-attachments li > span { min-width: 0; overflow-wrap: anywhere; }
@@ -403,10 +423,11 @@
   .announcement-row .announcement-title { font-size: 14px; }
   .announcement-search-toolbar { padding: 12px; }
   .announcement-search-toolbar form { flex-basis: 100%; max-width: none; }
-  .announcement-detail { padding: 16px; }
+  .announcement-detail { gap: 12px; }
+  .announcement-detail-body { padding: 16px; }
   .announcement-detail-heading { padding: 14px; }
   .announcement-metadata { grid-template-columns: minmax(0, 1fr); gap: 12px; }
-  .announcement-metadata > div { grid-template-columns: 48px minmax(0, 1fr); gap: 8px; align-items: baseline; }
+  .announcement-metadata > div { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 8px; align-items: baseline; }
   .announcement-editor textarea {
     min-height: 200px;
   }
