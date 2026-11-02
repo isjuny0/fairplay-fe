@@ -1159,6 +1159,7 @@ export default function Deliverables({
               <button
                 className="secondary-button"
                 onClick={() => setSelectedDeliverableId(null)}
+                aria-label="산출물 상세 닫기"
               >
                 닫기
               </button>

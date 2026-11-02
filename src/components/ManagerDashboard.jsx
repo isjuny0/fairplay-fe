@@ -149,8 +149,8 @@ export default function ManagerDashboard({ context }) {
         {teamId && <div className="dashboard-detail-panel">
           {selectedTeam && <>
             <section className="dashboard-work-overview" aria-label="선택한 팀 정보">
-              <div className="dashboard-work-progress"><h2>팀 진행률 <DashboardHelp label="팀 진행률" description={metricDescriptions.progress} /></h2><TeamProgress team={selectedTeam} /></div>
               <TeamTaskCounts team={selectedTeam} includeDeliverables />
+              <div className="dashboard-work-progress"><h2>팀 진행률 <DashboardHelp label="팀 진행률" description={metricDescriptions.progress} /></h2><TeamProgress team={selectedTeam} /></div>
             </section>
             <div className="dashboard-team-notices">
               <div className="dashboard-work-notices" aria-label="확인할 작업">

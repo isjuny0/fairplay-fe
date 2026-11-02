@@ -1,0 +1,15 @@
+/* Explicit close controls share one high-contrast color; save and delete stay separate. */
+#root button:is(.close-action-button, .close-confirmation-button, [aria-label$='닫기']) {
+  color: #fff;
+  background: #e52434;
+  border: 1px solid #e52434;
+}
+#root button:is(.close-action-button, .close-confirmation-button, [aria-label$='닫기']):hover:not(:disabled) {
+  color: #fff;
+  background: #dc2030;
+  border-color: #dc2030;
+}
+#root button:is(.close-action-button, .close-confirmation-button, [aria-label$='닫기']):focus-visible {
+  outline: 3px solid #ffabb1;
+  outline-offset: 3px;
+}

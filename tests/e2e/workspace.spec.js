@@ -140,7 +140,7 @@ async function workspace(
         completionRate: task.status === 'DONE' ? 100 : 0, overdueTaskCount: 0, staleTaskCount: 0,
         deliverableCount: deliverables.length, reportId: null, reportStatus: null }],
     });
-    if (path === '/api/spaces/1/announcements') return respond([]);
+    if (path === '/api/spaces/1/announcements') return respond({ items: [], totalCount: 0, page: 0, size: 3 });
     if (path === '/api/spaces/1/team-building-period') {
       Object.assign(space, request.postDataJSON(), {
         version: space.version + 1,
@@ -439,6 +439,7 @@ for (const [label, weight] of [
     await dialog.getByLabel('작업 제목').fill('예상 작업량 확인');
     await dialog.getByLabel('작업 설명', { exact: true }).fill('팀과 합의한 작업 범위입니다.');
     await fillDateTime(dialog, '마감', '2030-12-01T18:00');
+    await dialog.getByRole('button', { name: '다음', exact: true }).click();
     await dialog.getByLabel('담당자 · 팀원').check();
 
     await dialog.getByRole('button', { name: '저장', exact: true }).click();
@@ -474,6 +475,7 @@ test('담당자가 작업을 생성하고 PATCH 상태와 버전으로 직접 �
     .getByLabel('작업 설명', { exact: true })
     .fill('완료 조건과 담당 범위를 정의합니다.');
   await fillDateTime(dialog, '마감', '2030-12-01T18:00');
+  await dialog.getByRole('button', { name: '다음', exact: true }).click();
   await dialog.getByLabel('담당자 · 팀원').check();
 
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
@@ -741,7 +743,7 @@ test('모바일·태블릿·데스크톱에서 팀 탐색과 작업 생성 폼�
       await dialog.getByLabel('작업 제목', { exact: true }).fill('반응형 입력 검증');
       await dialog.getByLabel('작업 설명', { exact: true }).fill('각 화면 폭에서 담당·배분 설정을 확인합니다.');
       await fillDateTime(dialog, '마감', '2030-12-01T18:00');
-      await dialog.getByRole('button', { name: '다음: 담당·배분', exact: true }).click();
+      await dialog.getByRole('button', { name: '다음', exact: true }).click();
     }
 
     expect(
@@ -1508,18 +1510,18 @@ test('작업 시작일은 생성 시 필수이며 일정 검증 후 오프셋과
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('작업 제목', { exact: true }).fill('계획 일정 작업');
   await dialog.getByLabel('작업 설명', { exact: true }).fill('예정된 기간에 수행할 작업입니다.');
-  await dialog.getByLabel('담당자 · 팀원').check();
-
   await fillDateTime(dialog, '마감', '2030-12-01T18:00');
   await dialog.getByLabel('시작일 날짜', { exact: true }).fill('');
-  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await dialog.getByRole('button', { name: '다음', exact: true }).click();
   await expect(dialog.getByLabel('시작일 날짜', { exact: true })).toBeFocused();
   await fillDateTime(dialog, '시작일', '2030-12-02T18:00');
-  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await dialog.getByRole('button', { name: '다음', exact: true }).click();
   await expect(dialog.getByText('마감은 시작일과 같거나 이후여야 합니다.')).toBeVisible();
   await expect(dialog.getByLabel('마감 날짜', { exact: true })).toBeFocused();
   expect(requests.filter(({ method, path }) => method === 'POST' && path === '/api/teams/1/tasks')).toHaveLength(0);
   await fillDateTime(dialog, '시작일', '2030-12-01T18:00');
+  await dialog.getByRole('button', { name: '다음', exact: true }).click();
+  await dialog.getByLabel('담당자 · 팀원').check();
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   const created = requests.find(({ method, path }) => method === 'POST' && path === '/api/teams/1/tasks');

@@ -400,7 +400,7 @@ function GuideBar({ guide, stepCount, atLocation, action, stop, title, reveal })
     <div className="preview-guide-heading">
       <BookOpen size={17} aria-hidden="true" /><span>{guide.step + 1} / {stepCount}</span><strong>{title}</strong>
       <button className="ghost-button preview-guide-locate" onClick={atLocation ? reveal : action}>{atLocation ? '안내 위치' : '가이드로 돌아가기'}</button>
-      <button className="icon-button" aria-label="사용자 가이드 종료" onClick={stop}><X size={16} /></button>
+      <button className="icon-button close-action-button" aria-label="사용자 가이드 종료" onClick={stop}><X size={16} /></button>
     </div>
     <div className="preview-guide-progress" role="progressbar" aria-label={`${title} 진행 단계`}
       aria-valuemin={0} aria-valuemax={stepCount} aria-valuenow={guide.step}

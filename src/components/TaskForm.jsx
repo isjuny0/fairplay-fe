@@ -82,6 +82,9 @@ export default function TaskForm({
     initialForm.dueAt || defaultDateTime,
   );
   const mobile = useMobileLayout();
+  const creating = !task;
+  const stepped = creating || mobile;
+  const finalStep = creating ? 1 : 2;
   const [step, setStep] = useState(0);
   const formElement = useRef(null);
   const goToStep = (nextStep) => {
@@ -90,8 +93,8 @@ export default function TaskForm({
       const heading = formElement.current?.querySelector(
         `[data-step-title="${nextStep}"]`,
       );
-      heading?.focus();
-      heading?.scrollIntoView({ block: 'start' });
+      heading?.focus({ preventScroll: true });
+      formElement.current?.closest('.modal-body')?.scrollTo({ top: 0 });
     });
   };
   const dirty = JSON.stringify(form) !== JSON.stringify(initialForm);
@@ -206,7 +209,7 @@ export default function TaskForm({
           : {}),
     });
     const errors =
-      mobile && step < 2
+      stepped && step < finalStep
         ? Object.fromEntries(
             Object.entries(allErrors).filter(([name]) =>
               step === 0
@@ -217,7 +220,7 @@ export default function TaskForm({
         : allErrors;
     setFieldErrors(errors);
     if (Object.keys(errors).length) {
-      if (mobile && step === 2)
+      if (stepped && step === finalStep)
         setStep(
           ['title', 'description', 'startAt', 'dueAt'].some(
             (name) => errors[name],
@@ -228,7 +231,7 @@ export default function TaskForm({
       focusFirstFieldError(event.currentTarget, errors);
       return;
     }
-    if (mobile && step < 2) {
+    if (stepped && step < finalStep) {
       goToStep(step + 1);
       return;
     }
@@ -271,17 +274,18 @@ export default function TaskForm({
       onClose={onClose}
       wide
       editor
+      className={creating ? 'task-create-modal' : ''}
       dirty={dirty}
     >
       <form
-        className="task-editor-form"
+        className={`task-editor-form${creating ? ' task-create-form' : ''}`}
         ref={formElement}
         onSubmit={submit}
         noValidate
       >
-        {mobile && (
+        {stepped && (
           <ol className="task-form-steps" aria-label="작업 입력 단계">
-            {['작업 내용', '담당·배분', '저장 전 확인'].map((label, index) => (
+            {(creating ? ['작업 내용', '담당자 배분'] : ['작업 내용', '담당·배분', '저장 전 확인']).map((label, index) => (
               <li
                 key={label}
                 aria-current={step === index ? 'step' : undefined}
@@ -298,7 +302,7 @@ export default function TaskForm({
         >
           <div className="task-form-layout">
             <section
-              hidden={mobile && step !== 0}
+              hidden={stepped && step !== 0}
               className="task-form-section"
               aria-label="작업 내용 입력"
             >
@@ -400,7 +404,7 @@ export default function TaskForm({
               </section>
             </section>
             <section
-              hidden={mobile && step !== 1}
+              hidden={stepped && step !== 1}
               className="task-form-section assignment-form-section"
               aria-label="담당·배분 설정 입력"
             >
@@ -610,7 +614,7 @@ export default function TaskForm({
                   </p>
                 )}
             </section>
-            {mobile && step === 2 && (
+            {!creating && mobile && step === 2 && (
               <section
                 className="task-form-section task-form-review"
                 aria-label="작업 저장 전 요약"
@@ -763,12 +767,14 @@ export default function TaskForm({
           disabled={
             recommending ||
             blocked ||
-            ((!mobile || step === 2) &&
+            ((!stepped || step === finalStep) &&
               ((conflict && !recovery.latest) || !canReapply))
           }
           onCancel={onClose}
           label={
-            mobile && step < 2
+            creating && step === 0
+              ? '다음'
+              : mobile && step < finalStep
               ? step === 0
                 ? '다음: 담당·배분'
                 : '다음: 저장 전 확인'
@@ -778,7 +784,7 @@ export default function TaskForm({
                   ? '다시 저장'
                   : '저장'
           }
-          onBack={mobile && step > 0 ? () => goToStep(step - 1) : undefined}
+          onBack={stepped && step > 0 ? () => goToStep(step - 1) : undefined}
         />
       </form>
     </Modal>

@@ -384,6 +384,7 @@ export default function DateTimeInput({
             </button>
             <button
               type="button"
+              className="close-action-button"
               onClick={() => {
                 setOpen(false);
                 trigger.current?.focus();

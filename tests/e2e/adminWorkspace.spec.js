@@ -190,13 +190,13 @@ for (const width of [1440, 1280, 390]) {
       const style = getComputedStyle(element);
       return {
         ringWidth: ring.getBoundingClientRect().width,
-        titleBesideRing: title.getBoundingClientRect().left >= ring.getBoundingClientRect().right,
+        titleAboveRing: title.getBoundingClientRect().bottom <= ring.getBoundingClientRect().top,
         borderTop: style.borderTopWidth,
         borderBottom: style.borderBottomWidth,
       };
     });
-    expect(summaryLayout.ringWidth).toBe(64);
-    expect(summaryLayout.titleBesideRing).toBe(true);
+    expect(summaryLayout.ringWidth).toBe(width <= 720 ? 88 : 112);
+    expect(summaryLayout.titleAboveRing).toBe(true);
     expect(summaryLayout.borderTop).toBe('1px');
     expect(summaryLayout.borderBottom).toBe('1px');
     const help = page.getByRole('button', { name: '장기 정체 집계 기준', exact: true });

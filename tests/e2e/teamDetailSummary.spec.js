@@ -13,14 +13,14 @@ for (const width of [1920, 1440, 1280, 900, 721, 390, 320]) {
     await expect(overview.locator('.dashboard-work-counts dd')).toHaveText(['1건', '1건', '1건', '3건', '4개']);
     const progress = overview.getByRole('progressbar', { name: '삼위일체 팀 전체 진행률', exact: true });
     await expect(progress).toHaveAttribute('aria-valuenow', '50');
-    expect((await progress.boundingBox()).width).toBe(64);
+    expect((await progress.boundingBox()).width).toBe(width <= 720 ? 88 : 112);
     const box = await overview.boundingBox();
-    expect(box.width).toBeLessThanOrEqual(980);
+    const counts = await overview.locator('.dashboard-work-counts').boundingBox();
+    const indicator = await overview.locator('.dashboard-work-progress').boundingBox();
+    expect(counts.x + counts.width).toBeLessThanOrEqual(indicator.x);
     if (width > 1000) {
-      expect(box.height).toBeLessThanOrEqual(110);
-      const counts = await overview.locator('.dashboard-work-counts').boundingBox();
-      const indicator = await overview.locator('.dashboard-work-progress').boundingBox();
-      expect(counts.x - indicator.x - indicator.width).toBeLessThanOrEqual(20);
+      expect(box.height).toBeLessThanOrEqual(210);
+      expect(indicator.x - counts.x - counts.width).toBeGreaterThanOrEqual(24);
       const metricBoxes = await overview.locator('.dashboard-work-counts > div').evaluateAll((items) => items.map((el) => { const r = el.getBoundingClientRect(); return { x: r.x, width: r.width }; }));
       for (let index = 1; index < metricBoxes.length; index++) {
         expect(Math.abs(metricBoxes[index].width - metricBoxes[0].width)).toBeLessThan(1);
@@ -47,6 +47,15 @@ for (const width of [1920, 1440, 1280, 900, 721, 390, 320]) {
     await refresh.click();
     await expect(progress).toHaveAttribute('aria-valuenow', '50');
     await expect(page.getByRole('heading', { name: '팀원 수행 현황', exact: true })).toBeVisible();
+    if (width > 720) {
+      const table = page.getByRole('table', { name: '삼위일체 팀원 수행 현황', exact: true });
+      const aligned = await table.locator('tbody td:nth-child(2)').evaluateAll((cells) => cells.every((cell) => {
+        const assigned = cell.querySelector('.dashboard-member-assigned').getBoundingClientRect();
+        const status = cell.querySelector('.dashboard-member-task-counts, .dashboard-member-empty').getBoundingClientRect();
+        return Math.abs(assigned.x - status.x) <= 1 && getComputedStyle(cell).textAlign === 'left';
+      }));
+      expect(aligned).toBe(true);
+    }
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     await page.screenshot({ path: testInfo.outputPath('compact-team-summary.png'), animations: 'disabled' });
     expect(await overview.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);

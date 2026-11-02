@@ -31,6 +31,7 @@ import './navigation-contrast.css';
 import './screen-motion.css';
 import './dropdowns.css';
 import './table-headers.css';
+import './close-buttons.css';
 
 const router = createBrowserRouter([
   {
