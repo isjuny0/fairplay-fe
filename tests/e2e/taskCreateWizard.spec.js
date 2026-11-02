@@ -64,7 +64,8 @@ test('낮은 모바일 화면도 크기·이동·날짜 및 도움말 닫기 색
   expect(footer.y + footer.height).toBeLessThanOrEqual(500);
   await dialog.getByRole('button', { name: '예상 작업량과 담당 비율 도움말', exact: true }).click();
   const help = page.getByRole('button', { name: '도움말 닫기', exact: true });
-  await expect(help).toHaveCSS('background-color', 'rgb(229, 36, 52)');
+  await expect(help).not.toHaveCSS('background-color', 'rgb(229, 36, 52)');
+  await expect(help).toHaveCSS('color', 'rgb(85, 97, 112)');
   await help.click();
   await dialog.getByRole('button', { name: '시작일 달력 열기', exact: true }).click();
   const calendarClose = page.getByRole('button', { name: '달력 닫기', exact: true });

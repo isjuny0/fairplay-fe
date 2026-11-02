@@ -1,15 +1,15 @@
-/* Explicit close controls share one high-contrast color; save and delete stay separate. */
-#root button:is(.close-action-button, .close-confirmation-button, [aria-label$='닫기']) {
+/* Text close actions are red; X icons keep their component's original styling. */
+#root button:is(.close-action-button, .close-confirmation-button) {
   color: #fff;
   background: #e52434;
   border: 1px solid #e52434;
 }
-#root button:is(.close-action-button, .close-confirmation-button, [aria-label$='닫기']):hover:not(:disabled) {
+#root button:is(.close-action-button, .close-confirmation-button):hover:not(:disabled) {
   color: #fff;
   background: #dc2030;
   border-color: #dc2030;
 }
-#root button:is(.close-action-button, .close-confirmation-button, [aria-label$='닫기']):focus-visible {
+#root button:is(.close-action-button, .close-confirmation-button):focus-visible {
   outline: 3px solid #ffabb1;
   outline-offset: 3px;
 }

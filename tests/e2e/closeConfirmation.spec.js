@@ -26,7 +26,9 @@ for (const width of [1440, 390]) {
       await page.goto(scenario.path);
       await page.getByRole('main').getByRole('button', { name: scenario.button, exact: true }).click();
       const editor = page.getByRole('dialog', { name: scenario.dialog, exact: true });
-      await expect(editor.getByRole('button', { name: '닫기', exact: true })).toHaveCSS('background-color', 'rgb(229, 36, 52)');
+      const iconClose = editor.getByRole('button', { name: '닫기', exact: true });
+      await expect(iconClose).not.toHaveCSS('background-color', 'rgb(229, 36, 52)');
+      await expect(iconClose).not.toHaveCSS('color', 'rgb(255, 255, 255)');
       if (scenario.type) await editor.getByRole('button', { name: scenario.type, exact: true }).click();
       const input = editor.getByLabel(scenario.field, { exact: true });
       await input.fill('저장하지 않은 입력 보존 확인');
@@ -35,6 +37,7 @@ for (const width of [1440, 390]) {
       await expect(confirmation).toContainText('저장하지 않고 닫을까요?');
       await assertRedClose(confirmation);
       await expect(confirmation.getByRole('button', { name: '확인 창 닫기', exact: true })).toBeVisible();
+      await expect(confirmation.getByRole('button', { name: '확인 창 닫기', exact: true })).not.toHaveCSS('background-color', 'rgb(229, 36, 52)');
       await confirmation.getByRole('button', { name: '취소', exact: true }).click();
       await expect(input).toHaveValue('저장하지 않은 입력 보존 확인');
       await expect(confirmation).toHaveCount(0);
