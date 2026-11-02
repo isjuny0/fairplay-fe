@@ -59,8 +59,8 @@
   font-weight: 600;
   border-bottom: 1px solid var(--border);
 }
-.announcement-columns > :first-child { text-align: center; }
-.announcement-columns > :last-child { text-align: right; }
+.announcement-columns > * { text-align: center; }
+.announcement-columns > :nth-child(2) { text-align: left; }
 .announcement-row {
   min-height: 56px;
   background: var(--surface);
@@ -82,8 +82,10 @@
 .announcement-kind .ui-icon { display: block; width: 18px; height: 18px; color: var(--brand); }
 .announcement-row-copy {
   display: grid;
+  justify-items: start;
   gap: 4px;
   min-width: 0;
+  text-align: left;
 }
 .announcement-attachment-list,
 .announcement-editor-attachments {
@@ -93,7 +95,7 @@
   padding: 0;
   list-style: none;
 }
-.announcement-title-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.announcement-title-line { display: flex; align-items: center; justify-content: flex-start; gap: 8px; min-width: 0; }
 .announcement-title-line .announcement-title { width: auto; flex: 0 1 auto; }
 .announcement-attachment-actions { display: inline-flex; align-items: center; gap: 3px; flex: 0 0 auto; }
 .announcement-attachment-download {
@@ -169,11 +171,12 @@
 .announcement-author {
   overflow-wrap: anywhere;
   line-height: 1.6;
+  text-align: center;
 }
 .announcement-row time {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
-  text-align: right;
+  text-align: center;
   line-height: 1.6;
 }
 .announcement-empty {
@@ -409,9 +412,9 @@
   }
   .announcement-kind { grid-column: 1; grid-row: 1 / span 2; }
   .announcement-row-copy { grid-column: 2; }
-  .announcement-author { grid-column: 3; grid-row: 1; text-align: right; }
+  .announcement-author { grid-column: 3; grid-row: 1; text-align: center; }
   .announcement-author::before { content: "작성자"; display: block; margin-bottom: 2px; font-size: 11px; }
-  .announcement-row time { grid-column: 2 / -1; grid-row: 2; text-align: left; }
+  .announcement-row time { grid-column: 2 / -1; grid-row: 2; text-align: center; }
 }
 @media (max-width: 600px) {
   .announcement-section-heading {

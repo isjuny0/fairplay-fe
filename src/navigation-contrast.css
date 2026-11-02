@@ -91,11 +91,11 @@
   vertical-align: middle;
   background: currentColor;
 }
-.task-board-page :is(.board-task-card, .task-table) .is-overdue {
+.task-board-page .board-task-card .is-overdue {
   background: var(--notice-coral-background);
   color: var(--notice-coral);
 }
-.task-table td:has(> .is-overdue) > time {
+.task-table .task-date-is-overdue {
   color: var(--notice-coral);
 }
 .team-home-visual .home-action-icon {
