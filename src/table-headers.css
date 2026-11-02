@@ -22,3 +22,8 @@
 .app-shell .manager-peer-table tbody :is(th, td):first-child {
   text-align: left;
 }
+
+.app-shell .task-table thead th:not(:first-child),
+.app-shell .task-table tbody td {
+  text-align: center;
+}
