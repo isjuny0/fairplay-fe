@@ -15,6 +15,7 @@ import {
 import { useInteractions } from "../hooks/useInteractions.js";
 import { ErrorNotice, Field, FormActions, Modal } from "./ui.jsx";
 import SaveRecovery from "./SaveRecovery.jsx";
+import MarkdownEditor from "./MarkdownEditor.jsx";
 
 export default function AnnouncementEditor({
   spaceId,
@@ -199,8 +200,9 @@ export default function AnnouncementEditor({
             validation?.field === "content" ? validation.message : undefined
           }
         >
-          <textarea
-            ref={contentInput}
+          <MarkdownEditor
+            inputRef={contentInput}
+            name="content"
             required
             rows={10}
             maxLength={announcementLimits.content}
@@ -208,6 +210,10 @@ export default function AnnouncementEditor({
             disabled={busy}
             onChange={(event) => {
               setContent(event.target.value);
+              setValidation(null);
+            }}
+            onValueChange={(value) => {
+              setContent(value);
               setValidation(null);
             }}
           />

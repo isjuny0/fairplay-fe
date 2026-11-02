@@ -22,6 +22,7 @@ import {
 import { formatDate } from "../lib/domain.js";
 import AnnouncementList from "./AnnouncementList.jsx";
 import AnnouncementEditor from "./AnnouncementEditor.jsx";
+import MarkdownBody from "./MarkdownBody.jsx";
 import RefreshButton from "./RefreshButton.jsx";
 import Icon from "./Icon.jsx";
 import { ErrorNotice, ResourceState } from "./ui.jsx";
@@ -194,9 +195,7 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
             className="workspace-breadcrumb announcement-breadcrumb"
             aria-label="현재 위치"
           >
-            <button onClick={() => navigate(`${base}${query}`)}>
-              공지사항
-            </button>
+            <span>공지사항</span>
             <span aria-hidden="true">/</span>
             <span aria-current="page">
               {!accessError && resource.data?.title
@@ -265,7 +264,7 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
               <>
                 <div className="announcement-search-toolbar">
                   <div className="announcement-search-status">
-                    {resource.data && <span className="announcement-total-count" role="status">전체 공지 {resource.data.totalCount.toLocaleString()}건</span>}
+                    {resource.data && <span className="announcement-total-count" role="status">공지 {resource.data.totalCount.toLocaleString()}건</span>}
                     {search && <button className="text-button" onClick={() => {
                       navigate(`${base}${announcementQuery(page)}`);
                       searchField.current?.focus();
@@ -329,45 +328,49 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
                     )}
                   </div>
                 </header>
-                <p className="announcement-content">{resource.data.content}</p>
-                {!!resource.data.attachments?.length && (
-                  <div className="announcement-detail-attachments">
-                    <h2>첨부파일</h2>
-                    <ul className="announcement-attachment-list">
-                      {resource.data.attachments.map((attachment) => {
-                        return <li key={attachment.id}>
-                          <button
-                            type="button"
-                            className="text-button announcement-attachment-download"
-                            disabled={downloadingId === String(resource.data.id)}
-                            onClick={() => downloadAttachment(resource.data, attachment)}
-                          ><Icon name="download" /> <span>{attachment.originalFilename}</span></button>
-                        </li>;
-                      })}
-                    </ul>
+                <div className="announcement-detail-body">
+                  <div className="announcement-content">
+                    <MarkdownBody>{resource.data.content}</MarkdownBody>
                   </div>
-                )}
-                {canManage && (
-                  <div className="announcement-detail-actions">
-                    <button
-                      className="secondary-button"
-                      disabled={busy || resource.loading}
-                      onClick={() => {
-                        setError(null);
-                        setEditing(true);
-                      }}
-                    >
-                      공지 수정
-                    </button>
-                    <button
-                      className="secondary-button danger"
-                      disabled={busy || resource.loading}
-                      onClick={remove}
-                    >
-                      공지 삭제
-                    </button>
-                  </div>
-                )}
+                  {!!resource.data.attachments?.length && (
+                    <div className="announcement-detail-attachments">
+                      <h2>첨부파일</h2>
+                      <ul className="announcement-attachment-list">
+                        {resource.data.attachments.map((attachment) => {
+                          return <li key={attachment.id}>
+                            <button
+                              type="button"
+                              className="text-button announcement-attachment-download"
+                              disabled={downloadingId === String(resource.data.id)}
+                              onClick={() => downloadAttachment(resource.data, attachment)}
+                            ><Icon name="download" /> <span>{attachment.originalFilename}</span></button>
+                          </li>;
+                        })}
+                      </ul>
+                    </div>
+                  )}
+                  {canManage && (
+                    <div className="announcement-detail-actions">
+                      <button
+                        className="secondary-button"
+                        disabled={busy || resource.loading}
+                        onClick={() => {
+                          setError(null);
+                          setEditing(true);
+                        }}
+                      >
+                        공지 수정
+                      </button>
+                      <button
+                        className="secondary-button danger"
+                        disabled={busy || resource.loading}
+                        onClick={remove}
+                      >
+                        공지 삭제
+                      </button>
+                    </div>
+                  )}
+                </div>
               </article>
             ))}
         </ResourceState>
