@@ -31,7 +31,7 @@ import {
   ResourceState,
 } from './ui.jsx';
 
-export default function Spaces({ onSelect, user }) {
+export default function Spaces({ onSelect, onDirectoryContext, user }) {
   const guide = usePreviewGuide();
   const { notify, clearChanges } = useInteractions();
   const resource = useSpaceList(user.id);
@@ -64,6 +64,15 @@ export default function Spaces({ onSelect, user }) {
   const role = ['MANAGER', 'USER'].includes(requestedRole)
     ? requestedRole
     : 'ALL';
+  useEffect(() => {
+    onDirectoryContext?.({
+      kind: 'directory',
+      spaces: resource.data || [],
+      loading: resource.loading,
+      unavailable: Boolean(resource.error),
+      role,
+    });
+  }, [onDirectoryContext, resource.data, resource.loading, resource.error, role]);
   const updateFilters = (changes) => {
     setSearchParams(
       (current) => {
@@ -119,6 +128,16 @@ export default function Spaces({ onSelect, user }) {
     setForm(next);
     setInitialForm(next);
   };
+  const requestedAction = searchParams.get('action');
+  useEffect(() => {
+    if (requestedAction !== 'create' && requestedAction !== 'join') return;
+    open(requestedAction);
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.delete('action');
+      return next;
+    }, { replace: true });
+  }, [requestedAction, setSearchParams]);
   const submit = async (event) => {
     event.preventDefault();
     setError(null);

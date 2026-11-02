@@ -6,13 +6,15 @@ import { parseRouteId, spacePath, teamPath, teamMenuPaths } from '../lib/routes.
 
 import UnavailablePage from './UnavailablePage.jsx';
 import useAppNavigate from '../hooks/useAppNavigate.js';
+import WorkspaceNavigation from './WorkspaceNavigation.jsx';
+import SpaceDirectorySidebar from './SpaceDirectorySidebar.jsx';
 
 const Spaces = deferScreen(screenLoaders.Spaces, '스페이스 목록');
 const SpaceWorkspace = deferScreen(screenLoaders.SpaceWorkspace, '스페이스 화면');
 const PersonalNotifications = deferScreen(screenLoaders.PersonalNotifications, '알림함');
 const MyTasks = deferScreen(screenLoaders.MyTasks, '내 할 일');
 
-function WorkspaceRoute({ user, view = 'teams', teamMenu = '팀 홈' }) {
+function WorkspaceRoute({ user, view = 'teams', teamMenu = '팀 홈', setCurrentWorkspace }) {
   const params = useParams();
   const navigate = useAppNavigate();
   const spaceId = parseRouteId(params.spaceId);
@@ -45,15 +47,42 @@ function WorkspaceRoute({ user, view = 'teams', teamMenu = '팀 홈' }) {
       teamMenu={teamMenu}
       targetUserId={params.targetUserId}
       onBack={() => navigate('/main')}
+      setCurrentWorkspace={setCurrentWorkspace}
     />
   );
 }
 
-function SpacesRoute({ user }) {
+function PersonalWorkRoute({ currentWorkspace, user, children }) {
+  const navigate = useAppNavigate();
+  if (!currentWorkspace) return children;
+  if (currentWorkspace.kind === 'directory') return <div className="space-directory-layout">
+    <SpaceDirectorySidebar
+      {...currentWorkspace}
+      userId={user.id}
+      onRoleChange={(role) => navigate(`/main?role=${role}`)}
+      onCreate={() => navigate('/main?action=create')}
+      onJoin={() => navigate('/main?action=join')}
+      onSelect={(spaceId) => navigate(spacePath(spaceId))}
+      openingSpaceId={null}
+    />
+    {children}
+  </div>;
+  return <div className="workspace">
+    <WorkspaceNavigation
+      {...currentWorkspace}
+      view="personal"
+      onBack={() => navigate(currentWorkspace.returnPath || '/main')}
+    />
+    {children}
+  </div>;
+}
+
+function SpacesRoute({ user, setCurrentWorkspace }) {
   const navigate = useAppNavigate();
   return (
     <Spaces
       user={user}
+      onDirectoryContext={setCurrentWorkspace}
       onSelect={(id, teamId) =>
         navigate(teamId == null ? spacePath(id) : teamPath(id, teamId))
       }
@@ -61,7 +90,7 @@ function SpacesRoute({ user }) {
   );
 }
 
-export default function AppRoutes({ user, prefix = '' }) {
+export default function AppRoutes({ user, prefix = '', currentWorkspace, setCurrentWorkspace }) {
   const { pathname } = useLocation();
   useEffect(() => {
     // The screen boundary handles import failures; preloading must not reject globally.
@@ -73,44 +102,44 @@ export default function AppRoutes({ user, prefix = '' }) {
         path={prefix || '/'}
         element={<Navigate to={`${prefix}/main`} replace />}
       />
-      <Route path={`${prefix}/main`} element={<SpacesRoute user={user} />} />
-      <Route path={`${prefix}/notifications`} element={<PersonalNotifications />} />
-      <Route path={`${prefix}/my/tasks`} element={<MyTasks />} />
+      <Route path={`${prefix}/main`} element={<SpacesRoute user={user} setCurrentWorkspace={setCurrentWorkspace} />} />
+      <Route path={`${prefix}/notifications`} element={<PersonalWorkRoute currentWorkspace={currentWorkspace} user={user}><PersonalNotifications /></PersonalWorkRoute>} />
+      <Route path={`${prefix}/my/tasks`} element={<PersonalWorkRoute currentWorkspace={currentWorkspace} user={user}><MyTasks /></PersonalWorkRoute>} />
       <Route
         path={`${prefix}/spaces/:spaceId`}
-        element={<WorkspaceRoute user={user} />}
+        element={<WorkspaceRoute user={user} setCurrentWorkspace={setCurrentWorkspace} />}
       />
       <Route
         path={`${prefix}/spaces/:spaceId/settings`}
-        element={<WorkspaceRoute user={user} view="settings" />}
+        element={<WorkspaceRoute user={user} view="settings" setCurrentWorkspace={setCurrentWorkspace} />}
       />
-      <Route path={`${prefix}/spaces/:spaceId/announcements`} element={<WorkspaceRoute user={user} view="announcements" />} />
-      <Route path={`${prefix}/spaces/:spaceId/announcements/:announcementId`} element={<WorkspaceRoute user={user} view="announcements" />} />
+      <Route path={`${prefix}/spaces/:spaceId/announcements`} element={<WorkspaceRoute user={user} view="announcements" setCurrentWorkspace={setCurrentWorkspace} />} />
+      <Route path={`${prefix}/spaces/:spaceId/announcements/:announcementId`} element={<WorkspaceRoute user={user} view="announcements" setCurrentWorkspace={setCurrentWorkspace} />} />
       {Object.entries(teamMenuPaths).map(([menu, segment]) => (
         <Route
           key={menu}
           path={`${prefix}/spaces/:spaceId/teams/:teamId${segment ? `/${segment}` : ''}`}
-          element={<WorkspaceRoute user={user} view="team" teamMenu={menu} />}
+          element={<WorkspaceRoute user={user} view="team" teamMenu={menu} setCurrentWorkspace={setCurrentWorkspace} />}
         />
       ))}
       <Route
         path={`${prefix}/spaces/:spaceId/teams/:teamId/tasks/:taskId`}
-        element={<WorkspaceRoute user={user} view="team" teamMenu="작업" />}
+        element={<WorkspaceRoute user={user} view="team" teamMenu="작업" setCurrentWorkspace={setCurrentWorkspace} />}
       />
       <Route
         path={`${prefix}/spaces/:spaceId/teams/:teamId/meeting-minutes/:meetingMinuteId`}
-        element={<WorkspaceRoute user={user} view="team" teamMenu="팀 회의록" />}
+        element={<WorkspaceRoute user={user} view="team" teamMenu="팀 회의록" setCurrentWorkspace={setCurrentWorkspace} />}
       />
       {['dashboard', 'participants', 'rounds', 'reports'].map((view) => (
         <Route
           key={view}
           path={`${prefix}/spaces/:spaceId/${view}`}
-          element={<WorkspaceRoute user={user} view={view} />}
+          element={<WorkspaceRoute user={user} view={view} setCurrentWorkspace={setCurrentWorkspace} />}
         />
       ))}
       <Route
         path={`${prefix}/spaces/:spaceId/manager/teams/:teamId/members/:targetUserId`}
-        element={<WorkspaceRoute user={user} view="contributions" />}
+        element={<WorkspaceRoute user={user} view="contributions" setCurrentWorkspace={setCurrentWorkspace} />}
       />
       <Route
         path="*"

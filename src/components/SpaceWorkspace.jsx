@@ -2,7 +2,7 @@ import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import { screenLoaders } from '../lib/routeScreens.js';
 import { deferScreen } from './DeferredScreen.jsx';
-import { useCallback, useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router';
 import { HeaderContext } from './HeaderContext.js';
 import useAppNavigate from '../hooks/useAppNavigate.js';
@@ -65,6 +65,7 @@ export default function SpaceWorkspace({
   teamMenu,
   targetUserId,
   onBack,
+  setCurrentWorkspace,
 }) {
   const guide = usePreviewGuide();
   const navigate = useAppNavigate();
@@ -117,12 +118,12 @@ export default function SpaceWorkspace({
     setError(null);
   }, [resource.data]);
   const space = resource.data?.space;
-  const teams = (resource.data?.teams || []).map((summary) =>
+  const teams = useMemo(() => (resource.data?.teams || []).map((summary) =>
     selectedTeamResource.data?.id === summary.id
       ? selectedTeamResource.data
       : directoryResource.data?.find((detail) => detail.id === summary.id) ||
         summary,
-  );
+  ), [resource.data?.teams, selectedTeamResource.data, directoryResource.data]);
   const directoryReady =
     directoryResource.data != null &&
     !directoryResource.loading &&
@@ -228,6 +229,19 @@ export default function SpaceWorkspace({
       : isApprovedMember(team)
           ? '팀원'
           : '관리자 조회';
+  useEffect(() => {
+    if (!space || !setCurrentWorkspace) return;
+    setCurrentWorkspace({
+      space,
+      spaceId,
+      teams,
+      team,
+      view,
+      teamMenu,
+      teamRole,
+      returnPath: location.pathname,
+    });
+  }, [setCurrentWorkspace, space, spaceId, teams, team, view, teamMenu, teamRole, location.pathname]);
   const buildingOpen =
     space?.teamBuildingStatus === 'OPEN' &&
     new Date(apiTimeToEpoch(space.teamBuildingOpensAt)) <= new Date() &&
