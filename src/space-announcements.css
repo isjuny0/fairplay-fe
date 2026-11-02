@@ -60,6 +60,7 @@
   border-bottom: 1px solid var(--border);
 }
 .announcement-columns > * { text-align: center; }
+.announcement-columns > :nth-child(2) { text-align: left; }
 .announcement-row {
   min-height: 56px;
   background: var(--surface);
@@ -81,10 +82,10 @@
 .announcement-kind .ui-icon { display: block; width: 18px; height: 18px; color: var(--brand); }
 .announcement-row-copy {
   display: grid;
-  justify-items: center;
+  justify-items: start;
   gap: 4px;
   min-width: 0;
-  text-align: center;
+  text-align: left;
 }
 .announcement-attachment-list,
 .announcement-editor-attachments {
@@ -94,7 +95,7 @@
   padding: 0;
   list-style: none;
 }
-.announcement-title-line { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; }
+.announcement-title-line { display: flex; align-items: center; justify-content: flex-start; gap: 8px; min-width: 0; }
 .announcement-title-line .announcement-title { width: auto; flex: 0 1 auto; }
 .announcement-attachment-actions { display: inline-flex; align-items: center; gap: 3px; flex: 0 0 auto; }
 .announcement-attachment-download {
@@ -130,7 +131,7 @@
   overflow: hidden;
   overflow-wrap: anywhere;
   white-space: normal;
-  text-align: center;
+  text-align: left;
   text-decoration: none;
   color: var(--text-primary);
   font-size: var(--text-body);
