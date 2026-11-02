@@ -1157,7 +1157,7 @@ export default function Deliverables({
             <ErrorNotice error={error} />
             <div className="modal-actions">
               <button
-                className="secondary-button"
+                className="secondary-button close-action-button"
                 onClick={() => setSelectedDeliverableId(null)}
                 aria-label="산출물 상세 닫기"
               >
