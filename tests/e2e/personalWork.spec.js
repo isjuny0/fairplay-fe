@@ -1,4 +1,6 @@
 import { expect, test } from '@playwright/test';
+import { getMockState } from '../../src/mock/planned.js';
+import { previewContext } from '../../src/mock/preview.js';
 
 async function enterPreview(page) {
   const networkApiCalls = [];
@@ -44,30 +46,54 @@ test('알림함은 전체·미읽음 커서 목록과 전체 읽음을 제공한
   expect(calls).toEqual([]);
 });
 
-test('통합 할 일 화면은 작업·미제출 동료 평가와 기존 상세 경로를 제공한다', async ({ page }) => {
+test('통합 할 일 팝오버는 전체 작업·미제출 평가를 스크롤로 제공하고 상세로 연결한다', async ({ page }) => {
+  const context = previewContext();
+  const state = structuredClone(getMockState(context));
+  const baseTask = state.teams[1].tasks.find((task) =>
+    task.assignees?.some((assignee) => assignee.userId === context.user.id),
+  );
+  state.teams[1].tasks.push(...Array.from({ length: 22 }, (_, index) => ({
+    ...structuredClone(baseTask),
+    id: 5000 + index,
+    title: `추가 작업 ${index + 1}`,
+    status: 'TODO',
+    startAt: '2026-12-20T09:00:00',
+    dueAt: '2026-12-31T12:00:00',
+  })));
+  await page.addInitScript((mockState) => {
+    localStorage.setItem('fairplay:preview-role', 'leader');
+    localStorage.setItem('fairplay:mock:v9:preview:1', JSON.stringify(mockState));
+  }, state);
   const calls = await enterPreview(page);
   await page.getByRole('button', { name: '할 일' }).click();
-  await expect(page.getByRole('region', { name: '할 일 미리보기' })).toBeVisible();
-  await expect(page.getByRole('region', { name: '할 일 미리보기' })).toContainText('할 일·평가 3개');
-  await expect(page.getByRole('region', { name: '할 일 미리보기' })).toContainText('최종 동료 평가');
-  await expect(page.getByRole('region', { name: '할 일 미리보기' }).locator('.header-task-preview-more')).toHaveCount(0);
-  await page.getByRole('region', { name: '할 일 미리보기' }).getByRole('button', { name: /설문 결과 분석/ }).click();
-  await expect(page).toHaveURL(/\/preview\/spaces\/1\/teams\/1\/tasks\/102$/);
+  const popover = page.getByRole('region', { name: '할 일 미리보기' });
+  await expect(popover).toBeVisible();
+  await expect(popover).toContainText('할 일·평가 25개');
+  await expect(popover).toContainText('최종 동료 평가');
+  const list = popover.locator('.header-task-preview-cards');
+  const cards = list.locator('.header-task-preview-card');
+  await expect(cards).toHaveCount(25);
+  const { listTop, listBottom, fifthTop, scrollHeight, clientHeight } = await list.evaluate((element) => ({
+    listTop: element.getBoundingClientRect().top,
+    listBottom: element.getBoundingClientRect().bottom,
+    fifthTop: element.children[4].getBoundingClientRect().top,
+    scrollHeight: element.scrollHeight,
+    clientHeight: element.clientHeight,
+  }));
+  expect(fifthTop).toBeGreaterThanOrEqual(listBottom);
+  expect(scrollHeight).toBeGreaterThan(clientHeight);
+  expect(listTop).toBeGreaterThan(0);
+  await cards.last().scrollIntoViewIfNeeded();
+  await cards.last().click();
+  await expect(page).toHaveURL(/\/preview\/spaces\/1\/teams\/1\/tasks\/5021$/);
 
   await page.goto('/preview/main');
   await page.getByRole('button', { name: '할 일' }).click();
-  await page.getByRole('region', { name: '할 일 미리보기' }).getByRole('button', { name: '전체 보기', exact: true }).click();
-  await expect(page).toHaveURL(/\/preview\/my\/tasks$/);
-  await expect(page.getByRole('heading', { name: '할 일', exact: true })).toBeVisible();
-  await expect(page.getByRole('table')).toBeVisible();
-  await expect(page.getByRole('row')).toHaveCount(4);
-  await expect(page.getByRole('row', { name: /최종 동료 평가/ })).toBeVisible();
-  await page.getByRole('row', { name: '최종 동료 평가 상세 보기' }).click();
+  await page.getByRole('region', { name: '할 일 미리보기' }).getByRole('button', { name: /최종 동료 평가/ }).click();
   await expect(page).toHaveURL(/\/preview\/spaces\/1\/teams\/1\/peer-evaluations\?roundId=12$/);
+
   await page.goto('/preview/my/tasks');
-  await expect(page.getByText('완료', { exact: true })).toHaveCount(0);
-  await page.getByRole('row', { name: '설문 결과 분석 상세 보기' }).click();
-  await expect(page).toHaveURL(/\/preview\/spaces\/1\/teams\/1\/tasks\/102$/);
+  await expect(page.getByRole('heading', { name: '화면을 찾을 수 없습니다.' })).toBeVisible();
   expect(calls).toEqual([]);
 });
 

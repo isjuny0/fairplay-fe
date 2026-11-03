@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Bell, ListTodo, CheckCheck } from 'lucide-react';
 import useResource from '../hooks/useResource.js';
 import useAppNavigate from '../hooks/useAppNavigate.js';
-import { getMyNotificationUnreadCount, listMyNotifications, listMyTodos, markNotificationRead } from '../api/personalWork.js';
+import { getMyNotificationUnreadCount, listMyNotifications, listAllMyTodos, markNotificationRead } from '../api/personalWork.js';
 import { announceNotificationChange, notificationPath } from '../lib/personalWork.js';
 import { formatDate, statusLabels } from '../lib/domain.js';
 import { teamMenuPath } from '../lib/routes.js';
@@ -64,7 +64,7 @@ export default function HeaderActivityActions() {
 
   const loadTaskPreview = () => {
     if (taskRequest.current) return;
-    taskRequest.current = listMyTodos(0, 8).then((items) => {
+    taskRequest.current = listAllMyTodos().then((items) => {
       setTaskPreview(items);
       setTaskPreviewError(false);
     }).catch(() => {
@@ -100,9 +100,9 @@ export default function HeaderActivityActions() {
           <ListTodo size={19} />
         </button>
         {taskPopoverOpen && <section className="notification-popover header-task-popover" id="header-task-popover" aria-label="할 일 미리보기">
-          <header className="notification-popover-heading"><strong>{taskPreviewError ? '할 일을 불러오지 못했습니다' : taskPreview === null ? '할 일을 불러오는 중…' : taskCountLabel}</strong><button type="button" onClick={() => { setTaskPopoverOpen(false); navigate('/my/tasks'); }}>전체 보기</button></header>
+          <header className="notification-popover-heading"><strong>{taskPreviewError ? '할 일을 불러오지 못했습니다' : taskPreview === null ? '할 일을 불러오는 중…' : taskCountLabel}</strong></header>
           {taskPreviewError ? <p className="notification-popover-state">잠시 후 다시 확인해 주세요.</p> : taskPreview === null ? <p className="notification-popover-state" role="status">담당 중인 작업과 동료 평가를 확인하고 있습니다.</p> : taskPreview.items.length ? <>
-            <div className="header-task-preview-cards">{taskPreview.items.slice(0, 4).map((item) => {
+            <div className="header-task-preview-cards" aria-label="할 일 전체 목록">{taskPreview.items.map((item) => {
               const isEvaluation = item.type === 'PEER_EVALUATION';
               const task = item.task;
               const label = isEvaluation ? (item.evaluation.roundType === 'MID' ? '중간 동료 평가' : '최종 동료 평가') : (statusLabels[task.status] || task.status);
@@ -112,7 +112,6 @@ export default function HeaderActivityActions() {
               <span className="header-task-preview-meta">{item.teamName} · 마감 {formatDate(item.dueAt)}</span>
             </button>})}</div>
           </> : <p className="notification-popover-state">현재 할 일이나 진행 중인 동료 평가가 없습니다.</p>}
-          <button type="button" className="notification-popover-all" onClick={() => { setTaskPopoverOpen(false); navigate('/my/tasks'); }}><ListTodo size={16} /> 할 일 전체 보기</button>
         </section>}
       </div>
       {open && <section className="notification-popover" aria-label="최근 알림">

@@ -47,3 +47,19 @@ export async function listMyTodos(page = 0, size = 20) {
     throw new Error('내 할 일 목록 응답 형식을 확인해 주세요.');
   return result;
 }
+
+export async function listAllMyTodos(size = 20) {
+  const firstPage = await listMyTodos(0, size);
+  const pageCount = Math.ceil(firstPage.totalCount / size);
+  if (pageCount <= 1) return firstPage;
+
+  const remainingPages = await Promise.all(
+    Array.from({ length: pageCount - 1 }, (_, index) =>
+      listMyTodos(index + 1, size),
+    ),
+  );
+  return {
+    items: [firstPage, ...remainingPages].flatMap((page) => page.items),
+    totalCount: firstPage.totalCount,
+  };
+}

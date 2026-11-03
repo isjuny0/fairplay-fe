@@ -22,7 +22,6 @@ const imports = {
   MidFeedback: () => import('../components/MidFeedback.jsx'),
   ContributionReport: () => import('../components/ContributionReport.jsx'),
   PersonalNotifications: () => import('../components/PersonalNotifications.jsx'),
-  MyTasks: () => import('../components/MyTasks.jsx'),
 };
 
 // Reuse preloaded modules on first render instead of suspending again at every nested screen.
@@ -42,7 +41,6 @@ export function preloadRoute(pathname) {
   const path = pathname.replace(/^\/preview(?=\/|$)/, '');
   if (path === '/main') return screenLoaders.Spaces();
   if (path === '/notifications') return screenLoaders.PersonalNotifications();
-  if (path === '/my/tasks') return screenLoaders.MyTasks();
   if (!path.startsWith('/spaces/')) return Promise.resolve();
   const loaders = [screenLoaders.SpaceWorkspace];
   if (/\/teams\/\d+(?:\/|$)/.test(path) && !path.includes('/manager/')) {
