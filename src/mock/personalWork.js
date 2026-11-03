@@ -1,4 +1,4 @@
-import { MockError } from './planned.js';
+import { MockError, saveMockState } from './planned.js';
 import { previewSpace } from './fixtures.js';
 import { koreanDateTime } from '../lib/koreanTime.js';
 
@@ -65,6 +65,48 @@ export function previewPersonalWork(context, state, parts, url, method) {
   }
   if (parts[2] === 'todos' && parts.length === 3 && method === 'GET') {
     if (context.manager) return { items: [], totalCount: 0 };
+    if (context.preview && !state.previewTodoExamplesSeeded) {
+      const previewTeam = context.teamContexts?.find(({ team }) => team.id === 1);
+      const entry = previewTeam && state.teams[previewTeam.team.id];
+      if (entry?.tasks?.length && (entry.members?.length || previewTeam.members?.length)) {
+        const members = entry.members?.length ? entry.members : previewTeam.members;
+        const assignees = members.map((member, index) => ({
+          userId: member.userId,
+          allocationPercent: index === members.length - 1
+            ? 100 - Math.floor(100 / members.length) * (members.length - 1)
+            : Math.floor(100 / members.length),
+        }));
+        const contributionUsers = assignees.map(({ userId }) => userId);
+        const template = entry.tasks.find((task) => task.status !== 'DONE') || entry.tasks[0];
+        const examples = [
+          ['화면 시안 검토', 'TODO', 2],
+          ['테스트 항목 정리', 'IN_PROGRESS', 3],
+          ['회의 자료 준비', 'REVISING', 4],
+          ['사용자 의견 분류', 'TODO', 5],
+          ['최종 일정 확인', 'IN_PROGRESS', 6],
+        ];
+        const firstId = Math.max(0, ...entry.tasks.map((task) => Number(task.id) || 0)) + 1;
+        const timestamp = Date.now();
+        entry.tasks.push(...examples.map(([title, status, dueInDays], index) => ({
+          ...structuredClone(template),
+          id: firstId + index,
+          title,
+          status,
+          version: 1,
+          startAt: koreanDateTime(timestamp - 86400000),
+          dueAt: koreanDateTime(timestamp + dueInDays * 86400000),
+          createdAt: koreanDateTime(timestamp - 2 * 86400000),
+          updatedAt: koreanDateTime(timestamp - 86400000),
+          completedAt: null,
+          lastActivityAt: koreanDateTime(timestamp - 86400000),
+          assignees: structuredClone(assignees),
+          contributions: Object.fromEntries(contributionUsers.map((userId) => [userId, null])),
+          completionBlockReason: null,
+        })));
+        state.previewTodoExamplesSeeded = true;
+        saveMockState(context, state);
+      }
+    }
     const page = Math.max(0, Number(url.searchParams.get('page') || 0));
     const size = Math.max(1, Math.min(100, Number(url.searchParams.get('size') || 20)));
     const now = Date.now();
