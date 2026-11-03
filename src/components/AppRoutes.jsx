@@ -12,7 +12,6 @@ import SpaceDirectorySidebar from './SpaceDirectorySidebar.jsx';
 const Spaces = deferScreen(screenLoaders.Spaces, '스페이스 목록');
 const SpaceWorkspace = deferScreen(screenLoaders.SpaceWorkspace, '스페이스 화면');
 const PersonalNotifications = deferScreen(screenLoaders.PersonalNotifications, '알림함');
-const MyTasks = deferScreen(screenLoaders.MyTasks, '내 할 일');
 
 function WorkspaceRoute({ user, view = 'teams', teamMenu = '팀 홈', setCurrentWorkspace }) {
   const params = useParams();
@@ -104,7 +103,6 @@ export default function AppRoutes({ user, prefix = '', currentWorkspace, setCurr
       />
       <Route path={`${prefix}/main`} element={<SpacesRoute user={user} setCurrentWorkspace={setCurrentWorkspace} />} />
       <Route path={`${prefix}/notifications`} element={<PersonalWorkRoute currentWorkspace={currentWorkspace} user={user}><PersonalNotifications /></PersonalWorkRoute>} />
-      <Route path={`${prefix}/my/tasks`} element={<PersonalWorkRoute currentWorkspace={currentWorkspace} user={user}><MyTasks /></PersonalWorkRoute>} />
       <Route
         path={`${prefix}/spaces/:spaceId`}
         element={<WorkspaceRoute user={user} setCurrentWorkspace={setCurrentWorkspace} />}
