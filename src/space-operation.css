@@ -68,3 +68,6 @@
 .space-operation-page > .space-operation-tabs { margin: 0; }
 .space-operation-page > [role='tabpanel'] { min-width: 0; }
 .space-operation-page > [role='tabpanel'][hidden] { display: none; }
+@media (max-width: 720px) {
+  .main-content > .space-operation-page > .page-heading { min-height: 44px; }
+}

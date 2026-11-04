@@ -12,6 +12,7 @@ import googleLogo from '../assets/google-g.svg';
 import BrandLogo from './BrandLogo.jsx';
 import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import HeaderActivityActions from './HeaderActivityActions.jsx';
+import ScrollAffordances from './ScrollAffordances.jsx';
 import '../preview-controls.css';
 import '../header-profile.css';
 
@@ -213,7 +214,7 @@ export default function Application({ previewRuntime }) {
               로그인 없이 사용자 가이드
             </button>
             <p className="field-help">
-              개발·조사·발표·행사 등 다양한 팀 프로젝트에 사용할 수 있습니다.
+              로그인하면 내 프로젝트를 관리할 수 있습니다. 사용자 가이드에서는 예시 프로젝트로 먼저 둘러볼 수 있습니다.
             </p>
             {sessionNotice && <p role="status">{sessionNotice}</p>}
             <ErrorNotice error={error} />
@@ -404,6 +405,7 @@ export default function Application({ previewRuntime }) {
           currentWorkspace={currentWorkspace}
           setCurrentWorkspace={setCurrentWorkspace}
         />
+        <ScrollAffordances />
       </div>
     </HeaderContext.Provider>
   );

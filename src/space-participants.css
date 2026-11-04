@@ -81,6 +81,9 @@
     min-width: 0;
     align-items: flex-start;
   }
+  .app-shell .participant-table tbody td {
+    text-align: left;
+  }
   .participant-table td::before {
     content: attr(data-label);
     font-size: var(--text-caption);

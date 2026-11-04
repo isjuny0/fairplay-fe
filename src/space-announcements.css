@@ -109,6 +109,8 @@
 }
 .announcement-row-copy .announcement-attachment-download { display: inline-grid; place-items: center; flex: 0 0 28px; width: 28px; height: 28px; min-height: 28px; padding: 5px; border-color: transparent; border-radius: 6px; background: transparent; color: var(--text-muted); }
 .announcement-row-copy .announcement-attachment-download:hover { border-color: var(--border); background: var(--surface-secondary); color: var(--brand-dark); }
+.announcement-row-copy .announcement-attachment-download { position: relative; }
+.announcement-attachment-count { position: absolute; top: -3px; right: -4px; min-width: 14px; padding: 0 3px; border-radius: 7px; background: var(--brand-light); color: var(--brand-dark); font-size: 10px; line-height: 14px; }
 .announcement-attachment-download .ui-icon { flex: 0 0 15px; width: 15px; height: 15px; }
 .announcement-attachment-download span { white-space: nowrap; }
 .announcement-attachment-download:hover { color: var(--brand-dark); text-decoration: underline; }
@@ -131,6 +133,7 @@
   overflow: hidden;
   overflow-wrap: anywhere;
   white-space: normal;
+  word-break: keep-all;
   text-align: left;
   text-decoration: none;
   color: var(--text-primary);
@@ -170,9 +173,11 @@
 }
 .announcement-author {
   overflow-wrap: anywhere;
+  word-break: keep-all;
   line-height: 1.6;
   text-align: center;
 }
+.announcement-row-meta { display: contents; }
 .announcement-row time {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -283,6 +288,7 @@
 .main-content .announcements-page > .page-heading {
   align-items: center;
 }
+.main-content .announcements-page.is-list > .page-heading { padding-bottom: var(--space-3); }
 .announcement-title-group {
   display: flex;
   align-items: center;
@@ -406,15 +412,15 @@
   .announcement-columns { display: none; }
   .announcement-row,
   .announcement-board.is-compact .announcement-row {
-    grid-template-columns: 32px minmax(0, 1fr) 76px;
+    grid-template-columns: 28px minmax(0, 1fr);
     gap: 6px 12px;
     padding: 12px;
   }
-  .announcement-kind { grid-column: 1; grid-row: 1 / span 2; }
-  .announcement-row-copy { grid-column: 2; }
-  .announcement-author { grid-column: 3; grid-row: 1; text-align: center; }
-  .announcement-author::before { content: "작성자"; display: block; margin-bottom: 2px; font-size: 11px; }
-  .announcement-row time { grid-column: 2 / -1; grid-row: 2; text-align: center; }
+  .announcement-kind { grid-column: 1; grid-row: 1; align-self: start; padding-top: 5px; }
+  .announcement-row-copy { grid-column: 2; grid-row: 1; }
+  .announcement-row-meta { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; grid-column: 2; grid-row: 2; min-width: 0; }
+  .announcement-row .announcement-author { min-width: 0; max-width: 100%; text-align: left; }
+  .announcement-row time { text-align: left; }
 }
 @media (max-width: 600px) {
   .announcement-section-heading {
@@ -429,7 +435,7 @@
   .announcement-detail { gap: 12px; }
   .announcement-detail-body { padding: 16px; }
   .announcement-detail-heading { padding: 14px; }
-  .announcement-metadata { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .announcement-metadata { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .announcement-metadata > div { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 8px; align-items: baseline; }
   .announcement-editor textarea {
     min-height: 200px;

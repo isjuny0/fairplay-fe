@@ -66,7 +66,8 @@
 .dashboard-arrange-grid .dashboard-progress-ring small {
   font-size: 9px;
 }
-.dashboard-arrange-grid .dashboard-progress-copy {
+.dashboard-arrange-grid .dashboard-team-progress .dashboard-progress-copy {
+  align-self: stretch;
   margin: 15px 0 0;
   text-align: center;
 }
@@ -85,6 +86,7 @@
   flex-shrink: 0;
 }
 .dashboard-arrange-grid .dashboard-team-progress > time {
+  align-self: stretch;
   margin: 10px 0 12px;
   font-size: 9px;
   text-align: center;
@@ -465,5 +467,13 @@
   .dashboard-arrange-grid .dashboard-progress-ring {
     width: 145px;
     height: 145px;
+  }
+  .dashboard-arrange-grid > .widget-progress {
+    height: auto;
+    min-height: 350px;
+  }
+  .dashboard-arrange-grid > .widget-progress.is-editing {
+    height: auto;
+    min-height: 390px;
   }
 }

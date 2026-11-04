@@ -59,12 +59,14 @@ for (const width of [1440, 390]) {
     await page.goto(`${team}/peer-evaluations`);
     const score = page.locator('.peer-target.is-active .score-field').first().getByRole('radio').nth(3);
     await score.check();
+    if (width < 721) await page.getByRole('button', {name:'스페이스 메뉴 펼치기',exact:true}).click();
     await page.getByRole('button', { name: '작업', exact: true }).first().click();
     const confirmation = page.getByRole('dialog', { name: '저장하지 않은 변경 사항', exact: true });
     await assertRedClose(confirmation);
     await confirmation.getByRole('button', { name: '계속 작성', exact: true }).click();
     await expect(score).toBeChecked();
     await expect(page).toHaveURL(/peer-evaluations$/);
+    if (width < 721) await page.getByRole('button', {name:'스페이스 메뉴 펼치기',exact:true}).click();
     await page.getByRole('button', { name: '작업', exact: true }).first().click();
     await confirmation.getByRole('button', { name: '닫기', exact: true }).click();
     await expect(page).toHaveURL(/\/tasks$/);

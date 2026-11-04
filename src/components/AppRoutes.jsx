@@ -70,6 +70,7 @@ function PersonalWorkRoute({ currentWorkspace, user, children }) {
     <WorkspaceNavigation
       {...currentWorkspace}
       view="personal"
+      navigationView={currentWorkspace.view}
       onBack={() => navigate(currentWorkspace.returnPath || '/main')}
     />
     {children}

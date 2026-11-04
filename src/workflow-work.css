@@ -1,0 +1,32 @@
+.task-quick-filters { display: none; }
+.markdown-more-tools { display: none; }
+.deliverable-mobile-download { display: none; }
+.task-next-action:focus { outline: 2px solid var(--brand); outline-offset: 3px; }
+.allocation-selected-names { flex-basis: 100%; color: var(--text-muted); font-weight: 400; overflow-wrap: anywhere; }
+.task-editor-form .allocation-summary { position: sticky; top: 52px; z-index: 3; flex-wrap: wrap; padding: 10px 12px; background: var(--surface-secondary); border: 1px solid var(--border); border-radius: 6px; }
+@media (max-width: 720px) {
+.meeting-list-scroll, .collection-table-scroll:has(.deliverable-table) { container-type: inline-size; }
+.meeting-list-scroll .meeting-table { width: calc(100cqw + 200px); min-width: 0; table-layout: fixed; }
+.meeting-list-scroll .meeting-table th:first-child { width: calc(100cqw - 152px); }
+.meeting-list-scroll .meeting-table th:nth-child(2) { width: 152px; }
+.meeting-list-scroll .meeting-table th:nth-child(3) { width: 120px; }
+.meeting-list-scroll .meeting-table th:nth-child(4) { width: 80px; }
+.meeting-table time { white-space: normal; word-break: keep-all; }
+.collection-table-scroll .deliverable-table { width: calc(100cqw + 550px); min-width: 0; table-layout: fixed; }
+.collection-table-scroll .deliverable-table th:first-child { width: calc(100cqw - 76px); }
+.collection-table-scroll .deliverable-table th:nth-child(2) { width: 76px; }
+.collection-table-scroll .deliverable-table th:nth-child(3) { width: 150px; }
+.collection-table-scroll .deliverable-table th:nth-child(4) { width: 100px; }
+.collection-table-scroll .deliverable-table th:nth-child(5) { width: 150px; }
+.collection-table-scroll .deliverable-table th:nth-child(6) { width: 150px; }
+.collection-title-actions { display: flex; align-items: center; gap: 4px; }
+.collection-title-actions h3 { min-width: 0; flex: 1; }
+.deliverable-mobile-download { display: inline-grid; place-items: center; flex: 0 0 36px; width: 36px; height: 44px; padding: 8px; }
+.deliverable-table .collection-actions .deliverable-download { display: none; }
+.rag-workspace.is-welcome .rag-conversation { flex: 0 1 auto; }
+.rag-workspace.is-welcome .rag-welcome { min-height: 0; padding: 16px 0; }
+.task-quick-filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.task-quick-filters button[aria-pressed='true'] { color: var(--brand-dark); border-color: var(--brand); background: var(--brand-light); }
+.markdown-editor-tools .markdown-advanced-tool { display: none; }
+.markdown-editor-tools .markdown-more-tools { display: inline-flex; align-items: center; }
+}
