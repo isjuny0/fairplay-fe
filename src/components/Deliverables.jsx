@@ -645,180 +645,202 @@ export default function Deliverables({
       </div>
       {isCollection && (
         <div
-          className="deliverable-search-toolbar collection-controls"
+          className="deliverable-collection-controls collection-controls"
           ref={searchToolbar}
         >
-          <div className="deliverable-search-primary">
-            <form
-              role="search"
-              className="deliverable-query-form"
-              onSubmit={(event) => {
-                event.preventDefault();
-                setSearchOption("q", queryInput.trim());
-              }}
+          <div className="deliverable-search-toolbar">
+            <button
+              ref={filterToggle}
+              type="button"
+              className="secondary-button deliverable-filter-toggle"
+              aria-expanded={filtersOpen}
+              aria-controls={filterId}
+              onClick={() => setFiltersOpen((value) => !value)}
             >
-              <label className="sr-only" htmlFor="deliverable-search">
-                자료 검색
-              </label>
-              <div className="deliverable-query-input">
-                <Icon name="search" />
-                <input
-                  id="deliverable-search"
-                  type="search"
-                  placeholder="제목 또는 원본 파일명으로 검색"
-                  maxLength={100}
-                  value={queryInput}
-                  onChange={(event) => setQueryInput(event.target.value)}
-                />
-                <button className="secondary-button" type="submit">
-                  검색
-                </button>
-              </div>
-            </form>
-            <label className="deliverable-sort-field">
-              <span>정렬</span>
-              <select
-                aria-label="자료 정렬"
-                value={sort}
-                onChange={(event) =>
-                  setSearchOption("sort", event.target.value)
-                }
-              >
-                <option value="">최근 등록 순</option>
-                <option value="UPDATED_DESC">최근 수정 순</option>
-                <option value="TITLE_ASC">이름 순</option>
-              </select>
-            </label>
-          </div>
-          <button ref={filterToggle} type="button" className="secondary-button deliverable-filter-toggle" aria-expanded={filtersOpen} aria-controls={filterId} onClick={() => setFiltersOpen(value => !value)}>필터 {appliedFilters.filter(filter => !['q', 'sort'].includes(filter.key)).length || ''} {filtersOpen ? '접기' : '펼치기'}</button>
-          <div id={filterId} className={`deliverable-filter-row${filtersOpen ? ' is-expanded' : ''}`}>
-            <label
-              className="deliverable-filter-field"
-              data-active={scope !== "ALL"}
-            >
-              <span>작업 범위</span>
-              <select
-                aria-label="작업별 조회"
-                disabled={!taskOptionsReady}
-                value={scope}
-                onChange={(event) => setScope(event.target.value)}
-              >
-                <option value="ALL">전체 자료</option>
-                <option value="COMMON">팀 공용 자료</option>
-                {tasks.map((task) => (
-                  <option key={task.id} value={task.id}>
-                    {task.title}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label
-              className="deliverable-filter-field"
-              data-active={Boolean(type)}
-            >
-              <span>유형</span>
-              <select
-                aria-label="자료 유형"
-                value={type}
-                onChange={(event) =>
-                  setSearchOption("type", event.target.value)
-                }
-              >
-                <option value="">전체 유형</option>
-                <option value="TEXT">문서</option>
-                <option value="FILE">파일</option>
-              </select>
-            </label>
-            <label
-              className="deliverable-filter-field"
-              data-active={Boolean(authorId)}
-            >
-              <span>등록자</span>
-              <select
-                aria-label="자료 등록자"
-                value={authorId}
-                onChange={(event) =>
-                  setSearchOption("authorId", event.target.value)
-                }
-              >
-                <option value="">전체 등록자</option>
-                {members.map((member) => (
-                  <option key={member.userId} value={member.userId}>
-                    {member.name}
-                  </option>
-                ))}
-                {authorId &&
-                  !members.some((member) => member.userId === authorId) && (
-                    <option value={authorId}>
-                      현재 팀원 목록에 없는 등록자
-                    </option>
-                  )}
-              </select>
-            </label>
-          </div>
-          {appliedFilters.length > 0 && (
+              필터{" "}
+              {appliedFilters.filter(
+                (filter) => !["q", "sort"].includes(filter.key),
+              ).length || ""}{" "}
+              {filtersOpen ? "접기" : "펼치기"}
+            </button>
             <div
-              className="deliverable-applied-filters collection-applied-filters"
-              role="group"
-              aria-label="적용된 조회 조건"
+              id={filterId}
+              className={`deliverable-filter-row${filtersOpen ? " is-expanded" : ""}`}
             >
-              <span className="deliverable-filter-caption collection-filter-caption">
-                적용 중
-              </span>
-              {appliedFilters.map((filter) => (
-                <button
-                  key={filter.key}
-                  className="deliverable-filter-chip collection-filter-chip"
-                  title={`${filter.label}: ${filter.value}`}
-                  aria-label={`${filter.label}: ${filter.value} 조건 해제`}
-                  onClick={() => {
-                    const controlLabels = {
-                      q: "자료 검색",
-                      sort: "자료 정렬",
-                      scope: "작업별 조회",
-                      type: "자료 유형",
-                      authorId: "자료 등록자",
-                    };
-                    const selector =
-                      filter.key === "q"
-                        ? "input"
-                        : `select[aria-label="${controlLabels[filter.key]}"]`;
-                    const control = searchToolbar.current?.querySelector(selector);
-                    (control?.getClientRects().length ? control : filterToggle.current)?.focus();
-                    if (filter.key === "scope") setScope("ALL");
-                    else setSearchOption(filter.key, "");
-                  }}
+              <label
+                className="deliverable-filter-field"
+                data-active={scope !== "ALL"}
+              >
+                <span>작업 범위</span>
+                <select
+                  aria-label="작업별 조회"
+                  disabled={!taskOptionsReady}
+                  value={scope}
+                  onChange={(event) => setScope(event.target.value)}
                 >
-                  <span className="deliverable-chip-label">{filter.label}</span>
-                  <span className="deliverable-chip-value">{filter.value}</span>
-                  <Icon name="close" />
-                </button>
-              ))}
+                  <option value="ALL">전체 자료</option>
+                  <option value="COMMON">팀 공용 자료</option>
+                  {tasks.map((task) => (
+                    <option key={task.id} value={task.id}>
+                      {task.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label
+                className="deliverable-filter-field"
+                data-active={Boolean(type)}
+              >
+                <span>유형</span>
+                <select
+                  aria-label="자료 유형"
+                  value={type}
+                  onChange={(event) =>
+                    setSearchOption("type", event.target.value)
+                  }
+                >
+                  <option value="">전체 유형</option>
+                  <option value="TEXT">문서</option>
+                  <option value="FILE">파일</option>
+                </select>
+              </label>
+              <label
+                className="deliverable-filter-field"
+                data-active={Boolean(authorId)}
+              >
+                <span>등록자</span>
+                <select
+                  aria-label="자료 등록자"
+                  value={authorId}
+                  onChange={(event) =>
+                    setSearchOption("authorId", event.target.value)
+                  }
+                >
+                  <option value="">전체 등록자</option>
+                  {members.map((member) => (
+                    <option key={member.userId} value={member.userId}>
+                      {member.name}
+                    </option>
+                  ))}
+                  {authorId &&
+                    !members.some((member) => member.userId === authorId) && (
+                      <option value={authorId}>
+                        현재 팀원 목록에 없는 등록자
+                      </option>
+                    )}
+                </select>
+              </label>
             </div>
-          )}
-        </div>
-      )}
-      {isCollection && (
-        <div className="deliverable-search-scope">
-          <div>
-            <h2>자료 목록</h2>
-            {!resource.loading && !resource.error && (
-              <span role="status">
-                현재 페이지 {resource.data?.length || 0}건
-              </span>
+            {appliedFilters.length > 0 && (
+              <div
+                className="deliverable-applied-filters collection-applied-filters"
+                role="group"
+                aria-label="적용된 조회 조건"
+              >
+                <span className="deliverable-filter-caption collection-filter-caption">
+                  적용 중
+                </span>
+                {appliedFilters.map((filter) => (
+                  <button
+                    key={filter.key}
+                    className="deliverable-filter-chip collection-filter-chip"
+                    title={`${filter.label}: ${filter.value}`}
+                    aria-label={`${filter.label}: ${filter.value} 조건 해제`}
+                    onClick={() => {
+                      const controlLabels = {
+                        q: "자료 검색",
+                        sort: "자료 정렬",
+                        scope: "작업별 조회",
+                        type: "자료 유형",
+                        authorId: "자료 등록자",
+                      };
+                      const selector =
+                        filter.key === "q"
+                          ? "input"
+                          : `select[aria-label="${controlLabels[filter.key]}"]`;
+                      const control =
+                        searchToolbar.current?.querySelector(selector);
+                      (control?.getClientRects().length
+                        ? control
+                        : filterToggle.current
+                      )?.focus();
+                      if (filter.key === "scope") setScope("ALL");
+                      else setSearchOption(filter.key, "");
+                    }}
+                  >
+                    <span className="deliverable-chip-label">
+                      {filter.label}
+                    </span>
+                    <span className="deliverable-chip-value">
+                      {filter.value}
+                    </span>
+                    <Icon name="close" />
+                  </button>
+                ))}
+              </div>
             )}
           </div>
-          {hasSearch ? (
-            <button
-              className="text-button collection-reset-button"
-              title="검색·유형·등록자·작업 범위·정렬을 초기화하고 첫 페이지로 이동합니다."
-              onClick={clearSearch}
-            >
-              조회 조건 초기화
-            </button>
-          ) : (
-            <p className="field-help">팀 자료 목록에서 조회합니다.</p>
-          )}
+          <div className="deliverable-search-scope">
+            <div>
+              <h2>자료 목록</h2>
+              {!resource.loading && !resource.error && (
+                <span role="status">
+                  현재 페이지 {resource.data?.length || 0}건
+                </span>
+              )}
+              {hasSearch && (
+                <button
+                  className="text-button collection-reset-button"
+                  title="검색·유형·등록자·작업 범위·정렬을 초기화하고 첫 페이지로 이동합니다."
+                  onClick={clearSearch}
+                >
+                  조회 조건 초기화
+                </button>
+              )}
+            </div>
+            <div className="deliverable-search-primary">
+              <form
+                role="search"
+                className="deliverable-query-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  setSearchOption("q", queryInput.trim());
+                }}
+              >
+                <label className="sr-only" htmlFor="deliverable-search">
+                  자료 검색
+                </label>
+                <div className="deliverable-query-input">
+                  <Icon name="search" />
+                  <input
+                    id="deliverable-search"
+                    type="search"
+                    placeholder="제목 또는 파일명 검색"
+                    maxLength={100}
+                    value={queryInput}
+                    onChange={(event) => setQueryInput(event.target.value)}
+                  />
+                  <button className="secondary-button" type="submit">
+                    검색
+                  </button>
+                </div>
+              </form>
+              <label className="deliverable-sort-field">
+                <span>정렬</span>
+                <select
+                  aria-label="자료 정렬"
+                  value={sort}
+                  onChange={(event) =>
+                    setSearchOption("sort", event.target.value)
+                  }
+                >
+                  <option value="">최근 등록 순</option>
+                  <option value="UPDATED_DESC">최근 수정 순</option>
+                  <option value="TITLE_ASC">이름 순</option>
+                </select>
+              </label>
+            </div>
+          </div>
         </div>
       )}
       <ErrorNotice error={error} onRetry={resource.reload} />
