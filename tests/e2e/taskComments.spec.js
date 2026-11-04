@@ -324,9 +324,9 @@ for (const width of [390, 1440])
       '2020-01-01T09:00:00';
     await page.addInitScript((state) => {
       localStorage.setItem('fairplay:preview-role', 'teammate');
-      if (!localStorage.getItem('fairplay:mock:v9:preview:1'))
+      if (!localStorage.getItem('fairplay:mock:v11:preview:1'))
         localStorage.setItem(
-          'fairplay:mock:v9:preview:1',
+          'fairplay:mock:v11:preview:1',
           JSON.stringify(state),
         );
     }, state);
@@ -340,7 +340,7 @@ for (const width of [390, 1440])
     await expect(
       panel.getByText('최종 마감 후에도 의견을 남깁니다.', { exact: true }),
     ).toBeVisible();
-    await expect(panel.getByText('박서연', { exact: true })).toBeVisible();
+    await expect(panel.getByText('박선우', { exact: true })).toBeVisible();
     const assignment = page.getByRole('region', {
       name: '담당자·담당 비율',
       exact: true,

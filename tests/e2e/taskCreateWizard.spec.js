@@ -30,20 +30,20 @@ for (const width of [1440, 900, 390, 320]) {
       await expect(dialog.locator('.allocation-member input:checked')).toHaveCount(1);
       await dialog.locator('.allocation-member input:checked').uncheck();
     }
-    await dialog.getByRole('checkbox', { name: '김하늘 · 리더', exact: true }).check();
-    await dialog.getByRole('checkbox', { name: '이지원 · 팀원', exact: true }).check();
-    await expect(dialog.getByLabel('김하늘 배분율', { exact: true })).toHaveValue('50');
-    await expect(dialog.getByLabel('이지원 배분율', { exact: true })).toHaveValue('50');
-    await dialog.getByLabel('김하늘 배분율', { exact: true }).fill('70');
+    await dialog.getByRole('checkbox', { name: '김준영 · 리더', exact: true }).check();
+    await dialog.getByRole('checkbox', { name: '김영진 · 팀원', exact: true }).check();
+    await expect(dialog.getByLabel('김준영 배분율', { exact: true })).toHaveValue('50');
+    await expect(dialog.getByLabel('김영진 배분율', { exact: true })).toHaveValue('50');
+    await dialog.getByLabel('김준영 배분율', { exact: true }).fill('70');
     await dialog.getByRole('button', { name: '저장', exact: true }).click();
     await expect(dialog.getByText(/현재 합계는 120%/)).toBeVisible();
-    await dialog.getByLabel('이지원 배분율', { exact: true }).fill('30');
+    await dialog.getByLabel('김영진 배분율', { exact: true }).fill('30');
     await dialog.getByRole('button', { name: '이전', exact: true }).click();
     await expect(dialog.getByLabel('작업 제목', { exact: true })).toHaveValue(`두 단계 작업 ${width}`);
     expect(await dialog.boundingBox()).toEqual(firstBox);
     await dialog.getByRole('button', { name: '다음', exact: true }).click();
-    await expect(dialog.getByLabel('김하늘 배분율', { exact: true })).toHaveValue('70');
-    await expect(dialog.getByLabel('이지원 배분율', { exact: true })).toHaveValue('30');
+    await expect(dialog.getByLabel('김준영 배분율', { exact: true })).toHaveValue('70');
+    await expect(dialog.getByLabel('김영진 배분율', { exact: true })).toHaveValue('30');
     expect(await dialog.boundingBox()).toEqual(firstBox);
     expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath('task-create-allocation.png'), animations: 'disabled' });

@@ -18,7 +18,7 @@ for (const width of [1440, 390, 320]) {
     await clickDashboardControl(page, '편집 완료');
     await page.evaluate(async () => {
       const key = Object.keys(localStorage).find((key) =>
-        key.startsWith('fairplay:mock:v9:'),
+        key.startsWith('fairplay:mock:v11:preview:'),
       );
       const state = JSON.parse(localStorage.getItem(key));
       state.events = Array.from({ length: 7 }, (_, index) => ({

@@ -4,15 +4,15 @@ import { MockError } from './planned.js';
 function exampleFeedback(review) {
   const source = review.reviewedSources[0];
   return {
-    summary: '주요 발견과 다음 단계 제안이 연결되어 있다고 가정한 예시입니다. 결론의 근거를 쉽게 찾을 수 있도록 주요 발견 옆에 배치해 보세요.',
+    summary: '점검 항목과 결과를 함께 기록하면 다른 팀원이 같은 화면에서 다시 확인할 수 있습니다.',
     findings: [
       {
-        type: 'SUGGESTION', title: '주요 발견마다 근거를 연결해 보세요',
-        description: '발견과 근거가 함께 있으면 팀원이 결론을 이해하고 다음 작업에 활용하기 쉽습니다.',
-        action: '각 주요 발견 아래에 이를 뒷받침하는 응답이나 관찰 내용을 연결해 보세요. 작업 범위에 맞게 선택해서 반영할 수 있습니다.',
+        type: 'SUGGESTION', title: '점검 결과에 재현 방법을 함께 적어 보세요',
+        description: '확인한 화면과 동작을 기록하면 팀원이 동일한 조건에서 결과를 검토할 수 있습니다.',
+        action: '항목마다 화면 이름, 실행한 동작, 기대 결과와 실제 결과를 한 줄씩 남겨 보세요.',
         requirementQuote: null,
         references: [{ deliverableId: source.deliverableId, quote: null,
-          observation: '문서에 주요 발견과 다음 단계 제안이 정리되어 있다고 가정한 예시입니다.', location: '예시 문서 본문' }],
+          observation: '재현 방법을 보완하는 예시입니다.', location: '예시 문서 본문' }],
       },
     ],
     strengths: [],

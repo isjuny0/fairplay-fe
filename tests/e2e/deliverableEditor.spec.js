@@ -20,13 +20,13 @@ test('등록·수정·검색과 상세에서는 분류를 표시하지 않는다
   await dialog.getByRole('button', { name: '문서 작성', exact: true }).click();
   await expect(dialog.getByLabel('분류', { exact: true })).toHaveCount(0);
   await dialog.getByRole('button', { name: '닫기', exact: true }).click();
-  const row = page.getByRole('row').filter({ has: page.getByRole('button', { name: '프로젝트 기획서', exact: true }) });
+  const row = page.getByRole('row').filter({ has: page.getByRole('button', { name: 'Fairplay 프로젝트 소개', exact: true }) });
   await row.getByRole('button', { name: '수정', exact: true }).click();
   dialog = page.getByRole('dialog', { name: '팀 자료 수정', exact: true });
   await expect(dialog.getByLabel('분류', { exact: true })).toHaveCount(0);
-  await dialog.getByLabel('제목', { exact: true }).fill('프로젝트 기획서 수정');
+  await dialog.getByLabel('제목', { exact: true }).fill('Fairplay 프로젝트 소개 수정');
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
-  await page.getByRole('button', { name: '프로젝트 기획서 수정', exact: true }).click();
+  await page.getByRole('button', { name: 'Fairplay 프로젝트 소개 수정', exact: true }).click();
   dialog = page.getByRole('dialog', { name: '팀 자료 상세', exact: true });
   await expect(dialog.locator('.deliverable-kind')).toHaveText('문서');
 });
@@ -98,13 +98,13 @@ test('공용 자료의 비작성 리더는 제목만 수정하고 본문을 유�
   page,
 }) => {
   await openDeliverables(page, 'member');
-  await page.getByRole('row').filter({has:page.getByRole('button',{name:'프로젝트 기획서',exact:true})}).getByRole('button',{name:'수정',exact:true}).count().then(count=>expect(count).toBe(0));
+  await page.getByRole('row').filter({has:page.getByRole('button',{name:'Fairplay 프로젝트 소개',exact:true})}).getByRole('button',{name:'수정',exact:true}).count().then(count=>expect(count).toBe(0));
   await page.evaluate(async () => {const {getMockState, saveMockState} = await import('/src/mock/planned.js'); const {previewContext} = await import('/src/mock/preview.js'); const context=previewContext(); const state=getMockState(context); state.teams[1].deliverables.find(item=>item.taskId==null).authorId=context.user.id; saveMockState(context,state);});
   await openDeliverables(page, 'leader');
   const row = page
     .getByRole('row')
     .filter({
-      has: page.getByRole('button', { name: '프로젝트 기획서', exact: true }),
+      has: page.getByRole('button', { name: 'Fairplay 프로젝트 소개', exact: true }),
     });
   await row.getByRole('button', { name: '수정', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '팀 자료 수정' });
@@ -118,12 +118,12 @@ test('공용 자료의 비작성 리더는 제목만 수정하고 본문을 유�
   await expect(
     dialog.getByRole('region', { name: '자료 내용 입력' }),
   ).toHaveCount(0);
-  await dialog.getByLabel('제목', { exact: true }).fill('프로젝트 기획서 정리');
+  await dialog.getByLabel('제목', { exact: true }).fill('Fairplay 프로젝트 소개 정리');
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
   await page
-    .getByRole('button', { name: '프로젝트 기획서 정리', exact: true })
+    .getByRole('button', { name: 'Fairplay 프로젝트 소개 정리', exact: true })
     .click();
   await expect(page.getByRole('dialog', { name: '팀 자료 상세' })).toContainText(
-    '목표: 일상 속 불편을 조사하고 실행 가능한 서비스 개선안을 제안합니다.',
+    '목표: 팀 프로젝트의 역할과 수행 과정을 기록하고 기여도를 근거와 함께 확인합니다.',
   );
 });
