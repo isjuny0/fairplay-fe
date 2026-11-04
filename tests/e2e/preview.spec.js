@@ -31,7 +31,7 @@ for (const [path, heading, role] of [
   ['/spaces/1/teams/1', '삼위일체', 'leader'],
   ['/spaces/1/teams/1/tasks', '작업', 'leader'],
   ['/spaces/1/teams/1/tasks/101', '사용자 인터뷰 계획', 'leader'],
-  ['/spaces/1/teams/1/deliverables', '산출물 관리', 'leader'],
+  ['/spaces/1/teams/1/deliverables', '팀 자료', 'leader'],
   ['/spaces/1/teams/1/meeting-minutes', '팀 회의록', 'leader'],
   ['/spaces/1/teams/1/materials-search', '팀 자료 검색', 'leader'],
   ['/spaces/1/teams/1/members', '팀원 관리', 'leader'],
@@ -204,16 +204,16 @@ test('AI 검토는 담당자만 조회하고 비담당 팀원에게 표시하지
   page,
 }) => {
   await preview(page, { role: 'leader', path: '/spaces/1/teams/1/tasks/102' });
-  await page.getByRole('tab', { name: 'AI피드백', exact: true }).click();
-  await page.getByRole('button', { name: 'AI 검토 요청', exact: true }).click();
+  await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
+  await page.getByRole('button', { name: '피드백 받기', exact: true }).click();
   await expect(page.getByText('검토 대기', { exact: true })).toBeVisible();
   await selectPreviewOption(page, '미리보기 역할', 'teammate');
   await page.goto('/preview/spaces/1/teams/1/tasks/102');
   await expect(
-    page.getByRole('heading', { name: 'AI 검토', exact: true }),
+    page.getByRole('heading', { name: 'AI 피드백', exact: true }),
   ).toHaveCount(0);
   await expect(
-    page.getByRole('button', { name: 'AI 검토 요청', exact: true }),
+    page.getByRole('button', { name: '피드백 받기', exact: true }),
   ).toHaveCount(0);
 });
 test('팀원 직접 관리자 주소 접근은 차단하고 관리자는 수행 자료를 읽고 다운로드한다', async ({
@@ -239,11 +239,10 @@ test('미리보기 업로드는 새 파일 형식을 지원하고 URL 새 등록
   page,
 }) => {
   const calls = await preview(page, { path: '/spaces/1/teams/1/deliverables' });
-  await page.getByRole('button', { name: '산출물 등록', exact: true }).click();
-  await page.getByRole('dialog', { name: '산출물 등록', exact: true }).getByRole('button', { name: '파일 업로드', exact: true }).click();
+  await page.getByRole('button', { name: '팀 자료 등록', exact: true }).click();
+  await page.getByRole('dialog', { name: /^(팀 자료 등록|문서 작성|파일 업로드)$/, exact: true }).getByRole('button', { name: '파일 업로드', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('제목', { exact: true }).fill('발표 자료');
-  await dialog.getByLabel('분류', { exact: true }).selectOption('OTHER');
   await expect(dialog.getByLabel('자료 유형')).toHaveCount(0);
   await dialog.getByLabel('파일', { exact: true }).setInputFiles({
     name: '발표.pptx',
@@ -251,7 +250,7 @@ test('미리보기 업로드는 새 파일 형식을 지원하고 URL 새 등록
       'application/vnd.openxmlformats-officedocument.presentationml.presentation',
     buffer: Buffer.from('preview only'),
   });
-  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await dialog.getByRole('button', { name: /^(저장|팀 자료 등록)$/, exact: true }).click();
   await expect(page.getByText('발표.pptx', { exact: true })).toBeVisible();
   expect(calls).toEqual([]);
 });
@@ -327,27 +326,25 @@ test('실제 로그인 화면에서 인증 없이 미리보기를 시작할 수 
 test('미리보기 AI 검토는 피드백과 근거를 제공하고 작업 완료 후 추가 요청을 제공하지 않는다', async ({
   page,
 }) => {
+  await page.clock.install();
   const calls = await preview(page, {
     role: 'leader',
     path: '/spaces/1/teams/1/tasks/102',
   });
-  await page.getByRole('tab', { name: 'AI피드백', exact: true }).click();
-  await page.getByRole('button', { name: 'AI 검토 요청', exact: true }).click();
+  await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
+  await page.getByRole('button', { name: '피드백 받기', exact: true }).click();
   await expect(page.getByText('검토 대기', { exact: true })).toBeVisible();
-  await page.waitForTimeout(2100);
-  await page
-    .getByRole('button', { name: '검토 상태 확인', exact: true })
-    .click();
+  await page.clock.fastForward(5100);
   await expect(
-    page.getByText('요구사항과 제출 자료의 연결을 확인한 예시 피드백입니다.'),
+    page.getByText('주요 발견과 다음 단계 제안이 연결되어 있다고 가정한 예시입니다.', { exact: false }),
   ).toBeVisible();
   await expect(
-    page.getByRole('heading', { name: '검토 한계', exact: true }),
+    page.getByRole('heading', { name: '확인하지 못한 범위', exact: true }),
   ).toBeVisible();
   await page.goto('/preview/spaces/1/teams/1/tasks/101');
-  await page.getByRole('tab', { name: 'AI피드백', exact: true }).click();
+  await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
   await expect(
-    page.getByRole('button', { name: 'AI 검토 요청', exact: true }),
+    page.getByRole('button', { name: '피드백 받기', exact: true }),
   ).toHaveCount(0);
   expect(calls).toEqual([]);
 });
@@ -423,7 +420,8 @@ test('일반 팀원은 이름·본인 표시·역할이 정렬된 목록을 보�
   const roster = page.getByRole('list', { name: '현재 팀원', exact: true });
   await expect(roster.getByRole('listitem')).toHaveCount(3);
   await expect(roster.locator('.is-self')).toContainText('이지원');
-  await expect(roster.locator('.member-self')).toHaveText('나');
+  await expect(roster.locator('.member-self')).toHaveCount(0);
+  await expect(roster.locator('.is-self .self-identity')).toHaveText('이지원');
   await expect(roster.locator('.member-roster-role')).toHaveText(['리더', '팀원', '팀원']);
   await expect(page.getByRole('button', { name: '가입 승인', exact: true })).toHaveCount(0);
   for (const width of [1006, 390, 320]) {

@@ -60,7 +60,7 @@ async function backend(page, role = "MANAGER") {
     if (url.pathname === "/api/spaces/1/teams") return reply([]);
     if (url.pathname === "/api/spaces/1/manager-dashboard")
       return reply({ teams: [] });
-    if (url.pathname === "/api/spaces/1/announcements") return reply([]);
+    if (url.pathname === "/api/spaces/1/announcements") return reply({ items: [], totalCount: 0, page: 0, size: 3 });
     if (!url.pathname.startsWith(base))
       return reply({ code: "TEST_NOT_FOUND", message: url.pathname }, 404);
     if (control.denied)

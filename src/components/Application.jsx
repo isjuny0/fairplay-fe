@@ -178,7 +178,7 @@ export default function Application({ previewRuntime }) {
             </p>
             <ol className="login-benefits">
               <li>작업을 나누고 수행 내용을 기록</li>
-              <li>산출물을 등록하고 직접 완료</li>
+              <li>결과물을 등록하고 직접 완료</li>
               <li>협업을 돌아보고 기여도 확인</li>
             </ol>
           </div>

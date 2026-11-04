@@ -63,7 +63,7 @@ test('페이지 변경은 이전 자료를 숨기고 같은 페이지 새로고�
   state.pausedPage = 1;
   await page.getByRole('button', { name: '다음', exact: true }).click();
   await expect(
-    page.getByRole('status', { name: '산출물 목록 불러오는 중' }),
+    page.getByRole('status', { name: '팀 자료 목록 불러오는 중' }),
   ).toBeVisible();
   await expect(
     page.getByRole('button', { name: previousTitle, exact: true }),
@@ -170,7 +170,7 @@ test('작업 100건과 긴 파일명 20건은 웹 화면에서 바깥 가로 넘
     await page.goto('/spaces/1/teams/1/deliverables');
     await expect(
       page
-        .getByRole('region', { name: '산출물 목록', exact: true })
+        .getByRole('region', { name: '팀 자료 목록', exact: true })
         .locator('tbody tr'),
     ).toHaveCount(20);
     expect(
@@ -195,7 +195,7 @@ test('작업 100건과 긴 파일명 20건은 웹 화면에서 바깥 가로 넘
     await page
       .getByRole('button', { name: deliverablePage(0)[0].title, exact: true })
       .click();
-    const dialog = page.getByRole('dialog', { name: '산출물 상세' });
+    const dialog = page.getByRole('dialog', { name: '팀 자료 상세' });
     await expect(dialog).toContainText(
       deliverablePage(0)[0].file.originalFilename,
     );

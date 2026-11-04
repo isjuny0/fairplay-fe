@@ -183,7 +183,7 @@ export default function TeamSettings({
                     작업 <strong>{request.taskCount}개</strong>
                   </span>
                   <span>
-                    산출물 <strong>{request.deliverableCount}개</strong>
+                    자료 <strong>{request.deliverableCount}개</strong>
                   </span>
                   <span>연결 파일 포함</span>
                 </div>
@@ -194,9 +194,8 @@ export default function TeamSettings({
                   {request.members.map((member) => (
                     <li className="row-item" key={member.userId}>
                       <span>
-                        <strong>
+                        <strong className={member.userId === user.id ? 'self-identity' : undefined}>
                           {member.name}
-                          {member.userId === user.id && ' · 나'}
                         </strong>
                         {member.consentedAt && (
                           <small>{formatDate(member.consentedAt)}</small>
@@ -212,7 +211,7 @@ export default function TeamSettings({
                 </ul>
                 {request.workFrozen && (
                   <p className="notice">
-                    삭제 동의 중에는 작업·수행 설명·산출물·완료 검토를 변경할 수
+                    삭제 동의 중에는 작업·수행 설명·자료·완료 검토를 변경할 수
                     없습니다. 조회와 파일 다운로드는 가능합니다.
                   </p>
                 )}
@@ -306,12 +305,12 @@ export default function TeamSettings({
         </div>
         <div className="settings-section-content">
           <ol className="handoff-checklist">
-            <li>담당 작업·팀 공용 산출물을 인계합니다.</li>
+            <li>담당 작업·팀 공용 자료를 인계합니다.</li>
             <li>리더라면 다음 리더를 직접 선택합니다.</li>
             <li>탈퇴 조건을 확인한 뒤 팀에서 탈퇴합니다.</li>
           </ol>
           <p className="field-help">
-            담당 작업(완료 작업 포함)이나 본인이 등록한 팀 공용 산출물이 남아 있으면 탈퇴할 수 없습니다. 담당자를 변경하고 공용 자료를 정리해 주세요.
+            담당 작업(완료 작업 포함)이나 본인이 등록한 팀 공용 자료가 남아 있으면 탈퇴할 수 없습니다. 담당자를 변경하고 공용 자료를 정리해 주세요.
           </p>
           <div className="heading-actions">
             <button
@@ -322,9 +321,9 @@ export default function TeamSettings({
             </button>
             <button
               className="secondary-button"
-              onClick={() => onNavigate('산출물')}
+              onClick={() => onNavigate('팀 자료')}
             >
-              공용 산출물 확인
+              공용 자료 확인
             </button>
           </div>
           {team.approvedMemberCount < 2 && (
@@ -374,7 +373,7 @@ export default function TeamSettings({
               <>
                 <p>
                   <strong>{team.name}</strong>과 작업{' '}
-                  {confirmedRequest.taskCount}개, 산출물{' '}
+                  {confirmedRequest.taskCount}개, 자료{' '}
                   {confirmedRequest.deliverableCount}개 및 연결 파일을
                   완전히 삭제합니다. 복구할 수 없습니다.
                 </p>
@@ -398,7 +397,7 @@ export default function TeamSettings({
             {confirmationType === 'leave' && (
               <>
                 <p>
-                  탈퇴하면 이 팀의 작업·산출물 화면에 접근할 수 없습니다.
+                  탈퇴하면 이 팀의 작업·자료 화면에 접근할 수 없습니다.
                   스페이스 소속은 유지됩니다.
                 </p>
                 {isLeader && (
@@ -426,7 +425,7 @@ export default function TeamSettings({
             <ErrorNotice error={error} />
             {error?.code === 'TEAM_LEAVE_HAS_DEPENDENCIES' && (
               <p className="field-help">
-                창을 닫고 담당 작업·공용 산출물을 확인해 주세요. 완료
+                창을 닫고 담당 작업·공용 자료를 확인해 주세요. 완료
                 작업에 담당자로 남아 있는 경우에도 탈퇴가 제한됩니다.
               </p>
             )}

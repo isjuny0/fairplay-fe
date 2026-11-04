@@ -115,6 +115,10 @@
   padding-top: 0;
   border-top: 0;
 }
+.linked-deliverables .deliverable-card .linked-deliverable-actions {
+  justify-content: flex-end;
+  gap: 8px;
+}
 .deliverable-card .heading-actions .secondary-button {
   min-height: var(--control-height);
   font-size: var(--text-support);

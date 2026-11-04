@@ -7,7 +7,7 @@ const screens = [
   ['/spaces/1/teams/1', '삼위일체', '현황 새로고침'],
   ['/spaces/1/teams/1/tasks', '작업', '새로고침'],
   ['/spaces/1/teams/1/tasks/103', '서비스 흐름 설계', '새로고침'],
-  ['/spaces/1/teams/1/deliverables', '산출물 관리', '새로고침'],
+  ['/spaces/1/teams/1/deliverables', '팀 자료', '새로고침'],
   ['/spaces/1/teams/1/materials-search', '팀 자료 검색', '팀 자료 새로고침'],
   ['/spaces/1/teams/1/members', '팀원 관리', '새로고침'],
   ['/spaces/1/teams/1/settings', '팀 설정', '현황 새로고침'],
@@ -31,7 +31,7 @@ const screens = [
   ],
 ];
 
-async function assertIconButton(button) {
+async function assertIconButton(button, size = 40) {
   await expect(button).toBeVisible();
   await expect(button).toHaveText('');
   await expect(button).toHaveAttribute('type', 'button');
@@ -41,8 +41,8 @@ async function assertIconButton(button) {
   await expect(button.locator('svg')).toHaveCount(1);
   await expect(button.locator('svg')).toHaveAttribute('aria-hidden', 'true');
   const box = await button.boundingBox();
-  expect(box.width).toBe(40);
-  expect(box.height).toBe(40);
+  expect(box.width).toBe(size);
+  expect(box.height).toBe(size);
 }
 
 for (const width of [1440, 390]) {
@@ -68,7 +68,7 @@ for (const width of [1440, 390]) {
       ).toBeVisible();
       if (path.endsWith('/materials-search') && width < 900)
         await page
-          .getByRole('button', { name: '팀 자료', exact: true })
+          .locator('.rag-page').getByRole('button', { name: '팀 자료', exact: true })
           .click();
       const button = page.getByRole('button', { name: label, exact: true });
       await assertIconButton(button);
@@ -89,14 +89,15 @@ for (const width of [1440, 390]) {
   }
 }
 
-test('작업 상세의 산출물과 댓글 새로고침은 모두 아이콘만 표시한다', async ({
+test('작업 상세의 결과물과 댓글 새로고침은 모두 아이콘만 표시한다', async ({
   page,
 }) => {
   await page.goto('/preview/spaces/1/teams/1/tasks/103');
-  await page.getByRole('tab', { name: '산출물', exact: true }).click();
+  await page.getByRole('tab', { name: '결과물', exact: true }).click();
   const buttons = page.getByRole('button', { name: '새로고침', exact: true });
   await expect(buttons).toHaveCount(2);
-  for (const button of await buttons.all()) await assertIconButton(button);
+  await assertIconButton(page.locator('#task-deliverables-section').getByRole('button', { name: '새로고침', exact: true }), 36);
+  await assertIconButton(page.locator('#task-comments-section').getByRole('button', { name: '새로고침', exact: true }));
 });
 
 test('평가 결과 새로고침은 전용 결과 탭에서 제공한다', async ({ page }) => {

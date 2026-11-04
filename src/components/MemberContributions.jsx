@@ -114,9 +114,9 @@ function MemberTaskRecord({ task, teamId }) {
         {task.contributionUpdatedAt && <small>수정 {formatDate(task.contributionUpdatedAt)}</small>}</div>
         <p className="preserve-lines">{task.contributionDescription || '아직 작성하지 않았습니다. 미작성만으로 수행 여부를 판단할 수 없습니다.'}</p>
       </section>
-      <section className="member-task-deliverables"><div className="section-heading"><h3>연결된 최신 산출물</h3><span>{task.deliverableSummary.length}개</span></div>
+      <section className="member-task-deliverables"><div className="section-heading"><h3>연결된 최신 결과물</h3><span>{task.deliverableSummary.length}개</span></div>
         {task.deliverableSummary.length ? task.deliverableSummary.map((item) => <LinkedDeliverable key={`${item.id}:${item.version}:${task.taskVersion}`} item={item} teamId={teamId} taskId={task.taskId} />)
-          : <p className="field-help">연결된 산출물이 없습니다.</p>}
+          : <p className="field-help">연결된 결과물이 없습니다.</p>}
       </section>
     </div>
   </section>;
@@ -154,7 +154,7 @@ function DeliverableContent({ teamId, taskId, deliverableId, summaryVersion, exp
   const guidedSource = guide?.guiding && guide.scenarioId === 'team-management' && guide.stepId === 'manager-material'
     && taskId === guide.managerTaskId && deliverableId === guide.managerDeliverableId;
   const resource = useResource(async () => {
-    // 목록 API의 페이지 한도를 지키면서 요약에 연결된 산출물의 현재 본문을 찾는다.
+    // 목록 API의 페이지 한도를 지키면서 요약에 연결된 결과물의 현재 본문을 찾는다.
     for (let page = 0; ; page++) {
       const items = await listDeliverables(teamId, { taskId, page, size: 100 });
       const item = items.find((item) => item.id === deliverableId);
@@ -163,7 +163,7 @@ function DeliverableContent({ teamId, taskId, deliverableId, summaryVersion, exp
         throw new ApiError(404, {
           code: 'DELIVERABLE_NOT_FOUND',
           message:
-            '산출물이 삭제되었거나 연결이 변경되었습니다. 수행 상세를 다시 불러와 주세요.',
+            '결과물이 삭제되었거나 연결이 변경되었습니다. 수행 상세를 다시 불러와 주세요.',
         });
     }
   }, [teamId, taskId, deliverableId]);
@@ -202,7 +202,7 @@ function DeliverableContent({ teamId, taskId, deliverableId, summaryVersion, exp
       {item && (
         <>
           {item.version !== summaryVersion && (
-            <p className="notice">요약 조회 이후 변경된 최신 산출물입니다.</p>
+            <p className="notice">요약 조회 이후 변경된 최신 결과물입니다.</p>
           )}
           <h4 className="sr-only">{item.title}</h4>
           {item.description && (
@@ -225,7 +225,7 @@ function DeliverableContent({ teamId, taskId, deliverableId, summaryVersion, exp
           )}
           {guidedSource && <div className="heading-actions preview-guide-inline-action">
             <button className="secondary-button" data-guide="confirm-manager-material" disabled={!sourceReady}
-              onClick={() => guide.confirmManagerStep('manager-material')}>산출물 확인 완료</button>
+              onClick={() => guide.confirmManagerStep('manager-material')}>결과물 확인 완료</button>
           </div>}
         </>
       )}

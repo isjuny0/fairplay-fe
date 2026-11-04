@@ -18,7 +18,7 @@ for (const width of [1440, 390]) {
     await page.goto('/preview/spaces/1/teams/1/deliverables');
     await expect(header.locator('strong')).toHaveText('2026 서비스 디자인 프로젝트');
     await expect(breadcrumb.locator('button')).toHaveText('삼위일체');
-    await expect(breadcrumb.locator('[aria-current="page"]')).toHaveText('산출물');
+    await expect(breadcrumb.locator('[aria-current="page"]')).toHaveText('팀 자료');
     await expect(breadcrumb).not.toContainText('2026 서비스 디자인 프로젝트');
     await page.getByRole('button', { name: 'Fairplay', exact: true }).click();
     await expect(header.locator('strong')).toHaveText('내 스페이스');
@@ -166,7 +166,7 @@ for (const width of [1440, 768, 390, 320]) {
 }
 
 for (const width of [1920, 1440, 1280, 1024, 768, 390, 320]) {
-  test(`작업 카드 ${width}px: 핵심 정보만 접고 상세를 펼칠 수 있다`, async ({ page }) => {
+  test(`작업 카드 ${width}px: 담당자·마감을 바로 보고 작업량·담당 비율을 펼친다`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('/preview/spaces/1/teams/1/tasks');
     await expect(page.locator('.board-task-card')).toHaveCount(6);
@@ -187,7 +187,12 @@ for (const width of [1920, 1440, 1280, 1024, 768, 390, 320]) {
     }
     const firstCard = page.locator('.board-task-card').first();
     const foldedHeight = await firstCard.evaluate((card) => card.getBoundingClientRect().height);
-    await expect(firstCard.locator('.task-number')).toBeVisible();
+    await expect(firstCard.locator('.task-number')).toHaveCount(0);
+    await expect(firstCard.locator('.board-card-assignees')).toBeVisible();
+    const deadline = firstCard.locator('.task-deadline time');
+    await expect(deadline).toHaveText(/\d+월 \d+일 마감$/);
+    await expect(deadline).toHaveAttribute('title', /마감 .*\d{2}:\d{2}/);
+    await expect(deadline).not.toHaveText(/\d{2}:\d{2}/);
     await expect(firstCard.locator('.task-workload-line')).toHaveCount(0);
     await expect(firstCard.locator('.task-card-meta')).toHaveCount(0);
     const overdueCard = page.locator('.board-task-card').filter({
@@ -204,12 +209,18 @@ for (const width of [1920, 1440, 1280, 1024, 768, 390, 320]) {
     });
     expect(overduePosition.top).toBeLessThanOrEqual(15);
     expect(overduePosition.right).toBeLessThanOrEqual(15);
-    await firstCard.getByRole('button', { name: /상세 보기$/ }).click();
+    await firstCard.getByRole('button', { name: /작업량·담당 비율 보기$/ }).click();
     await expect(firstCard.locator('.task-workload-line')).toBeVisible();
     await expect(firstCard.locator('.task-card-meta')).toBeVisible();
+    await expect(firstCard.locator('.board-card-details-toggle')).toHaveAttribute('aria-expanded', 'true');
     expect(await firstCard.evaluate((card) => card.getBoundingClientRect().height)).toBeGreaterThan(foldedHeight);
-    await firstCard.getByRole('button', { name: /상세 접기$/ }).click();
+    await firstCard.getByRole('button', { name: /작업량·담당 비율 접기$/ }).click();
     await expect(firstCard.locator('.task-workload-line')).toHaveCount(0);
+    await expect(firstCard.locator('.task-title-button > svg')).toHaveCount(0);
+    const taskTitle = await firstCard.locator('h3').innerText();
+    await firstCard.click({ position: { x: 4, y: 4 } });
+    await expect(page.getByRole('heading', { name: taskTitle, exact: true, level: 1 })).toBeVisible();
+    await page.getByRole('button', { name: '← 목록으로', exact: true }).click();
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   });
 }
@@ -217,10 +228,10 @@ for (const width of [1920, 1440, 1280, 1024, 768, 390, 320]) {
 test('상세 작업 카드는 담당자 수에 맞춰 높이를 사용한다', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/preview/spaces/1/teams/1/tasks');
-  const twoAssigneeCard = page.locator('.board-task-card').filter({ hasText: '#102' });
-  const oneAssigneeCard = page.locator('.board-task-card').filter({ hasText: '#103' });
-  await twoAssigneeCard.getByRole('button', { name: /상세 보기$/ }).click();
-  await oneAssigneeCard.getByRole('button', { name: /상세 보기$/ }).click();
+  const twoAssigneeCard = page.locator('.board-task-card').filter({ has: page.locator('[data-guide-task-id="102"]') });
+  const oneAssigneeCard = page.locator('.board-task-card').filter({ has: page.locator('[data-guide-task-id="103"]') });
+  await twoAssigneeCard.getByRole('button', { name: /작업량·담당 비율 보기$/ }).click();
+  await oneAssigneeCard.getByRole('button', { name: /작업량·담당 비율 보기$/ }).click();
   const [twoAssigneeHeight, oneAssigneeHeight] = await Promise.all([
     twoAssigneeCard.evaluate((card) => card.getBoundingClientRect().height),
     oneAssigneeCard.evaluate((card) => card.getBoundingClientRect().height),

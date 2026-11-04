@@ -14,7 +14,7 @@ import UnavailablePage from './UnavailablePage.jsx';
 import { teamMenuPath } from '../lib/routes.js';
 import { ErrorNotice, ResourceState } from './ui.jsx';
 
-const Deliverables = deferScreen(screenLoaders.Deliverables, '산출물');
+const Deliverables = deferScreen(screenLoaders.Deliverables, '팀 자료');
 const MeetingMinutes = deferScreen(screenLoaders.MeetingMinutes, '팀 회의록');
 const TaskBoard = deferScreen(screenLoaders.TaskBoard, '작업');
 const TeamMembers = deferScreen(screenLoaders.TeamMembers, '팀원 관리');
@@ -132,7 +132,7 @@ export default function TeamWorkspace({
       {!approved && space.myRole === 'MANAGER' && <ManagerTeamLinks spaceId={space.id} teamId={team.id} activeMenu={menu} />}
       {approved && <nav className="mobile-team-navigation" aria-label="모바일 팀 메뉴">
         {menus
-          .filter((label) => ['팀 홈', '작업', '산출물'].includes(label))
+          .filter((label) => ['팀 홈', '작업', '팀 자료'].includes(label))
           .map((label) => (
             <button
               key={label}
@@ -146,14 +146,14 @@ export default function TeamWorkspace({
         <details>
           <summary
             className={
-              !['팀 홈', '작업', '산출물'].includes(menu) ? 'active' : ''
+              !['팀 홈', '작업', '팀 자료'].includes(menu) ? 'active' : ''
             }
           >
             더보기 ⌄
           </summary>
           <div className="mobile-team-more">
             {menus
-              .filter((label) => !['팀 홈', '작업', '산출물'].includes(label))
+              .filter((label) => !['팀 홈', '작업', '팀 자료'].includes(label))
               .map((label) => (
                 <button
                   key={label}
@@ -180,7 +180,7 @@ export default function TeamWorkspace({
               <span>
                 {workTeam.workStateUnknown
                   ? '삭제 동의 현황을 확인할 때까지 작업 변경이 제한됩니다.'
-                  : '팀 삭제 동의가 진행 중입니다. 작업과 산출물은 조회만 할 수 있습니다.'}
+                  : '팀 삭제 동의가 진행 중입니다. 작업과 자료는 조회만 할 수 있습니다.'}
               </span>
               <button
                 className="secondary-button"
@@ -236,7 +236,7 @@ export default function TeamWorkspace({
               readOnly={managerReadOnly}
             />
           )}
-          {currentMenu === '산출물' && (
+          {currentMenu === '팀 자료' && (
             <TeamDeliverables team={workTeam} user={user} members={members} />
           )}
           {currentMenu === '팀 회의록' && approved && (

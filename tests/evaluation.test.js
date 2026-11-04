@@ -241,10 +241,32 @@ test('AI 검토는 현재 담당자만 조회·실행할 수 있다', async () =
   });
   assert.equal(review.status, 'PENDING');
   assert.equal(review.isCurrent, true);
+  assert.deepEqual(review.reviewedSources, []);
+  assert.deepEqual(review.findings, []);
+  assert.equal(review.completedAt, null);
   assert.equal(
     (await previewRequest('/api/tasks/102/ai-review', { method: 'POST' })).id,
     review.id,
   );
+  const pendingState = getMockState(context('leader'));
+  const reviewedSource = pendingState.teams[1].deliverables.find((item) => item.taskId === 102);
+  pendingState.reviews[102].completesAt = Date.now() - 1;
+  saveMockState(context('leader'), pendingState);
+  const completed = await previewRequest('/api/tasks/102/ai-review');
+  assert.equal(completed.status, 'COMPLETED');
+  assert.ok(completed.completedAt);
+  assert.deepEqual(completed.findings.map((item) => item.type), ['SUGGESTION']);
+  assert.equal(completed.reviewedSources[0].title, reviewedSource.title);
+  assert.equal(completed.reviewedSources[0].version, reviewedSource.version);
+  assert.equal('improvements' in completed, false);
+  assert.equal('completesAt' in completed, false);
+  const changedState = getMockState(context('leader'));
+  changedState.teams[1].deliverables.find((item) => item.id === reviewedSource.id).version++;
+  changedState.reviews[102].isCurrent = false;
+  saveMockState(context('leader'), changedState);
+  const previousFeedback = await previewRequest('/api/tasks/102/ai-review');
+  assert.equal(previousFeedback.reviewedSources[0].version, reviewedSource.version);
+  assert.equal(previousFeedback.completedAt, completed.completedAt);
   context('teammate');
   await assert.rejects(previewRequest('/api/tasks/102/ai-review'), {
     status: 403,
@@ -433,7 +455,7 @@ test('미리보기 공동 담당 설명 누락은 직접 완료를 막고 전원
   assert.equal((await previewRequest('/api/tasks/102')).task.status, 'DONE');
 });
 
-test('미리보기 연결 산출물이 없으면 직접 완료를 거절하고 상태를 유지한다', async () => {
+test('미리보기 연결된 결과물이 없으면 직접 완료를 거절하고 상태를 유지한다', async () => {
   const leader = context('leader');
   const state = getMockState(leader);
   state.teams[1].tasks.find((task) => task.id === 102).contributions[
@@ -663,7 +685,7 @@ test('가이드 전용 작업은 단독 담당이며 자유 탐색 데이터와 
   } finally { delete globalThis.sessionStorage; }
 });
 
-test('사용자 가이드의 AI피드백은 현재 결과가 준비되고 사용자가 확인해야 진행한다', async () => {
+test('사용자 가이드의 AI 피드백은 현재 결과가 준비되고 사용자가 확인해야 진행한다', async () => {
   const session = new Map();
   globalThis.sessionStorage = { getItem: (key) => session.get(key) ?? null, setItem: (key, value) => session.set(key, value), removeItem: (key) => session.delete(key) };
   try {

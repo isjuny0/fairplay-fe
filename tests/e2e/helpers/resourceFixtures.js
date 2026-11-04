@@ -50,7 +50,6 @@ export function deliverablePage(page = 0) {
         100,
       ),
     description: '자료의 목적과 확인할 내용입니다.\n'.repeat(80).slice(0, 2000),
-    category: 'OTHER',
     type: 'FILE',
     version: 1,
     createdAt: '2030-11-01T09:00:00',

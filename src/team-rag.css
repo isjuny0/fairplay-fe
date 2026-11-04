@@ -33,6 +33,7 @@
   flex-shrink: 0;
 }
 .main-content .rag-page {
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -71,8 +72,8 @@
 }
 .rag-workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
-  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) clamp(300px, 32cqi, 380px);
+  gap: clamp(16px, 2cqi, 24px);
   align-items: stretch;
   flex: 1;
   min-height: 0;
@@ -97,9 +98,9 @@
 .rag-welcome {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-end;
   min-height: 100%;
-  padding: 24px 0;
+  padding: 24px 0 12px;
 }
 .rag-welcome h2 {
   margin: 0 0 8px;
@@ -179,12 +180,30 @@
 }
 .rag-loading {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 32px 0;
+  flex-direction: column;
+  gap: 22px;
+  min-height: 180px;
+  padding: 24px 0;
   font-size: 14px;
   color: #526258;
 }
+.rag-loading-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  line-height: 1.7;
+}
+.rag-loading-lines {
+  display: grid;
+  gap: 12px;
+}
+.rag-loading-lines span {
+  height: 8px;
+  border-radius: 2px;
+  background: #edf1ee;
+}
+.rag-loading-lines span:nth-child(2) { width: 92%; }
+.rag-loading-lines span:last-child { width: 65%; }
 .rag-loading-dot {
   width: 7px;
   height: 7px;
@@ -210,8 +229,8 @@
   margin-bottom: 26px;
 }
 .rag-answer-body .markdown-body {
-  font-size: 14px;
-  line-height: 1.9;
+  font-size: 15px;
+  line-height: 1.85;
 }
 .rag-limitations {
   margin: 22px 0;
@@ -250,15 +269,19 @@
   gap: 12px;
   border: 0;
   border-bottom: 1px solid var(--border, #e5e7eb);
+  border-left: 2px solid transparent;
   border-radius: 0;
   background: #fff;
   text-align: left;
   font: inherit;
   cursor: pointer;
 }
-.rag-reference:hover,
-.rag-reference.is-selected {
+.rag-reference:hover {
   background: #f6faf7;
+}
+.rag-reference.is-selected {
+  border-left-color: var(--brand);
+  background: #eaf4ed;
 }
 .rag-reference-number {
   font-size: 12px;
@@ -398,13 +421,14 @@
 .rag-original-line code {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.8;
   font-family: inherit;
   color: #3c5143;
 }
 .rag-original-line[data-source-highlight='true'] {
   background: #eaf4ed;
+  box-shadow: inset 2px 0 var(--brand);
 }
 .rag-source-panel > footer {
   flex-shrink: 0;
@@ -473,7 +497,12 @@
 }
 .rag-reset-question {
   display: block;
-  margin-top: 4px;
+  margin: 0;
+  line-height: 20px;
+}
+.rag-question-tools {
+  height: 32px;
+  padding-top: 4px;
 }
 .rag-send-actions {
   display: flex;
@@ -576,6 +605,24 @@
   color: var(--text-muted);
   font-size: 12px;
 }
+.rag-summary-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.rag-summary-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--rag-status-color);
+}
+.rag-summary-status.is-ready { --rag-status-color: #32694b; }
+.rag-summary-status.is-preparing { --rag-status-color: #42698a; }
+.rag-summary-status.is-failed { --rag-status-color: #a4574f; }
+.rag-summary-status.is-unsupported { --rag-status-color: #68756d; }
 .rag-material-scroll {
   flex: 1;
   min-height: 0;
@@ -670,7 +717,7 @@
   line-height: 1.7;
   flex-shrink: 0;
 }
-@media (max-width: 1199px) {
+@container (width < 720px) {
   .rag-workspace {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -695,6 +742,44 @@
   .rag-mobile-status-error {
     display: block;
   }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .rag-welcome h2 {
+    animation: rag-welcome-enter 360ms cubic-bezier(.2, .7, .3, 1) both;
+  }
+  .rag-welcome .rag-examples {
+    animation: rag-welcome-enter 400ms cubic-bezier(.2, .7, .3, 1) 70ms both;
+  }
+  .rag-submitted-question {
+    animation: rag-content-enter 160ms ease-out;
+  }
+  .rag-answer,
+  .rag-loading {
+    animation: rag-content-enter 180ms ease-out;
+  }
+  .rag-source-panel,
+  .rag-list-view:not([hidden]) {
+    animation: rag-panel-enter 180ms ease-out;
+  }
+  .rag-workspace.is-materials-open .rag-side-panel {
+    animation: rag-panel-enter 180ms ease-out;
+  }
+  .rag-reference,
+  .rag-material-item {
+    transition: background-color 140ms ease, border-color 140ms ease;
+  }
+}
+@keyframes rag-welcome-enter {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes rag-content-enter {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes rag-panel-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 @media (max-width: 720px) {
   .workspace:has(.rag-page) > .workspace-sidebar {

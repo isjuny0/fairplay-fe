@@ -143,7 +143,7 @@ export default function RagSourcePanel({
         {guidedSource && <button className="primary-button" data-guide="confirm-material-source"
           disabled={!sourceReady} onClick={() => guide.confirmMaterialsStep('materials-source')}>원문 확인 완료</button>}
         <button className="secondary-button" onClick={onOpenMaterials}>
-          산출물에서 찾기
+          팀 자료에서 찾기
           <ArrowUpRight size={15} />
         </button>
       </footer>

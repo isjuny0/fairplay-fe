@@ -1,7 +1,7 @@
 export const teamMenuPaths = {
   '팀 홈': '',
   '작업': 'tasks',
-  산출물: 'deliverables',
+  '팀 자료': 'deliverables',
   '팀 회의록': 'meeting-minutes',
   '팀 자료 검색': 'materials-search',
   '동료 평가': 'peer-evaluations',

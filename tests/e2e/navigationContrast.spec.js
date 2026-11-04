@@ -34,7 +34,7 @@ test('사이드바는 세 그룹의 모든 메뉴를 한 번에 표시하고 현
   for (const label of [
     '팀 홈',
     '작업',
-    '산출물',
+    '팀 자료',
     '회의록',
     '팀 자료 검색',
     '동료 평가',
@@ -195,6 +195,7 @@ test('팀 홈의 마감 지연은 빨간색 아이콘으로 표시한다', async
 test('타임라인·목록은 밝은 상태 배경과 읽기 쉬운 글씨색을 공유한다', async ({
   page,
 }) => {
+  await page.clock.setFixedTime(new Date('2026-10-15T09:00:00Z'));
   const palette = [
     ['todo', 'rgb(191, 233, 250)', 'rgb(0, 92, 186)'],
     ['in_progress', 'rgb(231, 244, 237)', 'rgb(8, 124, 85)'],
@@ -239,10 +240,9 @@ test('타임라인·목록은 밝은 상태 배경과 읽기 쉬운 글씨색을
     await expect(badge).toHaveCSS('background-color', background);
     await expect(badge).toHaveCSS('color', text);
   }
-  const overdue = page.locator('.task-table .is-overdue').first();
+  const overdue = page.locator('.task-table time.task-date-is-overdue');
+  await expect(overdue).toHaveCount(1);
   await expect(overdue).toHaveCSS('color', 'rgb(255, 85, 92)');
-  await expect(overdue).toHaveCSS('background-color', 'rgb(255, 240, 241)');
-  await expect(page.locator('.task-table td:has(> .is-overdue) > time').first()).toHaveCSS('color', 'rgb(255, 85, 92)');
 
 });
 
@@ -364,7 +364,7 @@ for (const width of [768, 390, 320]) {
     } else {
       await page
         .getByRole('navigation', { name: '팀 메뉴', exact: true })
-        .getByRole('button', { name: '산출물', exact: true })
+        .getByRole('button', { name: '팀 자료', exact: true })
         .click();
       await expect(page).toHaveURL(/\/deliverables$/);
     }

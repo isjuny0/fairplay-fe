@@ -98,10 +98,7 @@ export default function TeamMembers({
                       {member.name.slice(0, 1)}
                     </span>
                     <span>
-                      <strong>{member.name}</strong>
-                      {member.userId === user.id && (
-                        <span className="member-self">나</span>
-                      )}
+                      <strong className={member.userId === user.id ? 'self-identity' : undefined}>{member.name}</strong>
                     </span>
                   </span>
                   <span className={`member-roster-role${member.role === 'LEADER' ? ' is-leader' : ''}`}>{memberRole(member)}</span>

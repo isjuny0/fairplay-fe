@@ -728,12 +728,7 @@
   color: var(--text-muted);
   font-size: var(--text-caption);
 }
-.member-self {
-  display: inline-block;
-  margin-left: 8px;
-  color: var(--text-muted);
-  font-size: var(--text-caption);
-}
+
 .team-member-directory .application-directory .row-item > span {
   min-width: 0;
   overflow-wrap: anywhere;
@@ -849,7 +844,6 @@
 .team-member-directory .member-roster .member-identity > span:last-child { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; }
 .team-member-directory .member-roster .member-identity strong { font-size: 14px; font-weight: 500; line-height: 1.6; }
 .team-member-directory .member-roster .member-avatar { display: inline-grid; flex: 0 0 32px; }
-.team-member-directory .member-roster .member-self { margin: 0; padding: 1px 5px; background: #edf1ee; color: var(--text-muted); border-radius: 4px; font-size: 11px; line-height: 1.6; }
 .team-member-directory .member-roster-role { flex: 0 0 96px; text-align: center; font-size: 13px; line-height: 1.6; color: var(--text-muted); }
 .team-member-directory .member-roster-role.is-leader { flex-basis: 64px; margin-inline: 16px; padding: 3px 8px; background: var(--brand-light); color: var(--brand-dark); border-radius: 4px; font-size: 12px; font-weight: 500; }
 .team-member-directory .member-roster-note { margin: 12px 0 0; color: var(--text-muted); font-size: 12px; line-height: 1.7; }

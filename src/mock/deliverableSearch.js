@@ -4,7 +4,6 @@ export function searchPreviewDeliverables(deliverables, params) {
   const query = (params.get("q") || "").trim().toLocaleLowerCase();
   const taskId = Number(params.get("taskId"));
   const type = params.get("type");
-  const category = params.get("category");
   const authorId = params.get("authorId");
   const unlinkedOnly = params.get("unlinkedOnly") === "true";
   const sort = params.get("sort") || "CREATED_DESC";
@@ -16,7 +15,6 @@ export function searchPreviewDeliverables(deliverables, params) {
         (!taskId || item.taskId === taskId) &&
         (!unlinkedOnly || item.taskId == null) &&
         (!type || item.type === type) &&
-        (!category || item.category === category) &&
         (!authorId || item.authorId === authorId) &&
         (!query ||
           item.title.toLocaleLowerCase().includes(query) ||

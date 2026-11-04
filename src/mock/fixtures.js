@@ -119,7 +119,6 @@ export function exampleDeliverables(team, tasks, members) {
       taskId: null,
       title: '프로젝트 기획서',
       description: '프로젝트 공용 자료',
-      category: 'PLANNING',
       type: 'TEXT',
       text:
         '목표: 일상 속 불편을 조사하고 실행 가능한 서비스 개선안을 제안합니다.\n범위: 사용자 인터뷰, 설문 분석, 서비스 흐름, 사용성 검증, 발표.',
@@ -130,7 +129,6 @@ export function exampleDeliverables(team, tasks, members) {
       teamId: team.id,
       taskId: tasks[0]?.id,
       title: '인터뷰 계획과 질문 목록',
-      category: 'PLANNING',
       type: 'TEXT',
       text:
         '목적과 대상자를 정의하고 인터뷰 질문 8개를 작성했습니다.\n관찰과 해석을 구분해 기록합니다.',
@@ -141,7 +139,6 @@ export function exampleDeliverables(team, tasks, members) {
       teamId: team.id,
       taskId: tasks[1]?.id,
       title: '설문 결과 분석 보고서',
-      category: 'OTHER',
       type: 'TEXT',
       text:
         '응답을 문항별로 집계하고 주요 발견 세 가지를 정리했습니다.\n표본 범위와 분석 한계를 함께 안내합니다.',
@@ -152,7 +149,6 @@ export function exampleDeliverables(team, tasks, members) {
       teamId: team.id,
       taskId: tasks[0]?.id,
       title: '인터뷰 결과 기록 파일',
-      category: 'OTHER',
       type: 'FILE',
       version: 1,
       file: {

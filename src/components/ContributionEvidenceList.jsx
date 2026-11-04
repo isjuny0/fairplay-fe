@@ -32,13 +32,13 @@ export default function ContributionEvidenceList({ evidence, showCalculation = t
       <button type="button" className="evidence-task-toggle" data-guide-report-task={task.taskId} aria-expanded={taskId === task.taskId}
         aria-controls={`report-${evidence.reportId}-evidence-${task.taskId}`}
         onClick={() => setTaskId(taskId === task.taskId ? null : task.taskId)}>
-        <span className="evidence-task-name"><strong>{task.current.title || `작업 #${task.taskId}`}</strong></span>
+        <span className="evidence-task-name"><strong>{task.current.title || '제목을 확인할 수 없는 작업'}</strong></span>
         <span className="evidence-task-allocation">담당 {task.allocationAtCutoff}%</span>
         <span className="evidence-task-completed">완료 {formatDate(task.completedAt).split(' ').slice(0, 3).join(' ')}</span>
         <ChevronDown size={16} aria-hidden="true" />
       </button>
       {taskId === task.taskId && <div className="evidence-task-body" data-guide-report-task-body={task.taskId} id={`report-${evidence.reportId}-evidence-${task.taskId}`}>
-        <div className="evidence-task-summary"><span>작업 #{task.taskId}</span>
+        <div className="evidence-task-summary">
           <span>작업량 · {formatExpectedWorkload(task.weightAtCutoff)} <TaskAllocationHelp task={task} /></span>
           <span>완료 {formatDate(task.completedAt)}</span></div>
         {task.current.availability === 'MISSING' ? <p className="notice">현재 작업을 조회할 수 없습니다. 리포트에 저장된 완료일·작업량·담당 비율은 유지됩니다.</p>

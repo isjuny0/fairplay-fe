@@ -32,18 +32,17 @@ export const guideExamples = {
   deliverable: {
     title: '사용자 조사 결과 요약',
     description: '조사에서 확인한 핵심 발견과 다음 단계 제안을 정리한 예시 문서입니다.',
-    category: 'PLANNING',
     type: 'TEXT',
-    text: '## 핵심 발견\n\n- 팀원은 작업의 담당자와 진행 상황을 한눈에 확인하고 싶어 합니다.\n- 수행한 내용과 결과물이 작업에 함께 연결되면 진행 상황을 이해하기 쉽습니다.\n\n## 다음 단계\n\n작업별 수행 설명과 산출물을 남기고, 완료 후 팀 진행률에 반영되는 흐름을 확인합니다.',
+    text: '## 핵심 발견\n\n- 팀원은 작업의 담당자와 진행 상황을 한눈에 확인하고 싶어 합니다.\n- 수행한 내용과 결과물이 작업에 함께 연결되면 진행 상황을 이해하기 쉽습니다.\n\n## 다음 단계\n\n작업별 수행 설명과 결과물을 남기고, 완료 후 팀 진행률에 반영되는 흐름을 확인합니다.',
   },
 };
 export const guideSteps = [
   { id: 'team-progress', title: '우리 팀의 진행률을 확인하세요', description: '작업을 완료하면 예상 작업량을 반영한 팀 진행률이 달라집니다. 현재 값을 확인한 뒤, 강조된 ‘작업 보드 보기’ 버튼을 직접 눌러 주세요.', path: guideHome, target: '[data-guide="team-progress"]', actionTarget: '[data-guide="open-tasks"]', action: '강조 위치 보기' },
   { id: 'task', title: '예시 작업을 열어 보세요', description: '‘예시 작업: 조사 결과 정리’는 내가 단독으로 담당하는 작업입니다. 강조된 작업 제목을 직접 눌러 내용을 확인하세요.', path: `${guideHome}/tasks?view=list&mine=1`, actionTarget: '[data-guide-task-id="109"]', action: '강조 위치 보기' },
-  { id: 'deliverable', title: '작업 결과를 문서로 남기세요', description: '강조된 ‘산출물 등록’ 버튼을 눌러 주세요. 자동 입력된 문서 내용을 확인한 뒤 등록 창의 ‘저장’을 직접 누르면 작업에 연결됩니다.', path: guideTask, section: 'task-deliverables-section', target: '#task-deliverables-section', actionTarget: '[data-guide="open-deliverable"]', dialogTitle: '산출물 등록', dialogCalloutContainer: '.deliverable-editor-scroll', dialogDescription: '예시 문서의 제목과 본문이 자동 입력되었습니다. 내용을 확인하거나 수정한 뒤 하단의 ‘저장’을 눌러 작업에 연결하세요.', dialogTarget: 'input[name="title"], textarea[name="text"]', dialogActionTarget: 'button[type="submit"]', action: '강조 위치 보기' },
-  { id: 'ai-feedback', title: '산출물의 AI피드백을 확인하세요', description: '‘AI 검토 요청’을 눌러 예시 피드백을 확인하세요. 실제 AI를 호출하지 않습니다. AI 검토는 일반 작업 완료의 필수 조건은 아닙니다.', readyDescription: '예시 피드백의 요약·잘된 점·보완할 내용을 확인한 뒤, 결과 아래의 ‘피드백 확인 완료’를 직접 눌러 주세요.', path: guideTask, section: 'task-ai-review-section', target: '.ai-review-panel', actionTarget: '[data-guide="request-ai-review"]', readyTarget: '.ai-review-result', readyActionTarget: '[data-guide="confirm-ai-feedback"]', action: '강조 위치 보기' },
+  { id: 'deliverable', title: '결과물을 문서로 남기세요', description: '강조된 ‘결과물 추가’ 버튼을 눌러 주세요. 자동 입력된 문서 내용을 확인한 뒤 추가 창의 ‘결과물 추가’를 직접 누르면 작업에 연결됩니다.', path: guideTask, section: 'task-deliverables-section', target: '#task-deliverables-section', actionTarget: '[data-guide="open-deliverable"]', dialogTitle: '문서 작성', dialogCalloutContainer: '.deliverable-editor-scroll', dialogDescription: '예시 문서의 제목과 본문이 자동 입력되었습니다. 내용을 확인하거나 수정한 뒤 하단의 ‘결과물 추가’를 눌러 작업에 연결하세요.', dialogTarget: 'input[name="title"], textarea[name="text"]', dialogActionTarget: 'button[type="submit"]', action: '강조 위치 보기' },
+  { id: 'ai-feedback', title: '결과물의 AI 피드백을 확인하세요', description: '‘피드백 받기’를 눌러 예시 피드백을 확인하세요. 실제 AI를 호출하지 않습니다. AI 피드백은 작업 완료의 필수 조건이 아닙니다.', readyDescription: '핵심 요약과 중요한 피드백을 읽고, 근거 자료를 확인한 뒤, 결과 아래의 ‘피드백 확인 완료’를 직접 눌러 주세요.', path: guideTask, section: 'task-ai-review-section', target: '.ai-review-panel', actionTarget: '[data-guide="request-ai-review"]', readyTarget: '.ai-review-result', readyActionTarget: '[data-guide="confirm-ai-feedback"]', action: '강조 위치 보기' },
   { id: 'contribution', title: '내가 수행한 내용을 기록하세요', description: '예시 수행 설명을 자동으로 채웠습니다. 내용을 확인한 뒤 화면의 ‘수행 설명 저장’ 버튼을 직접 눌러 주세요. 직접 수정해도 됩니다.', path: guideTask, section: 'task-contributions-section', target: '#own-contribution-description', calloutTarget: '#own-contribution-description', calloutAvoidClosest: 'form', calloutPlacement: 'flow', actionTarget: '[data-guide="save-contribution"]', action: '강조 위치 보기' },
-  { id: 'complete', title: '완료 조건을 확인하고 완료하세요', description: '완료하려면 수행 설명과 연결 산출물이 필요합니다. 준비 항목을 확인하고 완료 처리를 확정하세요. 담당 배분은 이 작업 안의 분담이며 최종 종합점수와 다릅니다.', path: guideTask, section: 'task-description-section', target: '[aria-label="완료 준비 상태"]', actionTarget: '[data-guide="complete-task"]', dialogTitle: '작업 완료', dialogDescription: '완료하면 팀 진행률에 반영됩니다. 안내를 확인하고 ‘완료 처리’를 직접 눌러 주세요.', dialogActionTarget: '.modal-actions .primary-button', action: '강조 위치 보기' },
+  { id: 'complete', title: '완료 조건을 확인하고 완료하세요', description: '완료하려면 담당자별 수행 설명과 결과물이 필요합니다. 준비 항목을 확인하고 완료 처리를 확정하세요. 담당 배분은 이 작업 안의 분담이며 최종 종합점수와 다릅니다.', path: guideTask, section: 'task-description-section', target: '.task-header-body', actionTarget: '[data-guide="complete-task"]', dialogTitle: '작업 완료', dialogDescription: '완료하면 팀 진행률에 반영됩니다. 안내를 확인하고 ‘완료 처리’를 직접 눌러 주세요.', dialogActionTarget: '.modal-actions .primary-button', action: '강조 위치 보기' },
   { id: 'result', title: '진행률의 변화를 확인하세요', description: '완료한 작업만 팀 진행률에 포함됩니다. 팀 홈에서 처음 진행률과 현재 값을 비교해 보세요.', path: guideHome, target: '[data-guide="team-progress"]', calloutTarget: '[data-guide="team-progress"] [role="progressbar"]', action: '가이드 마치기' },
 ];
 export const materialsGuideSteps = [
@@ -105,8 +104,8 @@ export function contributionGuideReady(report, userId) {
 export const managerGuideSteps = [
   { id: 'manager-select-team', title: '진행 상황을 확인할 팀을 선택하세요', description: '팀 관리 목록에서 삼위일체의 진행률과 작업 현황을 살펴보고, 강조된 팀 이름을 직접 눌러 주세요.', path: managerGuidePath, target: '[data-guide-manager-team-row="1"]', calloutAvoidClosest: '[data-guide-manager-team-row]', calloutPlacement: 'vertical', actionTarget: '[data-guide-manager-team="1"]', action: '강조 위치 보기' },
   { id: 'manager-overview', title: '팀의 진행 상황을 살펴보세요', description: '팀 진행률·작업 현황과 마감 지연·장기 정체를 확인하세요. 진행률과 완료 작업 비중은 최종 종합점수와 다른 지표입니다. 팀원 수행 현황에서 ‘김하늘 수행 상세’를 직접 눌러 주세요.', path: `${managerGuidePath}?teamId=1`, target: '.dashboard-work-overview, .dashboard-team-notices', actionTarget: `[data-guide-manager-member="${managerGuideMemberId}"]`, action: '강조 위치 보기' },
-  { id: 'manager-member', title: '팀원의 수행 기록을 확인하세요', description: '작업 기록에서 ‘사용자 인터뷰 계획’의 상태·담당 배분·수행 설명을 확인하세요. 확인한 뒤 ‘수행 기록 확인 완료’를 누르면 연결 산출물을 살펴봅니다. 관리자는 수행 내용을 수정하지 않습니다.', path: `${managerGuideMemberPath}?taskId=${managerGuideTaskId}`, target: '.member-task-record', actionTarget: `[data-guide-manager-task="${managerGuideTaskId}"], [data-guide="confirm-manager-member"]`, action: '강조 위치 보기' },
-  { id: 'manager-material', title: '연결된 산출물을 직접 펼쳐 보세요', description: '‘인터뷰 계획과 질문 목록’을 눌러 원문을 확인하세요. 수행 설명과 실제 결과물을 함께 살펴본 뒤 ‘산출물 확인 완료’를 누르면 가이드를 마칩니다.', path: `${managerGuideMemberPath}?taskId=${managerGuideTaskId}`, target: '[data-guide="manager-material-content"]', actionTarget: `[data-guide-manager-task="${managerGuideTaskId}"], details:not([open]) > [data-guide-manager-deliverable="${managerGuideDeliverableId}"], [data-guide="confirm-manager-material"]`, action: '강조 위치 보기' },
+  { id: 'manager-member', title: '팀원의 수행 기록을 확인하세요', description: '작업 기록에서 ‘사용자 인터뷰 계획’의 상태·담당 배분·수행 설명을 확인하세요. 확인한 뒤 ‘수행 기록 확인 완료’를 누르면 연결된 결과물을 살펴봅니다. 관리자는 수행 내용을 수정하지 않습니다.', path: `${managerGuideMemberPath}?taskId=${managerGuideTaskId}`, target: '.member-task-record', actionTarget: `[data-guide-manager-task="${managerGuideTaskId}"], [data-guide="confirm-manager-member"]`, action: '강조 위치 보기' },
+  { id: 'manager-material', title: '연결된 결과물을 직접 펼쳐 보세요', description: '‘인터뷰 계획과 질문 목록’을 눌러 원문을 확인하세요. 수행 설명과 실제 결과물을 함께 살펴본 뒤 ‘결과물 확인 완료’를 누르면 가이드를 마칩니다.', path: `${managerGuideMemberPath}?taskId=${managerGuideTaskId}`, target: '[data-guide="manager-material-content"]', actionTarget: `[data-guide-manager-task="${managerGuideTaskId}"], details:not([open]) > [data-guide-manager-deliverable="${managerGuideDeliverableId}"], [data-guide="confirm-manager-material"]`, action: '강조 위치 보기' },
 ];
 export function managerGuideReady(stepId, state, source) {
   if (stepId === 'manager-select-team') return Boolean(state?.kind === 'team' && state.team?.teamId === 1
@@ -204,13 +203,13 @@ export function managerGuideStep(step, { member, source, reportResult, reportRev
     && source.taskId === managerGuideTaskId && source.deliverableId === managerGuideDeliverableId) {
     if (managerGuideReady(step.id, member, source)) return {
       ...current, title: '원문과 수행 설명을 함께 확인하세요',
-      description: '연결된 원문을 열었습니다. 실제 산출물 내용과 이 작업의 수행 설명을 비교한 뒤 ‘산출물 확인 완료’를 눌러 주세요.',
+      description: '연결된 원문을 열었습니다. 실제 결과물 내용과 이 작업의 수행 설명을 비교한 뒤 ‘결과물 확인 완료’를 눌러 주세요.',
     };
     return { ...current,
-      title: source.loading ? '연결된 원문을 불러오고 있습니다' : '산출물 조회 상태를 확인하세요',
+      title: source.loading ? '연결된 원문을 불러오고 있습니다' : '결과물 조회 상태를 확인하세요',
       description: source.loading ? '원문을 불러온 뒤 수행 설명과 비교할 수 있습니다. 조회가 끝나면 다음 안내가 표시됩니다.'
-        : source.error ? '원문을 불러오지 못했습니다. 산출물 영역의 오류를 확인하고 다시 불러와 주세요. 정상 조회 전에는 확인을 완료할 수 없습니다.'
-          : '연결된 산출물의 본문과 버전이 확인되지 않았습니다. ‘수행 상세 새로고침’으로 최신 연결을 확인해 주세요.',
+        : source.error ? '원문을 불러오지 못했습니다. 결과물 영역의 오류를 확인하고 다시 불러와 주세요. 정상 조회 전에는 확인을 완료할 수 없습니다.'
+          : '연결된 결과물의 본문과 버전이 확인되지 않았습니다. ‘수행 상세 새로고침’으로 최신 연결을 확인해 주세요.',
       target: null, actionTarget: null, calloutTarget: `[data-guide-manager-deliverable="${managerGuideDeliverableId}"]`,
     };
   }
@@ -239,8 +238,8 @@ export function managerGuideStep(step, { member, source, reportResult, reportRev
       const source = reportEvidence.source;
       if (source?.taskId === managerGuideTaskId && source.materialId === managerGuideDeliverableId) {
         if (source.ready && !source.loading && !source.error) return { ...current,
-          title: '수행 설명과 산출물 원문을 함께 확인하세요',
-          description: '연결된 문서를 열었습니다. 수행 설명과 실제 결과물을 비교하세요. 점수는 리포트 집계 기준이며 산출물은 현재 자료입니다. ‘작업 근거 검토 완료’를 누르면 상세 패널을 닫고 전체 공개로 이동합니다.',
+          title: '수행 설명과 결과물 원문을 함께 확인하세요',
+          description: '연결된 문서를 열었습니다. 수행 설명과 실제 결과물을 비교하세요. 점수는 리포트 집계 기준이며 결과물은 현재 자료입니다. ‘작업 근거 검토 완료’를 누르면 상세 패널을 닫고 전체 공개로 이동합니다.',
           target: '[data-guide="report-material-preview"]', actionTarget: '[data-guide="confirm-management-report-evidence"]' };
         return { ...current, title: source.loading ? '연결 문서를 불러오고 있습니다' : '연결 문서의 조회 상태를 확인하세요',
           description: source.loading ? '본문을 불러온 뒤 수행 설명과 비교할 수 있습니다. 잠시 기다려 주세요.' : '문서를 불러오지 못했습니다. 문서 영역에서 다시 불러온 뒤 검토를 마쳐 주세요.',
@@ -282,10 +281,10 @@ export function materialsSourceGuideStep(step, { answer, source } = {}) {
     calloutContainer: '.rag-source-panel', calloutPlacement: 'flow' };
 }
 export const guideScenarios = [
-  { id: 'task-completion', audience: 'member', title: '작업 완료하기', purpose: '산출물과 수행 기록을 남기고 작업을 완료합니다.', stepCount: guideSteps.length, available: true },
+  { id: 'task-completion', audience: 'member', title: '작업 완료하기', purpose: '결과물과 수행 기록을 남기고 작업을 완료합니다.', stepCount: guideSteps.length, available: true },
   { id: 'materials-search', audience: 'member', title: '팀 자료 검색하기', purpose: '팀 자료에 질문하고 답변의 원문 근거를 확인합니다.', stepCount: materialsGuideSteps.length, available: true },
   { id: 'peer-evaluation', audience: 'member', title: '동료 평가 제출하기', purpose: '팀원을 평가하고 최종 제출까지 진행합니다.', stepCount: peerGuideSteps.length, available: true },
-  { id: 'contribution-report', audience: 'member', title: '내 기여도 확인하기', purpose: '본인 점수부터 동료 평가, 완료 작업과 산출물까지 확인합니다.', stepCount: contributionGuideSteps.length, available: true },
+  { id: 'contribution-report', audience: 'member', title: '내 기여도 확인하기', purpose: '본인 점수부터 동료 평가, 완료 작업과 결과물까지 확인합니다.', stepCount: contributionGuideSteps.length, available: true },
   { id: 'team-management', audience: 'manager', title: '팀 진행 상황 살펴보기', purpose: '팀의 진행 상황과 팀원의 수행 근거를 확인합니다.', stepCount: managerGuideSteps.length, available: true },
   { id: 'evaluation-management', audience: 'manager', title: '동료 평가 시작하기', purpose: '평가 일정을 설정하고 자동 시작 결과를 확인합니다.', stepCount: evaluationGuideSteps.length, available: true },
   { id: 'report-management', audience: 'manager', title: '리포트 생성·공개하기', purpose: '리포트를 생성하고 팀별 결과를 확인한 뒤 전체 공개합니다.', stepCount: reportManagementGuideSteps.length, available: true },
@@ -336,7 +335,7 @@ export function prepareGuide(scenarioId = 'task-completion') {
   if (scenarioId === 'contribution-report') {
     entry.deliverables.push({ id: reportGuideMaterialId, teamId: 1, taskId: reportGuideTaskId,
       title: '조사 결과 요약 문서', description: '수행 기록과 함께 확인하는 가이드 예시 자료',
-      category: 'PLANNING', type: 'TEXT', text: guideExamples.deliverable.text, version: 1,
+      type: 'TEXT', text: guideExamples.deliverable.text, version: 1,
       authorId: context.user.id, createdAt: koreanDateTime(), updatedAt: koreanDateTime() });
   }
   if (scenarioId === 'peer-evaluation') {

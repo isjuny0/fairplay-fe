@@ -59,10 +59,10 @@ test('새 화면은 상단과 제목에서 시작하고 목록 복귀는 필터�
     .toBeLessThan(20);
   await page
     .getByRole('navigation', { name: '모바일 팀 메뉴' })
-    .getByRole('button', { name: '산출물', exact: true })
+    .getByRole('button', { name: '팀 자료', exact: true })
     .click();
   await expect(
-    page.getByRole('heading', { name: '산출물 관리', level: 1 }),
+    page.getByRole('heading', { name: '팀 자료', level: 1 }),
   ).toBeFocused();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 });
@@ -72,37 +72,38 @@ test('완료 준비 상태는 미작성 담당자를 표시하고 전원 작성 
 }) => {
   await preview(page, '/spaces/1/teams/1/tasks/102');
   const readiness = page.getByRole('list', { name: '완료 준비 상태' });
+  const assignments = page.getByRole('table', { name: '담당자별 수행 상태' });
   await expect(
     readiness.getByRole('img', { name: '충족', exact: true }),
-  ).toHaveCount(3);
+  ).toHaveCount(2);
   await expect(
     readiness.getByRole('img', { name: '미충족', exact: true }),
-  ).toHaveCount(1);
+  ).toHaveCount(0);
   await expect(readiness.getByRole('checkbox')).toHaveCount(0);
   await expect(readiness).not.toContainText('✓');
   await expect(readiness).not.toContainText('○');
-  await expect(readiness).toContainText('이지원 수행 설명 미작성');
-  await expect(readiness).toContainText('연결 산출물 등록 완료');
+  await expect(assignments.getByRole('row').filter({ hasText: '이지원' })).toContainText('미작성');
+  await expect(readiness).toContainText('결과물 추가됨');
   await expect(
     page.getByRole('button', { name: '완료 처리', exact: true }),
   ).toBeDisabled();
   await preview(page, '/spaces/1/teams/1/tasks/102', 'member');
-  await page.getByRole('tab', { name: '수행설명', exact: true }).click();
+  await page.getByRole('tab', { name: '수행 설명', exact: true }).click();
   await page
     .getByLabel('내 수행 설명', { exact: true })
     .fill('설문 응답을 분류하고 검증 근거와 한계를 작성했습니다.');
   await page
     .getByRole('button', { name: '수행 설명 저장', exact: true })
     .click();
-  await expect(readiness).toContainText('이지원 수행 설명 작성 완료');
+  await expect(assignments.getByRole('row').filter({ hasText: '이지원' })).toContainText('작성 완료');
   await expect(
     readiness.getByRole('img', { name: '충족', exact: true }),
-  ).toHaveCount(4);
+  ).toHaveCount(2);
   await expect(
     readiness.getByRole('img', { name: '미충족', exact: true }),
   ).toHaveCount(0);
   await preview(page, '/spaces/1/teams/1/tasks/102', 'leader');
-  await expect(readiness).toContainText('이지원 수행 설명 작성 완료');
+  await expect(assignments.getByRole('row').filter({ hasText: '이지원' })).toContainText('작성 완료');
   await expect(
     page.getByRole('button', { name: '완료 처리', exact: true }),
   ).toBeEnabled();
@@ -186,9 +187,7 @@ for (const width of [1440, 390])
     await expect(
       page.getByLabel('이지원 작업 수행 1점', { exact: true }),
     ).toBeFocused();
-    const card = page.locator('.peer-card').filter({
-      has: page.getByRole('heading', { name: '이지원', exact: true }),
-    });
+    const card = page.getByRole('form', { name: '이지원 동료 평가 입력', exact: true });
     const criterion = card.getByRole('group', {
       name: '작업 수행',
       exact: true,
@@ -242,7 +241,7 @@ test('완료 준비 목록에서 내 수행 설명으로 이동하고 변경된 
     .getByRole('button', { name: '내 수행 설명 작성', exact: true })
     .click();
   await expect(
-    page.getByRole('tab', { name: '수행설명', exact: true }),
+    page.getByRole('tab', { name: '수행 설명', exact: true }),
   ).toHaveAttribute('aria-selected', 'true');
   await expect(save).toBeDisabled();
   await expect(description).toBeFocused();
@@ -258,7 +257,7 @@ test('완료 준비 목록에서 내 수행 설명으로 이동하고 변경된 
   ).toHaveCount(0);
 });
 
-test('연결 산출물이 없으면 준비 목록에서 등록 영역으로 바로 이동한다', async ({
+test('연결된 결과물이 없으면 준비 목록에서 등록 영역으로 바로 이동한다', async ({
   page,
 }) => {
   await preview(page, '/spaces/1/teams/1/tasks/104', 'member');
@@ -272,12 +271,12 @@ test('연결 산출물이 없으면 준비 목록에서 등록 영역으로 바�
   await expect(
     readiness
       .getByRole('listitem')
-      .filter({ hasText: '연결 산출물 미등록' })
+      .filter({ hasText: '결과물 없음' })
       .getByRole('img', { name: '미충족', exact: true }),
   ).toBeVisible();
-  await page.getByRole('button', { name: '산출물 확인', exact: true }).click();
+  await page.getByRole('button', { name: '결과물 확인', exact: true }).click();
   await expect(page.locator('#task-deliverables-section')).toBeFocused();
   await expect(
-    page.getByRole('button', { name: '산출물 등록', exact: true }),
+    page.getByRole('button', { name: '결과물 추가', exact: true }),
   ).toBeInViewport();
 });

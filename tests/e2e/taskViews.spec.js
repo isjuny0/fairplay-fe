@@ -87,9 +87,11 @@ test('타임라인은 3개월의 계획 기간을 주 눈금으로 비교하고 
   const timeline = page.getByRole('region', { name: '작업 계획 타임라인' });
   await expect(timeline.locator('.timeline-period')).toHaveCount(5);
   await expect(timeline.locator('.continues-before')).toHaveCount(2);
-  await expect(
-    timeline.getByRole('button', { name: '설문 결과 분석', exact: true }),
-  ).toHaveCount(0);
+  const previousOverdueTask = timeline.locator('.timeline-row').filter({
+    has: page.getByRole('button', { name: '설문 결과 분석', exact: true }),
+  });
+  await expect(previousOverdueTask).toContainText('이전 기간 마감');
+  await expect(previousOverdueTask.locator('.timeline-period')).toHaveCount(0);
   await page.screenshot({
     path: testInfo.outputPath('task-timeline.png'),
     fullPage: true,

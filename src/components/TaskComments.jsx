@@ -1,6 +1,7 @@
 import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import RefreshButton from './RefreshButton.jsx';
-import { useRef, useState } from 'react';
+import { MoreHorizontal } from 'lucide-react';
+import { useEffect, useId, useRef, useState } from 'react';
 import {
   createTaskComment,
   deleteTaskComment,
@@ -21,6 +22,62 @@ import { ErrorNotice, Field, ResourceState } from './ui.jsx';
 
 const PAGE_SIZE = 20;
 
+function CommentActions({ disabled, onEdit, onDelete }) {
+  const [open, setOpen] = useState(false);
+  const container = useRef(null);
+  const trigger = useRef(null);
+  const actionsId = useId();
+  const visible = open && !disabled;
+
+  useEffect(() => {
+    if (!visible) return;
+    const closeOutside = (event) => {
+      if (!container.current?.contains(event.target)) setOpen(false);
+    };
+    container.current?.querySelector('.task-comment-action-popover button')?.focus();
+    document.addEventListener('pointerdown', closeOutside);
+    document.addEventListener('focusin', closeOutside);
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside);
+      document.removeEventListener('focusin', closeOutside);
+    };
+  }, [visible]);
+
+  useEffect(() => {
+    if (disabled) setOpen(false);
+  }, [disabled]);
+
+  const choose = (action) => {
+    setOpen(false);
+    trigger.current?.focus();
+    action();
+  };
+
+  return (
+    <div ref={container} className="task-comment-actions"
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && visible) {
+          event.preventDefault();
+          event.stopPropagation();
+          setOpen(false);
+          trigger.current?.focus();
+        }
+      }}>
+      <button ref={trigger} type="button" className="task-comment-more"
+        aria-label="댓글 더보기" aria-expanded={visible} aria-controls={actionsId}
+        disabled={disabled} onClick={() => setOpen((current) => !current)}>
+        <MoreHorizontal size={18} aria-hidden="true" />
+      </button>
+      {visible && (
+        <div id={actionsId} role="group" aria-label="댓글 관리" className="task-comment-action-popover">
+          <button type="button" onClick={() => choose(onEdit)}>수정</button>
+          <button type="button" className="danger" onClick={() => choose(onDelete)}>삭제</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CommentForm({
   initialContent = '',
   editing = false,
@@ -36,7 +93,8 @@ function CommentForm({
   useUnsavedChanges(changed);
   return (
     <form
-      className="task-comment-form"
+      className={`task-comment-form${editing ? ' is-editing' : ''}`}
+      aria-label={editing ? '댓글 수정' : '댓글 작성'}
       noValidate
       onSubmit={async (event) => {
         event.preventDefault();
@@ -59,7 +117,8 @@ function CommentForm({
       <Field label={editing ? '댓글 수정 내용' : '댓글 내용'} error={error}>
         <textarea
           ref={input}
-          rows={3}
+          autoFocus={editing}
+          rows={2}
           maxLength={2000}
           placeholder="팀원에게 의견을 남겨보세요."
           value={content}
@@ -151,18 +210,6 @@ export default function TaskComments({ taskId, team, user }) {
         />
       </div>
       <ErrorNotice error={error} />
-      {approved && (
-        <CommentForm
-          busy={busy}
-          blocked={blocked || unavailable || editingId !== null}
-          onSave={(content) =>
-            mutate(
-              () => createTaskComment(taskId, content),
-              '댓글을 등록했습니다.',
-            )
-          }
-        />
-      )}
       {team.workFrozen && (
         <p className="field-help" role="status">
           팀 삭제 동의 중에는 댓글을 조회만 할 수 있습니다.
@@ -183,71 +230,42 @@ export default function TaskComments({ taskId, team, user }) {
             {comments.map((comment) => (
               <li key={comment.id} className="task-comment-entry">
                 <div className="task-comment-author">
-                  <strong>
-                    {comment.authorName}
-                    {comment.authorId === user.id && ' · 나'}
-                  </strong>
-                  {approved &&
-                    comment.authorId === user.id &&
-                    editingId !== comment.id && (
-                      <div className="task-comment-actions">
-                        <button
-                          type="button"
-                          className="text-button"
-                          disabled={
-                            busy || blocked || unavailable || editingId !== null
-                          }
-                          onClick={() => {
-                            setError(null);
-                            setEditingId(comment.id);
-                          }}
-                        >
-                          수정
-                        </button>
-                        <button
-                          type="button"
-                          className="text-button danger"
-                          disabled={
-                            busy || blocked || unavailable || editingId !== null
-                          }
-                          onClick={async () => {
-                            if (
-                              !(await confirm({
-                                title: '댓글 삭제',
-                                message:
-                                  '댓글을 삭제할까요? 삭제한 댓글은 복구할 수 없습니다.',
-                                label: '댓글 삭제',
-                                danger: true,
-                              }))
-                            )
-                              return;
-                            mutate(
-                              () => deleteTaskComment(comment.id),
-                              '댓글을 삭제했습니다.',
-                              () => {
-                                if (comments.length === 1 && page > 0)
-                                  setPage(page - 1);
-                              },
-                            );
-                          }}
-                        >
-                          삭제
-                        </button>
-                      </div>
-                    )}
-                </div>
-                <p className="task-comment-time">
-                  <time dateTime={comment.createdAt}>
-                    {formatDate(comment.createdAt)}
-                  </time>
-                  {apiTimeToEpoch(comment.updatedAt) >
-                    apiTimeToEpoch(comment.createdAt) && (
-                    <span title={`수정 ${formatDate(comment.updatedAt)}`}>
-                      {' '}
-                      · 수정됨
+                  <div className="task-comment-metadata">
+                    <strong className={comment.authorId === user.id ? 'self-identity' : undefined}>
+                      {comment.authorName}
+                    </strong>
+                    <span className="task-comment-time">
+                      <time dateTime={comment.createdAt}>{formatDate(comment.createdAt)}</time>
+                      {apiTimeToEpoch(comment.updatedAt) > apiTimeToEpoch(comment.createdAt) && (
+                        <span title={`수정 ${formatDate(comment.updatedAt)}`}> · 수정됨</span>
+                      )}
                     </span>
+                  </div>
+                  {approved && comment.authorId === user.id && editingId !== comment.id && (
+                    <CommentActions
+                      disabled={busy || blocked || unavailable || editingId !== null}
+                      onEdit={() => {
+                        setError(null);
+                        setEditingId(comment.id);
+                      }}
+                      onDelete={async () => {
+                        if (!(await confirm({
+                          title: '댓글 삭제',
+                          message: '댓글을 삭제할까요? 삭제한 댓글은 복구할 수 없습니다.',
+                          label: '댓글 삭제',
+                          danger: true,
+                        }))) return;
+                        mutate(
+                          () => deleteTaskComment(comment.id),
+                          '댓글을 삭제했습니다.',
+                          () => {
+                            if (comments.length === 1 && page > 0) setPage(page - 1);
+                          },
+                        );
+                      }}
+                    />
                   )}
-                </p>
+                </div>
                 {editingId === comment.id ? (
                   <CommentForm
                     initialContent={comment.content}
@@ -309,6 +327,18 @@ export default function TaskComments({ taskId, team, user }) {
             다음
           </button>
         </nav>
+      )}
+      {approved && (
+        <CommentForm
+          busy={busy}
+          blocked={blocked || unavailable || editingId !== null}
+          onSave={(content) =>
+            mutate(
+              () => createTaskComment(taskId, content),
+              '댓글을 등록했습니다.',
+            )
+          }
+        />
       )}
     </section>
   );

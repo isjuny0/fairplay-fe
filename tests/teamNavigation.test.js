@@ -13,7 +13,7 @@ test('팀 메뉴는 세 그룹으로 묶고 회의록을 포함한 열 개 이�
   assert.deepEqual(availableTeamMenus({ myMembershipStatus: 'APPROVED' }), [
     '팀 홈',
     '작업',
-    '산출물',
+    '팀 자료',
     '팀 회의록',
     '팀 자료 검색',
     '동료 평가',
@@ -28,7 +28,7 @@ test('승인된 팀원이 아니면 조회용 메뉴만 유지한다', () => {
   for (const status of [null, 'PENDING', 'REJECTED']) {
     assert.deepEqual(availableTeamMenus({ myMembershipStatus: status }), [
       '팀원 관리',
-      '산출물',
+      '팀 자료',
     ]);
   }
 });

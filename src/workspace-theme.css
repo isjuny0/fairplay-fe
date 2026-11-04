@@ -572,6 +572,7 @@
   border-bottom: 1px solid var(--border);
 }
 .task-board-page .board-task-card {
+  position: relative;
   grid-template-rows: 24px minmax(48px, auto) 30px minmax(90px, auto) minmax(
       72px,
       auto
@@ -1495,9 +1496,9 @@ h1[tabindex="-1"]:focus {
   .modal-fullscreen .modal-body { padding: 12px; }
 }
 
-/* Compact board cards keep task essentials visible and reveal the existing details on demand. */
+/* Keep ownership visible; only workload and allocation need expanding. */
 .task-board-page .board-task-card {
-  grid-template-rows: auto auto auto;
+  grid-template-rows: auto auto auto auto;
   gap: 10px;
   min-height: 0;
   padding: 14px;
@@ -1512,41 +1513,86 @@ h1[tabindex="-1"]:focus {
 .board-card-heading { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
 .task-board-page .board-card-footer .task-deadline {
   min-width: 0;
-  flex: 1 1 120px;
+  flex: 1 1 auto;
   padding-top: 0;
   border-top: 0;
 }
-.board-card-details-toggle {
+.task-board-page .board-card-footer time {
+  white-space: nowrap;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.task-board-page .board-task-card .task-title-button {
+  position: static;
+  width: 100%;
+}
+.board-task-card .task-title-button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.task-board-page .board-task-card .task-title-button:focus-visible { outline: none; }
+.board-task-card .task-title-button:focus-visible::after {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.board-card-assignees {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.board-card-assignees > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.board-card-assignees .board-card-mine {
   flex: 0 0 auto;
-  display: inline-grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: 4px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--brand-light);
+  color: var(--brand-dark);
+  font-size: 11px;
+}
+.board-card-details-toggle {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  margin: 0;
+  padding: 8px 0 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
   background: transparent;
   color: var(--text-muted);
   font: inherit;
   font-size: 12px;
+  text-align: left;
   cursor: pointer;
 }
-.board-card-details-toggle:hover { color: var(--brand); border-color: #cbdcd3; background: #f3f8f5; }
-.board-card-details-toggle:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-.board-card-toggle-triangle {
-  width: 0;
-  height: 0;
-  border-top: 4px solid transparent;
-  border-bottom: 4px solid transparent;
-  border-left: 5px solid currentColor;
-  transition: transform .16s ease;
+.board-card-details-toggle:hover { color: var(--brand); background: transparent; }
+.board-card-details-toggle:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+.board-card-toggle-chevron { flex: 0 0 auto; transition: transform .16s ease; }
+.board-card-details-toggle[aria-expanded='true'] .board-card-toggle-chevron { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) {
+  .board-card-toggle-chevron { transition: none; }
 }
-.board-card-details-toggle[aria-expanded='true'] .board-card-toggle-triangle { transform: rotate(90deg); }
 .board-task-details {
   display: grid;
   gap: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--border);
 }
 .board-task-details .task-workload-line { order: 1; margin: 0; }
 .task-board-page .board-task-details .task-card-meta {
@@ -1633,3 +1679,13 @@ h1[tabindex="-1"]:focus {
   height: 24px;
   box-sizing: border-box;
 }
+
+/* Without database IDs, only deadline warnings occupy the desktop card header. */
+@media (min-width: 721px) {
+  .task-board-page .board-card-top:not(.has-overdue) { display: none; }
+  .task-board-page .board-card-top .board-card-heading { display: none; }
+  .task-board-page .board-card-top { justify-content: flex-end; }
+}
+
+/* Identify the current user consistently without repeating a self label. */
+.self-identity { color: var(--brand); }

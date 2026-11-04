@@ -100,7 +100,7 @@ export default function PreviewGuideProvider({ children }) {
   const stop = useCallback(() => update((current) => current ? { ...current, status: 'paused' } : null), [update]);
   const focusTarget = useCallback(() => {
     const dialog = [...document.querySelectorAll('[role="dialog"]')].at(-1);
-    const inStepDialog = atLocation && (dialog?.querySelector('h2')?.textContent === step.dialogTitle || (atGuideSelection && isReportGuideDrawer(dialog, step)));
+    const inStepDialog = atLocation && Boolean(dialog) && (dialog.querySelector('h2')?.textContent === step.dialogTitle || (atGuideSelection && isReportGuideDrawer(dialog, step)));
     setRevealRequest({ scope: guide?.scope, stepId: step.id, inStepDialog });
     // Locating an open form should scroll that form, not navigate away from it.
     if (!atGuideSelection && !inStepDialog) navigate(step.path, { preventScrollReset: true, state: location.state });
@@ -286,7 +286,7 @@ export default function PreviewGuideProvider({ children }) {
       return;
     }
     update((current) => ({ ...current, status: 'completed' }));
-    notify('수행 기록과 산출물을 남기고 작업을 완료했습니다.');
+    notify('수행 기록과 결과물을 남기고 작업을 완료했습니다.');
   };
   const action = () => {
     if (!atLocation) return focusTarget();
@@ -328,7 +328,7 @@ export default function PreviewGuideProvider({ children }) {
     if (stepId === 'report-tasks') {
       if (!contributionTaskGuideReady(reportState.report, reportState.userId, reportOpenedTaskId, reportSource)) return;
       update((current) => ({ ...current, status: 'completed' }));
-      notify('본인 종합점수와 동료 평가, 완료 작업과 산출물을 확인했습니다.');
+      notify('본인 종합점수와 동료 평가, 완료 작업과 결과물을 확인했습니다.');
     } else if (['report-overview', 'report-components', 'report-peer-results'].includes(stepId)) {
       update((current) => current?.step === guide.step ? { ...current, step: current.step + 1 } : current);
     }
@@ -340,7 +340,7 @@ export default function PreviewGuideProvider({ children }) {
       update((current) => current?.step === guide.step ? { ...current, step: current.step + 1 } : current);
     } else if (stepId === 'manager-material') {
       update((current) => ({ ...current, status: 'completed' }));
-      notify('팀 진행 상황과 팀원의 수행 기록·산출물을 확인했습니다.');
+      notify('팀 진행 상황과 팀원의 수행 기록·결과물을 확인했습니다.');
     }
   };
   const confirmEvaluationStep = (stepId) => {

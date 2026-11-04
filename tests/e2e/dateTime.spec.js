@@ -156,7 +156,7 @@ test('달력 방향키는 다음 달로 이동하고 Escape는 달력만 닫는�
   await expect(trigger).toBeFocused();
 });
 
-test('미저장 입력의 닫기 버튼은 중립 회색이며 기능은 유지한다', async ({
+test('미저장 입력의 닫기 버튼은 빨간색이며 기능은 유지한다', async ({
   page,
 }) => {
   const dialog = await openCreate(page);
@@ -166,8 +166,8 @@ test('미저장 입력의 닫기 버튼은 중립 회색이며 기능은 유지�
     name: '닫기',
     exact: true,
   });
-  await expect(discard).toHaveCSS('background-color', 'rgb(243, 244, 246)');
-  await expect(discard).toHaveCSS('color', 'rgb(55, 65, 81)');
+  await expect(discard).toHaveCSS('background-color', 'rgb(229, 36, 52)');
+  await expect(discard).toHaveCSS('color', 'rgb(255, 255, 255)');
   await expect(discard).not.toHaveClass(/danger/);
   await discard.click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -199,7 +199,7 @@ for (const width of [1440, 390, 320]) {
     );
     await expect(
       picker.locator('.time-picker-options [aria-pressed="true"]').first(),
-    ).toHaveCSS('background-color', 'rgb(32, 36, 43)');
+    ).toHaveCSS('background-color', 'rgb(231, 244, 237)');
     await expect(
       picker.getByRole('button', { name: '시간 적용', exact: true }),
     ).toHaveCSS('background-color', 'rgb(32, 36, 43)');

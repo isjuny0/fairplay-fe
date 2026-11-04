@@ -19,7 +19,7 @@ const examples = [
     icon: ListTodo,
   },
   {
-    title: '산출물',
+    title: '팀 자료',
     description: '결과물과 수행 기록을 한곳에',
     icon: FileText,
   },
@@ -57,7 +57,7 @@ function TaskExample() {
       tag: '디자인',
       name: '김영진',
       date: '10. 23',
-      progress: '산출물 2개 첨부',
+      progress: '자료 2개 첨부',
     },
     {
       label: '완료',
@@ -108,7 +108,7 @@ function DeliverableExample() {
   return (
     <div className="showcase-files">
       <div className="showcase-file-heading">
-        <span>산출물 이름</span>
+        <span>자료 이름</span>
         <span>연결된 작업</span>
         <span>등록자</span>
         <span>검토 상태</span>
@@ -366,7 +366,7 @@ export default function LandingPage() {
                   {
                     [
                       '담당자와 작업 상태를 한눈에 확인하고, 팀의 다음 할 일을 정하세요.',
-                      '작업에 산출물과 수행 설명을 남기고 직접 완료하세요.',
+                      '작업에 자료과 수행 설명을 남기고 직접 완료하세요.',
                       '수행 기록과 동료 평가를 바탕으로, 함께한 과정을 확인하세요.',
                     ][index]
                   }

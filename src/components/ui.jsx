@@ -269,6 +269,7 @@ export function FormActions({
   onCancel,
   label = '저장',
   onBack,
+  backLabel = '이전',
   hideSubmit = false,
 }) {
   const closeModal = useContext(ModalCloseContext);
@@ -281,7 +282,7 @@ export function FormActions({
           disabled={busy}
           onClick={onBack}
         >
-          이전
+          {backLabel}
         </button>
       )}
       {onCancel && (

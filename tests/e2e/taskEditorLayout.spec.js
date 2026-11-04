@@ -13,7 +13,7 @@ for (const width of [1024, 1440, 1920]) {
       .getByRole('heading', { name: '작업 내용', exact: true })
       .boundingBox();
     const right = await editor
-      .getByRole('heading', { name: '담당자와 배분', exact: true })
+      .getByRole('heading', { name: '담당자·담당 비율', exact: true })
       .boundingBox();
     expect(Math.abs(left.y - right.y)).toBeLessThanOrEqual(1);
     expect(Math.abs(left.height - right.height)).toBeLessThanOrEqual(1);

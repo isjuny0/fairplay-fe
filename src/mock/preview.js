@@ -538,10 +538,9 @@ async function executePreviewRequest(
         task: previewTaskResponse(state, context, entry, task),
         deliverableSummary: entry.deliverables
           .filter((item) => item.taskId === id)
-          .map(({ id, title, category, type, version }) => ({
+          .map(({ id, title, type, version }) => ({
             id,
             title,
-            category,
             type,
             version,
           })),
@@ -668,7 +667,7 @@ async function executePreviewRequest(
             reason,
             reason === 'CONTRIBUTION_DESCRIPTION_REQUIRED'
               ? '담당자 전원의 수행 설명이 필요합니다.'
-              : '작업에 연결된 산출물이 필요합니다.',
+              : '작업에 연결된 자료가 필요합니다.',
           );
       }
       const startAt = body.startAt ?? task.startAt;
@@ -701,11 +700,11 @@ async function executePreviewRequest(
     );
     const item =
       entry?.deliverables.find((item) => item.id === id) ||
-      missing('DELIVERABLE_NOT_FOUND', '산출물이 없습니다.');
+      missing('DELIVERABLE_NOT_FOUND', '자료가 없습니다.');
     if (responseType === 'blob')
       return (
         fileContents.get(id) ||
-        new Blob(['미리보기 산출물입니다.'], { type: 'text/plain' })
+        new Blob(['미리보기 자료입니다.'], { type: 'text/plain' })
       );
     if (method === 'DELETE') {
       invalidateReview(state, item.taskId);
@@ -721,7 +720,7 @@ async function executePreviewRequest(
       if (metadata.expectedVersion !== item.version)
         throw new MockError(
           'VERSION_CONFLICT',
-          '다른 사용자가 먼저 산출물을 수정했습니다.',
+          '다른 사용자가 먼저 자료를 수정했습니다.',
           409,
         );
       if (

@@ -40,7 +40,7 @@ const taskCountFields = [
 function TeamTaskCounts({ team, compact = false, includeDeliverables = false }) {
   return <dl className={`dashboard-task-counts ${compact ? 'dashboard-inline-counts dashboard-team-work-counts' : 'dashboard-work-counts'}`}>
     {taskCountFields.map(([field, label]) => <div key={field}><dt>{label}</dt><dd>{team[field]}건</dd></div>)}
-    {includeDeliverables && <div><dt>산출물</dt><dd>{team.deliverableCount}개</dd></div>}
+    {includeDeliverables && <div><dt>자료</dt><dd>{team.deliverableCount}개</dd></div>}
   </dl>;
 }
 
@@ -359,7 +359,7 @@ export default function ManagerDashboard({ context }) {
                             마감 지연: 마감 시각이 지난 할 일·진행 중·수정 중 작업입니다.<br /><br />
                             장기 정체: 마지막 활동 후 48시간 이상 지난 진행 중·수정 중 작업입니다.
                           </>} /></th>
-                          <th>산출물</th>
+                          <th>자료</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -441,9 +441,9 @@ export default function ManagerDashboard({ context }) {
                       </dl>
                       <TeamTaskCounts team={team} compact />
                       <details>
-                        <summary>산출물·팀 참여 상태</summary>
+                        <summary>자료·팀 참여 상태</summary>
                         <p>
-                          산출물 {team.deliverableCount}개 · 가입 대기{' '}
+                          자료 {team.deliverableCount}개 · 가입 대기{' '}
                           {team.pendingApplications}명
                         </p>
                       </details>

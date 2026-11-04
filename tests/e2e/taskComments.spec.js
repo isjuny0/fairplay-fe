@@ -177,11 +177,11 @@ test('실제 로그인 경로에서 댓글 CRUD·CSRF·일반 텍스트와 작�
     navigation.getByRole('tab', { name: '댓글', exact: true }),
   ).toHaveCount(0);
   await expect(
-    page.locator('.task-progress-sidebar #task-comments-section'),
+    page.locator('.task-detail-comments #task-comments-section'),
   ).toBeVisible();
   await expect(page.getByRole('tabpanel')).toHaveCount(1);
   await expect(
-    page.getByRole('region', { name: '담당자와 배분', exact: true }),
+    page.getByRole('region', { name: '담당자·담당 비율', exact: true }),
   ).toHaveCount(1);
   const panel = page.getByRole('region', { name: '작업 댓글', exact: true });
   await expect(panel.getByText('아직 댓글이 없습니다.')).toBeVisible();
@@ -193,8 +193,25 @@ test('실제 로그인 경로에서 댓글 CRUD·CSRF·일반 텍스트와 작�
     panel.getByText('<b>피드백</b>\n보완 의견', { exact: true }),
   ).toBeVisible();
   await expect(panel.locator('.task-comment-content b')).toHaveCount(0);
+  const listBounds = await panel.getByRole('list', { name: '댓글 목록', exact: true }).boundingBox();
+  const composerBounds = await panel.getByRole('form', { name: '댓글 작성', exact: true }).boundingBox();
+  expect(composerBounds.y).toBeGreaterThanOrEqual(listBounds.y + listBounds.height);
   await expect(panel.getByLabel('댓글 내용', { exact: true })).toHaveValue('');
-  await panel.getByRole('button', { name: '수정', exact: true }).click();
+  const heading = await panel.getByRole('heading', { name: '댓글', exact: true }).boundingBox();
+  const descriptionHeading = await page.locator('.task-description-card h2').boundingBox();
+  expect(Math.abs(heading.x - descriptionHeading.x)).toBeLessThanOrEqual(1);
+  const name = await panel.locator('.task-comment-metadata strong').boundingBox();
+  const date = await panel.locator('.task-comment-time').boundingBox();
+  expect(Math.abs(name.y - date.y)).toBeLessThanOrEqual(5);
+  const more = panel.getByRole('button', { name: '댓글 더보기', exact: true });
+  await more.click();
+  await expect(panel.getByRole('button', { name: '수정', exact: true })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(panel.getByRole('group', { name: '댓글 관리', exact: true })).toHaveCount(0);
+  await expect(more).toBeFocused();
+  await more.press('Enter');
+  await panel.getByRole('button', { name: '수정', exact: true }).press('Enter');
+  await expect(panel.getByLabel('댓글 수정 내용')).toBeFocused();
   await panel.getByLabel('댓글 수정 내용').fill('수정한 의견');
   await panel.getByRole('button', { name: '수정 저장' }).click();
   await expect(panel.getByText('수정한 의견', { exact: true })).toBeVisible();
@@ -203,6 +220,7 @@ test('실제 로그인 경로에서 댓글 CRUD·CSRF·일반 텍스트와 작�
     path: testInfo.outputPath('comments-desktop.png'),
     fullPage: true,
   });
+  await panel.getByRole('button', { name: '댓글 더보기', exact: true }).click();
   await panel.getByRole('button', { name: '삭제', exact: true }).click();
   await page
     .getByRole('dialog', { name: '댓글 삭제', exact: true })
@@ -234,11 +252,12 @@ test('20개 페이지·작성자 버튼·마지막 페이지 삭제 후 이동�
   const items = panel.locator('.task-comment-entry');
   await expect(items).toHaveCount(20);
   await expect(
-    items.first().getByRole('button', { name: '수정', exact: true }),
+    items.first().getByRole('button', { name: '댓글 더보기', exact: true }),
   ).toHaveCount(0);
   await panel.getByRole('button', { name: '다음', exact: true }).click();
   await expect(items).toHaveCount(1);
   await expect(panel.getByText('기존 댓글 21', { exact: true })).toBeVisible();
+  await panel.getByRole('button', { name: '댓글 더보기', exact: true }).click();
   await panel.getByRole('button', { name: '삭제', exact: true }).click();
   await page
     .getByRole('dialog', { name: '댓글 삭제', exact: true })
@@ -290,12 +309,8 @@ test('삭제 동결에서는 기존 댓글을 읽고 댓글 쓰기 버튼은 비
   const { requests } = await backend(page, { count: 2, frozen: true });
   const panel = page.getByRole('region', { name: '작업 댓글', exact: true });
   await expect(panel.getByText('기존 댓글 1', { exact: true })).toBeVisible();
-  await expect(
-    panel.getByRole('button', { name: '수정', exact: true }),
-  ).toBeDisabled();
-  await expect(
-    panel.getByRole('button', { name: '삭제', exact: true }),
-  ).toBeDisabled();
+  await expect(panel.getByRole('button', { name: '댓글 더보기', exact: true })).toBeDisabled();
+  await expect(panel.getByRole('group', { name: '댓글 관리', exact: true })).toHaveCount(0);
   await expect(panel.getByLabel('댓글 내용', { exact: true })).toBeDisabled();
   expect(requests.filter(({ method }) => method !== 'GET')).toHaveLength(0);
 });
@@ -325,9 +340,9 @@ for (const width of [390, 1440])
     await expect(
       panel.getByText('최종 마감 후에도 의견을 남깁니다.', { exact: true }),
     ).toBeVisible();
-    await expect(panel.getByText('박서연 · 나', { exact: true })).toBeVisible();
+    await expect(panel.getByText('박서연', { exact: true })).toBeVisible();
     const assignment = page.getByRole('region', {
-      name: '담당자와 배분',
+      name: '담당자·담당 비율',
       exact: true,
     });
     await expect(panel).toBeVisible();
@@ -337,9 +352,8 @@ for (const width of [390, 1440])
     );
     if (width >= 1101) {
       const main = await page.locator('.task-detail-main').boundingBox();
-      expect((await panel.boundingBox()).x).toBeGreaterThanOrEqual(
-        main.x + main.width,
-      );
+      expect((await panel.boundingBox()).y).toBeGreaterThanOrEqual(main.y + main.height);
+      expect(Math.abs((await panel.boundingBox()).width - main.width)).toBeLessThanOrEqual(1);
     }
     expect(
       await page.evaluate(
@@ -348,6 +362,7 @@ for (const width of [390, 1440])
     ).toBe(true);
     if (width < 600)
       expect((await panel.boundingBox()).width).toBeGreaterThan(width - 80);
+    await expect(page.locator('.task-detail-comments')).toHaveCSS('overflow-y', 'visible');
     await panel.scrollIntoViewIfNeeded();
     await page.screenshot({
       path: testInfo.outputPath(`comments-${width}.png`),

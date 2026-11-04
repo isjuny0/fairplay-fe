@@ -108,7 +108,7 @@ export function previewSpaceParticipants(context, state, parts, method) {
     )
       return [
         "SPACE_MEMBER_HAS_DEPENDENCIES",
-        "담당 작업이나 미연결 산출물을 먼저 정리해 주세요.",
+        "담당 작업이나 미연결 자료를 먼저 정리해 주세요.",
       ];
     return null;
   };

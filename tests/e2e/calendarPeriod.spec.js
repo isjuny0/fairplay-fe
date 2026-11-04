@@ -187,7 +187,7 @@ for (const width of [1440, 390, 320]) {
     const hour = timePicker.getByRole('button', { name: '09시', exact: true });
     await hour.click();
     await timePicker.getByRole('button', { name: '30분', exact: true }).click();
-    await expect(hour).toHaveCSS('background-color', 'rgb(230, 243, 235)');
+    await expect(hour).toHaveCSS('background-color', 'rgb(231, 244, 237)');
     await timePicker
       .getByRole('button', { name: '시간 적용', exact: true })
       .click();
