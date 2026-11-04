@@ -122,7 +122,7 @@ export default function Spaces({ onSelect, onDirectoryContext, user }) {
       name: '',
       description: '',
       startAt: type === 'create' ? current : '',
-      endAt: type === 'create' ? current : '',
+      endAt: '',
       code: '',
     };
     setForm(next);

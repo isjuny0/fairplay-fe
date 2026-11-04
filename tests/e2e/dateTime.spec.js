@@ -13,23 +13,24 @@ async function openCreate(page) {
   return page.getByRole('dialog');
 }
 
-test('새 스페이스 시작·종료 기본값은 현재 날짜·시간이며 기본값만으로 이탈 경고하지 않는다', async ({
-  page,
-}) => {
+test('새 스페이스는 시작 시각만 채우고 종료일을 선택해야 만들 수 있다', async ({ page }) => {
   const dialog = await openCreate(page);
-  for (const label of [
-    '프로젝트 시작',
-    '프로젝트 종료',
-  ]) {
-    await expect(
-      dialog.getByRole('textbox', { name: `${label} 날짜`, exact: true }),
-    ).toHaveValue('2026-10-12');
-    await expect(
-      dialog.getByLabel(`${label} 시간`, { exact: true }),
-    ).toHaveValue('18:15');
-  }
+  await expect(dialog.getByLabel('프로젝트 시작 날짜', { exact: true })).toHaveValue('2026-10-12');
+  await expect(dialog.getByLabel('프로젝트 시작 시간', { exact: true })).toHaveValue('18:15');
+  const endDate = dialog.getByLabel('프로젝트 종료 날짜', { exact: true });
+  await expect(endDate).toHaveValue('');
+  await expect(dialog.getByLabel('프로젝트 종료 시간', { exact: true })).toHaveValue('');
   await dialog.getByRole('button', { name: '취소', exact: true }).click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(dialog).toHaveCount(0);
+
+  await page.getByRole('main').getByRole('button', { name: '새 스페이스', exact: true }).click();
+  await dialog.getByLabel('스페이스 이름', { exact: true }).fill('종료일 확인 프로젝트');
+  await dialog.getByRole('button', { name: '만들기', exact: true }).click();
+  await expect(endDate).toHaveAttribute('aria-invalid', 'true');
+  await expect(endDate).toBeFocused();
+  await fillDateTime(dialog, '프로젝트 종료', '2026-10-13T18:15');
+  await dialog.getByRole('button', { name: '만들기', exact: true }).click();
+  await expect(page).toHaveURL(/\/spaces\/3$/);
 });
 
 for (const width of [1440, 390]) {
