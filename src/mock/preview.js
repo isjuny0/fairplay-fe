@@ -108,7 +108,7 @@ function teamDetail(entry, context, state) {
     approvedMemberCount: entry.members.length,
     teamBuildingStatus: context.space.teamBuildingStatus,
     canApply:
-      context.space.teamBuildingStatus === 'OPEN' &&
+      !context.space.membershipLockedAt &&
       (membership === null || membership === 'REJECTED') &&
       !Object.values(state.teams).some((team) =>
         team.team.spaceId === entry.team.spaceId &&

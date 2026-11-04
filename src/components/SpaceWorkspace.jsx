@@ -261,7 +261,7 @@ export default function SpaceWorkspace({
           }[space?.teamBuildingStatus] ||
           '현재 팀을 만들 수 없습니다. 최신 팀 빌딩 상태를 확인해 주세요.';
   const apply = async (target) => {
-    if (busy || !directoryReady || joinedTeam || pendingTeam || !buildingOpen || !target.canApply) return;
+    if (busy || !directoryReady || joinedTeam || pendingTeam || !target.canApply) return;
     setBusy(true);
     setError(null);
     try {
@@ -514,7 +514,6 @@ export default function SpaceWorkspace({
                   joinedTeam={joinedTeam}
                   user={user}
                   directoryReady={directoryReady}
-                  buildingOpen={buildingOpen}
                   loading={resource.loading || directoryResource.loading}
                   busy={busy}
                   error={error}

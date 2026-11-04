@@ -78,14 +78,16 @@ test('반려된 신청을 같은 신청으로 갱신하고 취소 후 상태를 
   assert.equal((await getTeam(2)).canApply, true);
 });
 
-test('기간 종료 후 취소는 가능하지만 새 가입 신청은 계속 제한한다', async () => {
+test('팀 생성 기간이 끝나도 구성 확정 전에는 취소 후 다시 가입을 신청할 수 있다', async () => {
   const context = previewContext();
   const state = getMockState(context);
   state.spaceOverrides.teamBuildingStatus = 'CLOSED';
   saveMockState(context, state);
   await cancelTeamJoin(1);
   assert.equal((await getTeam(1)).myMembershipStatus, null);
-  assert.equal((await getTeam(2)).canApply, false);
+  assert.equal((await getTeam(2)).canApply, true);
+  await requestTeamJoin(2);
+  assert.equal((await getTeam(2)).myMembershipStatus, 'PENDING');
 });
 
 for (const status of ['APPROVED', 'REJECTED']) {
