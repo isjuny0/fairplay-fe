@@ -107,3 +107,52 @@ test('모바일에서도 헤더 할 일 카드 패널이 화면 너비를 넘지
   await expect(page.getByRole('button', { name: /설문 결과 분석/ })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
 });
+
+for (const entry of ['알림함', '헤더 팝오버']) {
+  test(`${entry}에서 읽음 요청이 끝나기 전에 상세로 이동하고 실패 시 미읽음을 유지한다`, async ({ page }) => {
+    const item = {
+      id: 205, type: 'TEAM_APPLICATION_APPROVED', title: '팀 가입이 승인되었습니다',
+      spaceId: 1, teamId: 1, accessible: true, target: { type: 'TEAM_APPLICATION', id: 1 },
+      createdAt: '2026-10-12T10:00:00', readAt: null,
+    };
+    const space = { id: 1, name: '알림 대상 프로젝트', myRole: 'USER', teamBuildingStatus: 'CLOSED' };
+    let finishRead;
+    const delayed = new Promise((resolve) => { finishRead = resolve; });
+    await page.route('**/api/**', async (route) => {
+      const path = new URL(route.request().url()).pathname;
+      if (!path.startsWith('/api/')) return route.continue();
+      if (path === '/api/me/notifications/205/read') {
+        await delayed;
+        return route.fulfill({ status: 503, json: { code: 'UNAVAILABLE' } });
+      }
+      const responses = {
+        '/api/me': { id: 'me', name: '팀원' },
+        '/api/auth/csrf': { headerName: 'X-CSRF-TOKEN', token: 'test-token' },
+        '/api/me/notifications': { items: [item], nextCursor: null },
+        '/api/me/notifications/unread-count': { unreadCount: 1 },
+        '/api/spaces': [space],
+        '/api/spaces/1': space,
+        '/api/spaces/1/teams': [],
+        '/api/spaces/1/announcements': { items: [], totalCount: 0, page: 0, size: 3 },
+      };
+      return path in responses
+        ? route.fulfill({ json: responses[path] })
+        : route.fulfill({ status: 404, json: {} });
+    });
+
+    try {
+      await page.goto(entry === '알림함' ? '/notifications' : '/main');
+      if (entry === '헤더 팝오버') {
+        await page.getByRole('button', { name: '알림함', exact: true }).click();
+        await page.getByRole('region', { name: '최근 알림' }).getByRole('button', { name: /팀 가입이 승인되었습니다/ }).click();
+      } else {
+        await page.getByRole('button', { name: '팀 가입이 승인되었습니다 상세 보기' }).click();
+      }
+      await expect(page).toHaveURL(/\/spaces\/1$/);
+    } finally {
+      finishRead();
+    }
+    await expect(page.getByRole('status').filter({ hasText: '알림을 읽음으로 표시하지 못했습니다.' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '알림함', exact: true })).toContainText('1');
+  });
+}

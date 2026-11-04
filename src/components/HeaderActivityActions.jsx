@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Bell, ListTodo, CheckCheck } from 'lucide-react';
 import useResource from '../hooks/useResource.js';
 import useAppNavigate from '../hooks/useAppNavigate.js';
+import { useInteractions } from '../hooks/useInteractions.js';
 import { getMyNotificationUnreadCount, listMyNotifications, listAllMyTodos, markNotificationRead } from '../api/personalWork.js';
 import { announceNotificationChange, notificationPath } from '../lib/personalWork.js';
 import { formatDate, statusLabels } from '../lib/domain.js';
@@ -9,9 +10,8 @@ import { teamMenuPath } from '../lib/routes.js';
 
 export default function HeaderActivityActions() {
   const navigate = useAppNavigate();
+  const { notify } = useInteractions();
   const [open, setOpen] = useState(false);
-  const [busyId, setBusyId] = useState(null);
-  const [actionError, setActionError] = useState(false);
   const [taskPopoverOpen, setTaskPopoverOpen] = useState(false);
   const [taskPreview, setTaskPreview] = useState(null);
   const [taskPreviewError, setTaskPreviewError] = useState(false);
@@ -44,22 +44,14 @@ export default function HeaderActivityActions() {
     };
   }, [count.reload, recent.reload]);
 
-  const openNotification = async (item) => {
-    try {
-      if (!item.readAt) {
-        setBusyId(item.id);
-        await markNotificationRead(item.id);
-        setActionError(false);
-        announceNotificationChange();
-      }
-      const path = notificationPath(item);
-      setOpen(false);
-      navigate(path || '/notifications');
-    } catch {
-      setActionError(true);
-      count.reload();
-      recent.reload();
-    } finally { setBusyId(null); }
+  const openNotification = (item) => {
+    setOpen(false);
+    navigate(notificationPath(item) || '/notifications');
+    if (!item.readAt) {
+      void markNotificationRead(item.id)
+        .then(announceNotificationChange)
+        .catch(() => notify('알림을 읽음으로 표시하지 못했습니다.'));
+    }
   };
 
   const loadTaskPreview = () => {
@@ -116,10 +108,9 @@ export default function HeaderActivityActions() {
       </div>
       {open && <section className="notification-popover" aria-label="최근 알림">
         <header className="notification-popover-heading"><strong>{count.error ? '알림' : `읽지 않은 알림 ${count.data ?? 0}개`}</strong><button type="button" onClick={() => { setOpen(false); navigate('/notifications'); }}>전체 보기</button></header>
-        {actionError && <p className="notification-popover-state" role="alert">읽음 처리에 실패했습니다. 다시 시도해 주세요.</p>}
         {count.error && <p className="notification-popover-state" role="alert">읽지 않은 알림 수를 불러오지 못했습니다.</p>}
         {recent.error ? <p className="notification-popover-state">알림을 불러오지 못했습니다.</p> : recent.loading && !recent.data ? <p className="notification-popover-state" role="status">알림을 불러오는 중…</p> : recent.data?.items.length ? <>
-          <div className="header-notification-preview-cards">{recent.data.items.slice(0, 3).map((item) => <button type="button" className="header-notification-preview-card" data-unread={!item.readAt} key={item.id} disabled={busyId === item.id} onClick={() => openNotification(item)}>
+          <div className="header-notification-preview-cards">{recent.data.items.slice(0, 3).map((item) => <button type="button" className="header-notification-preview-card" data-unread={!item.readAt} key={item.id} onClick={() => openNotification(item)}>
             <span className="header-notification-preview-card-heading"><span className="header-notification-preview-state"><i />{item.readAt ? '읽음' : '읽지 않음'}</span><time>{formatDate(item.createdAt)}</time></span>
             <strong>{item.title}</strong>
             {item.message && <span className="header-notification-preview-message">{item.message}</span>}

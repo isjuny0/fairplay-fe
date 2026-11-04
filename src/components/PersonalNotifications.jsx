@@ -3,6 +3,7 @@ import { Check, CheckCheck } from 'lucide-react';
 import { useLocation } from 'react-router';
 import useResource from '../hooks/useResource.js';
 import useAppNavigate from '../hooks/useAppNavigate.js';
+import { useInteractions } from '../hooks/useInteractions.js';
 import { getMyNotificationUnreadCount, listMyNotifications, markAllNotificationsRead, markNotificationRead } from '../api/personalWork.js';
 import { announceNotificationChange, notificationPath, notificationTypeLabels } from '../lib/personalWork.js';
 import { formatDate } from '../lib/domain.js';
@@ -14,6 +15,7 @@ const PAGE_SIZE = 20;
 
 export default function PersonalNotifications() {
   const navigate = useAppNavigate();
+  const { notify } = useInteractions();
   const setHeaderContext = useContext(HeaderContext);
   const { pathname } = useLocation();
   const [filter, setFilter] = useState('ALL');
@@ -28,6 +30,15 @@ export default function PersonalNotifications() {
     setHeaderContext?.({ pathname, scope: '개인 업무', title: '알림함', detail: '내 알림' });
   }, [setHeaderContext, pathname]);
 
+  useEffect(() => {
+    const refreshNotifications = () => {
+      resource.reload();
+      unreadCount.reload();
+    };
+    window.addEventListener('fairplay:notifications-changed', refreshNotifications);
+    return () => window.removeEventListener('fairplay:notifications-changed', refreshNotifications);
+  }, [resource.reload, unreadCount.reload]);
+
   const changeFilter = (value) => { setCursors([null]); setFilter(value); };
 
   const markOne = async (item) => {
@@ -36,8 +47,6 @@ export default function PersonalNotifications() {
       await markNotificationRead(item.id);
       setActionError(null);
       announceNotificationChange();
-      resource.reload();
-      unreadCount.reload();
     } catch (error) { setActionError(error); }
     finally { setBusy(false); }
   };
@@ -47,27 +56,17 @@ export default function PersonalNotifications() {
       await markAllNotificationsRead();
       setActionError(null);
       announceNotificationChange();
-      resource.reload();
-      unreadCount.reload();
     } catch (error) { setActionError(error); }
     finally { setBusy(false); }
   };
 
-  const openNotification = async (item, targetPath) => {
-    if (!targetPath) return;
-    if (!item.readAt) {
-      setBusy(true);
-      try {
-        await markNotificationRead(item.id);
-        setActionError(null);
-        announceNotificationChange();
-        unreadCount.reload();
-      } catch (error) {
-        setActionError(error);
-        return;
-      } finally { setBusy(false); }
-    }
+  const openNotification = (item, targetPath) => {
     navigate(targetPath);
+    if (!item.readAt) {
+      void markNotificationRead(item.id)
+        .then(announceNotificationChange)
+        .catch(() => notify('알림을 읽음으로 표시하지 못했습니다.'));
+    }
   };
 
   const page = resource.data;
