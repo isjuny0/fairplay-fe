@@ -215,6 +215,31 @@ test('로그인한 사용자는 상세 응답의 소속으로 내 팀과 다른 
   await expect(spaceHomeLink).toHaveAttribute('aria-current', 'page');
 });
 
+test('팀에 소속된 스페이스 관리자는 내 팀을 팀 홈으로 열고 다른 팀은 팀 관리에서 조회한다', async ({ page }) => {
+  const { space } = await spaceHome(page);
+  space.myRole = 'MANAGER';
+  await page.route('**/api/teams/1/home-preferences/me', (route) =>
+    route.fulfill({ json: { teamId: 1, widgets: [], memo: '' } }),
+  );
+  await page.route('**/api/teams/1/deletion-request', (route) =>
+    route.fulfill({ status: 404, json: { code: 'TEAM_DELETION_REQUEST_NOT_FOUND' } }),
+  );
+
+  await page.goto('/spaces/1');
+  await page.getByRole('button', { name: '삼위일체 팀 홈으로 이동', exact: true }).click();
+  await expect(page).toHaveURL(/\/spaces\/1\/teams\/1$/);
+  await expect(page.getByRole('heading', { name: '삼위일체', exact: true })).toBeVisible();
+
+  await page.goto('/spaces/1');
+  await page.getByRole('button', { name: '내 팀으로', exact: true }).click();
+  await expect(page).toHaveURL(/\/spaces\/1\/teams\/1$/);
+
+  await page.goto('/spaces/1');
+  const otherTeams = page.getByRole('list', { name: '팀 목록', exact: true });
+  await otherTeams.getByRole('button', { name: '팀 상세 보기', exact: true }).click();
+  await expect(page).toHaveURL(/\/spaces\/1\/dashboard\?teamId=2$/);
+});
+
 for (const rejected of [false, true]) {
   test(`미가입 참여자는 ${rejected ? '반려 후 재신청' : '가입 신청'} 뒤 승인 대기로 표시되고 내 팀에는 포함되지 않는다`, async ({ page }) => {
     const fixture = await spaceHome(page, { joined: false, rejected });

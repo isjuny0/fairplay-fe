@@ -539,13 +539,11 @@ export default function SpaceWorkspace({
                   }}
                   onOpenTeam={(item) =>
                     navigate(
-                      isManager
-                        ? `${spacePath(spaceId)}/dashboard?teamId=${item.id}`
-                        : teamMenuPath(
-                        spaceId,
-                        item.id,
-                        isApprovedMember(item) ? '팀 홈' : '팀원 관리',
-                      ),
+                      isApprovedMember(item)
+                        ? teamMenuPath(spaceId, item.id, '팀 홈')
+                        : isManager
+                          ? `${spacePath(spaceId)}/dashboard?teamId=${item.id}`
+                          : teamMenuPath(spaceId, item.id, '팀원 관리'),
                     )
                   }
                   onApply={apply}
