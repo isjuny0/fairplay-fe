@@ -38,19 +38,20 @@
   .topbar .profile-area, .profile-account-group { gap: 4px; }
   .topbar .profile-avatar, .profile-identity .profile-name { display: none; }
   .topbar .profile-identity { display: none; }
-  .app-shell:has(.preview-guide-entry) { --header-height: 110px; }
-  .topbar:has(.preview-guide-entry) { grid-template-rows: 38px 36px; }
-  .app-shell:has(.preview-guide-entry):has(.header-context-role) { --header-height: 144px; }
-  .topbar:has(.preview-guide-entry):has(.header-context-role) { grid-template-rows: 38px 36px 24px; }
-  .topbar:has(.preview-guide-entry):has(.header-context-role) .context-info { grid-row: 3; }
-  .topbar .profile-area:has(.preview-guide-entry) { display: contents; }
-  .topbar:has(.preview-guide-entry) .topbar-brand { grid-column: 1; grid-row: 1; }
-  .profile-area:has(.preview-guide-entry) .profile-account-group { grid-column: 2; grid-row: 1; justify-self: end; }
+  .app-shell:has(.preview-toolbar) { --header-height: 110px; }
+  .topbar:has(.preview-toolbar) { grid-template-rows: 38px 36px; }
+  .app-shell:has(.preview-toolbar):has(.header-context-role) { --header-height: 144px; }
+  .topbar:has(.preview-toolbar):has(.header-context-role) { grid-template-rows: 38px 36px 24px; }
+  .topbar:has(.preview-toolbar):has(.header-context-role) .context-info { grid-row: 3; }
+  .topbar .profile-area:has(.preview-toolbar) { display: contents; }
+  .topbar:has(.preview-toolbar) .topbar-brand { grid-column: 1; grid-row: 1; }
+  .profile-area:has(.preview-toolbar) .profile-account-group { grid-column: 2; grid-row: 1; justify-self: end; }
   .topbar .preview-guide-entry { grid-column: 1; grid-row: 2; justify-self: start; width: 34px; height: 34px; min-height: 34px; padding: 8px; }
   .preview-guide-entry > span { display: none; }
-  .topbar .profile-area:has(.preview-guide-entry) .preview-toolbar { grid-column: 1; grid-row: 2; justify-self: start; margin-left: 42px; position: static; }
-  .profile-area:has(.preview-guide-entry) .logout-button { grid-column: 2; grid-row: 2; justify-self: end; }
-  .topbar:has(.preview-guide-entry) .preview-popover { position: absolute; top: calc(100% + 8px); left: 12px; right: 12px; max-height: 60dvh; }
+  .topbar .profile-area:has(.preview-toolbar) .preview-toolbar { grid-column: 1; grid-row: 2; justify-self: start; position: static; }
+  .topbar .profile-area:has(.preview-guide-entry) .preview-toolbar { margin-left: 42px; }
+  .profile-area:has(.preview-toolbar) .logout-button { grid-column: 2; grid-row: 2; justify-self: end; }
+  .topbar:has(.preview-toolbar) .preview-popover { position: absolute; top: calc(100% + 8px); left: 12px; right: 12px; max-height: 60dvh; }
 }
 @media (max-width: 360px) {
   .app-shell > .topbar { padding-inline: 12px; }
