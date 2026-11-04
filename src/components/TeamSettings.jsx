@@ -4,6 +4,7 @@ import {
   createTeamDeletionRequest,
   deleteTeam,
   leaveTeam,
+  getTeamLeavePreview,
   updateTeamDeletionConsent,
 } from '../api/teams.js';
 import { formatDate, memberName, memberRole } from '../lib/domain.js';
@@ -29,10 +30,11 @@ export default function TeamSettings({
   deletionResource,
   onChanged,
   onRemoved,
-  onNavigate,
 }) {
   const [confirmation, setConfirmation] = useState(null);
   const [nextLeaderId, setNextLeaderId] = useState('');
+  const [handoffToUserId, setHandoffToUserId] = useState('');
+  const [leavePreview, setLeavePreview] = useState(null);
   const [acknowledged, setAcknowledged] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -49,13 +51,28 @@ export default function TeamSettings({
   const requestActive = ['PENDING', 'READY'].includes(request?.status);
   const requestUnavailable =
     deletionResource.loading || Boolean(deletionResource.error);
-  const nextLeaders = members.filter((member) => member.userId !== user.id);
-  const openConfirmation = (type) => {
+  const leaveBlockMessage = {
+    MEMBERSHIP_LOCKED: '중간 평가 대상이 확정되어 탈퇴할 수 없습니다.',
+    LAST_MEMBER_MUST_DELETE_TEAM: '마지막 팀원은 팀 삭제 절차를 이용해 주세요.',
+    TEAM_LEAVE_HAS_DEPENDENCIES: '완료 작업의 담당자가 포함되어 탈퇴할 수 없습니다.',
+  }[leavePreview?.blockReason];
+  const openConfirmation = async (type) => {
     setError(null);
     setAcknowledged(false);
     setNextLeaderId('');
+    setHandoffToUserId('');
+    setLeavePreview(null);
     // 최종 삭제는 사용자가 확인한 요청의 버전으로만 전송한다.
     setConfirmation({ type, request });
+    if (type !== 'leave') return;
+    setBusy(true);
+    try {
+      setLeavePreview(await getTeamLeavePreview(team.id));
+    } catch (requestError) {
+      setError(requestError);
+    } finally {
+      setBusy(false);
+    }
   };
   const closeConfirmation = () => {
     setConfirmation(null);
@@ -63,7 +80,7 @@ export default function TeamSettings({
   };
   const submit = async (event) => {
     event.preventDefault();
-    if (busy) return;
+    if (busy || (confirmation.type === 'leave' && (!leavePreview || leavePreview.blockReason))) return;
     const type = confirmation.type;
     setBusy(true);
     setError(null);
@@ -78,12 +95,13 @@ export default function TeamSettings({
           confirmation.request.version,
         );
       else if (type === 'leave')
-        await leaveTeam(team.id, isLeader ? nextLeaderId : undefined);
+        await leaveTeam(team.id, nextLeaderId, handoffToUserId);
       setConfirmation(null);
       if (type === 'delete' || type === 'leave') onRemoved();
       else onChanged();
     } catch (requestError) {
       setError(requestError);
+      if (type === 'leave') setLeavePreview(null);
       onChanged();
     } finally {
       setBusy(false);
@@ -299,33 +317,10 @@ export default function TeamSettings({
         <div className="settings-section-heading">
           <h2>팀 탈퇴</h2>
           <p>
-            맡은 역할과 자료를 인계한 뒤 팀에서 나갑니다. 스페이스 소속과 계정은
-            유지됩니다.
+            미완료 담당 작업은 탈퇴 화면에서 인계합니다. 작성한 자료와 스페이스 소속은 유지됩니다.
           </p>
         </div>
         <div className="settings-section-content">
-          <ol className="handoff-checklist">
-            <li>담당 작업·팀 공용 자료를 인계합니다.</li>
-            <li>리더라면 다음 리더를 직접 선택합니다.</li>
-            <li>탈퇴 조건을 확인한 뒤 팀에서 탈퇴합니다.</li>
-          </ol>
-          <p className="field-help">
-            담당 작업(완료 작업 포함)이나 본인이 등록한 팀 공용 자료가 남아 있으면 탈퇴할 수 없습니다. 담당자를 변경하고 공용 자료를 정리해 주세요.
-          </p>
-          <div className="heading-actions">
-            <button
-              className="secondary-button"
-              onClick={() => onNavigate('작업')}
-            >
-              담당 작업 확인
-            </button>
-            <button
-              className="secondary-button"
-              onClick={() => onNavigate('팀 자료')}
-            >
-              공용 자료 확인
-            </button>
-          </div>
           {team.approvedMemberCount < 2 && (
             <p className="notice">
               마지막 팀원은 탈퇴할 수 없습니다. 위에서 삭제 요청을 만들고 본인
@@ -400,7 +395,9 @@ export default function TeamSettings({
                   탈퇴하면 이 팀의 작업·자료 화면에 접근할 수 없습니다.
                   스페이스 소속은 유지됩니다.
                 </p>
-                {isLeader && (
+                {busy && !leavePreview && <p>탈퇴 영향을 확인하고 있습니다.</p>}
+                {leaveBlockMessage && <p className="notice">{leaveBlockMessage}</p>}
+                {leavePreview?.requiresNextLeader && !leavePreview.blockReason && (
                   <Field
                     label="다음 리더"
                     help="현재 승인된 다른 팀원 중 한 명을 지정해 주세요."
@@ -412,7 +409,7 @@ export default function TeamSettings({
                       onChange={(event) => setNextLeaderId(event.target.value)}
                     >
                       <option value="">다음 리더를 선택하세요</option>
-                      {nextLeaders.map((member) => (
+                      {leavePreview.eligibleMembers.map((member) => (
                         <option key={member.userId} value={member.userId}>
                           {member.name} · {memberRole(member)}
                         </option>
@@ -420,15 +417,28 @@ export default function TeamSettings({
                     </select>
                   </Field>
                 )}
+                {Boolean(leavePreview?.handoffTasks.length) && !leavePreview.blockReason && (
+                  <>
+                    <p>인계할 미완료 작업 {leavePreview.handoffTasks.length}개</p>
+                    <ul>
+                      {leavePreview.handoffTasks.map((task) => (
+                        <li key={task.id}>{task.title}</li>
+                      ))}
+                    </ul>
+                    <Field label="작업 인계 대상" help="목록의 작업을 모두 선택한 팀원에게 인계합니다.">
+                      <select required disabled={busy} value={handoffToUserId}
+                        onChange={(event) => setHandoffToUserId(event.target.value)}>
+                        <option value="">인계할 팀원을 선택하세요</option>
+                        {leavePreview.eligibleMembers.map((member) => (
+                          <option key={member.userId} value={member.userId}>{member.name}</option>
+                        ))}
+                      </select>
+                    </Field>
+                  </>
+                )}
               </>
             )}
             <ErrorNotice error={error} />
-            {error?.code === 'TEAM_LEAVE_HAS_DEPENDENCIES' && (
-              <p className="field-help">
-                창을 닫고 담당 작업·공용 자료를 확인해 주세요. 완료
-                작업에 담당자로 남아 있는 경우에도 탈퇴가 제한됩니다.
-              </p>
-            )}
             <div className="modal-actions">
               <button
                 type="button"
@@ -461,10 +471,10 @@ export default function TeamSettings({
                   (confirmationType === 'leave' &&
                     (membershipLocked ||
                       team.approvedMemberCount < 2 ||
-                      (isLeader &&
-                        !nextLeaders.some(
-                          (member) => member.userId === nextLeaderId,
-                        ))))
+                      !leavePreview ||
+                      Boolean(leavePreview.blockReason) ||
+                      (leavePreview.requiresNextLeader && !nextLeaderId) ||
+                      (leavePreview.handoffTasks.length > 0 && !handoffToUserId)))
                 }
               >
                 {busy

@@ -38,6 +38,7 @@ async function workspace(
     initialDeletion = null,
     membershipLocked = false,
     leaveBlocked = false,
+    leaveWithHandoff = false,
     deletionLoadError = null,
   } = {},
 ) {
@@ -249,6 +250,14 @@ async function workspace(
       deletion.version++;
       return respond(deletion);
     }
+    if (path === '/api/teams/1/members/me/leave-preview')
+      return respond({
+        blockReason: leaveBlocked ? 'TEAM_LEAVE_HAS_DEPENDENCIES' : null,
+        requiresNextLeader: userId === team.leaderId,
+        eligibleMembers: members.slice(0, memberCount).filter((member) => member.userId !== userId),
+        completedTaskCount: leaveBlocked ? 1 : 0,
+        handoffTasks: leaveWithHandoff ? [{ id: task.id, title: task.title, status: task.status }] : [],
+      });
     if (path === '/api/teams/1/members/me') {
       if (leaveBlocked)
         return respond(
@@ -980,27 +989,18 @@ test('리더 탈퇴는 현재 팀원 중 후임을 반드시 선택한다', asyn
   ).toBe('?nextLeaderId=member');
 });
 
-test('탈퇴에 남은 의존성이 있으면 담당 작업과 자료 정리를 안내한다', async ({
-  page,
-}) => {
-  const { requests } = await workspace(page, { leaveBlocked: true });
+test('탈퇴 화면에서 미완료 작업을 확인하고 인계 대상을 선택한다', async ({ page }) => {
+  const { requests } = await workspace(page, { leaveWithHandoff: true });
   await openTeamSettings(page);
   await page.getByRole('button', { name: '팀 탈퇴하기' }).click();
-  await page.getByRole('button', { name: '탈퇴 확정' }).click();
-  await expect(page.getByRole('dialog').getByRole('alert')).toContainText(
-    '담당 작업·공용 자료',
-  );
-  await page
-    .getByRole('dialog')
-    .getByRole('button', { name: '취소', exact: true })
-    .click();
-  await page.getByRole('button', { name: '담당 작업 확인' }).click();
-  await expect(
-    page.getByRole('heading', { name: '작업', exact: true }),
-  ).toBeVisible();
-  expect(
-    requests.filter(({ path }) => path === '/api/teams/1/members/me'),
-  ).toHaveLength(1);
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByText('인계할 미완료 작업 1개')).toBeVisible();
+  await expect(dialog.getByRole('button', { name: '탈퇴 확정' })).toBeDisabled();
+  await dialog.getByLabel('작업 인계 대상').selectOption('leader');
+  await dialog.getByRole('button', { name: '탈퇴 확정' }).click();
+  await expect(page).toHaveURL(/\/spaces\/1$/);
+  expect(requests.find(({ path }) => path === '/api/teams/1/members/me').query)
+    .toBe('?handoffToUserId=leader');
 });
 
 test('마지막 팀원은 탈퇴 대신 삭제 요청과 본인 동의로 팀을 삭제한다', async ({
