@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { BookOpen, X } from 'lucide-react';
 import { PreviewGuideContext } from '../lib/previewGuideContext.js';
-import { completedGuideStep, peerResponseGuideStep, guideTaskId, getGuideSteps, materialsGuideReady, materialsSourceGuideStep, contributionGuideReady, contributionGuideStep, contributionTaskGuideReady, managerGuideReady, managerGuidePath, managerGuideMemberId, managerGuideMemberPath, managerGuideTaskId, managerGuideDeliverableId, evaluationGuideReady, evaluationGuideSchedule, reportManagementGuideReady, guideScenarios, nextGuideScenario, guideExamples, prepareGuide, readGuideSession, storeGuideSession, guideScopeKey, guideStorageKey } from '../mock/guide.js';
+import { completedGuideStep, peerResponseGuideStep, guideTaskId, getGuideSteps, materialsGuideReady, materialsSourceGuideStep, contributionGuideReady, contributionGuideStep, contributionTaskGuideReady, managerGuideReady, managerGuidePath, managerGuideMemberId, managerGuideMemberPath, managerGuideTaskId, managerGuideDeliverableId, evaluationGuideReady, evaluationGuideSchedule, reportManagementGuideReady, guideScenarios, nextGuideScenario, guideExamples, prepareGuide, readGuideSession, storeGuideSession, clearGuideSession } from '../mock/guide.js';
 import { getMockState } from '../mock/planned.js';
-import { previewContext, previewRole, setPreviewRole } from '../mock/preview.js';
+import { previewContext, previewRole } from '../mock/preview.js';
 import { workSummary } from '../lib/evaluation.js';
 import { guideLocationMatches, isReportGuideDrawer } from '../lib/guideLocation.js';
 import { useInteractions } from '../hooks/useInteractions.js';
@@ -267,10 +267,7 @@ export default function PreviewGuideProvider({ children }) {
     setError('');
     try {
       if (!(await confirmDiscard())) return;
-      const originalRole = guide?.originalRole ?? previousSession?.originalRole;
-      if (originalRole) setPreviewRole(originalRole);
-      sessionStorage.removeItem(guideScopeKey);
-      sessionStorage.removeItem(guideStorageKey);
+      clearGuideSession();
       setGuide(null);
       setLauncher(false);
       window.dispatchEvent(new Event('fairplay:preview-updated'));

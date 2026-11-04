@@ -311,6 +311,14 @@ export function storeGuideSession(guide) {
     sessionStorage.setItem(guideStorageKey, JSON.stringify({ version, scope, originalRole, status, scenarioId }));
   } catch { /* Current tab still works when storage is unavailable. */ }
 }
+export function clearGuideSession() {
+  try {
+    const originalRole = readGuideSession()?.originalRole;
+    sessionStorage.removeItem(guideScopeKey);
+    sessionStorage.removeItem(guideStorageKey);
+    if (originalRole) setPreviewRole(originalRole);
+  } catch { /* Guide storage is unavailable. */ }
+}
 export function prepareGuide(scenarioId = 'task-completion') {
   if (!guideScenarios.some((scenario) => scenario.id === scenarioId && scenario.available))
     throw new Error('아직 준비되지 않은 가이드입니다.');

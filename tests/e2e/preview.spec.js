@@ -277,7 +277,7 @@ test('평가 일정 저장 시 자동 시작과 팀 구성 고정을 안내하�
   await expect(page.getByRole('region', { name: '중간 평가 운영', exact: true }).getByText('평가 진행 중', { exact: true })).toBeVisible();
 });
 
-test('로그인 미리보기는 Google 요청 없이 화면 미리보기로 이동한다', async ({
+test('로그인 미리보기에는 공개 가이드 진입 버튼이 없다', async ({
   page,
 }) => {
   const calls = await preview(page, { path: '/main' });
@@ -288,14 +288,11 @@ test('로그인 미리보기는 Google 요청 없이 화면 미리보기로 이�
   await expect(
     page.getByRole('button', { name: 'Google 로그인 · 실제 서비스에서 연결' }),
   ).toBeDisabled();
-  await page.getByRole('button', { name: '로그인 없이 사용자 가이드' }).click();
-  await expect(
-    page.getByRole('heading', { name: '내 스페이스', exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole('button', { name: /사용자 가이드/ })).toHaveCount(0);
   expect(calls).toEqual([]);
 });
 
-test('실제 로그인 화면에서 인증 없이 미리보기를 시작할 수 있다', async ({
+test('공개 화면에는 가이드를 표시하지 않고 전시 링크로만 체험할 수 있다', async ({
   page,
 }) => {
   const apiCalls = [];
@@ -310,16 +307,39 @@ test('실제 로그인 화면에서 인증 없이 미리보기를 시작할 수 
     if (new URL(request.url()).pathname.startsWith('/api/'))
       apiCalls.push(request.url());
   });
+  await page.goto('/');
+  await expect(page.getByRole('link', { name: 'Fairplay 시작하기', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: '사용자 가이드', exact: true })).toHaveCount(0);
   await page.goto('/login');
   await expect(
     page.getByRole('button', { name: 'Google로 계속하기' }),
   ).toBeVisible();
+  await expect(page.getByRole('button', { name: /사용자 가이드/ })).toHaveCount(0);
   const initialCalls = apiCalls.length;
-  await page.getByRole('button', { name: '로그인 없이 사용자 가이드' }).click();
+
+  await page.goto('/preview/main?guide=start');
   await expect(
     page.getByRole('heading', { name: '내 스페이스', exact: true }),
   ).toBeVisible();
+  const guideButton = page.getByRole('button', { name: '사용자 가이드', exact: true });
+  const guideDialog = page.getByRole('dialog', { name: '사용자 가이드', exact: true });
+  await expect(guideButton).toHaveCount(0);
+  await expect(guideDialog).toHaveCount(0);
+
+  await page.goto('/preview/exhibition');
+  await expect(guideDialog).toBeVisible();
   await expect(page).toHaveURL(/\/preview\/main$/);
+  await guideDialog.press('Escape');
+  await page.reload();
+  await expect(guideButton).toBeVisible();
+  await guideButton.click();
+  await expect(guideDialog).toBeVisible();
+  await guideDialog.press('Escape');
+  await page.getByRole('button', { name: '미리보기 종료', exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await page.goto('/preview/main');
+  await expect(page.getByRole('heading', { name: '내 스페이스', exact: true })).toBeVisible();
+  await expect(guideButton).toHaveCount(0);
   expect(apiCalls.length).toBe(initialCalls);
 });
 
