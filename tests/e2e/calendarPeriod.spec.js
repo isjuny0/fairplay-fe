@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { openCalendarEventEditor } from './helpers/teamDashboard.js';
+import { addDashboardWidgets, clickDashboardControl, openCalendarEventEditor } from './helpers/teamDashboard.js';
 
 test.beforeEach(async ({ page }) => {
   await page.clock.setFixedTime(new Date('2026-10-21T09:00:00Z'));
@@ -221,6 +221,10 @@ for (const width of [1440, 1920]) {
     page,
   }) => {
     await page.setViewportSize({ width, height: 1000 });
+    await addDashboardWidgets(page, ['내 기여도']);
+    await clickDashboardControl(page, '위젯 편집');
+    await page.getByRole('button', { name: '지금 확인할 작업 위젯 제거', exact: true }).click();
+    await clickDashboardControl(page, '편집 완료');
     const board = page.getByRole('button', {
       name: '작업 보드 보기',
       exact: true,

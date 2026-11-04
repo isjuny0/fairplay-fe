@@ -19,14 +19,17 @@ for (const width of [1920, 1440, 1024, 768, 390, 320]) {
       await expect(
         home.getByRole('region', { name: '직접 등록 일정 캘린더' }),
       ).toBeVisible();
-      await expect(home.locator('.dashboard-widget')).toHaveCount(4);
-      await addDashboardWidgets(page, [
+      await expect(home.locator('.dashboard-widget h2')).toHaveText([
+        '캘린더',
         '지금 확인할 작업',
+        '팀 전체 진행률',
+      ]);
+      await addDashboardWidgets(page, [
         '내 작업 현황',
         '우리 팀',
         '빠른 메모',
       ]);
-      await expect(home.locator('.dashboard-widget')).toHaveCount(7);
+      await expect(home.locator('.dashboard-widget')).toHaveCount(6);
       await expect(home.locator('.dashboard-work-metric > strong')).toHaveText([
         '70.00%',
         '40.00%',
@@ -51,26 +54,24 @@ for (const width of [1920, 1440, 1024, 768, 390, 320]) {
           () => document.documentElement.scrollWidth > innerWidth,
         ),
       ).toBe(false);
+      const calendar = await home.locator('.dashboard-calendar').boundingBox();
+      const attention = await home.locator('.widget-attention').boundingBox();
+      const progress = await home.locator('.dashboard-team-progress').boundingBox();
+      const [overdue, dueSoon] = await home.locator('.dashboard-attention > button')
+        .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().toJSON()));
+      expect(dueSoon.top).toBeGreaterThan(overdue.bottom);
+      expect(dueSoon.left).toBeCloseTo(overdue.left, 0);
       if (width > 1250) {
-        const progress = await home
-          .locator('.dashboard-team-progress')
-          .boundingBox();
-        const calendar = await home
-          .locator('.dashboard-calendar')
-          .boundingBox();
-        expect(calendar.x + calendar.width).toBeLessThan(progress.x);
-        expect(progress.y).toBe(calendar.y);
-        expect(Math.abs(progress.height - calendar.height)).toBeLessThanOrEqual(
-          1,
-        );
+        expect(attention.y).toBe(calendar.y);
+        expect(calendar.x + calendar.width).toBeLessThan(attention.x);
       } else {
-        const calendar = await home
-          .locator('.dashboard-calendar')
-          .boundingBox();
-        const progress = await home
-          .locator('.dashboard-team-progress')
-          .boundingBox();
-        expect(calendar.y + calendar.height).toBeLessThan(progress.y);
+        expect(calendar.y + calendar.height).toBeLessThan(attention.y);
+      }
+      if (width > 560) {
+        expect(progress.y).toBe(attention.y);
+        expect(attention.x + attention.width).toBeLessThan(progress.x);
+      } else {
+        expect(attention.y + attention.height).toBeLessThan(progress.y);
       }
     },
   );

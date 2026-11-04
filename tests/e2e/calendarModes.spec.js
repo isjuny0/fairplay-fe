@@ -202,7 +202,7 @@ test('기본·추가 위젯을 드래그하고 화살표로 이동하며 제거�
 }) => {
   // Keep both drag handles visible; browser auto-scrolling is not this assertion's subject.
   await page.setViewportSize({ width: 1440, height: 1600 });
-  await addDashboardWidgets(page, ['빠른 메모']);
+  await addDashboardWidgets(page, ['내 기여도', '빠른 메모']);
   await clickDashboardControl(page, '위젯 편집');
   await page
     .getByRole('button', { name: '캘린더 위젯 드래그', exact: true })
