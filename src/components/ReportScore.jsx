@@ -1,4 +1,5 @@
 import { formatReportNumber } from '../lib/reportScore.js';
+import useMobileLayout from '../hooks/useMobileLayout.js';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { CircleHelp } from 'lucide-react';
 import { validReportWeights } from '../lib/reportWeights.js';
@@ -82,6 +83,7 @@ export function ReportCriteriaResults({ details, guide }) {
   </section>;
 }
 export function ResultSummary({ name, totalScore, details, weights, evaluatedMemberCount, own = false, personal = false, guide, children }) {
+  const mobile = useMobileLayout();
   const appliedWeights = validReportWeights(weights) ? weights : null;
   const components = reportComponents.map((component) => ({ ...component, weight: appliedWeights?.[component.weightKey] ?? '—' }));
   return <section className={`report-score-summary composite-summary${own ? ' report-personal-summary' : ''}`} aria-label={`${name} 종합 평가 요약`}>
@@ -90,7 +92,9 @@ export function ResultSummary({ name, totalScore, details, weights, evaluatedMem
       <span className="report-score-caption">개인별 100점 만점</span>
       {guide?.stepId === 'report-overview' && <button className="secondary-button" data-guide="confirm-report-overview" disabled={!guide.reportReady} onClick={() => guide.confirmReportStep('report-overview')}>종합점수 확인 완료</button>}
     </div>
-    <ContributionBreakdown details={details} components={components} evaluatedMemberCount={evaluatedMemberCount} personal={personal} guide={guide} />
+    <details className="report-calculation-details" open={!mobile || Boolean(guide?.guiding)}><summary>점수 계산 내역</summary>
+      <ContributionBreakdown details={details} components={components} evaluatedMemberCount={evaluatedMemberCount} personal={personal} guide={guide} />
+    </details>
     {children}
     <ReportCriteriaResults details={details} guide={guide} />
   </section>;

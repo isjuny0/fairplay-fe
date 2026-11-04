@@ -26,12 +26,18 @@ async function withinViewport(locator) {
     );
   });
 }
+async function openCalculation(region) {
+  const calculation = region.locator('.report-calculation-details').first();
+  if (await calculation.count() && await calculation.getAttribute('open') === null)
+    await calculation.locator('summary').click();
+}
 for (const width of [1440, 1280, 390]) {
   test(`공개 리포트 ${width}px: 본인의 종합점수와 평가 결과만 표시한다`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await preview(page, '/spaces/1/teams/1/reports', 'leader', 'published');
     const summary = page.getByRole('region', { name: '나의 종합 평가 요약', exact: true });
     await expect(summary).toBeVisible();
+    await openCalculation(summary);
     await expect(summary.locator('.report-composition-track')).toHaveCount(1);
     await expect(summary.locator('.report-component-meter')).toHaveCount(0);
     await expect(summary.locator('.report-component-value')).toContainText(['70.0점', '7.0점', '14.0점']);
@@ -88,6 +94,7 @@ for (const width of [1440, 1280, 390]) {
     await memberButtons.nth(1).focus();
     await memberButtons.nth(1).press('Enter');
     const evidence = page.getByRole('region', { name: '이지원님의 수행 근거', exact: true });
+    await openCalculation(evidence);
     await expect(evidence.locator('.report-visual-breakdown')).toBeVisible();
     await expect(evidence.locator('.report-total-ring')).toHaveCount(0);
     await expect(evidence.locator('.report-composition-track')).toHaveCount(1);
@@ -170,13 +177,13 @@ for (const width of [1440, 1280, 390]) {
       page.getByLabel('이지원 작업 수행 4점', { exact: true }),
     ).toBeChecked();
     await expect(
-      dock.getByRole('button', { name: '최종 제출', exact: true }),
+      page.getByRole('region', { name: '평가 최종 제출', exact: true }).getByRole('button', { name: '최종 제출', exact: true }),
     ).toBeDisabled();
     await save.click();
-    await expect(dock).toContainText('저장한 평가입니다.');
+    await expect(dock).toContainText('임시 저장됨 · 최종 제출 전입니다.');
     await expect(page.locator('.evaluation-progress')).toContainText('1 / 2명 저장');
     await expect(
-      dock.getByRole('button', { name: '최종 제출', exact: true }),
+      page.getByRole('region', { name: '평가 최종 제출', exact: true }).getByRole('button', { name: '최종 제출', exact: true }),
     ).toBeDisabled();
     expect(await withinViewport(save)).toBe(true);
     expect(

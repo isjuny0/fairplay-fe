@@ -264,6 +264,10 @@ export default function ManagerDashboard({ context }) {
         </div>}
             {!teamId && (
               <section className="panel dashboard-team-overview">
+                {dashboard.teams.length > 0 && <p className="workflow-next-action"><strong>먼저 확인할 팀</strong>마감이 지연되었거나 가입 신청이 대기 중인 팀을 아래 버튼으로 추려 확인하세요.</p>}
+                {dashboard.teams.length > 0 && <div className="dashboard-priority-filters" role="group" aria-label="확인이 필요한 팀 빠른 조회">
+                  {[['overdue', '마감 지연', dashboard.teams.filter(team => team.overdueTaskCount > 0).length], ['applications', '가입 대기', dashboard.teams.filter(team => team.pendingApplications > 0).length]].map(([value,label,count]) => <button type="button" className="secondary-button" key={value} aria-pressed={teamFilter === value} onClick={() => changeListCondition('teamFilter',teamFilter === value ? '' : value)}>{label} {count}팀</button>)}
+                </div>}
                 <div className="dashboard-team-list-header">
                 {dashboard.teams.length > 0 && (
                     <div

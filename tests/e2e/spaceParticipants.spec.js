@@ -108,13 +108,15 @@ for (const width of [1440, 375]) {
     await page.setViewportSize({ width, height: 1000 });
     const { calls } = await backend(page);
     await page.goto("/spaces/1");
+    await expect(page.locator('.space-home')).toBeVisible();
+    if (width <= 720) await page.getByRole('button', {name:'스페이스 메뉴 펼치기',exact:true}).click();
     await page
       .getByRole("navigation", {
-        name: width <= 720 ? "모바일 관리자 메뉴" : "스페이스 메뉴",
+        name: "스페이스 메뉴",
         exact: true,
       })
       .getByRole("button", {
-        name: width <= 720 ? "참여자" : "참여자 관리",
+        name: "참여자 관리",
         exact: true,
       })
       .click();

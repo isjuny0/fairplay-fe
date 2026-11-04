@@ -1,5 +1,6 @@
 import { selectPreviewOption } from './helpers/previewControls.js';
 import { test, expect } from '@playwright/test';
+import { addDashboardWidgets, clickDashboardControl } from './helpers/teamDashboard.js';
 
 async function preview(page, path, role = 'leader', scenario = 'active') {
   await page.goto('/preview/main');
@@ -57,8 +58,9 @@ test('새 화면은 상단과 제목에서 시작하고 목록 복귀는 필터�
       Math.abs((await page.evaluate(() => window.scrollY)) - position),
     )
     .toBeLessThan(20);
+  await page.getByRole('button',{name:'스페이스 메뉴 펼치기',exact:true}).click();
   await page
-    .getByRole('navigation', { name: '모바일 팀 메뉴' })
+    .getByRole('navigation', { name: '팀 메뉴', exact:true })
     .getByRole('button', { name: '팀 자료', exact: true })
     .click();
   await expect(
@@ -120,38 +122,39 @@ test('완료 준비 상태는 미작성 담당자를 표시하고 전원 작성 
   ).toHaveCount(0);
 });
 
-test('모바일 관리자는 공간 선택을 펼치지 않고 평가와 리포트로 이동한다', async ({
+test('모바일 관리자는 통합 메뉴에서 평가와 리포트로 이동한다', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await preview(page, '/spaces/1/dashboard', 'manager');
-  const navigation = page.getByRole('navigation', {
-    name: '모바일 관리자 메뉴',
-  });
+  await page.getByRole('button',{name:'스페이스 메뉴 펼치기',exact:true}).click();
+  const navigation = page.locator('.manager-workspace-navigation');
   await expect(navigation.getByRole('button')).toHaveCount(5);
-  await expect(navigation.getByRole('button', { name: '참여자', exact: true })).toBeVisible();
+  await expect(navigation.getByRole('button', { name: '참여자 관리', exact: true })).toBeVisible();
   for (const width of [320, 390]) {
     await page.setViewportSize({ width, height: 844 });
     const boxes = await navigation.getByRole('button').evaluateAll((buttons) => buttons.map((button) => ({ top: button.getBoundingClientRect().top, fits: button.scrollWidth <= button.clientWidth })));
-    expect(boxes.every((box) => Math.abs(box.top - boxes[0].top) < 1 && box.fits)).toBe(true);
+    expect(boxes.every((box) => box.fits)).toBe(true);
   }
   await expect(page.getByLabel('스페이스 선택', { exact: true })).toBeHidden();
-  await navigation.getByRole('button', { name: '평가', exact: true }).click();
+  await navigation.getByRole('button', { name: '동료 평가 관리', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: '동료 평가 관리', level: 1 }),
   ).toBeVisible();
-  await navigation.getByRole('button', { name: '리포트', exact: true }).click();
+  await page.getByRole('button',{name:'스페이스 메뉴 펼치기',exact:true}).click();
+  await navigation.getByRole('button', { name: '리포트 관리', exact: true }).click();
   const readiness = page.getByRole('list', { name: '팀별 리포트 준비 상태' });
   await expect(readiness.getByRole('listitem')).toHaveCount(2);
   await expect(readiness).toContainText('중간·최종 평가를 모두 마감해 주세요.');
   await expect(
     page.getByRole('button', { name: '전체 리포트 생성', exact: true }),
   ).toBeDisabled();
-  await navigation.getByRole('button', { name: '평가', exact: true }).click();
+  await page.getByRole('button',{name:'스페이스 메뉴 펼치기',exact:true}).click();
+  await navigation.getByRole('button', { name: '동료 평가 관리', exact: true }).click();
   await expect(page).toHaveURL(/spaces\/1\/rounds$/);
 });
 
-test('모바일 고급 필터는 접혀 있고 적용 조건 수와 고정 더보기 문구를 제공한다', async ({
+test('모바일 고급 필터는 접혀 있고 통합 메뉴에 현재 위치를 표시한다', async ({
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -167,11 +170,11 @@ test('모바일 고급 필터는 접혀 있고 적용 조건 수와 고정 더�
   ).toBeVisible();
   await page.getByRole('button', { name: '필터 · 2', exact: true }).click();
   await expect(page.getByLabel('작업 정렬')).toBeHidden();
-  await page.getByText('더보기 ⌄', { exact: true }).click();
+  await page.getByRole('button', {name:'스페이스 메뉴 펼치기',exact:true}).click();
   await page
     .getByRole('button', { name: '기여도 리포트', exact: true })
     .click();
-  await expect(page.getByText('더보기 ⌄', { exact: true })).toBeVisible();
+  await expect(page.locator('.mobile-menu-location')).toContainText('기여도 리포트');
   await expect(
     page.getByRole('button', { name: '리포트 새로고침', exact: true }),
   ).toBeVisible();
@@ -187,7 +190,7 @@ for (const width of [1440, 390])
     await expect(
       page.getByLabel('이지원 작업 수행 1점', { exact: true }),
     ).toBeFocused();
-    const card = page.getByRole('form', { name: '이지원 동료 평가 입력', exact: true });
+    const card = page.locator('.peer-card[aria-label="이지원 동료 평가 입력"]');
     const criterion = card.getByRole('group', {
       name: '작업 수행',
       exact: true,
@@ -284,10 +287,8 @@ test('연결된 결과물이 없으면 준비 목록에서 등록 영역으로 �
 test('팀 홈의 7일 내 마감 건수와 목록이 일치하고 위젯 설정은 유지된다', async ({ page }) => {
   await page.clock.setFixedTime(new Date('2026-10-15T09:00:00Z'));
   await preview(page, '/spaces/1/teams/1');
-  await page.getByRole('button', { name: '위젯 추가', exact: true }).click();
+  await addDashboardWidgets(page, ['지금 확인할 작업']);
   const catalog = page.getByRole('dialog', { name: '위젯 추가', exact: true });
-  await catalog.getByRole('button', { name: '지금 확인할 작업 추가', exact: true }).click();
-  await catalog.getByRole('button', { name: '완료', exact: true }).click();
   const soon = page.getByRole('button', { name: /7일 내 마감/ });
   const count = Number((await soon.innerText()).match(/\d+\s*건/)?.[0].replace(/\D/g, ''));
   expect(count).toBeGreaterThan(0);
@@ -303,6 +304,6 @@ test('팀 홈의 7일 내 마감 건수와 목록이 일치하고 위젯 설정�
   await page.getByRole('button', { name: '7일 내 마감 해제', exact: true }).click();
   await expect(list).toContainText('설문 결과 분석');
   await page.goto('/preview/spaces/1/teams/1');
-  await page.getByRole('button', { name: '위젯 추가', exact: true }).click();
+  await clickDashboardControl(page, '위젯 추가');
   await expect(catalog.getByRole('button', { name: '다가오는 작업 추가', exact: true })).toBeEnabled();
 });

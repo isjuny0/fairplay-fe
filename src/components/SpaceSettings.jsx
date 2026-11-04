@@ -137,6 +137,7 @@ export default function SpaceSettings({ space, onChanged }) {
           <div className="settings-section-heading">
             <h2>팀 빌딩 기간</h2>
             <p>팀 생성·가입 신청·가입 승인은 이 기간 안에서 가능합니다.</p>
+            <div className="experience-summary" aria-label="팀 빌딩 기간 적용 안내"><span>설정한 시작 시각부터 팀 생성·가입 신청·승인이 열리고, 종료 시각 이후에는 닫힙니다.</span></div>
           </div>
           <div className="settings-section-content">
             {space.teamBuildingOpensAt && space.teamBuildingClosesAt ? (
