@@ -182,7 +182,7 @@ test('작업 상세에서 등록할 때 유형 선택 후에도 작업 연결을
   );
   await chooseType(dialog, '문서 작성');
   await expect(dialog.getByLabel('작업 연결', { exact: true })).toHaveCount(0);
-  await expect(dialog).toContainText('설문 결과 분석');
+  await expect(dialog).toContainText('팀 자료 검색 개선');
   await dialog.getByLabel('제목', { exact: true }).fill('작업에 연결한 문서');
   await dialog
     .getByLabel('본문', { exact: true })

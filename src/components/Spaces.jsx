@@ -1,5 +1,4 @@
 import { usePreviewGuide } from '../lib/previewGuideContext.js';
-import { recentSpaceIds, clearRecentSpaces } from '../lib/recentSpaces.js';
 import Icon from './Icon.jsx';
 import RefreshButton from './RefreshButton.jsx';
 import DateTimeInput from './DateTimeInput.jsx';
@@ -36,8 +35,6 @@ export default function Spaces({ onSelect, onDirectoryContext, user }) {
   const guide = usePreviewGuide();
   const { notify, clearChanges } = useInteractions();
   const resource = useSpaceList(user.id);
-  const [recentIds, setRecentIds] = useState(() => recentSpaceIds(user.id));
-  useEffect(() => setRecentIds(recentSpaceIds(user.id)), [user.id]);
   const [openingSpaceId, setOpeningSpaceId] = useState(null);
   const [shortcutError, setShortcutError] = useState(null);
   const shortcutRequest = useRef(0);
@@ -231,11 +228,6 @@ export default function Spaces({ onSelect, onDirectoryContext, user }) {
           <ResourceState resource={resource} label="스페이스 목록">
             {resource.data?.length ? (
               <section className="directory-section" aria-label="스페이스 목록">
-                {!!recentIds.some(id => visibleSpaces.some(space => space.id === id)) && <nav className="recent-space-links" aria-label="최근 방문 스페이스">
-                  <span>최근 방문</span>
-                  {recentIds.map(id => visibleSpaces.find(space => space.id === id)).filter(Boolean).map(space => <button key={space.id} className="secondary-button" aria-label={`최근 방문: ${space.name}`} disabled={openingSpaceId != null} onClick={() => openShortcut(space.id)}>{space.name}</button>)}
-                  <button className="text-button" onClick={() => { clearRecentSpaces(user.id); setRecentIds([]); }}>기록 지우기</button>
-                </nav>}
                 <div className="directory-toolbar">
                   <label className="directory-search">
                     <span className="sr-only">스페이스 이름 검색</span>

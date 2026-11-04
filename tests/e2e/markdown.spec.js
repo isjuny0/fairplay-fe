@@ -10,7 +10,7 @@ async function open(page, target = path, customize = () => {}) {
   customize(state);
   await page.addInitScript(state => {
     localStorage.setItem('fairplay:preview-role', 'leader');
-    localStorage.setItem('fairplay:mock:v9:preview:1', JSON.stringify(state));
+    localStorage.setItem('fairplay:mock:v11:preview:1', JSON.stringify(state));
   }, state);
   await page.goto(target);
 }
@@ -53,7 +53,7 @@ test('마크다운 미리보기·저장·수정·연결된 결과물에서 원�
   await dialog.getByRole('textbox', { name: '본문', exact: true }).fill(`${sample}\n\n수정한 원문`);
   await dialog.getByRole('button', { name: /^(저장|팀 자료 등록)$/, exact: true }).click();
   await page.getByRole('button', { name: '작업', exact: true }).click();
-  await page.getByRole('button', { name: '설문 결과 분석', exact: true }).click();
+  await page.getByRole('button', { name: '팀 자료 검색 개선', exact: true }).click();
   await page.getByRole('tab', { name: '결과물', exact: true }).click();
   const card = page.getByRole('article').filter({ has: page.getByRole('heading', { name: '마크다운 조사 기록', exact: true }) });
   await expect(card.getByRole('heading', { name: '조사 결과', exact: true })).toBeVisible();
@@ -125,7 +125,7 @@ for (const width of [1440, 320]) {
     const requests = [];
     page.on('request', request => { if (request.url().startsWith('https://example.com')) requests.push(request.url()); });
     await open(page, path, state => { state.teams[1].deliverables[0].text = `${sample}\n\n${malicious}${wideContent}`; });
-    await page.getByRole('button', { name: '프로젝트 기획서', exact: true }).click();
+    await page.getByRole('button', { name: 'Fairplay 프로젝트 소개', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: '팀 자료 상세', exact: true });
     await expect(dialog.getByRole('heading', { name: '조사 결과', exact: true })).toBeVisible();
     await expect(dialog.locator('script, img, iframe')).toHaveCount(0);

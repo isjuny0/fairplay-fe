@@ -253,12 +253,11 @@ export default function TaskBoard({
       검색·필터 초기화
     </button>
   );
-  const listSummary = view !== 'list' && (
+  const listSummary = isSchedule && (
     <div className="list-summary" aria-live="polite">
       <span>
         검색 결과 {tasks.length}개 · 전체 {resource.data?.length || 0}개
-        {isSchedule && ` · 현재 기간 ${periodTaskCount}개 (지연 포함)`} ·{' '}
-        {view === 'board' ? '상태별 ' : ''}
+        {` · 현재 기간 ${periodTaskCount}개 (지연 포함)`} ·{' '}
         {sortLabel}
       </span>
       {hasFilters && resetFiltersButton}
@@ -465,7 +464,7 @@ export default function TaskBoard({
               <Icon name="close" />
             </button>
           ))}
-          {view === 'list' && resetFiltersButton}
+          {!isSchedule && resetFiltersButton}
         </div>
       )}
       <ResourceState resource={resource} label="작업 목록">
@@ -561,25 +560,19 @@ export default function TaskBoard({
                         .map((task) => {
                           const detailsExpanded = expandedBoardTaskIds.has(task.id);
                           const detailsId = `board-task-details-${task.id}`;
-                          const assigneeNames = task.assignees
-                            .map((assignment) => memberName(members, assignment.userId))
-                            .join(', ');
-                          const isMyTask = !readOnly && task.assignees.some(
-                            (assignment) => assignment.userId === user.id,
-                          );
+                          const assignees = task.assignees.map(({ userId }) => ({
+                            userId,
+                            name: memberName(members, userId),
+                          }));
+                          const assigneeNames = assignees.map(({ name }) => name).join(', ');
+                          const isOverdue = task.status !== 'DONE' && apiTimeToEpoch(task.dueAt) < now;
                           return (
                             <article
                               key={task.id}
                               className={`board-task-card${detailsExpanded ? ' is-expanded' : ''}`}
                             >
-                              <div className={`board-card-top${task.status !== 'DONE' && apiTimeToEpoch(task.dueAt) < now ? ' has-overdue' : ''}`}>
-                                <span className="board-card-heading">
-                                  <span className="mobile-task-state">{label}</span>
-                                </span>
-                                {task.status !== 'DONE' &&
-                                  apiTimeToEpoch(task.dueAt) < now && (
-                                    <span className="is-overdue board-card-overdue">마감 지남</span>
-                                  )}
+                              <div className="board-card-top">
+                                <span className="mobile-task-state">{label}</span>
                               </div>
                               <button
                                 className="task-title-button" data-guide-task-id={task.id}
@@ -590,9 +583,18 @@ export default function TaskBoard({
                               </button>
                               <div className="board-card-assignees">
                                 <span title={`담당자: ${assigneeNames}`}>
-                                  <span className="sr-only">담당자: </span>{assigneeNames}
+                                  <span className="sr-only">담당자: </span>
+                                  {assignees.map(({ userId, name }, index) => {
+                                    const isSelf = !readOnly && userId === user.id;
+                                    return (
+                                      <span key={userId}>
+                                        {index > 0 && ', '}
+                                        <span className={isSelf ? 'board-card-self' : undefined}>{name}</span>
+                                        {isSelf && <span className="sr-only"> (내 담당)</span>}
+                                      </span>
+                                    );
+                                  })}
                                 </span>
-                                {isMyTask && <small className="board-card-mine">내 담당</small>}
                               </div>
                               <div className="board-card-footer">
                                 <div className="task-deadline">
@@ -601,6 +603,7 @@ export default function TaskBoard({
                                     aria-label={`마감 ${formatDate(task.dueAt)}`}>
                                     {formatBoardDeadline(task.dueAt, now)} 마감
                                   </time>
+                                  {isOverdue && <span className="board-card-overdue">지연</span>}
                                 </div>
                               </div>
                               <button

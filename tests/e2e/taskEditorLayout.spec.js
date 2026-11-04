@@ -54,13 +54,13 @@ for (const width of [1440, 768, 390, 320]) {
         .getByRole('button', { name: '다음: 담당·배분', exact: true })
         .click();
     await dialog
-      .getByRole('checkbox', { name: '이지원 · 팀원', exact: true })
+      .getByRole('checkbox', { name: '김영진 · 팀원', exact: true })
       .check();
     await expect(
-      dialog.getByLabel('김하늘 배분율', { exact: true }),
+      dialog.getByLabel('김준영 배분율', { exact: true }),
     ).toHaveValue('50');
     await expect(
-      dialog.getByLabel('이지원 배분율', { exact: true }),
+      dialog.getByLabel('김영진 배분율', { exact: true }),
     ).toHaveValue('50');
     await expect(dialog.getByText('합계 100%', { exact: true })).toBeVisible();
     const panels = dialog.locator('.task-form-section:not([hidden])');

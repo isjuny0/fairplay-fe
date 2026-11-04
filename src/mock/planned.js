@@ -1,5 +1,5 @@
 import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
-import { exampleDeliverables, exampleTasks, peerCriteria } from './fixtures.js';
+import { exampleCalendarEvents, exampleDeliverables, exampleTasks, peerCriteria } from './fixtures.js';
 import { validatePeerResponse, workSummary } from '../lib/evaluation.js';
 import { defaultReportWeights, sameReportWeights, validReportWeights } from '../lib/reportWeights.js';
 
@@ -17,14 +17,14 @@ const now = () => koreanDateTime();
 const clone = (value) => structuredClone(value);
 const memoryStates = new Map();
 export function mockKey(context) {
-  const baseKey = `fairplay:mock:v9:${context.preview ? 'preview' : context.user.id}:${context.space.id}`;
+  const baseKey = `fairplay:mock:${context.preview ? 'v11:preview' : `v9:${context.user.id}`}:${context.space.id}`;
   if (!context.preview) return baseKey;
   try {
     const guideScope = globalThis.sessionStorage?.getItem('fairplay:preview-guide-scope');
     return guideScope ? `${baseKey}:guide:${guideScope}` : baseKey;
   } catch { return baseKey; }
 }
-export function getMockState(context) {
+export function getMockState(context, initialScenario = 'active') {
   const key = mockKey(context);
   let state = memoryStates.get(key);
   try {
@@ -40,7 +40,8 @@ export function getMockState(context) {
       responses: {},
       submitted: {},
       reports: [],
-      scenario: 'active',
+      calendarEvents: context.preview ? exampleCalendarEvents() : [],
+      scenario: initialScenario,
       rounds: [
         {
           id: context.space.id * 10 + 1,
@@ -66,7 +67,7 @@ export function getMockState(context) {
   for (const entry of context.teamContexts ||
     (context.team ? [{ team: context.team, members: context.members }] : [])) {
     if (!state.teams[entry.team.id]) {
-      const tasks = exampleTasks(entry.team, entry.members);
+      const tasks = exampleTasks(entry.team, entry.members, state.scenario);
       state.teams[entry.team.id] = {
         team: clone(entry.team),
         members: clone(entry.members),
@@ -113,8 +114,7 @@ export function saveMockState(context, state) {
 export function resetMockState(context, scenario = 'active') {
   memoryStates.delete(mockKey(context));
   globalThis.localStorage?.removeItem(mockKey(context));
-  const state = getMockState(context);
-  state.scenario = scenario;
+  const state = getMockState(context, scenario);
   if (scenario === 'setup' || scenario === 'building') state.rounds = [];
   if (scenario === 'building') {
     state.spaceOverrides = {

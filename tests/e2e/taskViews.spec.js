@@ -30,7 +30,7 @@ async function seed(page, view = 'list', extra = '', customize = () => {}) {
   customize(state);
   await page.addInitScript((state) => {
     localStorage.setItem('fairplay:preview-role', 'leader');
-    localStorage.setItem('fairplay:mock:v9:preview:1', JSON.stringify(state));
+    localStorage.setItem('fairplay:mock:v11:preview:1', JSON.stringify(state));
   }, state);
   await page.goto(
     `/preview/spaces/1/teams/1/tasks?view=${view}&month=2026-11${extra}`,
@@ -67,17 +67,17 @@ test('목록은 일곱 열의 표로 제공하고 상세 복귀·필터·보기 
     path: testInfo.outputPath('task-table.png'),
     fullPage: true,
   });
-  await page.getByLabel('작업 제목 검색').fill('설문');
+  await page.getByLabel('작업 제목 검색').fill('팀 자료');
   await expect(table.getByRole('row')).toHaveCount(2);
   await table
-    .getByRole('button', { name: '설문 결과 분석', exact: true })
+    .getByRole('button', { name: '팀 자료 검색 개선', exact: true })
     .click();
   await page.getByRole('button', { name: '← 목록으로', exact: true }).click();
-  await expect(page.getByLabel('작업 제목 검색')).toHaveValue('설문');
+  await expect(page.getByLabel('작업 제목 검색')).toHaveValue('팀 자료');
   await page.reload();
   await expect(table.getByRole('row')).toHaveCount(2);
   await page.getByRole('button', { name: '타임라인', exact: true }).click();
-  await expect(page.getByLabel('작업 제목 검색')).toHaveValue('설문');
+  await expect(page.getByLabel('작업 제목 검색')).toHaveValue('팀 자료');
   await page.goBack();
   await expect(table).toBeVisible();
 });
@@ -137,7 +137,7 @@ test('타임라인은 3개월의 계획 기간을 주 눈금으로 비교하고 
   await expect(timeline.locator('.timeline-period')).toHaveCount(5);
   await expect(timeline.locator('.continues-before')).toHaveCount(2);
   const previousOverdueTask = timeline.locator('.timeline-row').filter({
-    has: page.getByRole('button', { name: '설문 결과 분석', exact: true }),
+    has: page.getByRole('button', { name: '팀 자료 검색 개선', exact: true }),
   });
   await expect(previousOverdueTask).toContainText('이전 기간 마감');
   await expect(previousOverdueTask.locator('.timeline-period')).toHaveCount(0);
@@ -146,7 +146,7 @@ test('타임라인은 3개월의 계획 기간을 주 눈금으로 비교하고 
     fullPage: true,
   });
   await timeline
-    .getByRole('button', { name: '사용자 인터뷰 계획', exact: true })
+    .getByRole('button', { name: '스페이스·팀 권한 설계', exact: true })
     .click();
   await page.getByRole('button', { name: '← 목록으로', exact: true }).click();
   await expect(
@@ -225,7 +225,7 @@ test('3개월을 가로지르는 일정은 양쪽 연속 표시와 실제 기간
     state.teams[1].tasks[0].startAt = '2026-10-31T23:59:00';
     state.teams[1].tasks[0].dueAt = '2027-02-01T09:00:00';
   });
-  const bar = page.getByRole('button', { name: /사용자 인터뷰 계획 · 시작일/ });
+  const bar = page.getByRole('button', { name: /스페이스·팀 권한 설계 · 시작일/ });
   await expect(bar).toHaveClass(/continues-before continues-after/);
   await expect(bar).toHaveCSS('left', '0px');
   const track = await bar.locator('..').boundingBox(),
@@ -237,7 +237,7 @@ test('3개월을 가로지르는 일정은 양쪽 연속 표시와 실제 기간
   await bar.focus();
   await page.keyboard.press('Enter');
   await expect(
-    page.getByRole('heading', { name: '사용자 인터뷰 계획', exact: true }),
+    page.getByRole('heading', { name: '스페이스·팀 권한 설계', exact: true }),
   ).toBeVisible();
 });
 
@@ -271,12 +271,12 @@ test('3개월 타임라인은 시작일 순서·오늘·지연 구간을 표시�
   await expect(
     timeline.locator('.timeline-task-label .task-title-button'),
   ).toHaveText([
-    '설문 결과 분석',
-    '서비스 흐름 설계',
-    '사용자 인터뷰 계획',
-    '조사 결과 요약',
-    '프로토타입 사용성 검증',
-    '최종 발표 자료',
+    '팀 자료 검색 개선',
+    'AI 피드백 화면 개선',
+    '스페이스·팀 권한 설계',
+    '종합 평가 리포트 연동',
+    '전시 가이드 동선 점검',
+    '작업 목록 페이지 이동',
   ]);
   await expect(timeline.locator('.timeline-row.is-late')).toHaveCount(2);
   await expect(timeline.locator('.timeline-delay')).toHaveCount(2);
@@ -304,10 +304,10 @@ test('3개월 타임라인은 시작일 순서·오늘·지연 구간을 표시�
 test('타임라인 미리보기는 마우스·키보드로 확인하고 짧은 막대 주변도 선택할 수 있다', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await seed(page, 'timeline');
-  const bar = page.getByRole('button', { name: /프로토타입 사용성 검증 · 시작일/ });
+  const bar = page.getByRole('button', { name: /전시 가이드 동선 점검 · 시작일/ });
   await bar.hover();
   const preview = timelinePreview(page);
-  await expect(preview).toContainText('프로토타입 사용성 검증');
+  await expect(preview).toContainText('전시 가이드 동선 점검');
   await expect(preview).toContainText('담당');
   await expect(preview).toContainText('2026. 11. 12. 11:00');
   await preview.hover();
@@ -327,7 +327,7 @@ test('타임라인 미리보기는 마우스·키보드로 확인하고 짧은 �
   expect(bounds.width).toBeLessThan(12);
   // Click outside the visible duration, inside its transparent target.
   await page.mouse.click(bounds.x + bounds.width / 2 + 10, bounds.y + bounds.height / 2);
-  await expect(page.getByRole('heading', { name: '프로토타입 사용성 검증', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '전시 가이드 동선 점검', exact: true })).toBeVisible();
 });
 
 test('타임라인은 긴 목록에서 월 헤더와 작업명을 고정하고 지연 집계로 필터링한다', async ({ page }, testInfo) => {
@@ -365,14 +365,14 @@ test('검색 결과와 현재 기간을 구분하고 적용한 검색·필터를
   await page.clock.install({ time: new Date('2026-10-15T09:00:00Z') });
   await seed(page, 'timeline');
   await expect(page.locator('.list-summary')).toContainText('검색 결과 6개 · 전체 6개 · 현재 기간 5개');
-  await page.getByLabel('작업 제목 검색').fill('설문');
+  await page.getByLabel('작업 제목 검색').fill('팀 자료');
   await page.getByLabel('작업 상태', { exact: true }).selectOption('IN_PROGRESS');
   await page.getByRole('checkbox', { name: '내 담당 작업만', exact: true }).check();
   await page.getByRole('checkbox', { name: '마감 지난 작업만', exact: true }).check();
   await page.getByLabel('작업 정렬').selectOption('newest');
   const chips = page.getByRole('group', { name: '적용 중인 검색·필터' });
   await expect(chips.getByRole('button')).toHaveCount(5);
-  await chips.getByRole('button', { name: '검색: 설문 해제', exact: true }).click();
+  await chips.getByRole('button', { name: '검색: 팀 자료 해제', exact: true }).click();
   await expect(page.getByLabel('작업 제목 검색')).toHaveValue('');
   await page.reload();
   await expect(chips.getByRole('button')).toHaveCount(4);
@@ -410,10 +410,10 @@ test('일정을 넓게 보고 작업명 너비를 조절해도 조회 조건을 
   expect((await timeline.boundingBox()).width).toBeGreaterThan(normalWidth);
   await expect(resizer).toHaveAttribute('aria-valuenow', '416');
   await expect(page.locator('body')).toHaveCSS('overflow', 'hidden');
-  await page.getByLabel('작업 제목 검색').fill('서비스');
+  await page.getByLabel('작업 제목 검색').fill('AI 피드백');
   await expect(page.locator('.list-summary')).toContainText('검색 결과 1개');
   await page.screenshot({ path: testInfo.outputPath('task-timeline-expanded.png') });
-  const task = dialog.getByRole('button', { name: '서비스 흐름 설계', exact: true });
+  const task = dialog.getByRole('button', { name: 'AI 피드백 화면 개선', exact: true });
   await task.focus();
   await expect(timelinePreview(page)).toBeVisible();
   await page.keyboard.press('Escape');
@@ -422,7 +422,7 @@ test('일정을 넓게 보고 작업명 너비를 조절해도 조회 조건을 
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
   await expect(page.getByRole('button', { name: '일정 넓게 보기', exact: true })).toBeFocused();
-  await expect(page.getByLabel('작업 제목 검색')).toHaveValue('서비스');
+  await expect(page.getByLabel('작업 제목 검색')).toHaveValue('AI 피드백');
   await expect(resizer).toHaveAttribute('aria-valuenow', '416');
   await resizer.focus();
   await page.keyboard.press('Home');
@@ -437,7 +437,7 @@ test('마우스로 잠깐 지나친 작업은 미리보기를 열지 않고 키�
   await page.clock.install({ time: new Date('2026-10-15T09:00:00Z') });
   await seed(page, 'timeline');
   await page.clock.pauseAt(new Date('2026-10-15T09:01:00Z'));
-  const task = page.getByRole('button', { name: '서비스 흐름 설계', exact: true });
+  const task = page.getByRole('button', { name: 'AI 피드백 화면 개선', exact: true });
   await task.hover();
   await page.clock.runFor(150);
   await expect(timelinePreview(page)).toHaveCount(0);
@@ -446,13 +446,13 @@ test('마우스로 잠깐 지나친 작업은 미리보기를 열지 않고 키�
   await expect(timelinePreview(page)).toHaveCount(0);
   await task.hover();
   await page.clock.runFor(220);
-  await expect(timelinePreview(page)).toContainText('서비스 흐름 설계');
+  await expect(timelinePreview(page)).toContainText('AI 피드백 화면 개선');
   await page.keyboard.press('Escape');
   await task.focus();
   await expect(timelinePreview(page)).toBeVisible();
 });
 
-test('작업 표는 가로·세로로 스크롤해도 열 제목과 작업 제목을 유지한다', async ({ page }, testInfo) => {
+test('작업 표는 페이지에서 세로로 이동하고 가로로 밀어도 작업 열을 유지한다', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1100, height: 900 });
   await seed(page, 'list', '', (state) => {
     const original = state.teams[1].tasks[0];
@@ -464,15 +464,20 @@ test('작업 표는 가로·세로로 스크롤해도 열 제목과 작업 제�
   for (const badge of await table.locator('.status-badge').all()) {
     await expect(badge).toHaveCSS('white-space', 'nowrap');
   }
-  await table.scrollIntoViewIfNeeded();
-  await table.evaluate((element) => { element.scrollTop = 400; element.scrollLeft = 150; });
+  await expect(table.locator('tbody tr')).toHaveCount(20);
+  expect(await table.evaluate((element) => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1);
+  await table.evaluate((element) => { element.scrollLeft = 150; });
   const bounds = await table.boundingBox();
   const corner = await table.getByRole('columnheader', { name: '작업', exact: true }).boundingBox();
   expect(Math.abs(corner.x - bounds.x)).toBeLessThan(2);
-  expect(Math.abs(corner.y - bounds.y - 1)).toBeLessThan(2);
   const firstTask = await table.locator('tbody th').first().boundingBox();
   expect(Math.abs(firstTask.x - bounds.x)).toBeLessThan(2);
   expect(await table.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
+  const pagination = page.getByRole('navigation', { name: '작업 목록 페이지' });
+  await pagination.scrollIntoViewIfNeeded();
+  await expect(pagination).toBeInViewport();
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+  expect(await table.evaluate((element) => element.scrollTop)).toBe(0);
   await page.screenshot({ path: testInfo.outputPath('task-table-sticky.png') });
 });
 
@@ -480,7 +485,7 @@ test('작업 표는 가로·세로로 스크롤해도 열 제목과 작업 제�
 test('빈 기간에서 현재 검색과 담당 조건을 유지한 채 작업 있는 기간으로 이동한다', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await seed(page, 'timeline');
-  await page.getByLabel('작업 제목 검색').fill('서비스');
+  await page.getByLabel('작업 제목 검색').fill('AI 피드백');
   await page.getByRole('checkbox', { name: '내 담당 작업만', exact: true }).check();
   await page.getByLabel('조회 시작 월', { exact: true }).fill('2032-01');
   await expect(page.locator('.list-summary')).toContainText('현재 기간 0개');
@@ -488,7 +493,7 @@ test('빈 기간에서 현재 검색과 담당 조건을 유지한 채 작업 �
   await page.screenshot({ path: testInfo.outputPath('task-timeline-empty.png'), fullPage: true });
   await page.getByRole('button', { name: '작업 있는 기간으로 이동', exact: true }).click();
   await expect(page.getByLabel('조회 시작 월', { exact: true })).toHaveValue('2026-11');
-  await expect(page.getByLabel('작업 제목 검색')).toHaveValue('서비스');
+  await expect(page.getByLabel('작업 제목 검색')).toHaveValue('AI 피드백');
   await expect(page.getByRole('checkbox', { name: '내 담당 작업만', exact: true })).toBeChecked();
   await expect(page.locator('.list-summary')).toContainText('현재 기간 1개');
 
@@ -514,9 +519,9 @@ test('검색으로 빈 일정은 필터만 초기화하고 등록된 작업이 �
   await expect(page.getByLabel('조회 시작 월')).toHaveValue('2032-01');
   await expect(page.getByRole('button', { name: '작업 있는 기간으로 이동', exact: true })).toBeVisible();
   await page.evaluate(() => {
-    const state = JSON.parse(localStorage.getItem('fairplay:mock:v9:preview:1'));
+    const state = JSON.parse(localStorage.getItem('fairplay:mock:v11:preview:1'));
     state.teams[1].tasks = [];
-    localStorage.setItem('fairplay:mock:v9:preview:1', JSON.stringify(state));
+    localStorage.setItem('fairplay:mock:v11:preview:1', JSON.stringify(state));
   });
   await page.getByRole('button', { name: '새로고침', exact: true }).click();
   await expect(page.getByText('아직 등록된 작업이 없습니다. 새 작업을 만들어 시작하세요.', { exact: true })).toBeVisible();
@@ -535,10 +540,10 @@ test('마지막 보기·너비는 재방문에 복원하고 주소의 보기·�
   await page.getByRole('button', { name: '작업', exact: true }).click();
   await expect(page.getByRole('button', { name: '타임라인', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(resizer).toHaveAttribute('aria-valuenow', '316');
-  await page.goto('/preview/spaces/1/teams/1/tasks?view=list&month=2026-11&q=서비스&status=REVISING');
+  await page.goto('/preview/spaces/1/teams/1/tasks?view=list&month=2026-11&q=AI+피드백&status=REVISING');
   await expect(page.getByRole('button', { name: '목록', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(page).toHaveURL(/month=2026-11/);
-  await expect(page.getByLabel('작업 제목 검색')).toHaveValue('서비스');
+  await expect(page.getByLabel('작업 제목 검색')).toHaveValue('AI 피드백');
   await expect(page.getByLabel('작업 상태', { exact: true })).toHaveValue('REVISING');
   await page.goto('/preview/spaces/1/teams/1/tasks?month=2026-11');
   await expect(page.getByRole('button', { name: '목록', exact: true })).toHaveAttribute('aria-pressed', 'true');
@@ -597,7 +602,7 @@ test('열어 둔 타임라인은 분마다 지연을 갱신하고 창·탭 복�
   await expect(late).toHaveText('마감 지남 0');
   await page.clock.runFor(60000);
   await expect(late).toHaveText('마감 지남 1');
-  const row = page.locator('.timeline-row').filter({ has: page.getByRole('button', { name: '사용자 인터뷰 계획', exact: true }) });
+  const row = page.locator('.timeline-row').filter({ has: page.getByRole('button', { name: '스페이스·팀 권한 설계', exact: true }) });
   await expect(row.locator('.timeline-late-label')).toHaveText('마감 지남');
   await page.clock.setSystemTime(new Date('2026-11-17T15:00:00Z'));
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
@@ -636,7 +641,7 @@ test('작업 표는 날짜와 시간을 생략 없이 한 줄로 표시하고 �
 
 test('접힌 모바일 필터의 조건을 해제하면 필터 버튼으로 복귀하고 초기화는 보기·월을 보존한다', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await seed(page, 'list', '&mine=1&sort=newest&q=설문&keep=1');
+  await seed(page, 'list', '&mine=1&sort=newest&q=팀+자료&keep=1');
   await expect(page.getByLabel('작업 정렬')).toBeHidden();
   const filters = page.getByRole('group', { name: '적용 중인 검색·필터' });
   await filters.getByRole('button', { name: '정렬: 최근 생성 순 해제', exact: true }).focus();
@@ -644,7 +649,7 @@ test('접힌 모바일 필터의 조건을 해제하면 필터 버튼으로 복�
   await expect(page.getByRole('button', { name: '필터 · 2', exact: true })).toBeFocused();
   expect(new URL(page.url()).searchParams.get('sort')).toBeNull();
   expect(new URL(page.url()).searchParams.get('mine')).toBe('1');
-  await filters.getByRole('button', { name: '검색: 설문 해제', exact: true }).click();
+  await filters.getByRole('button', { name: '검색: 팀 자료 해제', exact: true }).click();
   await expect(page.getByLabel('작업 제목 검색')).toBeFocused();
   await page.getByRole('button', { name: '검색·필터 초기화', exact: true }).click();
   await expect(page.getByLabel('작업 제목 검색')).toBeFocused();
@@ -658,18 +663,18 @@ test('접힌 모바일 필터의 조건을 해제하면 필터 버튼으로 복�
 
 
 test('이전 캘린더 주소와 저장된 보기는 목록으로 전환하고 필터·상세 복귀를 유지한다', async ({ page }) => {
-  await seed(page, 'calendar', '&q=서비스&status=REVISING');
+  await seed(page, 'calendar', '&q=AI+피드백&status=REVISING');
   const views = page.getByRole('group', { name: '작업 보기 방식' });
   await expect(views.getByRole('button')).toHaveText(['보드', '목록', '타임라인']);
   await expect(views.getByRole('button', { name: '목록', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(page).toHaveURL(/view=list&month=2026-11&q=.*&status=REVISING/);
-  await expect(page.getByLabel('작업 제목 검색')).toHaveValue('서비스');
+  await expect(page.getByLabel('작업 제목 검색')).toHaveValue('AI 피드백');
   await expect(page.getByLabel('작업 상태', { exact: true })).toHaveValue('REVISING');
   const table = page.getByRole('table', { name: '정렬된 작업 목록' });
-  await table.getByRole('button', { name: '서비스 흐름 설계', exact: true }).click();
+  await table.getByRole('button', { name: 'AI 피드백 화면 개선', exact: true }).click();
   await page.getByRole('button', { name: '← 목록으로', exact: true }).click();
   await expect(views.getByRole('button', { name: '목록', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.getByLabel('작업 제목 검색')).toHaveValue('서비스');
+  await expect(page.getByLabel('작업 제목 검색')).toHaveValue('AI 피드백');
   await page.reload();
   await expect(page).toHaveURL(/view=list/);
   await page.evaluate(() => localStorage.setItem('fairplay:task-view-preferences', JSON.stringify({ view: 'calendar', labelWidth: 316 })));

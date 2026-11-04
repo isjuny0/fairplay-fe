@@ -216,7 +216,7 @@ for (const width of [1440, 320]) {
       const board = page.locator('.announcement-board');
       await expect(board.locator('.announcement-row')).toHaveCount(2);
       await expect(page.getByRole('searchbox', { name: '현재 페이지 공지 검색' })).toBeVisible();
-      await expect(board.locator('.announcement-author').first()).toContainText('정민수');
+      await expect(board.locator('.announcement-author').first()).toContainText('신인철');
       await expect(board.locator('.announcement-pin')).toHaveCount(0);
       await expect(board.getByRole('img', { name: '중요 공지', exact: true })).toHaveCount(1);
       for (const row of await board.locator('.announcement-row').all()) {
@@ -234,7 +234,7 @@ for (const width of [1440, 320]) {
       await page.evaluate(() => document.fonts.ready);
       await page.screenshot({ path: testInfo.outputPath('announcement-board.png'), animations: 'disabled' });
       await board.getByRole('button', { name: '프로젝트 진행 및 공지 확인 안내', exact: true }).click();
-      await expect(page.locator('.announcement-content')).toContainText('프로젝트 공지');
+      await expect(page.locator('.announcement-content')).toContainText('2026 캡스톤디자인 미리보기');
       await expect(page.locator('.announcement-metadata')).toContainText('작성자');
       await expect(page.locator('.announcement-pin')).toHaveText('중요');
       const actions = page.locator('.announcements-page > .page-heading > .heading-actions');
@@ -248,7 +248,7 @@ for (const width of [1440, 320]) {
       await page.screenshot({ path: testInfo.outputPath('announcement-detail.png'), animations: 'disabled' });
       await page.goto('/preview/spaces/1');
       await expect(page.locator('.space-announcement-summary .announcement-board.is-compact')).toBeVisible();
-      await expect(page.locator('.space-announcement-summary .announcement-author').first()).toContainText('정민수');
+      await expect(page.locator('.space-announcement-summary .announcement-author').first()).toContainText('신인철');
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     });
   }

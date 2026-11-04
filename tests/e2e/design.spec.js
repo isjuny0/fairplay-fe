@@ -7,19 +7,19 @@ for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/preview/spaces/1/teams/1/tasks');
     const header = page.getByLabel('현재 화면 정보');
-    await expect(header.locator('strong')).toHaveText('2026 서비스 디자인 프로젝트');
+    await expect(header.locator('strong')).toHaveText('2026 캡스톤디자인');
     await expect(header).not.toContainText('삼위일체');
     await expect(header).not.toContainText('작업');
     const breadcrumb = page.locator('.workspace-breadcrumb');
     await expect(breadcrumb.locator('button')).toHaveText('삼위일체');
     await expect(breadcrumb.locator('[aria-current="page"]')).toHaveText('작업');
-    await expect(breadcrumb).not.toContainText('2026 서비스 디자인 프로젝트');
+    await expect(breadcrumb).not.toContainText('2026 캡스톤디자인');
     await expect(header).toBeVisible();
     await page.goto('/preview/spaces/1/teams/1/deliverables');
-    await expect(header.locator('strong')).toHaveText('2026 서비스 디자인 프로젝트');
+    await expect(header.locator('strong')).toHaveText('2026 캡스톤디자인');
     await expect(breadcrumb.locator('button')).toHaveText('삼위일체');
     await expect(breadcrumb.locator('[aria-current="page"]')).toHaveText('팀 자료');
-    await expect(breadcrumb).not.toContainText('2026 서비스 디자인 프로젝트');
+    await expect(breadcrumb).not.toContainText('2026 캡스톤디자인');
     await page.getByRole('button', { name: 'Fairplay', exact: true }).click();
     await expect(header.locator('strong')).toHaveText('내 스페이스');
     await page.locator('.preview-toolbar').waitFor({ state: 'visible' });
@@ -27,7 +27,7 @@ for (const width of [1440, 390]) {
       await page.getByRole('button', { name: '미리보기 설정', exact: true }).click();
     await selectPreviewOption(page, '미리보기 역할', 'manager');
     await page.goto('/preview/spaces/1/settings');
-    await expect(header.locator('strong')).toHaveText('2026 서비스 디자인 프로젝트');
+    await expect(header.locator('strong')).toHaveText('2026 캡스톤디자인');
     await expect(header).not.toContainText('삼위일체');
     await expect(breadcrumb.locator('button')).toHaveCount(0);
     await expect(breadcrumb.locator('[aria-current="page"]')).toHaveText('스페이스 관리');
@@ -40,7 +40,7 @@ for (const width of [3840, 1920, 1440, 1100, 1024, 1006, 901, 768, 721]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/preview/spaces/1/teams/1/deliverables');
     const label = page.getByLabel('현재 화면 정보').locator('strong');
-    await expect(label).toHaveText('2026 서비스 디자인 프로젝트');
+    await expect(label).toHaveText('2026 캡스톤디자인');
     const bounds = await label.boundingBox();
     const brand = await page.locator('.topbar-brand').boundingBox();
     const profile = await page.locator('.profile-area').boundingBox();
@@ -170,6 +170,7 @@ for (const width of [1920, 1440, 1280, 1024, 768, 390, 320]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('/preview/spaces/1/teams/1/tasks');
     await expect(page.locator('.board-task-card')).toHaveCount(6);
+    await expect(page.locator('.list-summary')).toHaveCount(0);
     if (width > 720) {
       const columns = await page.locator('.task-column').evaluateAll((elements) => elements.map((el) => {
         const box = el.getBoundingClientRect();
@@ -198,17 +199,10 @@ for (const width of [1920, 1440, 1280, 1024, 768, 390, 320]) {
     const overdueCard = page.locator('.board-task-card').filter({
       has: page.locator('.board-card-overdue'),
     }).first();
-    await expect(overdueCard.locator('.board-card-overdue')).toBeVisible();
-    const overduePosition = await overdueCard.evaluate((card) => {
-      const cardBounds = card.getBoundingClientRect();
-      const badgeBounds = card.querySelector('.board-card-overdue').getBoundingClientRect();
-      return {
-        top: badgeBounds.top - cardBounds.top,
-        right: cardBounds.right - badgeBounds.right,
-      };
-    });
-    expect(overduePosition.top).toBeLessThanOrEqual(15);
-    expect(overduePosition.right).toBeLessThanOrEqual(15);
+    const overdueDeadline = overdueCard.locator('.task-deadline');
+    await expect(overdueDeadline.locator('.board-card-overdue')).toHaveText('지연');
+    await expect(overdueCard.locator('.board-card-assignees .board-card-self')).toHaveText('김준영');
+    await expect(overdueCard.locator('.board-card-top')).not.toContainText('지연');
     await firstCard.getByRole('button', { name: /작업량·담당 비율 보기$/ }).click();
     await expect(firstCard.locator('.task-workload-line')).toBeVisible();
     await expect(firstCard.locator('.task-card-meta')).toBeVisible();
