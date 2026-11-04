@@ -6,7 +6,7 @@ import DeliverableTable from "./DeliverableTable.jsx";
 import DeliverableContent from "./DeliverableContent.jsx";
 import MarkdownEditor from "./MarkdownEditor.jsx";
 import { ArrowRight, FileText, Upload } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useLocation, useSearchParams } from "react-router";
 import { parseRouteId, teamMenuPath } from "../lib/routes.js";
 import {
@@ -239,6 +239,13 @@ function DeliverableForm({
             disabled={busy || recovery.loading || blocked}
             className={`form-fields deliverable-form-layout${canEditContent ? "" : " deliverable-metadata-only"}`}
           >
+              {canEditContent && <nav className="editor-section-links" aria-label="산출물 입력 위치">
+                {['기본 정보', form.type === 'FILE' ? '파일 업로드' : '본문 작성'].map((label, index) => <button type="button" key={label} onClick={event => {
+                  const section = event.currentTarget.closest('fieldset').querySelector(index === 0 ? '.deliverable-basic-section' : '.deliverable-content-section');
+                  section?.scrollIntoView({block:'start',behavior:'auto'});
+                  section?.querySelector('input:not([type="hidden"]), textarea, button')?.focus({preventScroll:true});
+                }}>{label}</button>)}
+              </nav>}
             {canEditContent && form.type === "FILE" && fileContent}
             <section className="deliverable-form-section deliverable-basic-section" aria-label={`${resourceName} 기본 정보 입력`}>
               <Field label="제목" error={fieldErrors.title}>
@@ -386,6 +393,9 @@ export default function Deliverables({
   const query = isCollection ? searchParams.get("q") || "" : "";
   const [queryInput, setQueryInput] = useState(query);
   const searchToolbar = useRef(null);
+  const filterId = useId();
+  const filterToggle = useRef(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   useEffect(() => setQueryInput(query), [query]);
   const type =
     isCollection && ["TEXT", "FILE"].includes(searchParams.get("type"))
@@ -680,7 +690,8 @@ export default function Deliverables({
               </select>
             </label>
           </div>
-          <div className="deliverable-filter-row">
+          <button ref={filterToggle} type="button" className="secondary-button deliverable-filter-toggle" aria-expanded={filtersOpen} aria-controls={filterId} onClick={() => setFiltersOpen(value => !value)}>필터 {appliedFilters.filter(filter => !['q', 'sort'].includes(filter.key)).length || ''} {filtersOpen ? '접기' : '펼치기'}</button>
+          <div id={filterId} className={`deliverable-filter-row${filtersOpen ? ' is-expanded' : ''}`}>
             <label
               className="deliverable-filter-field"
               data-active={scope !== "ALL"}
@@ -772,7 +783,8 @@ export default function Deliverables({
                       filter.key === "q"
                         ? "input"
                         : `select[aria-label="${controlLabels[filter.key]}"]`;
-                    searchToolbar.current?.querySelector(selector)?.focus();
+                    const control = searchToolbar.current?.querySelector(selector);
+                    (control?.getClientRects().length ? control : filterToggle.current)?.focus();
                     if (filter.key === "scope") setScope("ALL");
                     else setSearchOption(filter.key, "");
                   }}

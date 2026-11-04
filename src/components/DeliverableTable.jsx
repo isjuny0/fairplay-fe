@@ -50,6 +50,7 @@ export default function DeliverableTable({
             return (
               <tr className="deliverable-card" key={deliverable.id}>
                 <th scope="row" className="collection-name-cell">
+                  <div className="collection-title-actions">
                   <h3>
                     <button
                       className="collection-title-button"
@@ -64,6 +65,8 @@ export default function DeliverableTable({
                       <span>{deliverable.title}</span>
                     </button>
                   </h3>
+                  {deliverable.type === 'FILE' && <button className="ghost-button deliverable-mobile-download" aria-label={`${deliverable.title} 파일 다운로드`} title="파일 다운로드" disabled={busy} onClick={() => onDownload(deliverable)}><Icon name="download" /></button>}
+                  </div>
                   {deliverable.file && (
                     <small
                       className="collection-filename"

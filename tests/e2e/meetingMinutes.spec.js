@@ -240,7 +240,7 @@ test("팀 작업 메뉴에서 등록·상세·공동 수정·삭제와 KST·CSRF
   ).toHaveCount(0);
   await expect(page.locator(".meeting-minutes-page > .page-heading")).toHaveCSS(
     "border-bottom-width",
-    "1px",
+    "0px",
   );
   await expect(page.getByRole("region", { name: "회의록 목록" })).toHaveCSS(
     "border-top-width",

@@ -126,7 +126,7 @@ export default function MeetingMinutes({
     }
   };
   return (
-    <section className="stack meeting-minutes-page">
+    <section className={`stack meeting-minutes-page${meetingMinuteId == null ? ' is-list' : ''}`}>
       {meetingMinuteId != null && (
         <div className="meeting-detail-toolbar">
           <button
