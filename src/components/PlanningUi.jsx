@@ -4,7 +4,7 @@ import { useId, useState } from 'react';
 import { CircleHelp } from 'lucide-react';
 import PeerCriteriaScores from './PeerCriteriaScores.jsx';
 
-function FeedbackCriterionHelp({ label, description }) {
+export function FeedbackHelp({ label, description }) {
   const id = useId();
   const [open, setOpen] = useState(false);
   return (
@@ -95,11 +95,16 @@ export function RoundPicker({ rounds, selected, onSelect, renderDetails }) {
   );
 }
 export function FeedbackSummary({ member }) {
-  return <div className="feedback-layout">
-    <section className="feedback-criteria" aria-label="항목별 협업 평균">
-      <div className="feedback-score-heading"><h2>항목별 평균</h2><span>5점 만점</span></div>
-      <PeerCriteriaScores averages={member.averageScores} colorLowScores
-        renderHelp={(code, label) => <FeedbackCriterionHelp label={label} description={peerCriteriaDescriptions[code]} />} />
+  return (
+    <section className="feedback-criteria" aria-labelledby="mid-evaluation-heading">
+      <div className="feedback-score-heading">
+        <h2 id="mid-evaluation-heading">중간 동료 평가 결과</h2>
+      </div>
+      <PeerCriteriaScores
+        averages={member.averageScores}
+        colorLowScores
+        renderHelp={(code, label) => <FeedbackHelp label={label} description={peerCriteriaDescriptions[code]} />}
+      />
     </section>
-  </div>;
+  );
 }
