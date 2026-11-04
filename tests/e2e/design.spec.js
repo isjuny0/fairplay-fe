@@ -170,6 +170,7 @@ for (const width of [1920, 1440, 1280, 1024, 768, 390, 320]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('/preview/spaces/1/teams/1/tasks');
     await expect(page.locator('.board-task-card')).toHaveCount(6);
+    await expect(page.locator('.list-summary')).toHaveCount(0);
     if (width > 720) {
       const columns = await page.locator('.task-column').evaluateAll((elements) => elements.map((el) => {
         const box = el.getBoundingClientRect();
@@ -198,17 +199,11 @@ for (const width of [1920, 1440, 1280, 1024, 768, 390, 320]) {
     const overdueCard = page.locator('.board-task-card').filter({
       has: page.locator('.board-card-overdue'),
     }).first();
-    await expect(overdueCard.locator('.board-card-overdue')).toBeVisible();
-    const overduePosition = await overdueCard.evaluate((card) => {
-      const cardBounds = card.getBoundingClientRect();
-      const badgeBounds = card.querySelector('.board-card-overdue').getBoundingClientRect();
-      return {
-        top: badgeBounds.top - cardBounds.top,
-        right: cardBounds.right - badgeBounds.right,
-      };
-    });
-    expect(overduePosition.top).toBeLessThanOrEqual(15);
-    expect(overduePosition.right).toBeLessThanOrEqual(15);
+    const overdueDeadline = overdueCard.locator('.task-deadline');
+    await expect(overdueDeadline.locator('.board-card-overdue')).toHaveText('지연');
+    const currentUser = await page.locator('.profile-name').textContent();
+    await expect(overdueCard.locator('.board-card-assignees .board-card-self')).toHaveText(currentUser);
+    await expect(overdueCard.locator('.board-card-top')).not.toContainText('지연');
     await firstCard.getByRole('button', { name: /작업량·담당 비율 보기$/ }).click();
     await expect(firstCard.locator('.task-workload-line')).toBeVisible();
     await expect(firstCard.locator('.task-card-meta')).toBeVisible();
