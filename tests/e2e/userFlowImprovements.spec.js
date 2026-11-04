@@ -280,3 +280,29 @@ test('연결된 결과물이 없으면 준비 목록에서 등록 영역으로 �
     page.getByRole('button', { name: '결과물 추가', exact: true }),
   ).toBeInViewport();
 });
+
+test('팀 홈의 7일 내 마감 건수와 목록이 일치하고 위젯 설정은 유지된다', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-15T09:00:00Z'));
+  await preview(page, '/spaces/1/teams/1');
+  await page.getByRole('button', { name: '위젯 추가', exact: true }).click();
+  const catalog = page.getByRole('dialog', { name: '위젯 추가', exact: true });
+  await catalog.getByRole('button', { name: '지금 확인할 작업 추가', exact: true }).click();
+  await catalog.getByRole('button', { name: '완료', exact: true }).click();
+  const soon = page.getByRole('button', { name: /7일 내 마감/ });
+  const count = Number((await soon.innerText()).match(/\d+\s*건/)?.[0].replace(/\D/g, ''));
+  expect(count).toBeGreaterThan(0);
+  await soon.click();
+  await expect(page).toHaveURL(/tasks\?mine=1&due=week&view=list$/);
+  const list = page.getByRole('table', { name: '정렬된 작업 목록' });
+  await expect(list.locator('tbody tr')).toHaveCount(count);
+  await expect(list).not.toContainText('설문 결과 분석');
+  await expect(list).not.toContainText('프로토타입 사용성 검증');
+  await expect(list).not.toContainText('사용자 인터뷰 계획');
+  await page.reload();
+  await expect(list.locator('tbody tr')).toHaveCount(count);
+  await page.getByRole('button', { name: '7일 내 마감 해제', exact: true }).click();
+  await expect(list).toContainText('설문 결과 분석');
+  await page.goto('/preview/spaces/1/teams/1');
+  await page.getByRole('button', { name: '위젯 추가', exact: true }).click();
+  await expect(catalog.getByRole('button', { name: '다가오는 작업 추가', exact: true })).toBeEnabled();
+});

@@ -31,6 +31,7 @@ import {
   timelineWindow,
 } from '../lib/taskSchedule.js';
 import { EmptyState, Modal, ResourceState } from './ui.jsx';
+import { isTaskDueWithinWeek } from '../lib/teamDashboard.js';
 import { normalizeTaskView, readTaskViewPreferences, saveTaskViewPreferences } from '../lib/taskViewPreferences.js';
 
 const TaskForm = deferScreen(screenLoaders.TaskForm, '작업 입력');
@@ -67,6 +68,7 @@ export default function TaskBoard({
   const onlyMine = !readOnly && searchParams.get('mine') === '1';
   const onlyExecutionOverdue = searchParams.get('overdue') === 'work';
   const onlyOverdue = onlyExecutionOverdue || searchParams.get('overdue') === '1';
+  const onlyDueWithinWeek = !onlyOverdue && searchParams.get('due') === 'week';
   const [preferences, setPreferences] = useState(readTaskViewPreferences);
   const [expandedBoardTaskIds, setExpandedBoardTaskIds] = useState(() => new Set());
   const urlView = searchParams.get('view');
@@ -107,6 +109,7 @@ export default function TaskBoard({
     setSearchParams(
       (current) => {
         const next = new URLSearchParams(current);
+        if (key === 'overdue' && value) next.delete('due');
         if (value) next.set(key, value);
         else next.delete(key);
         return next;
@@ -117,7 +120,7 @@ export default function TaskBoard({
     filterControls.current.q?.focus();
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
-      for (const key of ['status', 'mine', 'q', 'overdue', 'sort'])
+      for (const key of ['status', 'mine', 'q', 'overdue', 'due', 'sort'])
         next.delete(key);
       return next;
     }, { state: location.state });
@@ -142,6 +145,7 @@ export default function TaskBoard({
     filter !== 'ALL',
     onlyMine,
     onlyOverdue,
+    onlyDueWithinWeek,
     Boolean(query.trim()),
     sort !== defaultSort,
   ].filter(Boolean).length;
@@ -193,13 +197,16 @@ export default function TaskBoard({
   const canCreate =
     !readOnly && team.canCreateTask && members.length >= 2 && canModifyTeamWork(team);
   const hasFilters = appliedFilterCount > 0;
-  const isOverdue = (task) =>
-    task.status !== 'DONE' && apiTimeToEpoch(task.dueAt) < now;
+  const matchesDeadline = (task) => {
+    if (onlyDueWithinWeek) return isTaskDueWithinWeek(task, now);
+    if (onlyExecutionOverdue) return isTaskExecutionOverdue(task, now);
+    return !onlyOverdue || (task.status !== 'DONE' && apiTimeToEpoch(task.dueAt) < now);
+  };
   const tasks = (resource.data || [])
     .filter(
       (task) =>
         (filter === 'ALL' || task.status === filter) &&
-        (!onlyOverdue || (onlyExecutionOverdue ? isTaskExecutionOverdue(task, now) : isOverdue(task))) &&
+        matchesDeadline(task) &&
         (!onlyMine ||
           task.assignees.some((assignment) => assignment.userId === user.id)) &&
         task.title
@@ -223,11 +230,12 @@ export default function TaskBoard({
     ? tasks.filter((task) => timelineTaskPeriod(task, scheduleWindow, now)).length
     : 0;
   const nearestMonth = nearestTaskMonth(tasks, `${month}-01`);
-  const hasSearchFilters = filter !== 'ALL' || onlyMine || onlyOverdue || Boolean(query.trim());
+  const hasSearchFilters = filter !== 'ALL' || onlyMine || onlyOverdue || onlyDueWithinWeek || Boolean(query.trim());
   const activeFilters = [
     ...(filter !== 'ALL' ? [{ key: 'status', label: `상태: ${statusLabels[filter]}` }] : []),
     ...(onlyMine ? [{ key: 'mine', label: '내 담당' }] : []),
     ...(onlyOverdue ? [{ key: 'overdue', label: onlyExecutionOverdue ? '수행 지연: 할 일·진행 중·수정 중' : '마감 지남' }] : []),
+    ...(onlyDueWithinWeek ? [{ key: 'due', label: '7일 내 마감' }] : []),
     ...(query.trim() ? [{ key: 'q', label: `검색: ${query.trim()}` }] : []),
     ...(sort !== defaultSort ? [{ key: 'sort', label: `정렬: ${sortLabel}` }] : []),
   ];
@@ -303,7 +311,7 @@ export default function TaskBoard({
                   (resource.data || []).filter(
                     (task) =>
                       (status === 'ALL' || task.status === status) &&
-                      (!onlyOverdue || (onlyExecutionOverdue ? isTaskExecutionOverdue(task, now) : isOverdue(task))) &&
+                      matchesDeadline(task) &&
                       task.title
                         .toLocaleLowerCase()
                         .includes(query.trim().toLocaleLowerCase()) &&
@@ -434,7 +442,7 @@ export default function TaskBoard({
               aria-label={`${label} 해제`}
               title={`${label} 해제`}
               onClick={() => {
-                const control = filterControls.current[key];
+                const control = filterControls.current[key === 'due' ? 'q' : key];
                 (control?.getClientRects().length ? control : filterToggle.current)?.focus();
                 setListOption(key, '');
               }}
