@@ -74,9 +74,13 @@ export const deleteTeam = (teamId, deletionRequestId, expectedVersion) => {
   const query = new URLSearchParams({ deletionRequestId, expectedVersion });
   return apiRequest(`/api/teams/${teamId}?${query}`, { method: 'DELETE' });
 };
-export const leaveTeam = (teamId, nextLeaderId) => {
-  const query = nextLeaderId ? `?${new URLSearchParams({ nextLeaderId })}` : '';
-  return apiRequest(`/api/teams/${teamId}/members/me${query}`, {
+export const getTeamLeavePreview = (teamId) =>
+  apiRequest(`/api/teams/${teamId}/members/me/leave-preview`);
+export const leaveTeam = (teamId, nextLeaderId, handoffToUserId) => {
+  const query = new URLSearchParams();
+  if (nextLeaderId) query.set('nextLeaderId', nextLeaderId);
+  if (handoffToUserId) query.set('handoffToUserId', handoffToUserId);
+  return apiRequest(`/api/teams/${teamId}/members/me${query.size ? `?${query}` : ''}`, {
     method: 'DELETE',
   });
 };

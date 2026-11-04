@@ -36,7 +36,7 @@ import Deliverables from './Deliverables.jsx';
 import TaskForm from './TaskForm.jsx';
 import TaskComments from './TaskComments.jsx';
 import Icon from './Icon.jsx';
-import { ErrorNotice, Field, ResourceState } from './ui.jsx';
+import { ErrorNotice, Field, Modal, ResourceState } from './ui.jsx';
 
 function ReadinessItem({ complete, children }) {
   return (
@@ -152,11 +152,14 @@ export default function TaskDetail({
     setError(null);
   }, [resource.data]);
   const [editing, setEditing] = useState(false);
+  const [reopening, setReopening] = useState(false);
+  const [revisionAssigneeId, setRevisionAssigneeId] = useState('');
   const [showAllAssignees, setShowAllAssignees] = useState(false);
   const [activeTab, setActiveTab] = useState('task-description-section');
   const [sectionToFocus, setSectionToFocus] = useState(null);
   useEffect(() => {
     setShowAllAssignees(false);
+    setReopening(false);
     setActiveTab('task-description-section');
     setSectionToFocus(null);
   }, [taskId]);
@@ -182,6 +185,15 @@ export default function TaskDetail({
   const reload = resource.reload;
   const task = resource.data?.task;
   const canViewAi = Boolean(!readOnly && task && isAssignee(task, user.id));
+  const memberIds = new Set(members.map((member) => member.userId));
+  const departedAllocation = task?.status === 'DONE'
+    ? task.assignees.filter((assignment) => !memberIds.has(assignment.userId))
+      .reduce((total, assignment) => total + assignment.allocationPercent, 0)
+    : 0;
+  const canReopenWithHandoff = departedAllocation > 0 && isTeamEditor(team, user.id);
+  const assigneeName = (userId) => memberIds.has(userId)
+    ? memberName(members, userId)
+    : '탈퇴한 팀원';
   const tabs = [
     ['task-description-section', '작업 내용'],
     ['task-deliverables-section', '결과물'],
@@ -224,6 +236,12 @@ export default function TaskDetail({
     )
       return;
     if (!(await confirmDiscard())) return;
+    if (status === 'REVISING' && departedAllocation > 0) {
+      setRevisionAssigneeId('');
+      setError(null);
+      setReopening(true);
+      return;
+    }
     if (
       status === 'DONE' &&
       !(await confirm({
@@ -248,6 +266,22 @@ export default function TaskDetail({
       () => updateTask(task.id, { expectedVersion: task.version, status }),
       status === 'DONE' ? '작업을 완료했습니다.' : '작업 상태를 변경했습니다.',
     );
+  };
+
+  const submitRevisionHandoff = (event) => {
+    event.preventDefault();
+    if (!revisionAssigneeId || busy || !canModifyTeamWork(team) || workClosed) return;
+    const assignees = task.assignees.filter((assignment) => memberIds.has(assignment.userId));
+    const recipient = assignees.find((assignment) => assignment.userId === revisionAssigneeId);
+    const allocation = recipient
+      ? assignees.map((assignment) => assignment === recipient
+        ? { ...assignment, allocationPercent: assignment.allocationPercent + departedAllocation }
+        : assignment)
+      : [...assignees, { userId: revisionAssigneeId, allocationPercent: departedAllocation }];
+    mutate(async () => {
+      await updateTask(task.id, { expectedVersion: task.version, status: 'REVISING', assignees: allocation });
+      setReopening(false);
+    }, '담당자를 재배정하고 수정 중으로 전환했습니다.');
   };
 
   const focusTaskSection = (id) => {
@@ -418,8 +452,8 @@ export default function TaskDetail({
                           const ownAssignment = assignment.userId === user.id;
                           return <tr key={assignment.userId} className={ownAssignment ? 'is-own-assignment' : undefined}>
                             <th scope="row"><span className="task-assignee-identity">
-                              <span className="task-assignee-avatar" aria-hidden="true">{memberName(members, assignment.userId).slice(0, 1)}</span>
-                              <span>{memberName(members, assignment.userId)}</span>
+                              <span className="task-assignee-avatar" aria-hidden="true">{assigneeName(assignment.userId).slice(0, 1)}</span>
+                              <span>{assigneeName(assignment.userId)}</span>
                             </span></th>
                             <td className="task-assignment-percent">{assignment.allocationPercent}%</td>
                             <td>{missing ? ownAssignment && !readOnly && isMutable(task) && canModifyTeamWork(team) && !workClosed
@@ -437,7 +471,7 @@ export default function TaskDetail({
                     </button>}
                   </section>
                 </div>
-                {!readOnly && isAssignee(task, user.id) && (
+                {!readOnly && (isAssignee(task, user.id) || canReopenWithHandoff) && (
                   <section className="task-next-action" aria-label="작업 상태 변경">
                     {task.status === 'DONE' ? (
                       <>
@@ -615,7 +649,7 @@ export default function TaskDetail({
                       >
                         <div className="contribution-entry-heading">
                           <h3 className={contribution.userId === user.id ? 'self-identity' : undefined}>
-                            {memberName(members, contribution.userId)}
+                            {assigneeName(contribution.userId)}
                           </h3>
                           <span
                             className={`contribution-description-state ${contribution.contributionDescription?.trim() ? 'is-written' : ''}`}
@@ -696,6 +730,27 @@ export default function TaskDetail({
           </>
         )}
       </ResourceState>
+      {reopening && task && (
+        <Modal title="완료 작업 담당 재배정" busy={busy} onClose={() => setReopening(false)}>
+          <form className="stack" onSubmit={submitRevisionHandoff}>
+            <p>탈퇴한 팀원의 배분 {departedAllocation}%를 현재 팀원에게 옮기고 작업을 수정 중으로 전환합니다. 기존 수행 기록은 보존됩니다.</p>
+            <Field label="새 담당자">
+              <select required disabled={busy} value={revisionAssigneeId}
+                onChange={(event) => setRevisionAssigneeId(event.target.value)}>
+                <option value="">현재 팀원을 선택하세요</option>
+                {members.map((member) => (
+                  <option key={member.userId} value={member.userId}>{member.name}</option>
+                ))}
+              </select>
+            </Field>
+            <ErrorNotice error={error} />
+            <div className="modal-actions">
+              <button type="button" className="secondary-button" disabled={busy} onClick={() => setReopening(false)}>취소</button>
+              <button type="submit" className="primary-button" disabled={busy || !revisionAssigneeId}>재배정하고 수정 중으로 전환</button>
+            </div>
+          </form>
+        </Modal>
+      )}
       {editing && task && (
         <TaskForm
           task={task}

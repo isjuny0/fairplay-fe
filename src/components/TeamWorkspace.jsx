@@ -249,7 +249,6 @@ export default function TeamWorkspace({
               user={user}
               members={members}
               deletionResource={deletionResource}
-              onNavigate={navigateToMenu}
               onRemoved={onRemoved}
               onChanged={() => {
                 deletionResource.reload();

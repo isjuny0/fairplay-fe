@@ -349,6 +349,31 @@ async function executePreviewRequest(
     } else if (parts[3] === 'members' && parts[4] !== 'me')
       return entry.members;
     else if (parts[3] === 'members' && parts[4] === 'me') {
+      const eligibleMembers = entry.members.filter((member) => member.userId !== context.user.id);
+      const assigned = entry.tasks.filter((task) =>
+        task.assignees.some((assignment) => assignment.userId === context.user.id),
+      );
+      const handoffTasks = assigned.filter((task) => task.status !== 'DONE');
+      const completedTaskCount = assigned.length - handoffTasks.length;
+      const requiresNextLeader = entry.team.leaderId === context.user.id;
+      const blockReason = context.space.membershipLockedAt ? 'MEMBERSHIP_LOCKED'
+        : !eligibleMembers.length ? 'LAST_MEMBER_MUST_DELETE_TEAM' : null;
+      if (method === 'GET' && parts[5] === 'leave-preview') {
+        return { blockReason, requiresNextLeader, eligibleMembers, completedTaskCount,
+          handoffTasks: handoffTasks.map(({ id, title, status }) => ({ id, title, status })) };
+      }
+      if (blockReason) throw new MockError(blockReason, '현재 탈퇴할 수 없습니다.', 409);
+      const handoffToUserId = url.searchParams.get('handoffToUserId');
+      if (handoffTasks.length && !eligibleMembers.some((member) => member.userId === handoffToUserId)) {
+        throw new MockError('INVALID_HANDOFF_RECIPIENT', '인계할 팀원을 지정해 주세요.', 400);
+      }
+      for (const task of handoffTasks) {
+        const departing = task.assignees.find((assignment) => assignment.userId === context.user.id);
+        const recipient = task.assignees.find((assignment) => assignment.userId === handoffToUserId);
+        task.assignees = task.assignees.filter((assignment) => assignment !== departing);
+        if (recipient) recipient.allocationPercent += departing.allocationPercent;
+        else task.assignees.push({ userId: handoffToUserId, allocationPercent: departing.allocationPercent });
+      }
       const nextLeaderId = url.searchParams.get('nextLeaderId');
       if (entry.team.leaderId === context.user.id && nextLeaderId) {
         entry.team.leaderId = nextLeaderId;
@@ -565,8 +590,12 @@ async function executePreviewRequest(
         '팀원만 작업을 변경할 수 있습니다.',
         403,
       );
+    const revisingWithDepartedAssignees = task.status === 'DONE' && body.status === 'REVISING'
+      && task.assignees.some((assignment) => !entry.members.some((member) => member.userId === assignment.userId));
+    if (revisingWithDepartedAssignees && !body.assignees?.length)
+      throw new MockError('INVALID_TASK_ASSIGNEES', '현재 팀원에게 담당 배분을 지정해 주세요.', 400);
     if (parts[3] === 'contribution' || body.status != null) {
-      if (!assigned)
+      if (!assigned && !(leader && revisingWithDepartedAssignees))
         throw new MockError(
           'FORBIDDEN',
           '현재 담당자만 처리할 수 있습니다.',
@@ -631,7 +660,7 @@ async function executePreviewRequest(
     } else {
       const { expectedVersion, ...changes } = body;
       const changesDetails = Object.keys(changes).some(
-        (key) => key !== 'status',
+        (key) => key !== 'status' && !(revisingWithDepartedAssignees && key === 'assignees'),
       );
       const transitions = {
         TODO: ['TODO', 'IN_PROGRESS'],
