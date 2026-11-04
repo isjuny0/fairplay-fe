@@ -51,10 +51,10 @@
 .team-deletion-section.danger-zone { border-top: 2px solid #d9a4a4; padding-top: 24px; }
 .board-card-details-toggle { min-width: 36px; min-height: 36px; }
 .board-card-details-toggle:hover { background: var(--surface-secondary); }
-.main-content :is(.announcement-pagination, .meeting-pagination, .personal-notification-simple-pagination) { gap: var(--space-4); padding-top: 0; font-size: var(--text-support); }
-.main-content :is(.announcement-pagination, .meeting-pagination, .personal-notification-simple-pagination) > button { min-height: 44px; padding: 8px 18px; }
-.main-content :is(.announcement-pagination, .meeting-pagination, .personal-notification-simple-pagination) > span { font-size: var(--text-support); }
-.main-content :is(.announcement-pagination, .meeting-pagination) { margin: var(--space-3) 0 0; }
+.main-content :is(.announcement-pagination, .meeting-pagination, .task-pagination, .personal-notification-simple-pagination) { gap: var(--space-4); padding-top: 0; font-size: var(--text-support); }
+.main-content :is(.announcement-pagination, .meeting-pagination, .task-pagination, .personal-notification-simple-pagination) > button { min-height: 44px; padding: 8px 18px; }
+.main-content :is(.announcement-pagination, .meeting-pagination, .task-pagination, .personal-notification-simple-pagination) > span { font-size: var(--text-support); }
+.main-content :is(.announcement-pagination, .meeting-pagination, .task-pagination) { margin: var(--space-3) 0 0; }
 .main-content .personal-notification-simple-pagination { margin: var(--space-6) 0 0; }
 .task-progress-sidebar:focus { outline: 2px solid var(--brand); outline-offset: 4px; }
 .dashboard-arrange-grid > .widget-attention .dashboard-attention { display: grid; gap: 12px; }

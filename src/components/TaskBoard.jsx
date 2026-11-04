@@ -34,6 +34,8 @@ import { EmptyState, Modal, ResourceState } from './ui.jsx';
 import { isTaskDueWithinWeek } from '../lib/teamDashboard.js';
 import { normalizeTaskView, readTaskViewPreferences, saveTaskViewPreferences } from '../lib/taskViewPreferences.js';
 
+const PAGE_SIZE = 20;
+
 const TaskForm = deferScreen(screenLoaders.TaskForm, '작업 입력');
 const TaskDetail = deferScreen(screenLoaders.TaskDetail, '작업 상세');
 
@@ -109,6 +111,7 @@ export default function TaskBoard({
     setSearchParams(
       (current) => {
         const next = new URLSearchParams(current);
+        if (key !== 'page') next.delete('page');
         if (key === 'overdue' && value) next.delete('due');
         if (value) next.set(key, value);
         else next.delete(key);
@@ -120,25 +123,13 @@ export default function TaskBoard({
     filterControls.current.q?.focus();
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
-      for (const key of ['status', 'mine', 'q', 'overdue', 'due', 'sort'])
+      for (const key of ['status', 'mine', 'q', 'overdue', 'due', 'sort', 'page'])
         next.delete(key);
       return next;
     }, { state: location.state });
   };
-  const setFilter = (status) =>
-    setSearchParams((current) => {
-      const next = new URLSearchParams(current);
-      if (status === 'ALL') next.delete('status');
-      else next.set('status', status);
-      return next;
-    }, { state: location.state });
-  const setOnlyMine = (checked) =>
-    setSearchParams((current) => {
-      const next = new URLSearchParams(current);
-      if (checked) next.set('mine', '1');
-      else next.delete('mine');
-      return next;
-    }, { state: location.state });
+  const setFilter = (status) => setListOption('status', status === 'ALL' ? '' : status);
+  const setOnlyMine = (checked) => setListOption('mine', checked ? '1' : '');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filterPanelId = useId();
   const appliedFilterCount = [
@@ -174,19 +165,6 @@ export default function TaskBoard({
       setBusy(false);
     }
   };
-  if (taskId != null)
-    return (
-      <TaskDetail
-        key={taskId}
-        taskId={taskId}
-        team={team}
-        space={space}
-        user={user}
-        members={members}
-        onBack={onTaskBack}
-        readOnly={readOnly}
-      />
-    );
   const toggleBoardTaskDetails = (taskId) =>
     setExpandedBoardTaskIds((current) => {
       const next = new Set(current);
@@ -202,7 +180,7 @@ export default function TaskBoard({
     if (onlyExecutionOverdue) return isTaskExecutionOverdue(task, now);
     return !onlyOverdue || (task.status !== 'DONE' && apiTimeToEpoch(task.dueAt) < now);
   };
-  const tasks = (resource.data || [])
+  const tasks = (taskId == null ? resource.data ?? [] : [])
     .filter(
       (task) =>
         (filter === 'ALL' || task.status === filter) &&
@@ -224,6 +202,37 @@ export default function TaskBoard({
           : (apiTimeToEpoch(left.dueAt) || Infinity) -
               (apiTimeToEpoch(right.dueAt) || Infinity) || right.id - left.id,
     );
+  const requestedPage = searchParams.get('page');
+  const requestedPageIndex = /^\d+$/.test(requestedPage ?? '') ? Number(requestedPage) : 0;
+  const lastPage = Math.max(0, Math.ceil(tasks.length / PAGE_SIZE) - 1);
+  const page = Number.isSafeInteger(requestedPageIndex) ? Math.min(requestedPageIndex, lastPage) : 0;
+  const canonicalPage = page > 0 ? String(page) : null;
+  const canNormalizePage = taskId == null && view === 'list' && urlView === view
+    && !resource.loading && !resource.error;
+  useEffect(() => {
+    if (!canNormalizePage || requestedPage === canonicalPage) return;
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      if (canonicalPage) next.set('page', canonicalPage);
+      else next.delete('page');
+      return next;
+    }, { replace: true, state: location.state });
+  }, [canNormalizePage, requestedPage, canonicalPage, setSearchParams, location.state]);
+
+  if (taskId != null)
+    return (
+      <TaskDetail
+        key={taskId}
+        taskId={taskId}
+        team={team}
+        space={space}
+        user={user}
+        members={members}
+        onBack={onTaskBack}
+        readOnly={readOnly}
+      />
+    );
+
   const isSchedule = view === 'timeline';
   const scheduleWindow = view === 'timeline' ? timelineWindow(month) : null;
   const periodTaskCount = view === 'timeline'
@@ -239,7 +248,12 @@ export default function TaskBoard({
     ...(query.trim() ? [{ key: 'q', label: `검색: ${query.trim()}` }] : []),
     ...(sort !== defaultSort ? [{ key: 'sort', label: `정렬: ${sortLabel}` }] : []),
   ];
-  const listSummary = (
+  const resetFiltersButton = (
+    <button className="text-button collection-reset-button" title="검색·상태·담당·마감·정렬 조건을 초기화하고 보기와 조회 기간은 유지합니다." onClick={clearFilters}>
+      검색·필터 초기화
+    </button>
+  );
+  const listSummary = view !== 'list' && (
     <div className="list-summary" aria-live="polite">
       <span>
         검색 결과 {tasks.length}개 · 전체 {resource.data?.length || 0}개
@@ -247,11 +261,7 @@ export default function TaskBoard({
         {view === 'board' ? '상태별 ' : ''}
         {sortLabel}
       </span>
-      {hasFilters && (
-        <button className="text-button collection-reset-button" title="검색·상태·담당·마감·정렬 조건을 초기화하고 보기와 조회 기간은 유지합니다." onClick={clearFilters}>
-          검색·필터 초기화
-        </button>
-      )}
+      {hasFilters && resetFiltersButton}
     </div>
   );
   const content = (
@@ -455,6 +465,7 @@ export default function TaskBoard({
               <Icon name="close" />
             </button>
           ))}
+          {view === 'list' && resetFiltersButton}
         </div>
       )}
       <ResourceState resource={resource} label="작업 목록">
@@ -492,7 +503,33 @@ export default function TaskBoard({
             onOpenTask={onOpenTask}
           />
         ) : tasks.length && view === 'list' ? (
-          <TaskTable now={now} tasks={tasks} members={members} onOpenTask={onOpenTask} />
+          <>
+            <TaskTable
+              now={now}
+              tasks={tasks.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)}
+              members={members}
+              onOpenTask={onOpenTask}
+            />
+            <nav className="pagination task-pagination" aria-label="작업 목록 페이지">
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={page === 0 || resource.loading}
+                onClick={() => setListOption('page', page - 1)}
+              >
+                이전
+              </button>
+              <span aria-live="polite">{page + 1}페이지</span>
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={page === lastPage || resource.loading}
+                onClick={() => setListOption('page', page + 1)}
+              >
+                다음
+              </button>
+            </nav>
+          </>
         ) : tasks.length ? (
           <div className="task-columns">
             {Object.entries(statusLabels).map(

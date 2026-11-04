@@ -26,12 +26,12 @@ function TaskDateTime({ value, isOverdue = false }) {
 export default function TaskTable({ tasks, members, onOpenTask, now }) {
   return (
     <div
-      className="table-scroll task-table-scroll"
+      className="table-scroll collection-table-scroll task-table-scroll"
       role="region"
       aria-label="작업 표"
       tabIndex={0}
     >
-      <table className="data-table task-table" aria-label="정렬된 작업 목록">
+      <table className="data-table collection-table task-table" aria-label="정렬된 작업 목록">
         <thead>
           <tr>
             <th scope="col">작업</th>
@@ -47,7 +47,7 @@ export default function TaskTable({ tasks, members, onOpenTask, now }) {
             <tr key={task.id}>
               <th scope="row">
                 <button
-                  className="task-title-button" data-guide-task-id={task.id}
+                  className="collection-title-button" data-guide-task-id={task.id}
                   title={task.title}
                   onClick={() => onOpenTask(task.id)}
                 >
