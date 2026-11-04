@@ -541,7 +541,8 @@ test('중간 피드백은 설명 문구 없이 서버 평균과 항목별 도움
   await page.goto('/spaces/1/teams/1/mid-feedback');
   await expect(page.getByText('4.3 / 5점', { exact: true })).toBeVisible();
   await expect(page.getByText('역할 조율을 함께 확인해 보세요.')).toHaveCount(0);
-  await expect(page.getByLabel('평가 정보')).toContainText('받은 평가 1개');
+  await expect(page.getByRole('heading', { name: '중간 동료 평가 결과', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: '평가 정보', exact: true })).toHaveCount(0);
   await expect(page.getByRole('meter')).toHaveCount(4);
   await expect(page.getByRole('meter', { name: '작업 수행 평균', exact: true })).toHaveAttribute('aria-valuenow', '4.25');
   await expect(page.locator('.peer-criteria-scores > div')).toHaveCount(4);
@@ -578,6 +579,43 @@ test('중간 피드백은 설명 문구 없이 서버 평균과 항목별 도움
   expect(mobileBoxes[1].y).toBeGreaterThanOrEqual(mobileBoxes[0].y + mobileBoxes[0].height - 1);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+test('2인 팀 중간 피드백에서 내 완료 작업량 비율과 현재 작업 현황을 조회한다', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-15T09:00:00Z'));
+  await backend(page);
+  const own = { userId: members[0].userId, allocationPercent: 50 };
+  const other = { userId: members[1].userId, allocationPercent: 50 };
+  const task = { teamId: 1, weight: 2, startAt: '2026-10-12T09:00:00', dueAt: '2026-10-14T18:00:00', status: 'DONE', version: 0 };
+  const shared = { ...task, id: 20, title: '함께 완료한 작업', assignees: [own, other] };
+  const otherDone = { ...task, id: 21, title: '다른 팀원의 완료 작업', assignees: [{ ...other, allocationPercent: 100 }] };
+  const active = { ...task, id: 22, title: '내 진행 작업', status: 'IN_PROGRESS', assignees: [{ ...own, allocationPercent: 100 }] };
+  let tasks = [shared, otherDone, active];
+  await page.route('**/api/teams/1/tasks', (route) => route.fulfill({ json: tasks }));
+  await page.goto('/spaces/1/teams/1/mid-feedback');
+  const work = page.getByRole('region', { name: '내 작업 현황' });
+  const share = work.getByRole('progressbar', { name: '팀 완료 작업량 중 내 비율' });
+  await expect(share).toHaveText('25%');
+  await expect(work.locator('dd')).toHaveText(['1건', '1건', '1건']);
+  await expect(work).not.toContainText('다른 팀원의 완료 작업');
+  await page.setViewportSize({ width: 390, height: 844 });
+  const help = work.getByRole('button', { name: '팀 완료 작업량 중 내 비율 설명' });
+  await help.focus();
+  await expect(work.getByRole('tooltip')).toContainText('작업량에 내 담당 비율을 곱해');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.keyboard.press('Escape');
+
+  tasks = [otherDone, active];
+  const refresh = page.getByRole('button', { name: '피드백 새로고침', exact: true });
+  await refresh.click();
+  await expect(share).toHaveText('0%');
+  tasks = [active];
+  await refresh.click();
+  await expect(work.getByText('아직 완료된 작업이 없어요.')).toBeVisible();
+  await expect(share).toHaveCount(0);
+  await work.getByRole('button', { name: '내 작업 보기', exact: true }).click();
+  await expect(page).toHaveURL(/\/tasks\?mine=1&view=list$/);
+  await expect(page.getByRole('button', { name: '내 진행 작업', exact: true })).toBeVisible();
+});
+
 test('팀 관리는 현재 DTO의 가중 진행률과 선택 팀 구성원을 표시한다', async ({
   page,
 }) => {
