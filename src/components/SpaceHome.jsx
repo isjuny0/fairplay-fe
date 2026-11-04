@@ -81,7 +81,6 @@ export default function SpaceHome({
   joinedTeam,
   user,
   directoryReady,
-  buildingOpen,
   loading,
   busy,
   error,
@@ -257,11 +256,9 @@ export default function SpaceHome({
                   ? `이미 ${joinedTeam.name} 팀에 소속되어 있습니다. 스페이스에서는 한 팀에만 소속될 수 있습니다.`
                   : pendingTeam && !pending
                     ? `${pendingTeam.name} 팀 가입 신청이 대기 중입니다. 신청을 취소하면 다른 팀에 신청할 수 있습니다.`
-                    : !buildingOpen
-                      ? teamCreationRestriction
-                      : !team.canApply
-                        ? '현재 팀 가입 신청을 할 수 없습니다.'
-                        : '';
+                    : !team.canApply
+                      ? '현재 팀 가입 신청을 할 수 없습니다.'
+                      : '';
               return (
                 <li className="space-home-team-row" key={team.id}>
                   <div className="space-home-team-row-info space-home-team-name-cell">
