@@ -1111,10 +1111,6 @@ h1[tabindex="-1"]:focus {
   .task-board-page .board-task-card .task-card-meta {
     grid-template-rows: minmax(52px, auto) auto;
   }
-  .task-board-page .board-task-card .is-overdue {
-    bottom: 8px;
-    left: 12px;
-  }
   .task-board-page .board-task-card:hover {
     border-color: #afc5b9;
     background: #fcfdfc;
@@ -1451,11 +1447,11 @@ h1[tabindex="-1"]:focus {
 .timeline-column-resizer:hover::after,
 .timeline-column-resizer:focus-visible::after { background: var(--brand); width: 3px; }
 .timeline-column-resizer:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
-.task-table-scroll { max-height: min(64dvh, 640px); overflow: auto; scroll-padding: 52px 0 12px 250px; }
-.task-table thead th { position: sticky; top: 0; z-index: 3; background: var(--surface-secondary); box-shadow: inset 0 -1px var(--border); }
+.task-table-scroll { scroll-padding-inline-start: 250px; }
+.task-table thead th { background: var(--surface-secondary); box-shadow: inset 0 -1px var(--border); }
 .task-table tbody th { position: sticky; left: 0; z-index: 2; background: var(--surface); }
 .task-table-scroll[data-horizontal-overflow='true'] .task-table tbody th { box-shadow: inset -1px 0 var(--border); }
-.task-table thead th:first-child { left: 0; z-index: 4; }
+.task-table thead th:first-child { position: sticky; left: 0; z-index: 3; }
 .task-table tbody tr:hover th { background: var(--surface-secondary); }
 .modal-backdrop:has(.modal-fullscreen) { padding: 12px; }
 .real-modal.modal-fullscreen { width: calc(100vw - 24px); height: calc(100dvh - 24px); max-width: none; max-height: none; }
@@ -1486,10 +1482,11 @@ h1[tabindex="-1"]:focus {
   gap: 8px;
   flex-wrap: wrap;
 }
-.board-card-heading { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
 .task-board-page .board-card-footer .task-deadline {
   min-width: 0;
   flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
   padding-top: 0;
   border-top: 0;
 }
@@ -1529,13 +1526,19 @@ h1[tabindex="-1"]:focus {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.board-card-assignees .board-card-mine {
-  flex: 0 0 auto;
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: var(--brand-light);
+.board-card-self {
   color: var(--brand-dark);
-  font-size: 11px;
+  font-weight: 600;
+}
+.board-card-overdue {
+  color: var(--notice-coral-text);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.board-card-overdue::before {
+  content: '·';
+  margin-right: 6px;
 }
 .board-card-details-toggle {
   position: relative;
@@ -1576,16 +1579,6 @@ h1[tabindex="-1"]:focus {
   grid-template-rows: none;
   min-height: 0;
 }
-.task-board-page .board-task-card .board-card-overdue {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  bottom: auto;
-  left: auto;
-  z-index: 1;
-  white-space: nowrap;
-}
-
 .task-schedule-preview-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 
 /* Contextual schedule guidance stays beside the month picker instead of adding vertical space below the view. */
@@ -1656,11 +1649,8 @@ h1[tabindex="-1"]:focus {
   box-sizing: border-box;
 }
 
-/* Without database IDs, only deadline warnings occupy the desktop card header. */
 @media (min-width: 721px) {
-  .task-board-page .board-card-top:not(.has-overdue) { display: none; }
-  .task-board-page .board-card-top .board-card-heading { display: none; }
-  .task-board-page .board-card-top { justify-content: flex-end; }
+  .task-board-page .board-card-top { display: none; }
 }
 
 /* Identify the current user consistently without repeating a self label. */

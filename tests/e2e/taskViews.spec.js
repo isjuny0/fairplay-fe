@@ -464,15 +464,20 @@ test('작업 표는 가로·세로로 스크롤해도 열 제목과 작업 제�
   for (const badge of await table.locator('.status-badge').all()) {
     await expect(badge).toHaveCSS('white-space', 'nowrap');
   }
-  await table.scrollIntoViewIfNeeded();
-  await table.evaluate((element) => { element.scrollTop = 400; element.scrollLeft = 150; });
+  await expect(table.locator('tbody tr')).toHaveCount(20);
+  expect(await table.evaluate((element) => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1);
+  await table.evaluate((element) => { element.scrollLeft = 150; });
   const bounds = await table.boundingBox();
   const corner = await table.getByRole('columnheader', { name: '작업', exact: true }).boundingBox();
   expect(Math.abs(corner.x - bounds.x)).toBeLessThan(2);
-  expect(Math.abs(corner.y - bounds.y - 1)).toBeLessThan(2);
   const firstTask = await table.locator('tbody th').first().boundingBox();
   expect(Math.abs(firstTask.x - bounds.x)).toBeLessThan(2);
   expect(await table.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
+  const pagination = page.getByRole('navigation', { name: '작업 목록 페이지' });
+  await pagination.scrollIntoViewIfNeeded();
+  await expect(pagination).toBeInViewport();
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+  expect(await table.evaluate((element) => element.scrollTop)).toBe(0);
   await page.screenshot({ path: testInfo.outputPath('task-table-sticky.png') });
 });
 

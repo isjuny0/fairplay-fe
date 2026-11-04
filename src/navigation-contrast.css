@@ -91,10 +91,6 @@
   vertical-align: middle;
   background: currentColor;
 }
-.task-board-page .board-task-card .is-overdue {
-  background: var(--notice-coral-background);
-  color: var(--notice-coral);
-}
 .task-table .task-date-is-overdue {
   color: var(--notice-coral);
 }

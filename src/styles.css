@@ -2085,12 +2085,6 @@ button {
   font-size: var(--text-support);
   line-height: 1.5;
 }
-.board-task-card .is-overdue {
-  position: absolute;
-  bottom: 12px;
-  left: 10px;
-  margin: 0;
-}
 .form-section-title {
   margin: 0 0 16px;
   padding-bottom: 12px;
