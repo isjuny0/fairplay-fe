@@ -100,3 +100,8 @@ button.collection-reset-button:hover {
   min-height: 36px;
   padding-block: 1px;
 }
+@media (min-width: 901px) {
+  .task-board-page .list-summary {
+    min-height: 40px;
+  }
+}
