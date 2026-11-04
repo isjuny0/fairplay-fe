@@ -1,3 +1,4 @@
+import { clickDashboardControl } from './helpers/teamDashboard.js';
 import { test, expect } from '@playwright/test';
 
 for (const width of [1440, 390, 320]) {
@@ -7,14 +8,14 @@ for (const width of [1440, 390, 320]) {
     await page.clock.setFixedTime(new Date('2026-10-21T09:00:00Z'));
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('/preview/spaces/1/teams/1');
-    await page.getByRole('button', { name: '위젯 편집', exact: true }).click();
+    await clickDashboardControl(page, '위젯 편집');
     await page
       .getByRole('button', { name: '팀 전체 진행률 앞으로 이동', exact: true })
       .click();
     await page
       .getByRole('button', { name: '팀 전체 진행률 뒤로 이동', exact: true })
       .click();
-    await page.getByRole('button', { name: '편집 완료', exact: true }).click();
+    await clickDashboardControl(page, '편집 완료');
     await page.evaluate(async () => {
       const key = Object.keys(localStorage).find((key) =>
         key.startsWith('fairplay:mock:v9:'),

@@ -1,3 +1,4 @@
+import { clickDashboardControl } from './helpers/teamDashboard.js';
 import { test, expect } from '@playwright/test';
 import { addDashboardWidgets } from './helpers/teamDashboard.js';
 
@@ -18,7 +19,7 @@ for (const width of [1920, 1440, 1024, 768, 390, 320]) {
       await expect(
         home.getByRole('region', { name: '직접 등록 일정 캘린더' }),
       ).toBeVisible();
-      await expect(home.locator('.dashboard-widget')).toHaveCount(3);
+      await expect(home.locator('.dashboard-widget')).toHaveCount(4);
       await addDashboardWidgets(page, [
         '지금 확인할 작업',
         '내 작업 현황',
@@ -112,14 +113,14 @@ test('6주인 달과 계산 기준을 펼친 상태에서도 두 기본 카드 �
   ).toHaveAttribute('aria-valuenow', '50');
   const calendar = page.locator('.dashboard-calendar');
   const progress = page.locator('.dashboard-team-progress');
-  await page.getByRole('button', { name: '위젯 편집', exact: true }).click();
+  await clickDashboardControl(page, '위젯 편집');
   await page
     .getByRole('button', { name: '팀 전체 진행률 앞으로 이동', exact: true })
     .click();
   await page
     .getByRole('button', { name: '팀 전체 진행률 뒤로 이동', exact: true })
     .click();
-  await page.getByRole('button', { name: '편집 완료', exact: true }).click();
+  await clickDashboardControl(page, '편집 완료');
   await page.evaluate(async () => {
     const key = Object.keys(localStorage).find((key) =>
       key.startsWith('fairplay:mock:v9:'),

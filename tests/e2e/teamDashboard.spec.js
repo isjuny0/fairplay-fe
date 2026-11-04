@@ -1,3 +1,4 @@
+import { clickDashboardControl } from './helpers/teamDashboard.js';
 import { selectPreviewOption } from './helpers/previewControls.js';
 import { test, expect } from '@playwright/test';
 import {
@@ -23,15 +24,15 @@ test('위젯을 선택·재정렬·제거하고 메모와 구성이 새로고침
   await expect(
     page.getByRole('button', { name: '메모 저장', exact: true }),
   ).toBeDisabled();
-  await page.getByRole('button', { name: '위젯 편집', exact: true }).click();
+  await clickDashboardControl(page, '위젯 편집');
   await page
     .getByRole('button', { name: '빠른 메모 앞으로 이동', exact: true })
     .click();
   await expect(page.locator('.dashboard-widget h2')).toHaveText([
+    '지금 확인할 작업',
     '캘린더',
     '팀 전체 진행률',
     '내 기여도',
-    '지금 확인할 작업',
     '빠른 메모',
     '다가오는 작업',
     '작업 상태 요약',
@@ -39,13 +40,13 @@ test('위젯을 선택·재정렬·제거하고 메모와 구성이 새로고침
   await page
     .getByRole('button', { name: '다가오는 작업 위젯 제거', exact: true })
     .click();
-  await page.getByRole('button', { name: '편집 완료', exact: true }).click();
+  await clickDashboardControl(page, '편집 완료');
   await page.reload();
   await expect(page.locator('.dashboard-widget h2')).toHaveText([
+    '지금 확인할 작업',
     '캘린더',
     '팀 전체 진행률',
     '내 기여도',
-    '지금 확인할 작업',
     '빠른 메모',
     '작업 상태 요약',
   ]);
@@ -186,7 +187,7 @@ test('역할 변경 시 다른 사용자에게 개인 위젯·메모가 보이�
   await selectPreviewOption(page, '미리보기 역할', 'member');
   await page.goto('/preview/spaces/1/teams/1');
   await expect(page.locator('.dashboard-heading h1')).toHaveText('삼위일체');
-  await expect(page.locator('.dashboard-widget')).toHaveCount(3);
+  await expect(page.locator('.dashboard-widget')).toHaveCount(4);
   await selectPreviewOption(page, '미리보기 역할', 'leader');
   await page.goto('/preview/spaces/1/teams/1');
   await expect(

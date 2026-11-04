@@ -124,6 +124,19 @@ function TeamDashboard({
   const [memoDirty, setMemoDirty] = useState(false);
   const [catalog, setCatalog] = useState(false);
   const [editing, setEditing] = useState(false);
+  const settingsMenu = useRef(null);
+  const closeSettings = () => {
+    if (!settingsMenu.current) return;
+    settingsMenu.current.open = false;
+    settingsMenu.current.querySelector('summary')?.focus();
+  };
+  useEffect(() => {
+    const outside = event => {
+      if (settingsMenu.current && !settingsMenu.current.contains(event.target)) settingsMenu.current.open = false;
+    };
+    document.addEventListener('pointerdown', outside);
+    return () => document.removeEventListener('pointerdown', outside);
+  }, []);
   const [draggedId, setDraggedId] = useState(null);
   const [dropId, setDropId] = useState(null);
   const [announcement, setAnnouncement] = useState('');
@@ -508,9 +521,27 @@ function TeamDashboard({
           >
             <Icon name="search" />자료에 질문하기
           </button>
+          <details className="dashboard-display-settings" ref={settingsMenu} onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); closeSettings(); } }}>
+          <summary
+            className={`secondary-button ${editing ? 'is-active' : ''}`}
+            role="button"
+            aria-label={editing ? '편집 완료' : '화면 설정'}
+            aria-disabled={editing && saving || undefined}
+            onClick={event => {
+              if (!editing) return;
+              event.preventDefault();
+              if (saving) return;
+              setEditing(false);
+              closeSettings();
+            }}
+          >
+            {editing ? <Check size={15} /> : <Settings2 size={15} />}
+            {editing ? '편집 완료' : '화면 설정'}
+          </summary>
+          <div className="dashboard-display-settings-actions">
           <button
             className={`secondary-button ${editing ? 'is-active' : ''}`}
-            onClick={() => setEditing(!editing)}
+            onClick={() => { setEditing(!editing); closeSettings(); }}
             aria-pressed={editing}
             disabled={saving}
           >
@@ -518,13 +549,15 @@ function TeamDashboard({
             {editing ? '편집 완료' : '위젯 편집'}
           </button>
           <button
-            className="primary-button"
+            className="secondary-button"
             disabled={saving}
-            onClick={() => setCatalog(true)}
+            onClick={() => { closeSettings(); setCatalog(true); }}
           >
             <Plus size={16} />
             위젯 추가
           </button>
+          </div>
+          </details>
         </div>
       </header>
       <ErrorNotice error={saveError} />

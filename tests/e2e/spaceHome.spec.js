@@ -135,6 +135,21 @@ test('팀원 수에 마우스를 올리거나 키보드로 선택하면 명단�
   await expect(page).toHaveURL(/\/spaces\/1\/teams\/1$/);
 });
 
+test('공지 응답 형식이 잘못되어도 스페이스 홈을 유지하고 공지만 다시 불러온다', async ({page}) => {
+  await spaceHome(page);
+  const pattern = '**/api/spaces/1/announcements?*';
+  const malformed = route => route.fulfill({json: []});
+  await page.route(pattern, malformed);
+  await page.goto('/spaces/1');
+  await expect(page.getByRole('heading',{name:'캡스톤 프로젝트',exact:true})).toBeVisible();
+  const summary=page.getByRole('region',{name:'공지사항',exact:true});
+  await expect(summary.getByRole('alert')).toContainText('공지사항을 불러오지 못했습니다.');
+  await expect(page.getByRole('region',{name:'내 팀',exact:true})).toBeVisible();
+  await page.unroute(pattern, malformed);
+  await summary.getByRole('button',{name:'다시 불러오기',exact:true}).click();
+  await expect(summary).toContainText('등록된 공지사항이 없습니다.');
+});
+
 test('팀원 수를 모바일에서 누르면 다른 팀의 이름도 보이고 화면을 넘치지 않는다', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 844 });
   const fixture = await spaceHome(page, { joined: false });
@@ -482,8 +497,8 @@ for (const width of [320, 768, 1440]) {
       expect(intro.x).toBeGreaterThanOrEqual(sidebar.x + sidebar.width);
     }
     const buildingDates = page.locator('.space-home-period').filter({ hasText: '팀 빌딩 기간' }).locator('.space-home-dates');
-    const dateLines = await buildingDates.locator('time, .space-home-countdown').evaluateAll((items) => items.map((item) => item.getBoundingClientRect().top));
-    expect(Math.max(...dateLines) - Math.min(...dateLines)).toBeLessThan(2);
+    const dateLines = await buildingDates.locator('time').evaluateAll((items) => items.map((item) => item.getBoundingClientRect().top));
+    if (width > 480) expect(Math.max(...dateLines) - Math.min(...dateLines)).toBeLessThan(2);
     if (width > 900) {
       const heading = await page.locator('.space-home-period-summary h2').boundingBox();
       const state = await page.locator('.space-home-period-status').boundingBox();

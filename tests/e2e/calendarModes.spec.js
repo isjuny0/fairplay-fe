@@ -1,3 +1,4 @@
+import { clickDashboardControl } from './helpers/teamDashboard.js';
 import { test, expect } from '@playwright/test';
 import {
   addDashboardWidgets,
@@ -199,24 +200,25 @@ test('모바일에서 매월·매년 반복과 종료일 없음이 저장된다'
 test('기본·추가 위젯을 드래그하고 화살표로 이동하며 제거·복원이 저장된다', async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 1440, height: 1000 });
+  // Keep both drag handles visible; browser auto-scrolling is not this assertion's subject.
+  await page.setViewportSize({ width: 1440, height: 1600 });
   await addDashboardWidgets(page, ['빠른 메모']);
-  await page.getByRole('button', { name: '위젯 편집', exact: true }).click();
+  await clickDashboardControl(page, '위젯 편집');
   await page
     .getByRole('button', { name: '캘린더 위젯 드래그', exact: true })
-    .dragTo(page.locator('[data-widget-id="contribution"]'));
+    .dragTo(page.locator('[data-widget-id="contribution"]'), {targetPosition:{x:30,y:20}});
   await expect
     .poll(() =>
       page
         .locator('[data-widget-id]')
         .evaluateAll((els) => els.map((el) => el.dataset.widgetId)),
     )
-    .toEqual(['progress', 'contribution', 'calendar', 'memo']);
+    .toEqual(['attention', 'progress', 'contribution', 'calendar', 'memo']);
   await page
     .getByRole('button', { name: '빠른 메모 위젯 드래그', exact: true })
-    .dragTo(page.locator('[data-widget-id="progress"]'));
+    .dragTo(page.locator('[data-widget-id="progress"]'), {targetPosition:{x:30,y:20}});
   await expect(
-    page.getByRole('button', { name: '편집 완료', exact: true }),
+    page.locator('.dashboard-display-settings button[aria-pressed]'),
   ).toBeEnabled();
   await page
     .getByRole('button', { name: '팀 전체 진행률 뒤로 이동', exact: true })
@@ -227,20 +229,20 @@ test('기본·추가 위젯을 드래그하고 화살표로 이동하며 제거�
         .locator('[data-widget-id]')
         .evaluateAll((els) => els.map((el) => el.dataset.widgetId)),
     )
-    .toEqual(['memo', 'contribution', 'progress', 'calendar']);
+    .toEqual(['attention', 'memo', 'contribution', 'progress', 'calendar']);
   await page
     .getByRole('button', { name: '내 기여도 위젯 제거', exact: true })
     .click();
-  await page.getByRole('button', { name: '편집 완료', exact: true }).click();
+  await clickDashboardControl(page, '편집 완료');
   await page.reload();
-  await expect(page.locator('[data-widget-id]')).toHaveCount(3);
+  await expect(page.locator('[data-widget-id]')).toHaveCount(4);
   await expect
     .poll(() =>
       page
         .locator('[data-widget-id]')
         .evaluateAll((els) => els.map((el) => el.dataset.widgetId)),
     )
-    .toEqual(['memo', 'progress', 'calendar']);
+    .toEqual(['attention', 'memo', 'progress', 'calendar']);
   await addDashboardWidgets(page, ['내 기여도']);
   await expect(page.locator('[data-widget-id="contribution"]')).toBeVisible();
 });

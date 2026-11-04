@@ -10,12 +10,14 @@ import { formatDate } from '../lib/domain.js';
 import { ErrorNotice, EmptyState, ResourceState } from './ui.jsx';
 import { HeaderContext } from './HeaderContext.js';
 import PersonalWorkBackButton from './PersonalWorkBackButton.jsx';
+import { notificationDateLabel } from '../lib/notificationDate.js';
+import { Fragment } from 'react';
 
 const PAGE_SIZE = 20;
 
 export default function PersonalNotifications() {
-  const navigate = useAppNavigate();
   const { notify } = useInteractions();
+  const navigate = useAppNavigate();
   const setHeaderContext = useContext(HeaderContext);
   const { pathname } = useLocation();
   const [filter, setFilter] = useState('ALL');
@@ -45,6 +47,7 @@ export default function PersonalNotifications() {
     setBusy(true);
     try {
       await markNotificationRead(item.id);
+      notify('알림을 읽음으로 표시했습니다.');
       setActionError(null);
       announceNotificationChange();
     } catch (error) { setActionError(error); }
@@ -54,6 +57,7 @@ export default function PersonalNotifications() {
     setBusy(true);
     try {
       await markAllNotificationsRead();
+      notify('모든 알림을 읽음으로 표시했습니다.');
       setActionError(null);
       announceNotificationChange();
     } catch (error) { setActionError(error); }
@@ -84,7 +88,7 @@ export default function PersonalNotifications() {
     </div>
     <ResourceState resource={resource} label="알림">
       {page?.items.length ? <ul className="personal-notification-list">
-        {page.items.map((item) => {
+        {page.items.map((item, index) => {
           const targetPath = notificationPath(item);
           const copy = <span className="personal-notification-copy">
               <span className="personal-notification-title-row">
@@ -95,10 +99,14 @@ export default function PersonalNotifications() {
               {item.message && <span className="personal-notification-message">{item.message}</span>}
               <time dateTime={item.createdAt}>{formatDate(item.createdAt)}</time>
             </span>;
-          return <li key={item.id} className={`personal-notification ${!item.readAt ? 'is-unread' : ''} ${!item.accessible ? 'is-inaccessible' : ''}`}>
+          const dateLabel = notificationDateLabel(item.createdAt);
+          return <Fragment key={item.id}>
+          {(index === 0 || dateLabel !== notificationDateLabel(page.items[index - 1].createdAt)) && <li className="notification-date-heading" role="presentation"><h2>{dateLabel}</h2></li>}
+          <li className={`personal-notification ${!item.readAt ? 'is-unread' : ''} ${!item.accessible ? 'is-inaccessible' : ''}`}>
             {targetPath
               ? <button type="button" className="personal-notification-open" disabled={busy} aria-label={`${item.title} 상세 보기`} onClick={() => openNotification(item, targetPath)}>{copy}</button>
               : copy}
+            {!item.accessible && <span className="notification-unavailable-reason">삭제되었거나 접근 권한이 없는 항목입니다.</span>}
             {!item.readAt && <button
               type="button"
               className="notification-mark-read"
@@ -107,7 +115,7 @@ export default function PersonalNotifications() {
               disabled={busy}
               onClick={() => markOne(item)}
             ><Check size={17} /></button>}
-          </li>;
+          </li></Fragment>;
         })}
       </ul> : <EmptyState>{filter === 'UNREAD' ? '읽지 않은 알림이 없습니다.' : '표시할 알림이 없습니다.'}</EmptyState>}
     </ResourceState>

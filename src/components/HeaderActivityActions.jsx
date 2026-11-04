@@ -15,6 +15,7 @@ export default function HeaderActivityActions() {
   const [taskPopoverOpen, setTaskPopoverOpen] = useState(false);
   const [taskPreview, setTaskPreview] = useState(null);
   const [taskPreviewError, setTaskPreviewError] = useState(false);
+  const [todoType, setTodoType] = useState('ALL');
   const root = useRef(null);
   const taskRequest = useRef(null);
   const count = useResource(getMyNotificationUnreadCount, []);
@@ -66,6 +67,7 @@ export default function HeaderActivityActions() {
   };
 
   const taskCountLabel = `할 일·평가 ${taskPreview?.totalCount ?? 0}개`;
+  const visibleTodos = taskPreview?.items.filter(item => todoType === 'ALL' || item.type === todoType) || [];
 
   const openTodo = (todo) => {
     setTaskPopoverOpen(false);
@@ -92,14 +94,18 @@ export default function HeaderActivityActions() {
           <ListTodo size={19} />
         </button>
         {taskPopoverOpen && <section className="notification-popover header-task-popover" id="header-task-popover" aria-label="할 일 미리보기">
-          <header className="notification-popover-heading"><strong>{taskPreviewError ? '할 일을 불러오지 못했습니다' : taskPreview === null ? '할 일을 불러오는 중…' : taskCountLabel}</strong></header>
+          <header className="notification-popover-heading"><strong>{taskPreviewError ? '할 일을 불러오지 못했습니다' : taskPreview === null ? '할 일을 불러오는 중…' : taskCountLabel}</strong>{taskPreview && !taskPreviewError && todoType !== 'ALL' && <span className="field-help">전체 기준</span>}</header>
+          {taskPreview && !taskPreviewError && <div className="todo-kind-filter" role="group" aria-label="할 일 종류">
+            {[["ALL", "전체"], ["TASK", "작업"], ["PEER_EVALUATION", "동료 평가"]].map(([type, label]) => <button key={type} type="button" aria-pressed={todoType === type} onClick={() => setTodoType(type)}>{label}</button>)}
+          </div>}
           {taskPreviewError ? <p className="notification-popover-state">잠시 후 다시 확인해 주세요.</p> : taskPreview === null ? <p className="notification-popover-state" role="status">담당 중인 작업과 동료 평가를 확인하고 있습니다.</p> : taskPreview.items.length ? <>
-            <div className="header-task-preview-cards" aria-label="할 일 전체 목록">{taskPreview.items.map((item) => {
+            {!visibleTodos.length && <p className="notification-popover-state">선택한 종류의 할 일이 없습니다.</p>}
+            <div className="header-task-preview-cards" aria-label="할 일 전체 목록">{visibleTodos.map((item) => {
               const isEvaluation = item.type === 'PEER_EVALUATION';
               const task = item.task;
               const label = isEvaluation ? (item.evaluation.roundType === 'MID' ? '중간 동료 평가' : '최종 동료 평가') : (statusLabels[task.status] || task.status);
               return <button type="button" className="header-task-preview-card" data-status={task?.status || 'EVALUATION'} data-type={item.type} key={`${item.type}-${item.id}`} onClick={() => openTodo(item)}>
-              <div className="header-task-preview-card-heading"><span className="header-task-preview-status"><i />{label}</span>{item.isOverdue && <span className="header-task-preview-overdue">마감 지남</span>}</div>
+              <div className="header-task-preview-card-heading"><span className="header-task-preview-status"><i />{label}</span><small className="todo-type-label">{isEvaluation ? '동료 평가' : '작업'}</small>{item.isOverdue && <span className="header-task-preview-overdue">마감 지남</span>}</div>
               <strong>{item.title}</strong>
               <span className="header-task-preview-meta">{item.teamName} · 마감 {formatDate(item.dueAt)}</span>
             </button>})}</div>

@@ -1,4 +1,5 @@
 import { usePreviewGuide } from '../lib/previewGuideContext.js';
+import { rememberSpace } from '../lib/recentSpaces.js';
 import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import { screenLoaders } from '../lib/routeScreens.js';
 import { deferScreen } from './DeferredScreen.jsx';
@@ -79,6 +80,9 @@ export default function SpaceWorkspace({
     ]);
     return { space, teams };
   }, [spaceId]);
+  useEffect(() => {
+    if (resource.data?.space && !resource.error) rememberSpace(user.id, resource.data.space.id);
+  }, [user.id, resource.data, resource.error]);
   const dashboardTeamId = view === 'dashboard'
     ? new URLSearchParams(location.search).get('teamId')
     : null;
@@ -236,12 +240,13 @@ export default function SpaceWorkspace({
       spaceId,
       teams,
       team,
+      teamId,
       view,
       teamMenu,
       teamRole,
       returnPath: location.pathname,
     });
-  }, [setCurrentWorkspace, space, spaceId, teams, team, view, teamMenu, teamRole, location.pathname]);
+  }, [setCurrentWorkspace, space, spaceId, teams, team, teamId, view, teamMenu, teamRole, location.pathname]);
   const buildingOpen =
     space?.teamBuildingStatus === 'OPEN' &&
     new Date(apiTimeToEpoch(space.teamBuildingOpensAt)) <= new Date() &&
@@ -341,6 +346,7 @@ export default function SpaceWorkspace({
         spaceId={spaceId}
         teams={teams}
         team={team}
+        teamId={teamId}
         view={view}
         teamMenu={teamMenu}
         teamRole={teamRole}
