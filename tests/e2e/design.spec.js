@@ -61,7 +61,7 @@ for (const width of [3840, 1920, 1440, 1100, 1024, 1006, 901, 768, 721]) {
 }
 
 for (const width of [1440, 1024, 390, 320]) {
-  test(`팀 홈 ${width}px: 확인할 작업 버튼의 문구와 건수 줄바꿈 방지`, async ({ page }) => {
+  test(`팀 홈 ${width}px: 확인할 작업 버튼의 제목과 건수는 위아래로 표시된다`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/preview/spaces/1/teams/1');
     await addDashboardWidgets(page, ['지금 확인할 작업']);
@@ -69,18 +69,19 @@ for (const width of [1440, 1024, 390, 320]) {
     const buttons = await page.locator('.dashboard-attention button').evaluateAll(elements => elements.map(button => {
       const title = button.children[1];
       const count = button.children[2];
-      const parts = [title, count].map(el => el.getBoundingClientRect());
+      const titleBounds = title.getBoundingClientRect();
+      const countBounds = count.getBoundingClientRect();
       const lineHeight = parseFloat(getComputedStyle(title).lineHeight);
       return {
-        oneLine: title.getBoundingClientRect().height <= lineHeight + 1,
-        aligned: parts[1].left >= parts[0].right && Math.max(parts[0].top, parts[1].top) < Math.min(parts[0].bottom, parts[1].bottom),
-        fits: button.scrollWidth <= button.clientWidth && title.scrollWidth <= title.clientWidth,
+        oneLine: titleBounds.height <= lineHeight + 1,
+        stacked: countBounds.top >= titleBounds.bottom,
+        fits: button.scrollWidth <= button.clientWidth && title.scrollWidth <= title.clientWidth && count.scrollWidth <= count.clientWidth,
       };
     }));
     expect(buttons).toHaveLength(2);
     for (const button of buttons) {
       expect(button.oneLine).toBe(true);
-      expect(button.aligned).toBe(true);
+      expect(button.stacked).toBe(true);
       expect(button.fits).toBe(true);
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
