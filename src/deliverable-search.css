@@ -374,7 +374,7 @@
     max-width: none;
   }
   .deliverable-sort-field {
-    margin-left: auto;
+    margin-left: 0;
   }
 }
 @media (max-width: 480px) {

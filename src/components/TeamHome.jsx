@@ -8,6 +8,7 @@ import {
   ChevronRight,
   LayoutDashboard,
   Plus,
+  Settings,
   Settings2,
 } from 'lucide-react';
 import Icon from './Icon.jsx';
@@ -535,7 +536,7 @@ function TeamDashboard({
               closeSettings();
             }}
           >
-            {editing ? <Check size={15} /> : <Settings2 size={15} />}
+            {editing ? <Check size={15} /> : <Settings size={15} />}
             {editing ? '편집 완료' : '화면 설정'}
           </summary>
           <div className="dashboard-display-settings-actions">
