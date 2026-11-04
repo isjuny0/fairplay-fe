@@ -78,7 +78,7 @@ test('타임라인은 3개월의 계획 기간을 주 눈금으로 비교하고 
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.clock.install({ time: new Date('2026-10-15T09:00:00Z') });
+  await page.clock.install({ time: new Date('2026-11-15T09:00:00Z') });
   await seed(page, 'timeline', '', (state) => {
     state.teams[1].tasks[3].status = 'IN_PROGRESS';
     state.teams[1].tasks[3].dueAt = '2026-12-10T09:00:00';

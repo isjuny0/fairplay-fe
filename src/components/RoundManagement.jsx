@@ -5,6 +5,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { useSearchParams } from 'react-router';
 import SectionTabs from './SectionTabs.jsx';
+import WorkflowSteps from './WorkflowSteps.jsx';
 import ManagerPeerResponses from './ManagerPeerResponses.jsx';
 import DateTimeInput from './DateTimeInput.jsx';
 import RoundTeamSubmissions from './RoundTeamSubmissions.jsx';
@@ -163,6 +164,8 @@ export default function RoundManagement({ context, onChanged }) {
               const stateLabel = { UNCONFIGURED: '미설정', DRAFT: '시작 예정', OPEN: '평가 진행 중', CLOSED: '평가 종료' }[status];
               return <div role="tabpanel" id={`${roundTabsId}-${type}-panel`} aria-labelledby={`${roundTabsId}-${type}-tab`} hidden={selectedRoundType !== type} key={type}>
                 {selectedRoundType === type && <section className={`round-operation-section is-${status.toLowerCase()}`} data-guide-round={type} aria-label={`${roundLabels[type]} 운영`}>
+                <WorkflowSteps label={`${roundLabels[type]} 진행 단계`} steps={['일정 설정', '시작 대기', '평가 진행', '평가 종료']} current={{UNCONFIGURED: 0, DRAFT: 1, OPEN: 2, CLOSED: 3}[status]} />
+                <p className="workflow-next-action" role="status"><strong>다음 단계</strong>{!round ? '평가 시작·마감 일정을 설정하세요.' : startBlockReasons.length ? '평가 시작을 막는 조건을 아래에서 확인하고 조정하세요.' : status === 'DRAFT' ? '저장된 시작 시각에 자동으로 열립니다. 일정을 확인하세요.' : status === 'OPEN' ? '아래 제출 현황에서 미제출 팀을 확인하세요.' : '동료 평가 결과 탭에서 팀별 응답을 확인하세요.'}</p>
                 <header className="round-section-heading">
                   <div><h2>{roundLabels[type]}</h2><span className={`status-badge round-lifecycle-${status.toLowerCase()}`}>{stateLabel}</span></div>
                   <div className="round-section-tools">

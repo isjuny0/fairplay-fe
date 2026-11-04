@@ -32,6 +32,11 @@ import './screen-motion.css';
 import './dropdowns.css';
 import './table-headers.css';
 import './close-buttons.css';
+import './mobile-usability.css';
+import './experience-consistency.css';
+import './workflow-navigation.css';
+import './workflow-work.css';
+import './workflow-evaluation.css';
 
 const router = createBrowserRouter([
   {

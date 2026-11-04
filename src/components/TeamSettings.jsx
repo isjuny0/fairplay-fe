@@ -139,7 +139,7 @@ export default function TeamSettings({
         </p>
       )}
       {!confirmation && <ErrorNotice error={error} />}
-      <section className="panel settings-section team-deletion-section">
+      <section className="panel settings-section team-deletion-section danger-zone">
         <div className="settings-section-heading">
           <h2>팀 삭제 동의</h2>
           <p>

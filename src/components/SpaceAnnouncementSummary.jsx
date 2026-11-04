@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { downloadSpaceAnnouncementAttachment, listSpaceAnnouncements } from "../api/spaceAnnouncements.js";
+import { listSpaceAnnouncements } from "../api/spaceAnnouncements.js";
+import { downloadAnnouncementAttachments } from '../lib/announcementDownloads.js';
 import useResource from "../hooks/useResource.js";
 import useAppNavigate from "../hooks/useAppNavigate.js";
 import { useInteractions } from "../hooks/useInteractions.js";
@@ -19,20 +20,12 @@ export default function SpaceAnnouncementSummary({ space }) {
   const [downloadingId, setDownloadingId] = useState(null);
   const navigate = useAppNavigate();
   const { notify } = useInteractions();
-  const downloadAttachment = async (item, attachment) => {
-    const key = `${item.id}/${attachment.id}`;
+  const downloadAttachment = async (item, attachments) => {
+    const key = String(item.id);
     setDownloadingId(key);
     setError(null);
     try {
-      const blob = await downloadSpaceAnnouncementAttachment(space.id, item.id, attachment.id);
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = attachment.originalFilename;
-      document.body.append(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      await downloadAnnouncementAttachments(space.id, item, attachments);
     } catch (downloadError) {
       setError(downloadError);
     } finally {

@@ -12,3 +12,13 @@
   padding: 0;
   gap: 0;
 }
+@media (max-width: 720px) {
+  .secondary-button.refresh-icon-button {
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+  }
+}

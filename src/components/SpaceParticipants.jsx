@@ -166,6 +166,7 @@ export default function SpaceParticipants({ space, user, onChanged }) {
                             className="secondary-button danger"
                             aria-label={`${member.name} 참여자 삭제`}
                             title={hint || `${member.name} 참여자 삭제`}
+                            aria-describedby={hint ? `removal-reason-${member.userId}` : undefined}
                             disabled={
                               !!hint ||
                               pendingId != null ||
@@ -178,6 +179,7 @@ export default function SpaceParticipants({ space, user, onChanged }) {
                               ? "삭제 중…"
                               : "삭제"}
                           </button>
+                          {hint && <small className="action-reason" id={`removal-reason-${member.userId}`}>{hint}</small>}
                         </td>
                       </tr>
                     );

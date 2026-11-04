@@ -28,6 +28,7 @@ for (const width of [1440, 768, 390, 320]) {
       exact: true,
     });
     await expect(heading).toHaveText('팀 목록 1');
+    await page.evaluate(() => document.fonts.ready);
     const headingBox = await heading.boundingBox(),
       searchBox = await search.boundingBox();
     expect(
@@ -60,9 +61,9 @@ for (const width of [1440, 768, 390, 320]) {
         () => document.documentElement.scrollWidth > innerWidth,
       ),
     ).toBe(false);
-    const headerSnapshot = () =>
-      page.evaluate(() =>
-        Object.fromEntries(
+    const headerSnapshot = async () => {
+      await page.evaluate(() => document.fonts.ready);
+      return page.evaluate(() => Object.fromEntries(
           [
             '.space-page-header',
             '.space-page-header h1',
@@ -83,8 +84,8 @@ for (const width of [1440, 768, 390, 320]) {
               },
             ];
           }),
-        ),
-      );
+        ));
+    };
     const spaceHeader = await headerSnapshot();
     await page.goto('/preview/main');
     await expect(
@@ -97,10 +98,16 @@ for (const width of [1440, 768, 390, 320]) {
     }
     for (const key of ['x', 'width'])
       expect(Math.abs(myHeader['.space-page-header'][key] - spaceHeader['.space-page-header'][key])).toBeLessThanOrEqual(1);
-    expect(myHeader['.space-page-header'].height).toBeLessThan(spaceHeader['.space-page-header'].height);
-    const toolbarBox = await page.locator('.directory-toolbar').boundingBox();
+    const headingActionsBox = await page.locator('.space-page-header > .heading-actions').boundingBox();
+    const headingContentBox = await page.locator('.space-page-heading').boundingBox();
     const headerBox = await page.locator('.space-page-header').boundingBox();
-    expect(toolbarBox.y - headerBox.y - headerBox.height).toBeLessThanOrEqual(24);
+    const headingBottom = headerBox.y + headerBox.height;
+    const contentBottom = Math.max(headingActionsBox.y + headingActionsBox.height, headingContentBox.y + headingContentBox.height);
+    expect(headingBottom - contentBottom).toBeLessThanOrEqual(25);
+    const toolbarBox = await page.locator('.directory-toolbar').boundingBox();
+    const recentBox = await page.getByRole('navigation', { name: '최근 방문 스페이스', exact: true }).boundingBox();
+    expect(recentBox.y - headerBox.y - headerBox.height).toBeLessThanOrEqual(24);
+    expect(toolbarBox.y - recentBox.y - recentBox.height).toBeLessThanOrEqual(24);
     const myRefresh = page
       .getByRole('main')
       .getByRole('button', { name: '새로고침', exact: true });

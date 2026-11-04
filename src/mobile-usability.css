@@ -1,0 +1,95 @@
+/* Keep forms readable without Safari zooming the focused field. */
+@media (max-width: 720px) {
+  .app-shell :is(input:not([type='checkbox'], [type='radio'], [type='range']), textarea, select),
+  .modal :is(input:not([type='checkbox'], [type='radio'], [type='range']), textarea, select) {
+    font-size: 16px !important;
+  }
+  .app-shell :is(.primary-button, .secondary-button, .logout-button),
+  .modal :is(.primary-button, .secondary-button),
+  .header-activity-actions .header-activity-button,
+  .personal-notification .notification-mark-read,
+  .task-comment-pagination button,
+  .task-comment-actions .text-button,
+  .task-comments-heading .text-button {
+    min-height: 44px;
+  }
+  .header-activity-actions .header-activity-button,
+  .personal-notification .notification-mark-read {
+    min-width: 44px;
+  }
+  .header-activity-actions .notification-popover {
+    position: fixed;
+    top: 64px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-height: calc(100dvh - 76px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .header-activity-actions .header-task-popover {
+    overflow: hidden;
+  }
+  .header-task-popover .header-task-preview-cards {
+    margin-right: 0;
+    padding-right: 0;
+    scrollbar-gutter: auto;
+    max-height: min(365px, calc(100dvh - 140px));
+  }
+  .header-activity-actions :is(.header-task-preview-card > strong, .header-notification-preview-card > strong) {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .header-notification-preview-card-heading { flex-wrap: wrap; }
+  .notification-popover-heading { flex-wrap: wrap; gap: 8px; }
+  .notification-popover-heading button { min-height: 44px; }
+
+  /* Leave part of the date track visible beside the sticky task column. */
+  .task-timeline { min-width: 784px; }
+  .timeline-row { grid-template-columns: 144px minmax(640px, 1fr); }
+  .task-timeline-scroll { scroll-padding-left: 144px; }
+  .timeline-column-resizer { display: none; }
+  .timeline-task-label { padding: 8px; }
+  .timeline-task-name { flex-wrap: wrap; gap: 4px; }
+  .timeline-task-label .task-title-button {
+    flex-basis: 100%;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .timeline-task-meta { padding-left: 0; font-size: 11px; }
+  .task-schedule-controls .task-month-navigation { gap: 8px; }
+  .task-month-navigation .heading-actions { gap: 6px; }
+  .task-month-navigation .task-month-select { font-size: 14px; }
+  .task-board-page .task-view-navigation button { min-height: 44px; }
+  .mobile-team-navigation > button,
+  .mobile-manager-navigation > button,
+  .peer-response-layout .score-options label { min-height: 44px; }
+
+  .modal-actions { padding-bottom: max(12px, env(safe-area-inset-bottom)) !important; }
+  .workspace-sidebar.is-personal-context.is-mobile-open .desktop-team-navigation {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
+  }
+  .workspace-sidebar.is-personal-context .desktop-team-navigation .workspace-nav-group {
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .workspace-sidebar.is-personal-context .desktop-team-navigation .nav-section {
+    display: block;
+    grid-column: 1 / -1;
+    margin: 8px 10px 4px;
+  }
+  .workspace-sidebar.is-personal-context .desktop-team-navigation .nav-item {
+    min-height: 44px;
+    width: 100%;
+  }
+  .modal .meeting-attendee-list label,
+  .checkbox-row { min-height: 44px; align-items: center; }
+}

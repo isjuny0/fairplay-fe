@@ -92,7 +92,14 @@
 .space-home-dates time {
   white-space: nowrap;
 }
+.space-home-period-end {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.space-home-dates > .space-home-period-end { color: inherit; }
 .space-home-countdown {
+  color: var(--text-muted);
   font-size: inherit;
   line-height: inherit;
   font-weight: 600;
@@ -564,17 +571,21 @@
   }
   .space-home-dates {
     font-size: 13px;
+    flex-wrap: wrap;
+    overflow-x: visible;
   }
   .space-home-own-card {
-    flex-wrap: wrap;
-    gap: 16px;
-    padding: 20px;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    gap: 12px;
+    padding: 16px;
+  }
+  .space-home-own-card > .space-home-team-icon {
+    width: 44px;
+    height: 44px;
   }
   .space-home-own-card > .space-home-team-indicator {
-    margin-left: auto;
-  }
-  .space-home-team-copy {
-    flex-basis: calc(100% - 68px);
+    gap: 6px;
   }
   .space-home-team-row {
     padding: 18px 8px;
@@ -592,5 +603,11 @@
   .space-home-section-heading .space-home-actions {
     margin-left: auto;
     gap: 8px;
+  }
+}
+@media (max-width: 480px) {
+  .space-home-period {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
   }
 }

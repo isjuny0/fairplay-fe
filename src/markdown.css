@@ -99,6 +99,7 @@
 }
 .markdown-body p {
   white-space: pre-line;
+  word-break: keep-all;
 }
 .markdown-body :is(h3, h4, h5, h6) {
   margin: 24px 0 12px;

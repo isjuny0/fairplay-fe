@@ -112,6 +112,23 @@
     gap: 12px;
     padding-top: 12px;
   }
+  .workspace-navigation-contextual {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+    animation: workspace-navigation-context-in 180ms ease-out both;
+  }
+  @keyframes workspace-navigation-context-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
   .workspace-sidebar .desktop-team-navigation {
     gap: 16px;
     padding-top: 12px;
@@ -158,6 +175,12 @@
   .workspace-sidebar .nav-item:focus-visible {
     outline: 2px solid var(--brand);
     outline-offset: -2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-navigation-contextual {
+    animation: none;
   }
 }
 

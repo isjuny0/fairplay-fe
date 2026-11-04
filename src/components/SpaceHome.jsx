@@ -21,10 +21,10 @@ function Period({ label, start, end, countdown }) {
           <>
             <time dateTime={start}>{formatDate(start)}</time>
             <span aria-hidden="true">~</span>
-            <time dateTime={end}>{formatDate(end)}</time>
-            {countdown && (
-              <span className="space-home-countdown">{countdown}</span>
-            )}
+            <span className="space-home-period-end">
+              <time dateTime={end}>{formatDate(end)}</time>
+              {countdown && <span className="space-home-countdown">{countdown}</span>}
+            </span>
           </>
         ) : (
           <span>기간 미설정</span>
@@ -103,6 +103,9 @@ export default function SpaceHome({
   const pendingTeam = teams.find(
     (team) => team.myMembershipStatus === 'PENDING',
   );
+  const sharedRestriction = !isManager && directoryReady && (joinedTeam
+    ? `이미 ${joinedTeam.name} 팀에 소속되어 있습니다. 스페이스에서는 한 팀에만 소속될 수 있습니다.`
+    : pendingTeam ? `${pendingTeam.name} 팀 가입 신청이 대기 중입니다. 신청을 취소하면 다른 팀에 신청할 수 있습니다.` : '');
   return (
     <section className="space-home" aria-label="스페이스 홈">
       <header className="space-home-intro space-page-header">
@@ -112,6 +115,7 @@ export default function SpaceHome({
           </span>
           <div className="space-home-title-row">
             <h1>{space.name}</h1>
+            {joinedTeam && <button type="button" className="primary-button space-own-team-shortcut" onClick={() => onOpenTeam(joinedTeam)}>내 팀으로 <Icon name="team" /></button>}
           </div>
         </div>
         <p
@@ -246,6 +250,8 @@ export default function SpaceHome({
           <span />
         </div>
         {otherTeams.length ? (
+          <>
+          {sharedRestriction && <p className="field-help team-join-shared-restriction" id="team-join-shared-restriction">{sharedRestriction}</p>}
           <ul className="space-home-team-list" aria-label="팀 목록">
             {visibleTeams.map((team) => {
               const pending = team.myMembershipStatus === 'PENDING';
@@ -306,7 +312,7 @@ export default function SpaceHome({
                         title={(!pending && restriction) || undefined}
                         aria-describedby={
                           !pending && restriction
-                            ? `team-join-restriction-${team.id}`
+                            ? sharedRestriction ? 'team-join-shared-restriction' : `team-join-restriction-${team.id}`
                             : undefined
                         }
                         aria-label={`${team.name} ${pending ? '신청 취소' : rejected ? '다시 신청' : '가입 신청'}`}
@@ -322,9 +328,9 @@ export default function SpaceHome({
                       </button>
                     )}
                   </div>
-                  {!isManager && !pending && restriction && (
+                  {!isManager && !pending && restriction && !sharedRestriction && (
                     <span
-                      className="sr-only"
+                      className="action-reason team-join-restriction"
                       id={`team-join-restriction-${team.id}`}
                     >
                       {restriction}
@@ -339,6 +345,7 @@ export default function SpaceHome({
               </li>
             )}
           </ul>
+          </>
         ) : (
           directoryReady && (
             <div className="space-home-empty">

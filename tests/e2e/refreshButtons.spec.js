@@ -31,7 +31,7 @@ const screens = [
   ],
 ];
 
-async function assertIconButton(button, size = 40) {
+async function assertIconButton(button, size) {
   await expect(button).toBeVisible();
   await expect(button).toHaveText('');
   await expect(button).toHaveAttribute('type', 'button');
@@ -41,6 +41,7 @@ async function assertIconButton(button, size = 40) {
   await expect(button.locator('svg')).toHaveCount(1);
   await expect(button.locator('svg')).toHaveAttribute('aria-hidden', 'true');
   const box = await button.boundingBox();
+  size ??= await button.evaluate(() => innerWidth <= 720 ? 44 : 40);
   expect(box.width).toBe(size);
   expect(box.height).toBe(size);
 }

@@ -206,7 +206,7 @@ export default function TaskDetail({
       : activeTab;
   useEffect(() => {
     if (!sectionToFocus) return;
-    const target = document.getElementById(sectionToFocus);
+    const target = document.getElementById(sectionToFocus === 'task-progress-section' ? 'task-next-action-panel' : sectionToFocus);
     target?.focus({ preventScroll: true });
     target?.scrollIntoView({ block: 'start' });
     setSectionToFocus(null);
@@ -228,6 +228,12 @@ export default function TaskDetail({
     !missingContributions.length &&
     hasDeliverables;
   const workClosed = task?.completionBlockReason === 'WORK_PERIOD_CLOSED';
+  const nextAction = !['IN_PROGRESS', 'REVISING'].includes(task?.status)
+    ? ['작업 시작하기', 'task-progress-section']
+    : !hasDeliverables ? ['결과물 등록하기', 'task-deliverables-section']
+    : missingContributions.some(entry => entry.userId === user.id) ? ['내 수행 설명 작성하기', 'own-contribution-description']
+    : missingContributions.length ? ['담당자 작성 현황 확인', 'task-assignment-section']
+    : ['완료 처리로 이동', 'task-progress-section'];
   const changeStatus = async (status) => {
     if (readOnly || busy || !canModifyTeamWork(team) || workClosed) return;
     if (
@@ -286,7 +292,7 @@ export default function TaskDetail({
 
   const focusTaskSection = (id) => {
     setActiveTab(
-      id === 'own-contribution-description' ? 'task-contributions-section' : id,
+      id === 'own-contribution-description' ? 'task-contributions-section' : ['task-progress-section', 'task-assignment-section'].includes(id) ? 'task-description-section' : id,
     );
     setSectionToFocus(id);
   };
@@ -472,7 +478,7 @@ export default function TaskDetail({
                   </section>
                 </div>
                 {!readOnly && (isAssignee(task, user.id) || canReopenWithHandoff) && (
-                  <section className="task-next-action" aria-label="작업 상태 변경">
+                  <section className="task-next-action" id="task-next-action-panel" tabIndex={-1} aria-label="작업 상태 변경">
                     {task.status === 'DONE' ? (
                       <>
                         <p className="field-help">
@@ -570,6 +576,11 @@ export default function TaskDetail({
                   </section>
                 )}
               </div>
+              {!readOnly && isAssignee(task, user.id) && task.status !== 'DONE' && <div className="experience-summary" aria-label="완료 준비 요약">
+                <strong>{completionReady && task.completionBlockReason === null ? '완료할 준비가 됐습니다' : '다음 할 일'}</strong>
+                <span>{completionBlockLabels[task.completionBlockReason] || (completionReady ? '완료 조건을 모두 갖췄습니다.' : '남은 조건을 확인해 주세요.')}</span>
+                <button type="button" className="text-button" onClick={() => focusTaskSection(workClosed ? 'task-progress-section' : nextAction[1])}>{workClosed ? '진행 조건 확인' : nextAction[0]}</button>
+              </div>}
             </header>
             {navigation}
             <div className="task-detail-layout">

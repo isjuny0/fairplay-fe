@@ -3,7 +3,9 @@ import { formatReportNumber } from '../lib/reportScore.js';
 import '../peer-criteria-scores.css';
 
 export default function PeerCriteriaScores({ id, averages, renderHelp, colorLowScores = false, lowScoreInclusive = false }) {
-  return <dl id={id} className="peer-criteria-scores">
+  return <>
+    {colorLowScores && <p className="score-reading-note"><span aria-hidden="true" />빨간색: {lowScoreInclusive ? '3점 이하' : '3점 미만'} · 값이 없으면 집계 정보 없음</p>}
+    <dl id={id} className="peer-criteria-scores">
     {Object.entries(peerCriteria).map(([code, label]) => {
       const value = averages?.[code];
       const score = typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 5 ? value : null;
@@ -25,5 +27,5 @@ export default function PeerCriteriaScores({ id, averages, renderHelp, colorLowS
         </dd>
       </div>;
     })}
-  </dl>;
+  </dl></>;
 }

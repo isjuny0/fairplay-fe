@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import JSZip from "jszip";
+import { downloadAnnouncementAttachments } from '../lib/announcementDownloads.js';
 import { useLocation } from "react-router";
 import { ApiError } from "../api/client.js";
 import {
-  downloadSpaceAnnouncementAttachment,
   deleteSpaceAnnouncement,
   getSpaceAnnouncement,
   listSpaceAnnouncements,
@@ -126,57 +125,10 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
     else resource.reload();
   };
   const downloadAttachment = async (item, selectedAttachments) => {
-    const attachments = Array.isArray(selectedAttachments)
-      ? selectedAttachments
-      : [selectedAttachments];
-    const key = String(item.id);
-    setDownloadingId(key);
+    setDownloadingId(String(item.id));
     setError(null);
     try {
-      const files = await Promise.all(attachments.map(async (attachment) => ({
-        attachment,
-        blob: await downloadSpaceAnnouncementAttachment(
-          space.id,
-          item.id,
-          attachment.id,
-        ),
-      })));
-      let blob;
-      let filename;
-      if (files.length === 1) {
-        blob = files[0].blob;
-        filename = files[0].attachment.originalFilename;
-      } else {
-        const archive = new JSZip();
-        const usedNames = new Set();
-        for (const { attachment, blob: fileBlob } of files) {
-          const originalName = (attachment.originalFilename || "첨부파일")
-            .split(/[\\/]/)
-            .pop()
-            .replace(/[\u0000-\u001f]/g, "-");
-          const extensionIndex = originalName.lastIndexOf(".");
-          const basename = extensionIndex > 0 ? originalName.slice(0, extensionIndex) : originalName;
-          const extension = extensionIndex > 0 ? originalName.slice(extensionIndex) : "";
-          let archiveName = originalName;
-          let suffix = 2;
-          while (usedNames.has(archiveName)) archiveName = `${basename} (${suffix++})${extension}`;
-          usedNames.add(archiveName);
-          archive.file(archiveName, fileBlob);
-        }
-        blob = await archive.generateAsync({ type: "blob", compression: "DEFLATE" });
-        const safeTitle = (item.title || "공지 첨부파일")
-          .replace(/[\\/:*?"<>|\u0000-\u001f]/g, "-")
-          .trim() || "공지 첨부파일";
-        filename = `${safeTitle}-첨부파일.zip`;
-      }
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = filename;
-      document.body.append(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      await downloadAnnouncementAttachments(space.id, item, selectedAttachments);
     } catch (downloadError) {
       setError(downloadError);
     } finally {
@@ -283,6 +235,7 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
                     </div>
                     <button className="secondary-button" type="submit">검색</button>
                   </form>
+                  <span className="field-help announcement-search-scope">검색 범위: 현재 {page + 1}페이지 · 제목·작성자</span>
                 </div>
                 {visibleItems.length ? (
                   <AnnouncementList

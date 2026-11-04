@@ -134,7 +134,7 @@ for (const width of [1440, 390])
       await expect(
         page.getByRole('navigation', { name: '팀 메뉴', exact: true }),
       ).toBeHidden();
-      await page.getByText('더보기 ⌄', { exact: true }).click();
+      await page.getByRole('button', {name:'스페이스 메뉴 펼치기',exact:true}).click();
     }
     await page.getByRole('button', { name: '동료 평가', exact: true }).click();
     await fillEvaluation(page, '이지원');
@@ -377,8 +377,9 @@ test('모바일 스페이스 메뉴는 하나의 접힌 영역에 있고 작업 
   await page.getByRole('button', { name: '내 팀 · 삼위일체', exact: true }).click();
   await expect(page).toHaveURL(/teams\/1$/);
   await expect(page.getByLabel('팀 선택', { exact: true })).toBeHidden();
+  await page.getByRole('button',{name:'스페이스 메뉴 펼치기',exact:true}).click();
   await page
-    .getByRole('navigation', { name: '모바일 팀 메뉴' })
+    .getByRole('navigation', { name: '팀 메뉴', exact:true })
     .getByRole('button', { name: '작업', exact: true })
     .click();
   await expect(page.getByLabel('작업 상태', { exact: true })).toBeHidden();
@@ -388,6 +389,8 @@ test('모바일 스페이스 메뉴는 하나의 접힌 영역에 있고 작업 
   const columns = await page.locator('.task-columns').boundingBox();
   const card = await page.locator('.board-task-card').first().boundingBox();
   expect(card.width).toBeGreaterThanOrEqual(columns.width - 2);
+  await page.getByRole('button', { name: /스페이스 메뉴/ }).click();
+  await expect(page.getByRole('navigation', {name:'팀 메뉴',exact:true})).toBeVisible();
   await page.getByRole('button', { name: /스페이스 메뉴/ }).click();
   await expect(
     page.getByRole('navigation', { name: '팀 메뉴', exact: true }),
@@ -874,7 +877,7 @@ for (const width of [1440, 320]) {
     await page.reload();
     await expect(page.getByLabel('작업별 조회')).toHaveValue('101');
     await expect(
-      list.getByRole('button', { name: '파일 다운로드', exact: true }),
+      list.getByRole('button', { name: width <= 720 ? '인터뷰 결과 기록 파일 파일 다운로드' : '파일 다운로드', exact: true }),
     ).toBeVisible();
     await list
       .getByRole('button', { name: '인터뷰 결과 기록 파일', exact: true })

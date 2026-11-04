@@ -416,6 +416,7 @@ function RoundResponses({ context, round, onSubmitted }) {
                 onClick={() => guide.confirmPeerStep('peer-result')}>제출 결과 확인 완료</button>
             </div>}
             {!locked && currentTarget && (
+              <>
               <div
                 className="review-action-dock peer-evaluation-actions"
                 role="region"
@@ -424,13 +425,14 @@ function RoundResponses({ context, round, onSubmitted }) {
                 <div className="peer-current-action">
                   <div className="review-action-context">
                     <strong>현재 대상 · {currentTarget.name}</strong>
+                    <small className="peer-mobile-save-state" role="status">{currentState?.saving ? '저장 중…' : currentState?.changed ? '미저장 변경 있음' : currentResponse ? '임시 저장됨' : '작성 필요'}</small>
                     <span>
                       {currentState?.saving
                         ? '현재 평가 저장 중'
                         : currentState?.changed
                           ? '변경 내용을 저장해 주세요.'
                           : currentResponse
-                            ? '저장한 평가입니다.'
+                            ? '임시 저장됨 · 최종 제출 전입니다.'
                             : '점수를 선택하고 대상별로 저장하세요.'}
                     </span>
                   </div>
@@ -460,6 +462,7 @@ function RoundResponses({ context, round, onSubmitted }) {
                     )}
                   </div>
                 </div>
+              </div>
                 <section
                   className="peer-submit-bar"
                   aria-label="평가 최종 제출"
@@ -485,7 +488,7 @@ function RoundResponses({ context, round, onSubmitted }) {
                     최종 제출
                   </button>
                 </section>
-              </div>
+              </>
             )}
           </>
         )}

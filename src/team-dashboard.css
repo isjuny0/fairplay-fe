@@ -46,6 +46,7 @@
   align-items: center;
   justify-content: center;
   font-size: 12px;
+  white-space: nowrap;
 }
 .dashboard-heading-actions .is-active {
   border-color: var(--brand);
@@ -421,9 +422,6 @@
   padding: 13px 0;
   text-align: left;
   font-size: 12px;
-}
-.dashboard-attention > button:first-child {
-  padding-top: 0;
 }
 .dashboard-attention > button strong {
   margin-left: auto;
@@ -818,9 +816,10 @@
   .dashboard-heading-actions {
     margin-left: 0;
     width: 100%;
+    flex-wrap: wrap;
   }
   .dashboard-heading-actions button {
-    flex: 1;
+    flex: 1 0 auto;
   }
   .dashboard-card {
     padding: 17px;

@@ -82,6 +82,7 @@ function ReportDetail({ context, report, actions, toolbarTarget, guide, manageme
         members={reviewableMembers} onMemberChange={switchDetailMember}
         context={context} report={report} member={selectedMember} guide={guide} currentTasksHref={!context.manager ? completedTasksHref : undefined}
         onReviewConfirmed={onGuideComplete} managementGuide={['management-report-review', 'management-report-evidence'].includes(managementGuide?.stepId) ? managementGuide : null} />}
+      {!context.manager && !selectedMember && <EmptyState><h2>내 집계 결과가 없습니다.</h2><p>리포트의 고정 평가 참여자 명단과 내 참여 여부를 관리자에게 확인해 주세요.</p></EmptyState>}
 
     </div>
   );
@@ -131,6 +132,7 @@ export function TeamReport({ context, manager = false, toolbarTarget, generation
           <EmptyState>
             <h2>공개된 리포트가 없습니다.</h2>
             <p>관리자가 최종 결과를 검토하고 공개하면 이곳에서 확인할 수 있습니다.</p>
+            <span className="field-help">상태: 공개 결과 대기</span>
           </EmptyState>
         )}
       </ResourceState>

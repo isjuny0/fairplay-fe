@@ -114,3 +114,6 @@
   .round-management-page .manager-peer-scope.has-team-search { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 40px; }
   .round-management-page .manager-peer-scope.has-team-search .form-field:first-child { grid-column: 1 / -1; }
 }
+@media (max-width: 720px) {
+  .round-management-page .manager-peer-scope.has-team-search { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px; }
+}

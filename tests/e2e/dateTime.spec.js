@@ -157,7 +157,7 @@ test('달력 방향키는 다음 달로 이동하고 Escape는 달력만 닫는�
   await expect(trigger).toBeFocused();
 });
 
-test('미저장 입력의 닫기 버튼은 빨간색이며 기능은 유지한다', async ({
+test('미저장 입력의 닫기 버튼은 공통 빨간색이며 기능은 유지한다', async ({
   page,
 }) => {
   const dialog = await openCreate(page);

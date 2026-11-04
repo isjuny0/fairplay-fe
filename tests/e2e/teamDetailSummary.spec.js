@@ -33,7 +33,7 @@ for (const width of [1920, 1440, 1280, 900, 721, 390, 320]) {
     expect(box.y - heading.y - heading.height).toBeLessThanOrEqual(16);
     if (width <= 720) {
       const actions = await page.locator('.dashboard-heading-actions').boundingBox();
-      expect(actions.height).toBeLessThanOrEqual(40);
+      expect(actions.height).toBeLessThanOrEqual(44);
       const buttons = await page.locator('.dashboard-heading-actions button').evaluateAll((items) => items.map((el) => { const r = el.getBoundingClientRect(); return r.y + r.height / 2; }));
       expect(Math.max(...buttons) - Math.min(...buttons)).toBeLessThanOrEqual(1);
     }

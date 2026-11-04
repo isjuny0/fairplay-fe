@@ -1,5 +1,8 @@
 .contribution-report-page { position: relative; }
-.contribution-report-page > .page-heading { padding-right: 52px; }
+.contribution-report-page > .page-heading { align-items: center; min-height: 53px; padding-right: 52px; }
+@media (max-width: 720px) {
+  .contribution-report-page > .page-heading { min-height: 57px; padding-right: 56px; }
+}
 .contribution-report-page .report-status-toolbar { position: absolute; top: 0; right: 0; }
 .report-result {
   display: grid;

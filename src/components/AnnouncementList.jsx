@@ -36,14 +36,17 @@ export default function AnnouncementList({ items, onOpen, onDownload, downloadin
                   onClick={() => onDownload?.(item, item.attachments)}
                 >
                   <Icon name="download" />
+                  {item.attachments.length > 1 && <span className="announcement-attachment-count" aria-hidden="true">{item.attachments.length}</span>}
                 </button>
               )}
             </div>
           </div>
-          <span className="announcement-author"><span className="sr-only">작성자 </span>{item.authorName}</span>
-          <time dateTime={item.createdAt}>
-            <span className="sr-only">등록일 </span>{formatDate(item.createdAt)}
-          </time>
+          <div className="announcement-row-meta">
+            <span className="announcement-author"><span className="sr-only">작성자 </span>{item.authorName}</span>
+            <time dateTime={item.createdAt}>
+              <span className="sr-only">등록일 </span>{formatDate(item.createdAt)}
+            </time>
+          </div>
         </li>
       ))}
       </ul>

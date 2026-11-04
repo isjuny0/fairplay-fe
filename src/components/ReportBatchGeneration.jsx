@@ -6,6 +6,7 @@ import { defaultReportWeights, reportWeightFields, sameReportWeights, validRepor
 import useResource from '../hooks/useResource.js';
 import { useInteractions } from '../hooks/useInteractions.js';
 import { ErrorNotice, Field, Modal, ResourceState } from './ui.jsx';
+import WorkflowSteps from './WorkflowSteps.jsx';
 
 export default function ReportBatchGeneration({ context, onGenerated, onReadinessLoaded, refreshRevision = 0, onBusyChange }) {
   const guide = usePreviewGuide();
@@ -128,6 +129,8 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
   </div>;
   return (
     <section className={`report-batch-generation${allGenerated ? ' is-generated' : ''}`} aria-label="전체 팀 리포트 생성" aria-busy={busy}>
+      {resource.data && <WorkflowSteps label="리포트 처리 단계" steps={['리포트 생성', '내용 검토', '전체 공개']} current={allPublished ? 3 : resource.data.canPublish ? 2 : allGenerated ? 1 : 0} />}
+      {state && <p className="workflow-next-action" role="status"><strong>다음 단계</strong>{allPublished ? '공개한 리포트와 팀별 결과를 확인할 수 있습니다.' : canPublish ? '팀별 검토를 마쳤습니다. 전체 공개를 진행하세요.' : allGenerated ? '아래 팀별 리포트에서 내용과 수행 근거를 검토하세요.' : state.canGenerate ? '반영 비율을 확인한 뒤 전체 리포트를 생성하세요.' : '아래 생성 대기 팀과 생성 제한 사유를 확인하세요.'}</p>}
       <div className="section-heading">
         <div>
           <h2>{allPublished ? '전체 리포트 공개 완료' : allGenerated ? '전체 리포트 생성 완료' : '전체 리포트 생성'}</h2>

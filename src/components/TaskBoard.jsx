@@ -331,6 +331,10 @@ export default function TaskBoard({
           승인된 팀원이 2명 이상이어야 작업을 생성할 수 있습니다.
         </p>
       )}
+      <div className="task-quick-filters" role="group" aria-label="빠른 작업 필터">
+        {!readOnly && <button type="button" className="secondary-button" aria-pressed={onlyMine} onClick={() => setOnlyMine(!onlyMine)}>내 담당</button>}
+        <button type="button" className="secondary-button" aria-pressed={onlyOverdue} onClick={() => setListOption('overdue', onlyOverdue ? '' : '1')}>마감 지남</button>
+      </div>
       <div className="toolbar collection-controls">
         <label className="task-status-filter" data-active={filter !== 'ALL'}>
           상태{' '}
@@ -567,6 +571,7 @@ export default function TaskBoard({
                                 aria-expanded={detailsExpanded}
                                 aria-controls={detailsId}
                                 aria-label={`${task.title} 작업량·담당 비율 ${detailsExpanded ? '접기' : '보기'}`}
+                                title={detailsExpanded ? '카드 정보 접기' : '카드 정보 펼치기'}
                                 onClick={() => toggleBoardTaskDetails(task.id)}
                               >
                                 작업량·담당 비율

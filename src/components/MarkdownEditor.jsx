@@ -9,6 +9,7 @@ const tools = [
 
 export default function MarkdownEditor({ value, onValueChange, labelText, inputRef, ...inputProps }) {
   const [mode, setMode] = useState('write');
+  const [moreTools, setMoreTools] = useState(false);
   const panelId = useId();
   const [insertionError, setInsertionError] = useState('');
   const input = useRef(null);
@@ -85,9 +86,10 @@ export default function MarkdownEditor({ value, onValueChange, labelText, inputR
       </div>
       <div id={`${panelId}-write`} hidden={mode !== 'write'}>
         <div className="markdown-editor-tools" role="group" aria-label="본문 서식 도구">
-          {tools.map(([action, label]) => (
-            <button key={action} type="button" onClick={() => insert(action)} aria-label={`${label} 서식 삽입`}>{label}</button>
+          {tools.map(([action, label], index) => (
+            <button className={index >= 3 && !moreTools ? 'markdown-advanced-tool' : ''} key={action} type="button" onClick={() => insert(action)} aria-label={`${label} 서식 삽입`}>{label}</button>
           ))}
+          <button className="markdown-more-tools" type="button" aria-expanded={moreTools} onClick={() => setMoreTools(!moreTools)}>{moreTools ? '도구 접기' : '더보기'}</button>
         </div>
         <textarea
           {...inputProps}

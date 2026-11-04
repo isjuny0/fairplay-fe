@@ -225,7 +225,7 @@ function TeamMaterialSearch({ context }) {
           </button>
         </p>
       )}
-      <div className={`rag-workspace ${isMaterialsOpen ? 'is-materials-open' : ''}`} ref={workspace}>
+      <div className={`rag-workspace ${isMaterialsOpen ? 'is-materials-open' : ''} ${!submittedQuestion && !error ? 'is-welcome' : ''}`} ref={workspace}>
         <div className="rag-main">
           <div
             className="rag-conversation"
@@ -380,7 +380,7 @@ function TeamMaterialSearch({ context }) {
               disabled={busy || permissionError}
               placeholder={busy
                 ? '자료에서 답변을 찾고 있습니다…'
-                : '팀 자료에 관해 질문해 주세요.'}
+                : '예: 인터뷰에서 발견한 주요 문제는 무엇인가요?'}
               aria-invalid={Boolean(inputError)}
               aria-describedby={inputError
                 ? 'rag-input-error rag-input-help'

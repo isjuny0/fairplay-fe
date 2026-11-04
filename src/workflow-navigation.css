@@ -1,0 +1,17 @@
+.recent-space-links { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.recent-space-links > span { color: var(--text-muted); font-size: 12px; }
+.recent-space-links .secondary-button { max-width: 28ch; min-height: 36px; padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-join-shared-restriction { padding: 12px; background: var(--surface-secondary); border-radius: 6px; }
+.dashboard-display-settings { position: relative; }
+.dashboard-display-settings > summary { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; list-style: none; }
+.dashboard-display-settings > summary::-webkit-details-marker { display: none; }
+.dashboard-display-settings-actions { position: absolute; right: 0; top: calc(100% + 6px); z-index: 12; display: grid; gap: 6px; min-width: 160px; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); box-shadow: 0 4px 16px #00000014; }
+.dashboard-display-settings-actions button { width: 100%; }
+.notification-date-heading { padding: 14px 0 6px; list-style: none; background: var(--surface); }
+.notification-date-heading h2 { margin: 0; font-size: 13px; color: var(--text-muted); font-weight: 600; }
+.header-task-popover { display: flex; flex-direction: column; }
+.header-task-popover .header-task-preview-cards { min-height: 0; flex: 0 1 auto; }
+.todo-kind-filter { display: flex; flex: 0 0 auto; gap: 6px; padding-bottom: 10px; }
+.todo-kind-filter button { padding: 6px 10px; min-height: 36px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-muted); font: inherit; font-size: 12px; }
+.todo-kind-filter button[aria-pressed='true'] { color: var(--brand-dark); border-color: var(--brand); background: var(--brand-light); }
+.todo-type-label { display: inline-block; margin-right: 6px; padding: 1px 4px; border-radius: 3px; background: var(--surface-secondary); color: var(--text-muted); font-size: 11px; font-weight: 400; vertical-align: middle; }

@@ -1,4 +1,9 @@
 import { expect } from '@playwright/test';
+export async function clickDashboardControl(page, name) {
+  const control = page.getByRole('button', { name, exact: true });
+  if (!(await control.isVisible())) await page.getByRole('button', { name: '화면 설정', exact: true }).click();
+  await control.click();
+}
 export async function openCalendarEventEditor(page) {
   const calendar = page.getByRole('region', {
     name: '직접 등록 일정 캘린더',
@@ -21,14 +26,16 @@ export async function openCalendarEventEditor(page) {
 }
 
 export async function addDashboardWidgets(page, titles) {
-  await page.getByRole('button', { name: '위젯 추가', exact: true }).click();
+  await clickDashboardControl(page, '위젯 추가');
   const catalog = page.getByRole('dialog', { name: '위젯 추가', exact: true });
-  for (const title of titles)
-    await catalog
-      .getByRole('button', { name: `${title} 추가`, exact: true })
-      .click();
+  for (const title of titles) {
+    const added = catalog.getByRole('button', { name: `${title} 추가됨`, exact: true });
+    if (await added.count()) { await expect(added).toBeDisabled(); continue; }
+    const button = catalog.getByRole('button', { name: `${title} 추가`, exact: true });
+    await button.click();
+  }
   await expect(
-    page.getByRole('button', { name: '위젯 추가', exact: true }),
+    page.getByRole('button', { name: '화면 설정', exact: true }),
   ).toBeEnabled();
   await catalog.getByRole('button', { name: '완료', exact: true }).click();
 }

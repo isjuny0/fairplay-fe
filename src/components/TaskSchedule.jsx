@@ -105,7 +105,18 @@ export function TimelineNavigation({
         </button>
         <button
           className="secondary-button"
-          onClick={() => onMonthChange(currentTaskMonth())}
+          onClick={event => {
+            const root = event.currentTarget.closest('.task-board-page');
+            onMonthChange(currentTaskMonth());
+            requestAnimationFrame(() => {
+              const region = root?.querySelector('.task-timeline-scroll');
+              const today = region?.querySelector('.timeline-today-line');
+              if (!today) return;
+              const labelWidth = region.querySelector('.timeline-task-label')?.getBoundingClientRect().width || 0;
+              const left = today.getBoundingClientRect().left - region.getBoundingClientRect().left + region.scrollLeft;
+              region.scrollTo({left: Math.max(0, left - labelWidth - (region.clientWidth - labelWidth) / 2)});
+            });
+          }}
         >
           오늘
         </button>
@@ -243,7 +254,7 @@ export function TaskTimeline({
               {todayPosition != null && (
                 <span
                   className="timeline-today-label"
-                  style={{ left: `${todayPosition}%` }}
+                  style={{ left: `clamp(18px, ${todayPosition}%, calc(100% - 18px))` }}
                 >
                   오늘
                 </span>

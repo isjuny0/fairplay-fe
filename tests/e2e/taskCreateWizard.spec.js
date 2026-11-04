@@ -19,14 +19,14 @@ for (const width of [1440, 900, 390, 320]) {
     await dialog.getByRole('textbox', { name: '마감 날짜', exact: true }).fill('2030-12-02');
     await page.screenshot({ path: testInfo.outputPath('task-create-content.png'), animations: 'disabled' });
     await dialog.getByRole('button', { name: '다음', exact: true }).click();
-    await expect(dialog.getByRole('heading', { name: '담당자와 배분', exact: true })).toBeFocused();
+    await expect(dialog.getByRole('heading', { name: '담당자·담당 비율', exact: true })).toBeFocused();
     expect(await dialog.boundingBox()).toEqual(firstBox);
     await expect(dialog.getByRole('region', { name: '작업 내용 입력', exact: true })).not.toBeVisible();
     await dialog.getByRole('button', { name: '저장', exact: true }).click();
     await expect(dialog.getByText('담당자를 한 명 이상 선택해 주세요.', { exact: true })).toBeVisible();
     if (width === 1440) {
       await dialog.getByRole('button', { name: '작업량 기준 자동 선택', exact: true }).click();
-      await expect(dialog.getByText('1명을 선택했습니다. 담당자와 배분을 조정할 수 있습니다.', { exact: true })).toBeVisible();
+      await expect(dialog.getByText('1명을 선택했습니다. 담당자와 담당 비율을 조정할 수 있습니다.', { exact: true })).toBeVisible();
       await expect(dialog.locator('.allocation-member input:checked')).toHaveCount(1);
       await dialog.locator('.allocation-member input:checked').uncheck();
     }

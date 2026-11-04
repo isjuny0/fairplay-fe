@@ -475,6 +475,7 @@ export default function TaskForm({
                   >
                     합계 {total}%
                   </strong>
+                  {!!form.assignees.length && <small className="allocation-selected-names">{form.assignees.slice(0, 3).map(assignment => memberName(editingMembers, assignment.userId)).join(' · ')}{form.assignees.length > 3 ? ` 외 ${form.assignees.length - 3}명` : ''}</small>}
                 </div>
                 <div
                   className={`allocation-total-track ${total > 100 ? 'is-over' : ''}`}
@@ -762,6 +763,15 @@ export default function TaskForm({
             <p>현재 작업 상태: {statusLabels[recovery.latest.task.status]}</p>
           )}
         </SaveRecovery>
+        {creating && step === finalStep && <section className="form-review-summary" aria-label="등록 전 확인">
+          <h3>등록 전 확인</h3>
+          <dl>
+            <div><dt>작업</dt><dd>{form.title || '제목을 입력해 주세요.'}</dd></div>
+            <div><dt>기간</dt><dd>{formatDate(startAt)} ~ {formatDate(dueAt)}</dd></div>
+            <div><dt>예상 작업량</dt><dd>{formatExpectedWorkload(form.weight)}</dd></div>
+            <div><dt>담당·배분</dt><dd>{form.assignees.length ? form.assignees.map(assignment => `${memberName(editingMembers, assignment.userId)} ${assignment.allocationPercent}%`).join(' · ') : '담당자를 선택해 주세요.'}</dd></div>
+          </dl>
+        </section>}
         <FormActions
           busy={busy || recovery.loading}
           disabled={
