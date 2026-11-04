@@ -188,7 +188,7 @@ test('로그인한 사용자는 상세 응답의 소속으로 내 팀과 다른 
   await page.goto('/spaces/1');
   await expect(page.locator('.space-home-eyebrow')).toHaveText('스페이스 홈');
   await expect(page.locator('.space-home-eyebrow')).toHaveCSS('color', 'rgb(8, 124, 85)');
-  await expect(page.locator('.space-home-intro p')).toHaveText('소개: 함께 만드는 서비스');
+  await expect(page.locator('.space-home-intro p')).toHaveText('함께 만드는 서비스');
   const own = page.getByRole('region', { name: '내 팀', exact: true });
   await expect(own).toContainText('삼위일체');
   await expect(own).toContainText('팀 리더');
@@ -231,12 +231,13 @@ test('팀에 소속된 스페이스 관리자는 내 팀을 팀 홈으로 열고
   await expect(page.getByRole('heading', { name: '삼위일체', exact: true })).toBeVisible();
 
   await page.goto('/spaces/1');
-  await page.getByRole('button', { name: '내 팀으로', exact: true }).click();
-  await expect(page).toHaveURL(/\/spaces\/1\/teams\/1$/);
-
-  await page.goto('/spaces/1');
+  await expect(page.getByRole('button', { name: '삼위일체 팀 홈으로 이동', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '내 팀으로', exact: true })).toHaveCount(0);
   const otherTeams = page.getByRole('list', { name: '팀 목록', exact: true });
-  await otherTeams.getByRole('button', { name: '팀 상세 보기', exact: true }).click();
+  const otherTeam = otherTeams.getByRole('listitem').filter({
+    has: page.getByRole('heading', { name: '파도', exact: true }),
+  });
+  await otherTeam.getByRole('button', { name: '팀 상세 보기', exact: true }).click();
   await expect(page).toHaveURL(/\/spaces\/1\/dashboard\?teamId=2$/);
 });
 

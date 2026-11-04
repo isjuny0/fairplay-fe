@@ -61,7 +61,7 @@ function overlaps(a, b) {
 }
 
 for (const width of widths) {
-  test(`${width}px: 긴 스페이스 제목과 소개가 팀 이동 버튼과 겹치거나 잘리지 않는다`, async ({ page }, info) => {
+  test(`${width}px: 긴 스페이스 제목과 소개가 겹치거나 잘리지 않는다`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('/preview/main');
     const title = '함께 만드는 서비스 디자인 프로젝트와 사용자 경험 개선을 위한 긴 스페이스 이름';
@@ -77,16 +77,11 @@ for (const width of widths) {
     await page.goto('/preview/spaces/1');
     const heading = page.locator('.space-page-heading');
     const intro = page.locator('.space-page-description');
-    const shortcut = page.getByRole('button', { name: '내 팀으로', exact: true });
     await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible();
-    await expect(intro).toHaveText(`소개: ${description.trim()}`);
+    await expect(intro).toHaveText(description.trim());
     const headingBox = await heading.boundingBox();
     const introBox = await intro.boundingBox();
     expect(introBox.y).toBeGreaterThanOrEqual(headingBox.y + headingBox.height + 10);
-    const shortcutBox = await shortcut.boundingBox();
-    for (const rect of await textRects(page.locator('.space-home-title-row h1'))) {
-      expect(overlaps(rect, { ...shortcutBox, left: shortcutBox.x, right: shortcutBox.x + shortcutBox.width, top: shortcutBox.y, bottom: shortcutBox.y + shortcutBox.height })).toBe(false);
-    }
     for (const locator of [page.locator('.space-home-title-row h1'), intro]) {
       expect(await locator.evaluate(e => e.scrollHeight <= e.clientHeight + 1)).toBe(true);
     }

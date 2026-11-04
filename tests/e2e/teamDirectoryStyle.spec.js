@@ -104,10 +104,9 @@ for (const width of [1440, 768, 390, 320]) {
     const headingBottom = headerBox.y + headerBox.height;
     const contentBottom = Math.max(headingActionsBox.y + headingActionsBox.height, headingContentBox.y + headingContentBox.height);
     expect(headingBottom - contentBottom).toBeLessThanOrEqual(25);
+    await expect(page.getByRole('navigation', { name: '최근 방문 스페이스', exact: true })).toHaveCount(0);
     const toolbarBox = await page.locator('.directory-toolbar').boundingBox();
-    const recentBox = await page.getByRole('navigation', { name: '최근 방문 스페이스', exact: true }).boundingBox();
-    expect(recentBox.y - headerBox.y - headerBox.height).toBeLessThanOrEqual(24);
-    expect(toolbarBox.y - recentBox.y - recentBox.height).toBeLessThanOrEqual(24);
+    expect(toolbarBox.y - headingBottom).toBeLessThanOrEqual(24);
     const myRefresh = page
       .getByRole('main')
       .getByRole('button', { name: '새로고침', exact: true });

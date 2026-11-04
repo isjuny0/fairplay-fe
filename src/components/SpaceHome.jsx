@@ -115,14 +115,13 @@ export default function SpaceHome({
           </span>
           <div className="space-home-title-row">
             <h1>{space.name}</h1>
-            {joinedTeam && <button type="button" className="primary-button space-own-team-shortcut" onClick={() => onOpenTeam(joinedTeam)}>내 팀으로 <Icon name="team" /></button>}
           </div>
         </div>
         <p
           className="space-page-description"
           aria-hidden={!space.description || undefined}
         >
-          {space.description ? `소개: ${space.description}` : ''}
+          {space.description || ''}
         </p>
       </header>
 

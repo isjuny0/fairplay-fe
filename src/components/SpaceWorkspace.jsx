@@ -1,5 +1,4 @@
 import { usePreviewGuide } from '../lib/previewGuideContext.js';
-import { rememberSpace } from '../lib/recentSpaces.js';
 import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import { screenLoaders } from '../lib/routeScreens.js';
 import { deferScreen } from './DeferredScreen.jsx';
@@ -80,9 +79,6 @@ export default function SpaceWorkspace({
     ]);
     return { space, teams };
   }, [spaceId]);
-  useEffect(() => {
-    if (resource.data?.space && !resource.error) rememberSpace(user.id, resource.data.space.id);
-  }, [user.id, resource.data, resource.error]);
   const dashboardTeamId = view === 'dashboard'
     ? new URLSearchParams(location.search).get('teamId')
     : null;
