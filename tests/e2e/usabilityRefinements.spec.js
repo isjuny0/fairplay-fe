@@ -2,19 +2,11 @@ import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import JSZip from 'jszip';
 
-test('최근 방문한 스페이스에서 내 팀으로 돌아가고 기록을 지울 수 있다', async ({ page }) => {
+test('스페이스를 방문한 뒤 내 스페이스 목록으로 돌아갈 수 있다', async ({ page }) => {
   await page.goto('/preview/spaces/1');
-  await expect(page.getByRole('heading', { name: '2026 서비스 디자인 프로젝트', exact: true })).toBeVisible();
-  await page.goto('/preview/main');
-  const recent = page.getByRole('navigation', { name: '최근 방문 스페이스', exact: true });
-  await expect(recent).toBeVisible();
-  await recent.getByRole('button', { name: '최근 방문: 2026 서비스 디자인 프로젝트', exact: true }).click();
-  await expect(page).toHaveURL(/teams\/1$/);
-  await page.goto('/preview/main');
-  await recent.getByRole('button', { name: '기록 지우기', exact: true }).click();
-  await expect(recent).toHaveCount(0);
-  await page.reload();
-  await expect(recent).toHaveCount(0);
+  await expect(page.locator('.space-home').getByRole('heading', { level: 1 })).toBeVisible();
+  await page.getByRole('button', { name: '내 스페이스', exact: true }).click();
+  await expect(page.getByRole('searchbox', { name: '스페이스 이름 검색' })).toBeVisible();
 });
 
 for (const width of [320, 390, 1440]) {

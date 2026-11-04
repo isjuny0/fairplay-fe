@@ -9,7 +9,6 @@
 .mobile-space-toggle[aria-expanded='true'] .mobile-menu-location > svg { transform: rotate(180deg); }
 .space-home-title-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 20px; }
 .space-home-title-row h1 { flex: 1 1 min(100%, 240px); min-width: 0; }
-.space-home-title-row .space-own-team-shortcut { flex: 0 0 auto; margin-left: auto; }
 .experience-summary { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-secondary); }
 .experience-summary strong { font-size: 14px; }
 .experience-summary .text-button { margin-left: auto; min-height: 36px; }
@@ -30,7 +29,6 @@
 }
 @media (max-width: 400px) {
   .workflow-steps li { flex: 1 1 calc(50% - 6px); }
-  .space-home-title-row .space-own-team-shortcut { margin-left: 0; }
 }
 .deliverable-filter-toggle { display: none; }
 .editor-section-links { display: none; flex-wrap: wrap; gap: 6px; padding-bottom: 12px; }
