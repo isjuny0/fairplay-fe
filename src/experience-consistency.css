@@ -57,8 +57,7 @@
 .main-content :is(.announcement-pagination, .meeting-pagination) { margin: var(--space-3) 0 0; }
 .main-content .personal-notification-simple-pagination { margin: var(--space-6) 0 0; }
 .task-progress-sidebar:focus { outline: 2px solid var(--brand); outline-offset: 4px; }
-.dashboard-arrange-grid > .widget-attention { grid-column: 1 / -1; }
-.dashboard-arrange-grid > .widget-attention .dashboard-attention { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit,minmax(min(100%,200px),1fr)); }
+.dashboard-arrange-grid > .widget-attention .dashboard-attention { display: grid; gap: 12px; }
 .widget-attention .dashboard-attention > button { min-height: 44px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; }
 @media (max-width: 720px) {
   .mobile-workspace-context { flex: 1; min-width: 0; word-break: keep-all; }

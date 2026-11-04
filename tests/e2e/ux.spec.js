@@ -402,7 +402,7 @@ test('데스크톱 홈은 기본 위젯 다음 추가 위젯을 배치하고 입
 }) => {
   await page.setViewportSize({ width: 1800, height: 1000 });
   await openPreview(page, '/spaces/1/teams/1');
-  await addDashboardWidgets(page, ['지금 확인할 작업', '내 작업 현황']);
+  await addDashboardWidgets(page, ['내 작업 현황']);
   const action = await page
     .locator('.widget-attention')
     .boundingBox();
@@ -410,12 +410,10 @@ test('데스크톱 홈은 기본 위젯 다음 추가 위젯을 배치하고 입
     .getByRole('region', { name: '본인 작업 현황' })
     .boundingBox();
   const progress = await page.locator('.dashboard-team-progress').boundingBox();
-  expect(own.y).toBeGreaterThanOrEqual(action.y);
-  expect(own.y).toBeGreaterThanOrEqual(progress.y + progress.height);
   const calendar = await page.locator('.dashboard-calendar').boundingBox();
-  expect(Math.abs(progress.y - calendar.y)).toBeLessThan(2);
-  expect(calendar.x + calendar.width).toBeLessThanOrEqual(progress.x);
-  expect(Math.abs(progress.height - calendar.height)).toBeLessThanOrEqual(1);
+  expect(action.y).toBe(calendar.y);
+  expect(progress.y).toBe(action.y);
+  expect(own.y).toBeGreaterThanOrEqual(progress.y + progress.height);
   const wide = await page.getByRole('main').boundingBox();
   await page.getByRole('button', { name: '중간 피드백', exact: true }).click();
   const reading = await page.getByRole('main').boundingBox();

@@ -96,7 +96,7 @@ export function calendarRelativeDay(date, today) {
   );
   return days === 0 ? '오늘' : days > 0 ? `D-${days}` : `D+${Math.abs(days)}`;
 }
-export const defaultDashboardWidgets = ['attention', 'calendar', 'progress', 'contribution'];
+export const defaultDashboardWidgets = ['calendar', 'attention', 'progress'];
 export function validateCalendarEvent(event) {
   if (typeof event.title !== 'string' || !event.title.trim())
     return '일정 이름을 입력해 주세요.';
