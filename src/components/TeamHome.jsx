@@ -303,18 +303,9 @@ function TeamDashboard({
               <ChevronRight size={16} />
             </button>
             <button
-              onClick={() => {
-                save({
-                  widgets: dashboard.widgets.includes('upcoming')
-                    ? dashboard.widgets
-                    : [...dashboard.widgets, 'upcoming'],
-                });
-                requestAnimationFrame(() =>
-                  document
-                    .getElementById('dashboard-widget-upcoming')
-                    ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }),
-                );
-              }}
+              onClick={() =>
+                onNavigate('작업', { mine: '1', due: 'week', view: 'list' })
+              }
             >
               <span className="dashboard-icon is-amber">
                 <Icon name="calendar" />

@@ -131,6 +131,11 @@ export function validateCalendarEvent(event) {
   }
   return '';
 }
+export function isTaskDueWithinWeek(task, now) {
+  const deadline = apiTimeToEpoch(task.dueAt);
+  return task.status !== 'DONE' && deadline >= now && deadline <= now + 7 * 86400000;
+}
+
 export function taskOverview(tasks, userId, now = Date.now()) {
   const mine = tasks.filter(
     (task) =>
@@ -144,8 +149,6 @@ export function taskOverview(tasks, userId, now = Date.now()) {
   return {
     overdue,
     upcoming,
-    soon: upcoming.filter(
-      (task) => apiTimeToEpoch(task.dueAt) <= now + 7 * 86400000,
-    ),
+    soon: upcoming.filter((task) => isTaskDueWithinWeek(task, now)),
   };
 }
