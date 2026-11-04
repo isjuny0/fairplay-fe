@@ -799,6 +799,20 @@ export default function Deliverables({
               )}
             </div>
             <div className="deliverable-search-primary">
+              <label className="deliverable-sort-field">
+                <span>정렬</span>
+                <select
+                  aria-label="자료 정렬"
+                  value={sort}
+                  onChange={(event) =>
+                    setSearchOption("sort", event.target.value)
+                  }
+                >
+                  <option value="">최근 등록 순</option>
+                  <option value="UPDATED_DESC">최근 수정 순</option>
+                  <option value="TITLE_ASC">이름 순</option>
+                </select>
+              </label>
               <form
                 role="search"
                 className="deliverable-query-form"
@@ -825,20 +839,6 @@ export default function Deliverables({
                   </button>
                 </div>
               </form>
-              <label className="deliverable-sort-field">
-                <span>정렬</span>
-                <select
-                  aria-label="자료 정렬"
-                  value={sort}
-                  onChange={(event) =>
-                    setSearchOption("sort", event.target.value)
-                  }
-                >
-                  <option value="">최근 등록 순</option>
-                  <option value="UPDATED_DESC">최근 수정 순</option>
-                  <option value="TITLE_ASC">이름 순</option>
-                </select>
-              </label>
             </div>
           </div>
         </div>
