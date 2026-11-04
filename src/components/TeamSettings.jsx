@@ -54,7 +54,6 @@ export default function TeamSettings({
   const leaveBlockMessage = {
     MEMBERSHIP_LOCKED: '중간 평가 대상이 확정되어 탈퇴할 수 없습니다.',
     LAST_MEMBER_MUST_DELETE_TEAM: '마지막 팀원은 팀 삭제 절차를 이용해 주세요.',
-    TEAM_LEAVE_HAS_DEPENDENCIES: '완료 작업의 담당자가 포함되어 탈퇴할 수 없습니다.',
   }[leavePreview?.blockReason];
   const openConfirmation = async (type) => {
     setError(null);
@@ -397,6 +396,9 @@ export default function TeamSettings({
                 </p>
                 {busy && !leavePreview && <p>탈퇴 영향을 확인하고 있습니다.</p>}
                 {leaveBlockMessage && <p className="notice">{leaveBlockMessage}</p>}
+                {Boolean(leavePreview?.completedTaskCount) && (
+                  <p>완료 작업 {leavePreview.completedTaskCount}개의 담당·수행 기록은 팀에 남습니다.</p>
+                )}
                 {leavePreview?.requiresNextLeader && !leavePreview.blockReason && (
                   <Field
                     label="다음 리더"

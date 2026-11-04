@@ -78,6 +78,8 @@ export default function RoundManagement({ context, onChanged }) {
   const [form, setForm] = useState({ type: 'MID', opensAt: '', closesAt: '' });
   const [initialForm, setInitialForm] = useState(null);
   const rounds = resource.data || [];
+  const teamsNeedingMembers = (submissions.data?.teams || [])
+    .filter((team) => Number.isInteger(team.approvedMemberCount) && team.approvedMemberCount < 2);
   const closingOnly = editing?.round?.status === 'OPEN';
   useEffect(() => {
     if (activeTab !== 'operations' || editing || busy || !rounds.some((round) => ['DRAFT', 'OPEN'].includes(round.status))) return;
@@ -182,7 +184,23 @@ export default function RoundManagement({ context, onChanged }) {
                   </div>}
                   {['OPEN', 'CLOSED'].includes(status) && !hasSubmissions && <p className="round-table-note">{submissions.loading ? '제출 현황을 불러오는 중…' : submissions.error || !teamSubmissions ? '제출 현황을 다시 불러와 주세요.' : '참여 팀이 없습니다.'}</p>}
                 </div>}
-                {startBlockReasons.length > 0 && <div className="round-start-block" role="status"><strong>평가를 시작하지 못했습니다.</strong><ul>{startBlockReasons.map((reason) => <li key={reason}>{startBlockMessages[reason] || '시작 조건을 확인하지 못했습니다. 현황을 새로고침해 주세요.'}</li>)}</ul></div>}
+                {startBlockReasons.length > 0 && (
+                  <div className="round-start-block" role="status">
+                    <strong>평가를 시작하지 못했습니다.</strong>
+                    <ul>
+                      {startBlockReasons.map((reason) => (
+                        <li key={reason}>{startBlockMessages[reason] || '시작 조건을 확인하지 못했습니다. 현황을 새로고침해 주세요.'}</li>
+                      ))}
+                    </ul>
+                    {startBlockReasons.includes('TEAM_TOO_SMALL') && teamsNeedingMembers.length > 0 && (
+                      <ul aria-label="충원이 필요한 팀">
+                        {teamsNeedingMembers.map((team) => (
+                          <li key={team.teamId}>{team.teamName} · 승인 팀원 {team.approvedMemberCount}명</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
                 {hasSubmissions && ['OPEN', 'CLOSED'].includes(status) && <div className="round-submission-detail" id={`round-${round.id}-submissions`} role="region" aria-label={`${roundLabels[type]} 팀별 제출 현황`}>
                   <RoundTeamSubmissions round={round} teams={teamSubmissions} directory={context.teams} loading={submissions.loading} onViewResults={(teamId) => {
                     const next = new URLSearchParams(params);
