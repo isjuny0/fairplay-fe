@@ -165,15 +165,22 @@ test('참여자 조회는 캐시·쿼리 없이 배열을 받고 삭제는 세�
   await assert.rejects(listSpaceParticipants(1), /응답 형식/);
 });
 
-test('공지 5개 API는 배열 페이지·전체 수정·쿼리 버전 삭제와 세션 및 CSRF 계약을 사용한다', async () => {
+test('공지 목록의 잘못된 응답은 빈 목록으로 처리하지 않고 조회 오류로 알린다', async () => {
+  for (const invalid of [[], null, {items: []}, {items: [], totalCount: -1}, {items: {}, totalCount: 0}]) {
+    globalThis.fetch = async () => jsonResponse(invalid);
+    await assert.rejects(() => listSpaceAnnouncements(1), /공지사항을 불러오지 못했습니다/);
+  }
+});
+
+test('공지 5개 API는 전체 건수가 있는 페이지·전체 수정·쿼리 버전 삭제와 세션 및 CSRF 계약을 사용한다', async () => {
   globalThis.fetch = async (url, options) => {
     calls.push({ url, ...options });
     if (url.endsWith('/csrf')) return jsonResponse({ headerName: 'X-CSRF-TOKEN', token: 'token' });
     if (options.method === 'DELETE') return new Response(null, { status: 204 });
-    return jsonResponse(options.method === 'GET' && url.includes('?page=') ? [] : { id: 7, version: 2 });
+    return jsonResponse(options.method === 'GET' && url.includes('?page=') ? {items: [], totalCount: 0} : { id: 7, version: 2 });
   };
   const input = { title: '제목', content: '본문', pinned: true };
-  assert.deepEqual(await listSpaceAnnouncements(1, 2, 20), []);
+  assert.deepEqual(await listSpaceAnnouncements(1, 2, 20), {items: [], totalCount: 0});
   assert.equal((await getSpaceAnnouncement(1, 7)).id, 7);
   await createSpaceAnnouncement(1, input);
   await updateSpaceAnnouncement(1, 7, { ...input, expectedVersion: 2 });

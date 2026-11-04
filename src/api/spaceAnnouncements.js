@@ -4,8 +4,12 @@ const collection = (spaceId) => `/api/spaces/${spaceId}/announcements`;
 const detail = (spaceId, announcementId) =>
   `${collection(spaceId)}/${announcementId}`;
 
-export const listSpaceAnnouncements = (spaceId, page = 0, size = 20) =>
-  apiRequest(`${collection(spaceId)}?${new URLSearchParams({ page, size })}`);
+export async function listSpaceAnnouncements(spaceId, page = 0, size = 20) {
+  const data = await apiRequest(`${collection(spaceId)}?${new URLSearchParams({ page, size })}`);
+  if (!data || !Array.isArray(data.items) || !Number.isSafeInteger(data.totalCount) || data.totalCount < 0)
+    throw new Error('공지사항을 불러오지 못했습니다. 다시 시도해 주세요.');
+  return data;
+}
 export const getSpaceAnnouncement = (spaceId, announcementId) =>
   apiRequest(detail(spaceId, announcementId));
 export const createSpaceAnnouncement = (spaceId, input) =>

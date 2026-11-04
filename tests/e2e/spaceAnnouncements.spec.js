@@ -431,8 +431,8 @@ for (const width of [1440, 320]) {
       .getByRole("button", { name: "새로고침", exact: true })
       .boundingBox();
     expect(Math.abs(titleBox.y + titleBox.height / 2 - refreshBox.y - refreshBox.height / 2)).toBeLessThan(1);
-    expect(refreshBox.width).toBe(40);
-    expect(refreshBox.height).toBe(40);
+    expect(refreshBox.width).toBe(width <= 720 ? 44 : 40);
+    expect(refreshBox.height).toBe(width <= 720 ? 44 : 40);
     await expect(
       heading.getByRole("button", { name: "새로고침", exact: true }),
     ).toHaveText("");
@@ -461,7 +461,7 @@ for (const width of [1440, 320]) {
     const paginationBox = await page
       .locator(".announcement-pagination")
       .boundingBox();
-    expect(paginationBox.y - listBox.y - listBox.height).toBeLessThanOrEqual(17);
+    expect(Math.abs(paginationBox.y - listBox.y - listBox.height - 24)).toBeLessThanOrEqual(1);
     await page
       .locator(".announcements-page")
       .screenshot({ path: testInfo.outputPath("compact-list.png") });
