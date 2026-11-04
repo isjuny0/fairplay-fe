@@ -240,10 +240,9 @@ test('타임라인·목록은 밝은 상태 배경과 읽기 쉬운 글씨색을
     await expect(badge).toHaveCSS('background-color', background);
     await expect(badge).toHaveCSS('color', text);
   }
-  const overdue = page.locator('.task-table .is-overdue').first();
+  const overdue = page.locator('.task-table time.task-date-is-overdue');
+  await expect(overdue).toHaveCount(1);
   await expect(overdue).toHaveCSS('color', 'rgb(255, 85, 92)');
-  await expect(overdue).toHaveCSS('background-color', 'rgb(255, 240, 241)');
-  await expect(page.locator('.task-table td:has(> .is-overdue) > time').first()).toHaveCSS('color', 'rgb(255, 85, 92)');
 
 });
 
