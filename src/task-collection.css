@@ -95,28 +95,17 @@
 .task-table {
   min-width: 900px;
 }
-.task-table :is(th, td) {
-  padding: 12px 10px;
-  vertical-align: middle;
-  font-size: 13px;
-}
 .task-table th:first-child { width: 23%; }
-.task-table th:nth-child(2) { width: 9%; }
+.task-table th:nth-child(2) { width: 100px; }
 .task-table th:nth-child(3) { width: 12%; }
 .task-table th:nth-child(4) { width: 18%; }
 .task-table th:nth-child(5) { width: 15%; }
 .task-table thead th:nth-last-child(-n + 2) { width: 15%; min-width: 0; }
-.task-table th:first-child .task-number {
-  margin-bottom: 2px;
-}
-.task-table .task-title-button {
-  font-size: 13px;
-}
+.task-table .status-badge { white-space: nowrap; }
 .task-table time {
   white-space: nowrap;
-  font-size: 12px;
+  color: var(--text-muted);
   line-height: 1.5;
-  font-variant-numeric: tabular-nums;
 }
 .task-table :is(.task-date-day, .task-date-clock) {
   display: inline;

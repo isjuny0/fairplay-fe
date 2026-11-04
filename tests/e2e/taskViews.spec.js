@@ -55,6 +55,14 @@ test('목록은 일곱 열의 표로 제공하고 상세 복귀·필터·보기 
     '마감일',
   ]);
   await expect(table.getByRole('row')).toHaveCount(7);
+  const tableRegion = page.getByRole('region', { name: '작업 표', exact: true });
+  await expect(tableRegion).toHaveCSS('border-left-width', '0px');
+  await expect(tableRegion).toHaveCSS('border-top-width', '1px');
+  await expect(tableRegion).toHaveCSS('border-radius', '0px');
+  const pagination = page.getByRole('navigation', { name: '작업 목록 페이지' });
+  await expect(pagination).toContainText('1페이지');
+  await expect(pagination.getByRole('button', { name: '이전', exact: true })).toBeDisabled();
+  await expect(pagination.getByRole('button', { name: '다음', exact: true })).toBeDisabled();
   await page.screenshot({
     path: testInfo.outputPath('task-table.png'),
     fullPage: true,
@@ -72,6 +80,47 @@ test('목록은 일곱 열의 표로 제공하고 상세 복귀·필터·보기 
   await expect(page.getByLabel('작업 제목 검색')).toHaveValue('설문');
   await page.goBack();
   await expect(table).toBeVisible();
+});
+
+test('작업 목록은 20건씩 표시하고 상세 복귀·새로고침 시 페이지를 유지한다', async ({ page }) => {
+  await seed(page, 'list', '', (state) => {
+    const [template] = state.teams[1].tasks;
+    state.teams[1].tasks = Array.from({ length: 41 }, (_, index) => ({
+      ...template,
+      id: 200 + index,
+      title: `페이지 테스트 작업 ${200 + index}`,
+    }));
+  });
+
+  const table = page.getByRole('table', { name: '정렬된 작업 목록' });
+  const rows = table.locator('tbody tr');
+  const pagination = page.getByRole('navigation', { name: '작업 목록 페이지' });
+  const previous = pagination.getByRole('button', { name: '이전', exact: true });
+  const next = pagination.getByRole('button', { name: '다음', exact: true });
+  await expect(rows).toHaveCount(20);
+  await expect(previous).toBeDisabled();
+
+  await next.click();
+  await expect(pagination).toContainText('2페이지');
+  await expect(rows).toHaveCount(20);
+  await table.getByRole('button', { name: '페이지 테스트 작업 220', exact: true }).click();
+  await page.getByRole('button', { name: '← 목록으로', exact: true }).click();
+  await expect(pagination).toContainText('2페이지');
+  await page.reload();
+  await expect(pagination).toContainText('2페이지');
+
+  await page.getByLabel('작업 제목 검색').fill('페이지 테스트 작업 200');
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toContainText('페이지 테스트 작업 200');
+  await expect(pagination).toContainText('1페이지');
+  await expect(previous).toBeDisabled();
+  await expect(next).toBeDisabled();
+  await expect(page).not.toHaveURL(/[?&]page=/);
+
+  await page.goto('/preview/spaces/1/teams/1/tasks?view=list&page=999');
+  await expect(page).toHaveURL(/[?&]page=2(?:&|$)/);
+  await expect(rows).toHaveCount(1);
+  await expect(next).toBeDisabled();
 });
 
 test('타임라인은 3개월의 계획 기간을 주 눈금으로 비교하고 상세 복귀·필터를 유지한다', async ({
@@ -336,8 +385,8 @@ test('검색 결과와 현재 기간을 구분하고 적용한 검색·필터를
   await expect(chips).toHaveCount(0);
   await expect(page.locator('.list-summary')).toContainText('현재 기간 5개');
   await page.getByRole('button', { name: '목록', exact: true }).click();
-  await expect(page.locator('.list-summary')).toContainText('검색 결과 6개 · 전체 6개');
-  await expect(page.locator('.list-summary')).not.toContainText('현재 기간');
+  await expect(page.getByRole('table', { name: '정렬된 작업 목록' }).locator('tbody tr')).toHaveCount(6);
+  await expect(page.locator('.list-summary')).toHaveCount(0);
 });
 
 test('일정을 넓게 보고 작업명 너비를 조절해도 조회 조건을 유지하고 원래 크기로 복귀한다', async ({ page }, testInfo) => {
@@ -412,14 +461,17 @@ test('작업 표는 가로·세로로 스크롤해도 열 제목과 작업 제�
     }
   });
   const table = page.getByRole('region', { name: '작업 표', exact: true });
+  for (const badge of await table.locator('.status-badge').all()) {
+    await expect(badge).toHaveCSS('white-space', 'nowrap');
+  }
   await table.scrollIntoViewIfNeeded();
   await table.evaluate((element) => { element.scrollTop = 400; element.scrollLeft = 150; });
   const bounds = await table.boundingBox();
   const corner = await table.getByRole('columnheader', { name: '작업', exact: true }).boundingBox();
-  expect(Math.abs(corner.x - bounds.x - 1)).toBeLessThan(2);
+  expect(Math.abs(corner.x - bounds.x)).toBeLessThan(2);
   expect(Math.abs(corner.y - bounds.y - 1)).toBeLessThan(2);
   const firstTask = await table.locator('tbody th').first().boundingBox();
-  expect(Math.abs(firstTask.x - bounds.x - 1)).toBeLessThan(2);
+  expect(Math.abs(firstTask.x - bounds.x)).toBeLessThan(2);
   expect(await table.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
   await page.screenshot({ path: testInfo.outputPath('task-table-sticky.png') });
 });

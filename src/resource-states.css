@@ -49,17 +49,14 @@
   white-space: normal;
   overflow-wrap: anywhere;
 }
-.task-table {
-  table-layout: fixed;
-}
 .task-table :is(th, td),
 .task-table-assignee {
   white-space: normal;
   overflow-wrap: anywhere;
 }
-.task-table .task-title-button {
+.task-table .collection-title-button {
   display: -webkit-box;
-  width: 100%;
+  min-height: 0;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
