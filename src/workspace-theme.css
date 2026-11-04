@@ -649,9 +649,6 @@
 .login-actions .field-help {
   margin: 24px 0 0;
 }
-.login-actions .preview-entry {
-  margin-top: 12px;
-}
 
 @media (min-width: 721px) {
   .workspace-sidebar {

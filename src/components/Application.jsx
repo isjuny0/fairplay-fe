@@ -16,7 +16,7 @@ import ScrollAffordances from './ScrollAffordances.jsx';
 import '../preview-controls.css';
 import '../header-profile.css';
 
-export default function Application({ previewRuntime }) {
+export default function Application({ previewRuntime, onPreviewExit }) {
   const {
     getMockState, getPreviewUser, previewRole, setPreviewRole,
     resetPreview, previewContext, getRagPreviewScenario, setRagPreviewScenario,
@@ -125,7 +125,7 @@ export default function Application({ previewRuntime }) {
   const signOut = async () => {
     if (!(await confirmDiscard())) return;
     if (preview) {
-      guide?.stop();
+      onPreviewExit?.();
       invalidateSharedReads();
       setUser(null);
       navigate('/', { replace: true });
@@ -207,15 +207,6 @@ export default function Application({ previewRuntime }) {
                     : 'Google로 계속하기'}
               </span>
             </button>
-            <button
-              className="secondary-button preview-entry"
-              onClick={() => navigate('/preview/main?guide=start')}
-            >
-              로그인 없이 사용자 가이드
-            </button>
-            <p className="field-help">
-              로그인하면 내 프로젝트를 관리할 수 있습니다. 사용자 가이드에서는 예시 프로젝트로 먼저 둘러볼 수 있습니다.
-            </p>
             {sessionNotice && <p role="status">{sessionNotice}</p>}
             <ErrorNotice error={error} />
           </div>
@@ -247,7 +238,7 @@ export default function Application({ previewRuntime }) {
             </div>
           </div>
           <div className="profile-area">
-            {preview && <button className="preview-toggle preview-guide-entry" aria-label="사용자 가이드" title="사용자 가이드" onClick={guide?.open}>
+            {guide && <button className="preview-toggle preview-guide-entry" aria-label="사용자 가이드" title="사용자 가이드" onClick={guide.open}>
               <BookOpen size={15} aria-hidden="true" /><span>사용자 가이드</span>
             </button>}
             {preview && (
