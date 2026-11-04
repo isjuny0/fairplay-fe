@@ -147,7 +147,7 @@ for (const width of [1440, 1280, 390]) {
     await page.getByLabel('팀 정렬', { exact: true }).selectOption('progress');
     if (width > 720) {
       const table = page.getByRole('table', { name: '팀 관리', exact: true });
-      await expect(table.getByRole('columnheader')).toHaveText(['팀', '팀 진행률', '작업 현황', '확인 사항', '팀 자료']);
+      await expect(table.getByRole('columnheader')).toHaveText(['팀', '팀 진행률', '작업 현황', '확인 사항', '자료']);
       expect(await table.locator('tbody > tr').first().evaluate((element) => element.getBoundingClientRect().bottom <= innerHeight)).toBe(true);
       expect(await table.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
       await expect(table.locator('tbody').getByRole('button', { name: /집계 기준/ })).toHaveCount(0);

@@ -131,7 +131,7 @@ async function backend(
       return respond({ headerName: 'X-CSRF-TOKEN', token: 'test-token' });
     if (path === '/api/spaces') return respond([space]);
     if (path === '/api/spaces/1') return respond(space);
-    if (path === '/api/spaces/1/announcements') return respond([]);
+    if (path === '/api/spaces/1/announcements') return respond({ items: [], totalCount: 0, page: 0, size: 3 });
     if (path === '/api/spaces/1/teams') return respond([team]);
     if (path === '/api/teams/1') return respond(team);
     if (path === '/api/teams/1/members') return respond(members);
@@ -667,7 +667,7 @@ test('OPEN 회차 일정 수정은 expectedVersion과 마감만 전송한다', a
     JSON.parse(requests.find((request) => request.method === 'PATCH').body),
   ).toEqual({ closesAt: '2030-12-02T18:00:00', expectedVersion: 3 });
 });
-test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이 근거·질문을 표시한다', async ({
+test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이 근거와 확인 한계를 표시한다', async ({
   page,
 }) => {
   await page.clock.install();
@@ -719,14 +719,6 @@ test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이
         references: [{ deliverableId: 40, quote: null, observation: '발견과 근거가 분리되어 있습니다.', location: '발견 절' }] },
       { type: 'ISSUE', title: '약속한 결과를 확인해 주세요', description: '작업 설명의 요구를 확인할 수 없습니다.',
         action: '결과를 보완해 주세요.', requirementQuote: '요구사항을 정리합니다.', references: [] },
-      {
-        type: 'QUESTION',
-        title: '누락된 조건을 확인했나요?',
-        description: '요구 범위를 판단하기 위해 확인이 필요합니다.',
-        requirementQuote: null,
-        action: '조건을 추가 확인해 주세요.',
-        references: [],
-      },
     ],
     limitations: ['외부 사실은 검증하지 않았습니다.'],
     failureCode: null,
@@ -734,7 +726,7 @@ test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이
   });
   await page.clock.fastForward(5100);
   await expect(page.getByText('실제 응답 검토 요약')).toBeVisible();
-  expect(await page.locator('[data-feedback-type]').evaluateAll((items) => items.map((item) => item.dataset.feedbackType))).toEqual(['SUGGESTION', 'ISSUE', 'QUESTION']);
+  expect(await page.locator('[data-feedback-type]').evaluateAll((items) => items.map((item) => item.dataset.feedbackType))).toEqual(['SUGGESTION', 'ISSUE']);
   await page.getByText('관련 작업 설명', { exact: true }).click();
   await expect(page.getByText('요구사항을 정리합니다.', { exact: true })).toBeVisible();
   let materialDenied = false;
@@ -756,7 +748,7 @@ test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이
   await page.keyboard.press('Escape');
 
   await expect(page.getByText('확인할 원문', { exact: true })).toBeVisible();
-  await expect(page.getByText('확인할 질문', { exact: true })).toBeVisible();
+  await expect(page.getByText('외부 사실은 검증하지 않았습니다.', { exact: true })).toBeVisible();
   await expect(
     page.getByText(/최신 작업·결과물을 기준으로 한 결과가 아닙니다/),
   ).toBeVisible();
@@ -789,7 +781,7 @@ test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이
   // V45 converts previous results without inventing historical source metadata.
   setReview({ id: 3, taskId: 10, status: 'COMPLETED', isCurrent: false,
     summary: '이전 검토 내용입니다.', strengths: [], limitations: [], reviewedSources: [], completedAt: null,
-    findings: [{ type: 'QUESTION', title: '이전 결과의 확인할 내용', description: '이전 결과의 확인할 내용',
+    findings: [{ type: 'ISSUE', title: '이전 결과의 확인할 내용', description: '이전 결과의 확인할 내용',
       action: '조건을 확인해 주세요.', requirementQuote: null,
       references: [{ deliverableId: 40, quote: '확인할 원문', observation: null, location: null }] }] });
   await page.reload();
@@ -1551,7 +1543,7 @@ test('팀 관리 목록은 서버의 리포트 상태와 바로가기를 표시�
   });
   await page.goto('/spaces/1/dashboard');
   const table = page.locator('.desktop-data-table').first();
-  await expect(table.getByRole('columnheader')).toHaveText(['팀', '팀 진행률', '작업 현황', '확인 사항', '팀 자료']);
+  await expect(table.getByRole('columnheader')).toHaveText(['팀', '팀 진행률', '작업 현황', '확인 사항', '자료']);
   await expect(page.getByRole('button', { name: '리포트 검토 화면' })).toHaveCount(0);
   await expect(table).not.toContainText('공개 완료');
 });

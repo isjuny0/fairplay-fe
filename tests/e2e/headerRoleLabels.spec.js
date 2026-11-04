@@ -20,7 +20,7 @@ for (const width of [1440, 1024, 768, 390, 320]) {
     const identity = page.locator('.topbar .profile-identity');
     const name = identity.locator('.profile-name');
     const role = page.locator('.topbar .header-context-role');
-    if (width > 720) await expect(name).toBeVisible();
+    if (width > 800) await expect(name).toBeVisible();
     else await expect(name).toBeHidden();
     await expect(name).toHaveText('김하늘');
     await expect(role).toHaveText('리더');

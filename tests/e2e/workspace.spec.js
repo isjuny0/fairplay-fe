@@ -446,7 +446,7 @@ for (const [label, weight] of [
     const request = requests.find(({ method, path }) =>
       method === 'POST' && path === '/api/teams/1/tasks');
     expect(JSON.parse(request.body).weight).toBe(weight);
-    await expect(page.getByLabel('작업 기본 정보').getByText(label, { exact: true })).toBeVisible();
+    await expect(page.getByLabel('작업 기본 정보').getByText(label.replace(/의 작업$/, ''), { exact: true })).toBeVisible();
     await page.getByRole('button', { name: '작업 수정', exact: true }).click();
     await expect(dialog.getByLabel('예상 작업량', { exact: true })).toHaveValue(String(weight));
     const changedLabel = weight === 8 ? '1시간 미만의 작업' : '12시간 이상의 작업';
@@ -457,7 +457,7 @@ for (const [label, weight] of [
       method === 'PATCH' && path === '/api/tasks/10');
     expect(JSON.parse(update.body)).toMatchObject({ weight: weight === 8 ? 1 : 8, expectedVersion: 0 });
     await page.reload();
-    await expect(page.getByLabel('작업 기본 정보').getByText(changedLabel, { exact: true })).toBeVisible();
+    await expect(page.getByLabel('작업 기본 정보').getByText(changedLabel.replace(/의 작업$/, ''), { exact: true })).toBeVisible();
   });
 
 test('담당자가 작업을 생성하고 PATCH 상태와 버전으로 직접 완료하면 잠긴다', async ({
@@ -1525,7 +1525,7 @@ test('작업 시작일은 생성 시 필수이며 일정 검증 후 오프셋과
   await expect(dialog).toHaveCount(0);
   const created = requests.find(({ method, path }) => method === 'POST' && path === '/api/teams/1/tasks');
   expect(JSON.parse(created.body)).toMatchObject({ startAt: '2030-12-01T18:00:00', dueAt: '2030-12-01T18:00:00' });
-  await expect(page.getByLabel('작업 기본 정보').locator('div').filter({ has: page.getByText('시작일', { exact: true }) }).getByText('2030. 12. 01. 18:00', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('작업 기본 정보').locator('div').filter({ has: page.getByText('계획 시작일', { exact: true }) }).getByText('2030. 12. 01. 18:00', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '작업 수정', exact: true }).click();
   await expect(dialog.getByLabel('시작일 날짜', { exact: true })).toHaveValue('2030-12-01');
   await fillDateTime(dialog, '시작일', '2030-11-30T09:00');

@@ -40,7 +40,7 @@ for (const width of [1440, 390, 320]) {
   test(`${width}px 기본 선택 목록과 기존 커스텀 목록의 색·테두리를 통일한다`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto(team + '/deliverables');
-    const status = page.getByLabel('산출물 유형', { exact: true });
+    const status = page.getByLabel('자료 유형', { exact: true });
     await assertControl(status);
     const heading = await page.locator('main h1').boundingBox();
     await status.click();

@@ -125,7 +125,7 @@ export default function AiReview({ context }) {
         <details className="ai-review-guide">
           <summary>검토 범위와 이용 안내</summary>
           <p className="field-help">
-            피드백은 작업 완료의 필수 조건이 아닙니다. 개선 제안은 필요한 경우 선택해 반영하고, 확인할 질문은 팀에서 판단해 주세요. 일부 파일 형식은 검토를 지원하지 않을 수 있습니다.
+            피드백은 작업 완료의 필수 조건이 아닙니다. 개선 제안은 작업에 필요한 경우 선택해 반영해 주세요. 일부 파일 형식은 검토를 지원하지 않을 수 있습니다.
           </p>
         </details>
       </div>

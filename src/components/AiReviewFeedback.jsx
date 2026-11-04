@@ -10,7 +10,6 @@ import { ErrorNotice, Modal, ResourceState } from './ui.jsx';
 const findingLabels = {
   ISSUE: { label: '보완할 점', action: '권장 수정' },
   SUGGESTION: { label: '개선 제안', action: '개선 방법' },
-  QUESTION: { label: '확인할 질문', action: '확인할 내용' },
 };
 
 function References({ references = [], sources, onOpenSource }) {

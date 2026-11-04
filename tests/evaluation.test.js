@@ -255,7 +255,7 @@ test('AI 검토는 현재 담당자만 조회·실행할 수 있다', async () =
   const completed = await previewRequest('/api/tasks/102/ai-review');
   assert.equal(completed.status, 'COMPLETED');
   assert.ok(completed.completedAt);
-  assert.deepEqual(completed.findings.map((item) => item.type), ['SUGGESTION', 'QUESTION']);
+  assert.deepEqual(completed.findings.map((item) => item.type), ['SUGGESTION']);
   assert.equal(completed.reviewedSources[0].title, reviewedSource.title);
   assert.equal(completed.reviewedSources[0].version, reviewedSource.version);
   assert.equal('improvements' in completed, false);

@@ -195,6 +195,7 @@ test('팀 홈의 마감 지연은 빨간색 아이콘으로 표시한다', async
 test('타임라인·목록은 밝은 상태 배경과 읽기 쉬운 글씨색을 공유한다', async ({
   page,
 }) => {
+  await page.clock.setFixedTime(new Date('2026-10-15T09:00:00Z'));
   const palette = [
     ['todo', 'rgb(191, 233, 250)', 'rgb(0, 92, 186)'],
     ['in_progress', 'rgb(231, 244, 237)', 'rgb(8, 124, 85)'],

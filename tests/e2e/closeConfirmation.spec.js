@@ -4,7 +4,7 @@ const team = '/preview/spaces/1/teams/1';
 const scenarios = [
   { name: '스페이스', path: '/preview/main', button: '새 스페이스', dialog: '스페이스 만들기', field: '스페이스 이름' },
   { name: '작업', path: `${team}/tasks`, button: '새 작업 만들기', dialog: '새 작업 만들기', field: '작업 제목' },
-  { name: '산출물', path: `${team}/deliverables`, button: '산출물 등록', dialog: '산출물 등록', field: '제목', type: '문서 작성' },
+  { name: '팀 자료', path: `${team}/deliverables`, button: '팀 자료 등록', dialog: '팀 자료 등록', field: '제목', type: '문서 작성' },
   { name: '공지', path: '/preview/spaces/1/announcements', button: '공지 작성', dialog: '공지 작성', field: '공지 제목', role: 'manager' },
   { name: '회의록', path: `${team}/meeting-minutes`, button: '회의록 등록', dialog: '팀 회의록 등록', field: '제목' },
 ];
@@ -25,11 +25,11 @@ for (const width of [1440, 390]) {
       await page.addInitScript((role) => localStorage.setItem('fairplay:preview-role', role), scenario.role || 'leader');
       await page.goto(scenario.path);
       await page.getByRole('main').getByRole('button', { name: scenario.button, exact: true }).click();
-      const editor = page.getByRole('dialog', { name: scenario.dialog, exact: true });
+      if (scenario.type) await page.getByRole('dialog', { name: scenario.dialog, exact: true }).getByRole('button', { name: scenario.type, exact: true }).click();
+      const editor = page.getByRole('dialog', { name: scenario.type || scenario.dialog, exact: true });
       const iconClose = editor.getByRole('button', { name: '닫기', exact: true });
       await expect(iconClose).not.toHaveCSS('background-color', 'rgb(229, 36, 52)');
       await expect(iconClose).not.toHaveCSS('color', 'rgb(255, 255, 255)');
-      if (scenario.type) await editor.getByRole('button', { name: scenario.type, exact: true }).click();
       const input = editor.getByLabel(scenario.field, { exact: true });
       await input.fill('저장하지 않은 입력 보존 확인');
       await editor.getByRole('button', { name: '닫기', exact: true }).click();

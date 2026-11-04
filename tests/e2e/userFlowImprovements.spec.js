@@ -187,9 +187,7 @@ for (const width of [1440, 390])
     await expect(
       page.getByLabel('이지원 작업 수행 1점', { exact: true }),
     ).toBeFocused();
-    const card = page.locator('.peer-card').filter({
-      has: page.getByRole('heading', { name: '이지원', exact: true }),
-    });
+    const card = page.getByRole('form', { name: '이지원 동료 평가 입력', exact: true });
     const criterion = card.getByRole('group', {
       name: '작업 수행',
       exact: true,

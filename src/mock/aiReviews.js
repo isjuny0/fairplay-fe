@@ -4,7 +4,7 @@ import { MockError } from './planned.js';
 function exampleFeedback(review) {
   const source = review.reviewedSources[0];
   return {
-    summary: '주요 발견과 다음 단계 제안이 연결되어 있다고 가정한 예시입니다. 결론의 근거를 쉽게 찾을 수 있도록 정리하고, 우선 반영할 개선안을 팀과 확인하는 흐름을 살펴보세요.',
+    summary: '주요 발견과 다음 단계 제안이 연결되어 있다고 가정한 예시입니다. 결론의 근거를 쉽게 찾을 수 있도록 주요 발견 옆에 배치해 보세요.',
     findings: [
       {
         type: 'SUGGESTION', title: '주요 발견마다 근거를 연결해 보세요',
@@ -13,12 +13,6 @@ function exampleFeedback(review) {
         requirementQuote: null,
         references: [{ deliverableId: source.deliverableId, quote: null,
           observation: '문서에 주요 발견과 다음 단계 제안이 정리되어 있다고 가정한 예시입니다.', location: '예시 문서 본문' }],
-      },
-      {
-        type: 'QUESTION', title: '다음 단계에서 먼저 반영할 개선안은 무엇인가요?',
-        description: '개선안의 우선순위를 알면 다음 작업으로 연결할 내용을 더 구체적으로 검토할 수 있습니다.',
-        action: '팀이 먼저 진행하기로 한 개선안과 선택 이유를 확인해 주세요.',
-        requirementQuote: null, references: [],
       },
     ],
     strengths: [],
