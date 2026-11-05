@@ -125,6 +125,9 @@ for (const width of [1440, 375]) {
     await expect(table.getByRole("row")).toHaveCount(6);
     await expect(table).toContainText("협업 팀");
     await expect(table).toContainText("미소속");
+    if (width <= 720) {
+      for (const summary of await table.locator('.participant-mobile-details summary').all()) await summary.click();
+    }
     for (const name of ["관리자", "팀 리더", "삭제 제한"])
       await expect(
         table.getByRole("button", { name: `${name} 참여자 삭제`, exact: true }),

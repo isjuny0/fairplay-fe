@@ -64,10 +64,10 @@ for (const width of [320, 390]) {
 test('작업 빠른 필터가 내 담당과 마감 지남 조건을 적용한다', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 900 });
   await page.goto('/preview/spaces/1/teams/1/tasks');
-  const quick = page.getByRole('group', { name: '빠른 작업 필터', exact: true });
-  await quick.getByRole('button', { name: '내 담당', exact: true }).click();
+  await page.getByRole('button', { name: '필터', exact: true }).click();
+  await page.getByRole('checkbox', { name: '내 담당 작업만', exact: true }).check();
   await expect(page).toHaveURL(/mine=1/);
-  await quick.getByRole('button', { name: '마감 지남', exact: true }).click();
+  await page.getByRole('checkbox', { name: '마감 지난 작업만', exact: true }).check();
   await expect(page).toHaveURL(/overdue=1/);
 });
 

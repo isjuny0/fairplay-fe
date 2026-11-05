@@ -110,19 +110,17 @@ for (const width of widths) {
     if (width <= 720) {
       for (const [route, label] of [[team, '팀 홈'], [`${team}/meeting-minutes`, '회의록'], [`${team}/mid-feedback`, '중간 피드백']]) {
         await page.goto(route);
-        const current = page.locator('.mobile-menu-current');
-        await expect(current).toHaveText(label);
-        expect(await textRects(current)).toHaveLength(1);
-        const action = page.locator('.mobile-menu-action');
-        const currentRect = (await textRects(current))[0];
-        const actionRect = (await textRects(action))[0];
-        expect(Math.abs(currentRect.top - actionRect.top)).toBeLessThan(3);
-        const toggle = await page.locator('.mobile-space-toggle').boundingBox();
-        const menu = await page.locator('.mobile-menu-location').boundingBox();
-        const context = await page.locator('.mobile-workspace-context').boundingBox();
-        expect(menu.x).toBeGreaterThanOrEqual(context.x + context.width + 10);
-        expect(menu.y).toBeGreaterThanOrEqual(toggle.y);
-        expect(menu.y + menu.height).toBeLessThanOrEqual(toggle.y + toggle.height);
+        const button = page.locator('.mobile-space-toggle');
+        await expect(button).toHaveText('');
+        await expect(button).toHaveAttribute('title', `${label} · 메뉴 열기`);
+        await expect(button.locator('.sidebar-toggle-glyph')).toHaveCount(1);
+        const toggle = await button.boundingBox();
+        const context = await page.locator('.topbar .header-context-copy').boundingBox();
+        expect(toggle.width).toBe(36);
+        expect(toggle.height).toBe(36);
+        expect(toggle.x).toBe(width <= 360 ? 12 : 16);
+        expect(context.x).toBeGreaterThanOrEqual(toggle.x + toggle.width + 10);
+        expect(Math.abs(toggle.y + toggle.height / 2 - context.y - context.height / 2)).toBeLessThan(1);
       }
     }
     await page.screenshot({ path: info.outputPath('readable-team-controls.png'), animations: 'disabled' });

@@ -154,7 +154,12 @@ test('작업 100건과 긴 파일명 20건은 웹 화면에서 바깥 가로 넘
     await page.goto('/spaces/1/teams/1/tasks?view=list');
     await expect(
       page.getByRole('table', { name: '정렬된 작업 목록' }).locator('tbody tr'),
-    ).toHaveCount(100);
+    ).toHaveCount(20);
+    const pagination = page.getByRole('navigation', { name: '작업 목록 페이지' });
+    await expect(pagination).toContainText('1페이지');
+    await pagination.getByRole('button', { name: '다음', exact: true }).click();
+    await expect(pagination).toContainText('2페이지');
+    await expect(page.getByRole('table', { name: '정렬된 작업 목록' }).locator('tbody tr')).toHaveCount(20);
     expect(
       await page.locator('.task-table').evaluate(
         (table) =>

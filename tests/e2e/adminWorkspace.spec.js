@@ -141,7 +141,8 @@ for (const width of [1440, 1280, 390]) {
       await expect(page.getByRole('tooltip')).toHaveCount(0);
     }
     const filters = page.getByRole('group', { name: '팀 빠른 필터', exact: true });
-    await filters.getByRole('button', { name: '마감 지연', exact: true }).click();
+    if (width <= 720) await page.getByLabel('팀 상태', { exact: true }).selectOption('overdue');
+    else await filters.getByRole('button', { name: '마감 지연', exact: true }).click();
     await expect(page.getByLabel('팀 상태', { exact: true })).toHaveValue('overdue');
     await page.getByLabel('팀·리더 검색', { exact: true }).fill('삼위일체');
     await page.getByLabel('팀 정렬', { exact: true }).selectOption('progress');
@@ -225,7 +226,7 @@ for (const width of [1440, 1280, 390]) {
     await expect(page.getByLabel('팀·리더 검색', { exact: true })).toHaveValue('삼위일체');
     await expect(page.getByLabel('팀 상태', { exact: true })).toHaveValue('overdue');
     await expect(page.getByLabel('팀 정렬', { exact: true })).toHaveValue('progress');
-    await expect(filters.getByRole('button', { name: '마감 지연', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    if (width > 720) await expect(filters.getByRole('button', { name: '마감 지연', exact: true })).toHaveAttribute('aria-pressed', 'true');
     expect(new URL(page.url()).searchParams.has('teamId')).toBe(false);
     expect(new URL(page.url()).searchParams.has('tab')).toBe(false);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

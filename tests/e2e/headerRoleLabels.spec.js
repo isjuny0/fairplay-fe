@@ -25,19 +25,23 @@ for (const width of [1440, 1024, 768, 390, 320]) {
     await expect(name).toHaveText('김준영');
     await expect(role).toHaveText('리더');
     await expect(page.locator('.breadcrumb-role')).toHaveCount(0);
-    await expect(page.locator('.mobile-workspace-context')).not.toContainText(
-      '리더',
-    );
+    await expect(page.locator('.mobile-workspace-context')).toHaveCount(0);
     await page.evaluate(() => document.fonts.ready);
-    const roleBox = await role.boundingBox();
-    const spaceName = await page.locator('.header-context-copy strong').boundingBox();
-    expect(spaceName.width).toBeGreaterThan(40);
-    const contextBox = await page.locator('.header-context-copy').boundingBox();
-    expect(roleBox.x + roleBox.width).toBeLessThanOrEqual(contextBox.x + contextBox.width + 1);
-    expect(roleBox.x - spaceName.x - spaceName.width).toBeGreaterThanOrEqual(8);
-    expect(Math.abs(spaceName.y + spaceName.height / 2 - roleBox.y - roleBox.height / 2)).toBeLessThan(1);
-    await expect(page.locator('.profile-identity .header-context-role')).toHaveCount(0);
-    expect(roleBox.x + roleBox.width).toBeLessThanOrEqual(width);
+      const roleBox = await role.boundingBox();
+      const spaceName = await page.locator('.header-context-copy strong').boundingBox();
+      expect(spaceName.width).toBeGreaterThan(40);
+      const contextBox = await page.locator('.header-context-copy').boundingBox();
+      expect(roleBox.x + roleBox.width).toBeLessThanOrEqual(contextBox.x + contextBox.width + 1);
+      expect(roleBox.x - spaceName.x - spaceName.width).toBeGreaterThanOrEqual(8);
+      expect(Math.abs(spaceName.y + spaceName.height / 2 - roleBox.y - roleBox.height / 2)).toBeLessThan(1);
+      await expect(page.locator('.profile-identity .header-context-role')).toHaveCount(0);
+      expect(roleBox.x + roleBox.width).toBeLessThanOrEqual(width);
+    if (width <= 720) {
+      await expect(role).toBeVisible();
+      await expect(page.getByLabel('현재 화면 정보').getByRole('button')).toBeVisible();
+      await expect(page.locator('.workspace > aside')).toBeHidden();
+      expect(await page.locator('.topbar').evaluate(element => element.getBoundingClientRect().height)).toBe(148);
+    }
     const logoBox = await page
       .locator('.topbar-brand .brand-logo')
       .boundingBox();

@@ -391,7 +391,7 @@ test('모바일 스페이스 메뉴는 하나의 접힌 영역에 있고 작업 
   expect(card.width).toBeGreaterThanOrEqual(columns.width - 2);
   await page.getByRole('button', { name: /스페이스 메뉴/ }).click();
   await expect(page.getByRole('navigation', {name:'팀 메뉴',exact:true})).toBeVisible();
-  await page.getByRole('button', { name: /스페이스 메뉴/ }).click();
+  await page.getByRole('button', { name: '메뉴 닫기', exact: true }).click();
   await expect(
     page.getByRole('navigation', { name: '팀 메뉴', exact: true }),
   ).toBeHidden();

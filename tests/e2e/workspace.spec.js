@@ -746,7 +746,7 @@ test('모바일·태블릿·데스크톱에서 팀 탐색과 작업 생성 폼�
         .getByRole('navigation', { name: '팀 메뉴' })
         .getByRole('button', { name: '작업', exact: true }),
     ).toHaveAttribute('aria-current', 'page');
-    if (width <= 720) await page.getByRole('button',{name:'스페이스 메뉴 접기',exact:true}).click();
+    if (width <= 720) await page.getByRole('button',{name:'메뉴 닫기',exact:true}).click();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth,
