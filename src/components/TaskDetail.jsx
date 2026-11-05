@@ -152,14 +152,12 @@ export default function TaskDetail({
     setError(null);
   }, [resource.data]);
   const [editing, setEditing] = useState(false);
-  const [addingDeliverable, setAddingDeliverable] = useState(false);
   const [reopening, setReopening] = useState(false);
   const [revisionAssigneeId, setRevisionAssigneeId] = useState('');
   const [showAllAssignees, setShowAllAssignees] = useState(false);
   const [activeTab, setActiveTab] = useState('task-description-section');
   const [sectionToFocus, setSectionToFocus] = useState(null);
   useEffect(() => {
-    setAddingDeliverable(false);
     setShowAllAssignees(false);
     setReopening(false);
     setActiveTab('task-description-section');
@@ -208,7 +206,7 @@ export default function TaskDetail({
       : activeTab;
   useEffect(() => {
     if (!sectionToFocus) return;
-    const target = document.getElementById(sectionToFocus === 'task-progress-section' ? 'task-next-action-panel' : sectionToFocus);
+    const target = document.getElementById(sectionToFocus);
     target?.focus({ preventScroll: true });
     target?.scrollIntoView({ block: 'start' });
     setSectionToFocus(null);
@@ -230,14 +228,6 @@ export default function TaskDetail({
     !missingContributions.length &&
     hasDeliverables;
   const workClosed = task?.completionBlockReason === 'WORK_PERIOD_CLOSED';
-  const canAddDeliverable = !readOnly && task && !workClosed && isMutable(task)
-    && canModifyTeamWork(team) && isAssignee(task, user.id);
-  const nextAction = !['IN_PROGRESS', 'REVISING'].includes(task?.status)
-    ? ['작업 시작하기', 'task-progress-section']
-    : !hasDeliverables ? ['결과물 등록하기', 'task-deliverables-section']
-    : missingContributions.some(entry => entry.userId === user.id) ? ['내 수행 설명 작성하기', 'own-contribution-description']
-    : missingContributions.length ? ['담당자 작성 현황 확인', 'task-assignment-section']
-    : ['완료 처리로 이동', 'task-progress-section'];
   const changeStatus = async (status) => {
     if (readOnly || busy || !canModifyTeamWork(team) || workClosed) return;
     if (
@@ -296,13 +286,9 @@ export default function TaskDetail({
 
   const focusTaskSection = (id) => {
     setActiveTab(
-      id === 'own-contribution-description' ? 'task-contributions-section' : ['task-progress-section', 'task-assignment-section'].includes(id) ? 'task-description-section' : id,
+      id === 'own-contribution-description' ? 'task-contributions-section' : id,
     );
     setSectionToFocus(id);
-  };
-  const openDeliverableRegistration = () => {
-    setActiveTab('task-deliverables-section');
-    setAddingDeliverable(true);
   };
   useEffect(() => {
     if (!guide?.guiding || Number(taskId) !== guide.taskId) return;
@@ -522,12 +508,12 @@ export default function TaskDetail({
                             {hasDeliverables
                               ? '결과물 추가됨'
                               : '결과물 없음'}
-                            {!hasDeliverables && canAddDeliverable && (
-                              <button type="button" className="text-button readiness-link"
-                                onClick={openDeliverableRegistration}>결과물 추가</button>
-                            )}
                           </ReadinessItem>
-
+                          <ReadinessItem complete={missingContributions.length === 0}>
+                            {missingContributions.length
+                              ? `수행 설명 ${missingContributions.length}명 미작성`
+                              : '수행 설명 작성 완료'}
+                          </ReadinessItem>
                         </ul>
                         <div className="heading-actions">
                           {['TODO', 'IN_PROGRESS'].includes(task.status) && (
@@ -568,24 +554,15 @@ export default function TaskDetail({
                       </>
                     )}
                     {task.completionBlockReason !== null &&
-                      task.completionBlockReason !== 'INVALID_TASK_STATE' && (
+                      task.completionBlockReason !== 'INVALID_TASK_STATE' &&
+                      task.completionBlockReason !== 'CONTRIBUTION_DESCRIPTION_REQUIRED' && (
                         <p className="field-help task-completion-reason">
-                          {task.completionBlockReason === 'CONTRIBUTION_DESCRIPTION_REQUIRED'
-                            ? `수행 설명 ${missingContributions.length}명 미작성 · 담당자 표에서 확인해 주세요.`
-                            : completionBlockLabels[task.completionBlockReason]}
+                          {completionBlockLabels[task.completionBlockReason]}
                         </p>
                       )}
                   </section>
                 )}
               </div>
-              {!readOnly && isAssignee(task, user.id) && task.status !== 'DONE' && <div className="experience-summary" aria-label="완료 준비 요약">
-                <strong>{completionReady && task.completionBlockReason === null ? '완료할 준비가 됐습니다' : '다음 할 일'}</strong>
-                <span>{completionBlockLabels[task.completionBlockReason] || (completionReady ? '완료 조건을 모두 갖췄습니다.' : '남은 조건을 확인해 주세요.')}</span>
-                <button type="button" className="text-button" onClick={() => {
-                  if (canAddDeliverable && nextAction[1] === 'task-deliverables-section') openDeliverableRegistration();
-                  else focusTaskSection(workClosed ? 'task-progress-section' : nextAction[1]);
-                }}>{workClosed ? '진행 조건 확인' : nextAction[0]}</button>
-              </div>}
             </header>
             {navigation}
             <div className="task-detail-layout">
@@ -620,8 +597,6 @@ export default function TaskDetail({
                     members={members}
                     tasks={[task]}
                     taskId={task.id}
-                    registerRequested={addingDeliverable}
-                    onRegistrationClose={() => setAddingDeliverable(false)}
                     onChanged={reload}
                   />
                 </div>

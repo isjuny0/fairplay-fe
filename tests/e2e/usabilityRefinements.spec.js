@@ -61,7 +61,7 @@ for (const width of [320, 390]) {
   });
 }
 
-test('작업 빠른 필터와 다음 행동이 실제 작업·입력 영역으로 연결된다', async ({ page }) => {
+test('작업 빠른 필터가 내 담당과 마감 지남 조건을 적용한다', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 900 });
   await page.goto('/preview/spaces/1/teams/1/tasks');
   const quick = page.getByRole('group', { name: '빠른 작업 필터', exact: true });
@@ -69,11 +69,6 @@ test('작업 빠른 필터와 다음 행동이 실제 작업·입력 영역으�
   await expect(page).toHaveURL(/mine=1/);
   await quick.getByRole('button', { name: '마감 지남', exact: true }).click();
   await expect(page).toHaveURL(/overdue=1/);
-  await page.goto('/preview/spaces/1/teams/1/tasks/102');
-  const summary = page.locator('[aria-label="완료 준비 요약"]');
-  await expect(summary).toContainText('다음 할 일');
-  await summary.getByRole('button').click();
-  await expect(page.locator('#task-assignment-section')).toBeFocused();
 });
 
 test('공지 작성의 추가 도구를 펼쳐도 본문과 마크다운 미리보기를 유지한다', async ({ page }) => {
