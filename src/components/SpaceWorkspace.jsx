@@ -243,10 +243,14 @@ export default function SpaceWorkspace({
       returnPath: location.pathname,
     });
   }, [setCurrentWorkspace, space, spaceId, teams, team, teamId, view, teamMenu, teamRole, location.pathname]);
+  const now = Date.now();
+  const buildingClosesAt = apiTimeToEpoch(space?.teamBuildingClosesAt);
   const buildingOpen =
     space?.teamBuildingStatus === 'OPEN' &&
-    new Date(apiTimeToEpoch(space.teamBuildingOpensAt)) <= new Date() &&
-    new Date(apiTimeToEpoch(space.teamBuildingClosesAt)) > new Date();
+    apiTimeToEpoch(space.teamBuildingOpensAt) <= now &&
+    buildingClosesAt > now;
+  const teamCreationStatus =
+    now >= buildingClosesAt ? 'CLOSED' : space?.teamBuildingStatus;
   const teamCreationRestriction = !directoryReady
     ? '팀 가입 상태를 확인한 뒤 팀을 만들 수 있습니다.'
     : joinedTeam
@@ -259,7 +263,7 @@ export default function SpaceWorkspace({
             SCHEDULED: `팀 생성 기간이 시작되는 ${formatDate(space?.teamBuildingOpensAt)}부터 팀을 만들 수 있습니다.`,
             CLOSED: '팀 생성 기간이 종료되어 팀을 만들 수 없습니다.',
             LOCKED: '평가가 시작되어 팀 구성이 고정되었습니다.',
-          }[space?.teamBuildingStatus] ||
+          }[teamCreationStatus] ||
           '현재 팀을 만들 수 없습니다. 최신 팀 생성 상태를 확인해 주세요.';
   const apply = async (target) => {
     if (busy || !directoryReady || joinedTeam || pendingTeam || !target.canApply) return;
