@@ -566,12 +566,12 @@ test('스페이스 종료 시각 오류를 수정한 뒤 스페이스 관리에�
   await expect(
     page.getByRole('heading', { name: '스페이스 관리', exact: true }),
   ).toBeVisible();
-  await fillDateTime(page, '팀 빌딩 시작', '2030-10-01T09:00');
-  await fillDateTime(page, '팀 빌딩 종료', '2030-09-01T18:00');
+  await fillDateTime(page, '팀 생성 시작', '2030-10-01T09:00');
+  await fillDateTime(page, '팀 생성 종료', '2030-09-01T18:00');
   await page.getByRole('button', { name: '저장', exact: true }).click();
-  await expect(page.getByLabel('팀 빌딩 종료 날짜')).toBeFocused();
+  await expect(page.getByLabel('팀 생성 종료 날짜')).toBeFocused();
   await expect(
-    page.getByText('팀 빌딩 종료 시각을 시작 시각보다 늦게 지정해 주세요.'),
+    page.getByText('팀 생성 종료 시각을 시작 시각보다 늦게 지정해 주세요.'),
   ).toBeVisible();
 });
 
@@ -583,7 +583,7 @@ test('가입 대기 참여자는 내 팀 없이 승인 대기 상태와 새로�
   await expect(pending.getByRole('button', { name: /가입 신청|다시 신청/ })).toHaveCount(0);
   const own = page.getByRole('region', { name: '내 팀', exact: true });
   await expect(own.getByRole('button', { name: '팀 만들기', exact: true })).toHaveCount(0);
-  await expect(own.getByRole('status')).toContainText('팀 가입승인 대기 상태 이므로 팀을 만들 수 없습니다.');
+  await expect(own.getByRole('status')).toContainText('팀의 가입 승인을 기다리고 있습니다.');
   await page.getByRole('button', { name: '팀 목록 새로고침', exact: true }).click();
   await expect(pending).toContainText('가입 승인 대기');
 });
@@ -709,7 +709,7 @@ test('작업 목록은 상태를 가로질러 정렬하고 상세 복귀·초기
 test('스페이스 홈은 시작 안내 없이 소개·일정과 내 팀·다른 팀을 분리한다', async ({ page }) => {
   await openPreview(page, '/spaces/1');
   await expect(page.getByRole('region', { name: '다음 단계 안내' })).toHaveCount(0);
-  await expect(page.getByRole('region', { name: '프로젝트 일정' })).toContainText('팀 빌딩 기간');
+  await expect(page.getByRole('region', { name: '프로젝트 일정' })).toContainText('팀 생성 기간');
   const own = page.getByRole('region', { name: '내 팀', exact: true });
   const others = page.getByRole('list', { name: '팀 목록', exact: true });
   await expect(own).toContainText('삼위일체');

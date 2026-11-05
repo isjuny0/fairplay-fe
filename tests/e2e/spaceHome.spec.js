@@ -254,13 +254,13 @@ for (const rejected of [false, true]) {
     await expect(page.getByRole('button', { name: '삼위일체 가입 신청', exact: true })).toBeDisabled();
     const own = page.getByRole('region', { name: '내 팀', exact: true });
     await expect(own.getByRole('button', { name: '팀 만들기', exact: true })).toHaveCount(0);
-    await expect(own.getByRole('status')).toHaveText('팀 가입승인 대기 상태 이므로 팀을 만들 수 없습니다. 팀을 만드려면 신청 취소 해주세요');
+    await expect(own.getByRole('status')).toHaveText('파도 팀의 가입 승인을 기다리고 있습니다.');
     await own.getByRole('status').click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(page.getByRole('button', { name: /^내 팀 ·/ })).toHaveCount(0);
     expect(fixture.writes).toEqual([{ path: '/api/teams/2/applications', body: null }]);
     await page.reload();
-    const cancel = page.getByRole('button', { name: '파도 신청 취소', exact: true });
+    const cancel = own.getByRole('button', { name: '신청 취소', exact: true });
     await expect(cancel).toBeEnabled();
     await expect(own.getByRole('status')).toBeVisible();
     await expect(page.getByRole('button', { name: '삼위일체 가입 신청', exact: true })).toBeDisabled();
@@ -337,7 +337,7 @@ test('팀 생성 중 다른 신청이 생겨 충돌하면 생성 창을 닫고 �
   });
   await dialog.getByRole('button', { name: '팀 만들기', exact: true }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(page.getByRole('region', { name: '내 팀', exact: true }).getByRole('status')).toContainText('팀 가입승인 대기 상태 이므로');
+  await expect(page.getByRole('region', { name: '내 팀', exact: true }).getByRole('status')).toContainText('파도 팀의 가입 승인을 기다리고 있습니다.');
   await expect(page.getByRole('button', { name: '파도 신청 취소', exact: true })).toBeEnabled();
   await expect(page.locator('.success-toast')).toContainText('대기 중인 가입 신청이 있습니다.');
   expect(attempts).toBe(1);
@@ -459,14 +459,14 @@ test('팀 빌딩 D-day는 날짜 변경과 실제 마감 시각에 맞게 자동
   await expect(countdown).toHaveText('D-14');
   const status = page.locator('.space-home-period-status');
   const dot = status.locator('.space-home-building-dot');
-  await expect(status).toHaveText('진행중');
+  await expect(status).toHaveText('신청 가능');
   await expect(status).toHaveCSS('color', 'rgb(8, 124, 85)');
   await expect(dot).toHaveCSS('background-color', await status.evaluate((element) => getComputedStyle(element).color));
   for (const locator of [
-    page.getByRole('heading', { name: '팀 구성', exact: true }),
+    page.getByRole('heading', { name: '기존 팀 가입', exact: true }),
     page.locator('.space-home-period-status'),
     page.getByRole('term').filter({ hasText: /^프로젝트 기간$/ }),
-    page.getByRole('term').filter({ hasText: /^팀 빌딩 기간$/ }),
+    page.getByRole('term').filter({ hasText: /^팀 생성 기간$/ }),
   ]) await expect(locator).toHaveCSS('font-weight', '700');
   fixture.space.teamBuildingClosesAt = '2026-09-20T23:59:00';
   await page.getByRole('button', { name: '팀 목록 새로고침', exact: true }).click();
@@ -476,7 +476,7 @@ test('팀 빌딩 D-day는 날짜 변경과 실제 마감 시각에 맞게 자동
   await expect(countdown).toHaveText('D-day');
   await page.clock.fastForward(1000);
   await expect(countdown).toHaveText('마감');
-  await expect(status).toHaveText('고정');
+  await expect(status).toHaveText('신청 가능');
   await expect(dot).toHaveCSS('background-color', await status.evaluate((element) => getComputedStyle(element).color));
   await page.clock.fastForward(86400000);
   await expect(countdown).toHaveText('마감');
@@ -522,14 +522,14 @@ for (const width of [320, 768, 1440]) {
       const sidebar = await page.locator('.workspace-sidebar').boundingBox();
       expect(intro.x).toBeGreaterThanOrEqual(sidebar.x + sidebar.width);
     }
-    const buildingDates = page.locator('.space-home-period').filter({ hasText: '팀 빌딩 기간' }).locator('.space-home-dates');
+    const buildingDates = page.locator('.space-home-period').filter({ hasText: '팀 생성 기간' }).locator('.space-home-dates');
     const dateLines = await buildingDates.locator('time').evaluateAll((items) => items.map((item) => item.getBoundingClientRect().top));
     if (width > 480) expect(Math.max(...dateLines) - Math.min(...dateLines)).toBeLessThan(2);
     if (width > 900) {
       const heading = await page.locator('.space-home-period-summary h2').boundingBox();
       const state = await page.locator('.space-home-period-status').boundingBox();
       const project = await page.getByRole('term').filter({ hasText: /^프로젝트 기간$/ }).boundingBox();
-      const building = await page.getByRole('term').filter({ hasText: /^팀 빌딩 기간$/ }).boundingBox();
+      const building = await page.getByRole('term').filter({ hasText: /^팀 생성 기간$/ }).boundingBox();
       expect(Math.abs(heading.y - project.y)).toBeLessThan(1);
       expect(Math.abs(state.y - building.y)).toBeLessThan(1);
     }

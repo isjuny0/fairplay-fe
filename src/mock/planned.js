@@ -115,7 +115,15 @@ export function resetMockState(context, scenario = 'active') {
   globalThis.localStorage?.removeItem(mockKey(context));
   const state = getMockState(context);
   state.scenario = scenario;
-  if (scenario === 'setup' || scenario === 'building') state.rounds = [];
+  if (['setup', 'building', 'recruiting'].includes(scenario)) state.rounds = [];
+  if (scenario === 'recruiting') {
+    state.spaceOverrides = {
+      membershipLockedAt: null,
+      teamBuildingStatus: 'CLOSED',
+      teamBuildingOpensAt: koreanDateTime(Date.now() - 7 * 86400000),
+      teamBuildingClosesAt: koreanDateTime(Date.now() - 86400000),
+    };
+  }
   if (scenario === 'building') {
     state.spaceOverrides = {
       membershipLockedAt: null,

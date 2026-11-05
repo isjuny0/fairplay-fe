@@ -1,7 +1,6 @@
 import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import { useEffect, useState } from 'react';
 import {
-  buildingLabels,
   teamBuildingCountdown,
   formatDate,
 } from '../lib/domain.js';
@@ -36,7 +35,6 @@ function Period({ label, start, end, countdown }) {
 
 function SpaceSchedule({ space }) {
   const [now, setNow] = useState(Date.now);
-  const start = apiTimeToEpoch(space.teamBuildingOpensAt);
   const end = apiTimeToEpoch(space.teamBuildingClosesAt);
   const closed = Number.isFinite(end) && now >= end;
   useEffect(() => {
@@ -45,27 +43,20 @@ function SpaceSchedule({ space }) {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, [end, closed]);
-  const canBuild = ['OPEN', 'SCHEDULED'].includes(space.teamBuildingStatus);
-  const inPeriod = canBuild && start <= now && now < end;
-  const status = inPeriod
-    ? '진행중'
-    : (canBuild && closed) ||
-        ['CLOSED', 'LOCKED'].includes(space.teamBuildingStatus)
-      ? '고정'
-      : buildingLabels[space.teamBuildingStatus] || '상태 확인 중';
+  const joinLocked = Boolean(space.membershipLockedAt) || space.teamBuildingStatus === 'LOCKED';
   return (
     <section className="space-home-periods" aria-label="프로젝트 일정">
       <div className="space-home-period-summary">
-        <h2>팀 구성</h2>
-        <p className={`space-home-period-status ${inPeriod ? 'is-open' : ''}`}>
+        <h2>기존 팀 가입</h2>
+        <p className={`space-home-period-status ${joinLocked ? '' : 'is-open'}`}>
           <span className="space-home-building-dot" aria-hidden="true" />
-          {status}
+          {joinLocked ? '팀 구성 고정' : '신청 가능'}
         </p>
       </div>
       <dl className="space-home-period-details">
         <Period label="프로젝트 기간" start={space.startAt} end={space.endAt} />
         <Period
-          label="팀 빌딩 기간"
+          label="팀 생성 기간"
           start={space.teamBuildingOpensAt}
           end={space.teamBuildingClosesAt}
           countdown={teamBuildingCountdown(space.teamBuildingClosesAt, now)}
@@ -169,14 +160,12 @@ export default function SpaceHome({
             </span>
           </div>
         ) : directoryReady && !directoryError && pendingTeam ? (
-          <div
-            className="space-home-empty space-home-pending-card"
-            role="status"
-          >
-            <p>
-              팀 가입승인 대기 상태 이므로 팀을 만들 수 없습니다. 팀을 만드려면
-              신청 취소 해주세요
-            </p>
+          <div className="space-home-empty space-home-pending-card">
+            <p role="status"><strong>{pendingTeam.name}</strong> 팀의 가입 승인을 기다리고 있습니다.</p>
+            <button type="button" className="secondary-button" disabled={busy || loading}
+              onClick={() => onCancelApplication(pendingTeam)}>
+              신청 취소
+            </button>
           </div>
         ) : directoryReady && !directoryError ? (
           <button

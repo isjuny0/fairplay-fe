@@ -236,20 +236,20 @@ for (const width of [1440, 390]) {
   test(`스페이스 관리 ${width}px: 팀 빌딩과 참여 코드를 나누고 미저장 입력을 유지한다`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await openManagerPreview(page, '/spaces/1/settings', 'building');
-    const periodTab = page.getByRole('tab', { name: '팀 빌딩 기간', exact: true });
+    const periodTab = page.getByRole('tab', { name: '팀 생성 기간', exact: true });
     const codeTab = page.getByRole('tab', { name: '참여 코드', exact: true });
     await expect(periodTab).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByRole('button', { name: '코드 새로고침', exact: true })).toBeHidden();
-    await fillDateTime(page, '팀 빌딩 시작', '2026-09-01T10:00');
+    await fillDateTime(page, '팀 생성 시작', '2026-09-01T10:00');
     await codeTab.click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(page).toHaveURL(/#join-code$/);
     await expect(page.getByRole('button', { name: '코드 새로고침', exact: true })).toBeVisible();
-    await expect(page.getByLabel('팀 빌딩 시작 날짜', { exact: true })).toBeHidden();
+    await expect(page.getByLabel('팀 생성 시작 날짜', { exact: true })).toBeHidden();
     // Code actions may refresh the space version; they must not reset the other tab's draft.
     await page.getByRole('button', { name: /새 코드로 재발급|참여 코드 발급/, exact: true }).click();
     await periodTab.click();
-    await expect(page.getByLabel('팀 빌딩 시작 날짜', { exact: true })).toHaveValue('2026-09-01');
+    await expect(page.getByLabel('팀 생성 시작 날짜', { exact: true })).toHaveValue('2026-09-01');
     await codeTab.focus();
     await codeTab.press('Enter');
     await page.getByRole('button', { name: 'Fairplay', exact: true }).click();
@@ -257,7 +257,7 @@ for (const width of [1440, 390]) {
     await expect(warning).toBeVisible();
     await warning.getByRole('button', { name: '계속 작성', exact: true }).click();
     await periodTab.click();
-    await expect(page.getByLabel('팀 빌딩 시작 날짜', { exact: true })).toHaveValue('2026-09-01');
+    await expect(page.getByLabel('팀 생성 시작 날짜', { exact: true })).toHaveValue('2026-09-01');
     await page.getByRole('button', { name: '저장', exact: true }).click();
     await codeTab.click();
     await page.reload();
@@ -267,13 +267,13 @@ for (const width of [1440, 390]) {
   });
 }
 
-test('팀 빌딩 기간은 저장된 값과 저장 전 입력을 구분하고 저장한 후 현재 기간을 갱신한다', async ({
+test('팀 생성 기간은 저장된 값과 저장 전 입력을 구분하고 저장한 후 현재 기간을 갱신한다', async ({
   page,
 }) => {
   await openManagerPreview(page, '/spaces/1/settings', 'building');
-  const currentPeriod = page.getByLabel('저장된 팀 빌딩 기간', { exact: true });
+  const currentPeriod = page.getByLabel('저장된 팀 생성 기간', { exact: true });
   const storedText = await currentPeriod.textContent();
-  await fillDateTime(page, '팀 빌딩 시작', '2026-09-01T10:00');
+  await fillDateTime(page, '팀 생성 시작', '2026-09-01T10:00');
   await expect(currentPeriod).toHaveText(storedText);
   await expect(
     page.getByRole('status').filter({ hasText: '저장 전 입력' }),
@@ -282,7 +282,7 @@ test('팀 빌딩 기간은 저장된 값과 저장 전 입력을 구분하고 �
   await expect(
     page
       .getByRole('status')
-      .filter({ hasText: '팀 빌딩 기간을 저장했습니다.' }),
+      .filter({ hasText: '팀 생성 기간을 저장했습니다.' }),
   ).toBeVisible();
   await expect(currentPeriod).toContainText('2026. 09. 01. 10:00');
   await expect(

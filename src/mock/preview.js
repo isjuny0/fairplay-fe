@@ -280,6 +280,9 @@ async function executePreviewRequest(
         return Object.values(state.teams)
           .filter((entry) => entry.team.spaceId === id)
           .map((entry) => teamDetail(entry, context, state));
+      if (id === context.space.id && (context.space.teamBuildingStatus !== 'OPEN'
+        || Date.now() >= apiTimeToEpoch(context.space.teamBuildingClosesAt)))
+        throw new MockError('TEAM_BUILDING_CLOSED', '팀 생성 기간이 마감되었습니다.', 409);
       if (state.applications?.some((item) =>
         item.userId === context.user.id && item.status === 'PENDING' &&
         state.teams[item.teamId]?.team.spaceId === id,
@@ -403,7 +406,7 @@ async function executePreviewRequest(
       if (method === 'GET')
         return state.applications.filter(
           (item) => item.teamId === id && item.status === 'PENDING',
-        );
+        ).map((item) => ({ ...item, canApprove: !context.space.membershipLockedAt }));
       if (method !== 'POST')
         throw new MockError('NOT_FOUND', '지원하지 않는 API입니다.', 404);
       if (!teamDetail(entry, context, state).canApply)
@@ -531,6 +534,8 @@ async function executePreviewRequest(
     const application =
       state.applications?.find((item) => item.id === id) ||
       missing('TEAM_APPLICATION_NOT_FOUND', '가입 신청이 없습니다.');
+    if (body.status === 'APPROVED' && context.space.membershipLockedAt)
+      throw new MockError('MEMBERSHIP_LOCKED', '팀 구성이 고정되어 가입을 승인할 수 없습니다.', 409);
     application.status = body.status;
     application.decidedAt = koreanDateTime();
     application.canApprove = false;

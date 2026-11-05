@@ -644,7 +644,7 @@ test('세션 만료 응답은 로그인 화면으로 돌아가 안내한다', as
   );
 });
 
-test('관리자는 스페이스 생성 후 팀 빌딩 기간을 지정하고 코드를 발급·철회한다', async ({
+test('관리자는 스페이스 생성 후 팀 생성 기간을 지정하고 코드를 발급·철회한다', async ({
   page,
 }) => {
   const { requests } = await workspace(page, {
@@ -667,10 +667,10 @@ test('관리자는 스페이스 생성 후 팀 빌딩 기간을 지정하고 코
     ({ path, method }) => path === '/api/spaces' && method === 'POST',
   );
   expect(JSON.parse(creation.body)).not.toHaveProperty('teamBuildingOpensAt');
-  await fillDateTime(page, '팀 빌딩 시작', '2026-10-05T10:00');
-  await fillDateTime(page, '팀 빌딩 종료', '2026-10-31T18:00');
+  await fillDateTime(page, '팀 생성 시작', '2026-10-05T10:00');
+  await fillDateTime(page, '팀 생성 종료', '2026-10-31T18:00');
   await page.getByRole('button', { name: '저장', exact: true }).click();
-  await expect(page.getByLabel('팀 빌딩 시작 날짜')).toHaveValue('2026-10-05');
+  await expect(page.getByLabel('팀 생성 시작 날짜')).toHaveValue('2026-10-05');
   expect(
     JSON.parse(
       requests.find(({ path }) => path.endsWith('/team-building-period')).body,
