@@ -994,10 +994,26 @@ test('리더 탈퇴는 현재 팀원 중 후임을 반드시 선택한다', asyn
 
 test('탈퇴 화면에서 미완료 작업을 확인하고 인계 대상을 선택한다', async ({ page }) => {
   const { requests } = await workspace(page, { leaveWithHandoff: true });
+  await page.route('**/api/teams/1/members/me/leave-preview', (route) =>
+    route.fulfill({ status: 503, json: { code: 'UNAVAILABLE', message: '탈퇴 영향을 확인할 수 없습니다.' } }),
+    { times: 1 });
+  await page.route('**/api/teams/1/members/me?*', (route) =>
+    route.fulfill({ status: 409, json: { code: 'CONFLICT', message: '인계 정보를 다시 확인해 주세요.' } }),
+    { times: 1 });
   await openTeamSettings(page);
   await page.getByRole('button', { name: '팀 탈퇴하기' }).click();
   const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('alert')).toContainText('탈퇴 영향을 확인할 수 없습니다.');
+  await dialog.getByRole('button', { name: '탈퇴 영향 다시 확인', exact: true }).click();
   await expect(dialog.getByText('인계할 미완료 작업 1개')).toBeVisible();
+  await expect(dialog.getByRole('listitem').filter({ hasText: '회원 탈퇴 구현' })).toContainText('인계 비율 100%');
+  await expect(dialog.getByLabel('작업 인계 대상').locator('option[value="leader"]')).toContainText('현재 미완료 0건');
+  await expect(dialog.getByRole('button', { name: '탈퇴 확정' })).toBeDisabled();
+  await dialog.getByLabel('작업 인계 대상').selectOption('leader');
+  await dialog.getByRole('button', { name: '탈퇴 확정' }).click();
+  await expect(dialog.getByRole('alert')).toContainText('인계 정보를 다시 확인해 주세요.');
+  await dialog.getByRole('button', { name: '탈퇴 영향 다시 확인', exact: true }).click();
+  await expect(dialog.getByLabel('작업 인계 대상')).toHaveValue('');
   await expect(dialog.getByRole('button', { name: '탈퇴 확정' })).toBeDisabled();
   await dialog.getByLabel('작업 인계 대상').selectOption('leader');
   await dialog.getByRole('button', { name: '탈퇴 확정' }).click();
@@ -1524,6 +1540,10 @@ test('작업 시작일은 생성 시 필수이며 일정 검증 후 오프셋과
   await fillDateTime(dialog, '시작일', '2030-12-01T18:00');
   await dialog.getByRole('button', { name: '다음', exact: true }).click();
   await dialog.getByLabel('담당자 · 팀원').check();
+  await dialog.getByText('생성할 작업 요약', { exact: true }).click();
+  const summary = dialog.locator('details.task-form-review');
+  await expect(summary).toContainText('계획 일정 작업');
+  await expect(summary).toContainText('담당자 100%');
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   const created = requests.find(({ method, path }) => method === 'POST' && path === '/api/teams/1/tasks');

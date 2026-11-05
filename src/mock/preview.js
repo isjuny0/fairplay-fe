@@ -11,6 +11,8 @@ import { searchPreviewDeliverables } from './deliverableSearch.js';
 import { previewAiReview, invalidateReview } from './aiReviews.js';
 import { previewAssigneeRecommendations } from './taskAssigneeRecommendations.js';
 import {
+  capstonePermissionChecklist,
+  previewPermissionChecklistFilename,
   previewUsers,
   previewMembers,
   previewSpace,
@@ -733,7 +735,8 @@ async function executePreviewRequest(
     if (responseType === 'blob')
       return (
         fileContents.get(id) ||
-        new Blob(['미리보기 자료입니다.'], { type: 'text/plain' })
+        new Blob([id === entry.team.id * 1000 + 4 && item.file?.originalFilename === previewPermissionChecklistFilename
+          ? capstonePermissionChecklist : '미리보기 자료입니다.'], { type: 'text/plain' })
       );
     if (method === 'DELETE') {
       invalidateReview(state, item.taskId);

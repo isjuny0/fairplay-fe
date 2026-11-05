@@ -51,7 +51,11 @@ test('기간·다중·주간 반복은 선택한 날짜에 표시되고 다시 �
   await save(page, picker);
   const calendar = page.getByRole('region', { name: '직접 등록 일정 캘린더' });
   await expect(calendar.locator('.team-calendar-label')).toHaveCount(0);
-  await expect(calendar.locator('.team-calendar-event-dot')).toHaveCount(2);
+  for (const date of ['2026-10-13', '2026-10-18']) {
+    await expect(
+      calendar.locator(`[data-date="${date}"] .team-calendar-event-dot`),
+    ).toHaveCount(1);
+  }
   await expect(
     calendar.getByRole('button', {
       name: '2026년 10월 15일, 일정 1개',

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const names = ['김하늘', '이지원', '박서연'];
+const names = ['김준영', '김영진', '박선우'];
 const roles = ['리더', '팀원', '팀원'];
 const person = (dialog, index) =>
   dialog.getByRole('checkbox', {

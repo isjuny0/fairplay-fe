@@ -342,9 +342,9 @@ test("미리보기는 서버 호출 없이 참여자를 삭제하고 새로고�
   });
   await page.addInitScript(() => {
     localStorage.setItem("fairplay:preview-role", "manager");
-    if (!localStorage.getItem("fairplay:mock:v9:preview:1"))
+    if (!localStorage.getItem("fairplay:mock:v11:preview:1"))
       localStorage.setItem(
-        "fairplay:mock:v9:preview:1",
+        "fairplay:mock:v11:preview:1",
         JSON.stringify({
           teams: {},
           rounds: [],
@@ -358,7 +358,7 @@ test("미리보기는 서버 호출 없이 참여자를 삭제하고 새로고�
   });
   await page.goto(`/preview${path}`);
   const remove = page.getByRole("button", {
-    name: "박서연 참여자 삭제",
+    name: "박선우 참여자 삭제",
     exact: true,
   });
   await remove.click();

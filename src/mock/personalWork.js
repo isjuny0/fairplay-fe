@@ -8,8 +8,8 @@ const initialNotifications = (context, state) => {
     || state.rounds.find((round) => round.type === 'MID');
   const roundLabel = evaluationRound?.type === 'FINAL' ? '최종 평가' : '중간 평가';
   return [
-    { id: 205, type: 'TASK_ASSIGNED', title: '새 작업에 배정되었습니다', message: '설문 결과 분석', spaceId: 1, teamId: 1, target: { type: 'TASK', id: 102, taskId: null }, accessible: true, createdAt: koreanDateTime(now - 3600000), readAt: null },
-    { id: 204, type: 'TASK_COMMENT_CREATED', title: '작업에 댓글이 등록되었습니다', message: '서비스 흐름 설계', spaceId: 1, teamId: 1, target: { type: 'TASK_COMMENT', id: 9002, taskId: 103 }, accessible: true, createdAt: koreanDateTime(now - 7200000), readAt: null },
+    { id: 205, type: 'TASK_ASSIGNED', title: '새 작업에 배정되었습니다', message: '팀 자료 검색 개선', spaceId: 1, teamId: 1, target: { type: 'TASK', id: 102, taskId: null }, accessible: true, createdAt: koreanDateTime(now - 3600000), readAt: null },
+    { id: 204, type: 'TASK_COMMENT_CREATED', title: '작업에 댓글이 등록되었습니다', message: 'AI 피드백 화면 개선', spaceId: 1, teamId: 1, target: { type: 'TASK_COMMENT', id: 9002, taskId: 103 }, accessible: true, createdAt: koreanDateTime(now - 7200000), readAt: null },
     ...(evaluationRound ? [{
       id: 203,
       type: 'EVALUATION_ROUND_OPENED',
@@ -23,7 +23,7 @@ const initialNotifications = (context, state) => {
       readAt: null,
     }] : []),
     { id: 202, type: null, title: '더 이상 접근할 수 없는 항목입니다', message: null, spaceId: null, teamId: null, target: null, accessible: false, createdAt: koreanDateTime(now - 172800000), readAt: koreanDateTime(now - 160000000) },
-    { id: 201, type: 'TASK_ASSIGNED', title: '작업 마감일이 변경되었습니다', message: '프로토타입 사용성 검증', spaceId: 1, teamId: 1, target: { type: 'TASK', id: 104, taskId: null }, accessible: true, createdAt: koreanDateTime(now - 108000000), readAt: koreanDateTime(now - 100000000) },
+    { id: 201, type: 'TASK_ASSIGNED', title: '작업 마감일이 변경되었습니다', message: '전시 가이드 동선 점검', spaceId: 1, teamId: 1, target: { type: 'TASK', id: 104, taskId: null }, accessible: true, createdAt: koreanDateTime(now - 108000000), readAt: koreanDateTime(now - 100000000) },
   ];
 };
 const notificationStore = new Map();

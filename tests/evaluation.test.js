@@ -586,7 +586,7 @@ test('AI 검토 진행 중에도 직접 완료하고 현재 담당자는 기존 
 test('이전 미리보기 역할 값이 남아 있어도 현재 역할 선택지를 표시한다', () => {
   setPreviewRole('obsolete-role');
   assert.equal(previewRole(), 'leader');
-  assert.equal(previewContext().user.name, '김하늘');
+  assert.equal(previewContext().user.name, '김준영');
 });
 
 test('미리보기는 최초 성공 비율을 스페이스에 고정하고 다른 팀과 공개 결과에도 유지한다', async () => {
@@ -630,7 +630,7 @@ test('미리보기는 잘못된 비율이나 생성 실패로 비율을 고정�
 
 test('팀 빌딩 미리보기의 최소 저장 상태에도 리포트 기본 정보를 복원한다', async () => {
   const manager = context('manager');
-  storage.set('fairplay:mock:v9:preview:1', JSON.stringify({ teams: {}, rounds: [], scenario: 'building', spaceOverrides: { membershipLockedAt: null, teamBuildingStatus: 'OPEN' } }));
+  storage.set('fairplay:mock:v11:preview:1', JSON.stringify({ teams: {}, rounds: [], scenario: 'building', spaceOverrides: { membershipLockedAt: null, teamBuildingStatus: 'OPEN' } }));
   const restored = getMockState(manager);
   assert.deepEqual(restored.reports, []);
   assert.equal(restored.reportWeights, null);
@@ -663,7 +663,7 @@ test('가이드 전용 작업은 단독 담당이며 자유 탐색 데이터와 
     assert.equal(readGuideSession().status, 'active');
     const state = getMockState(previewContext());
     const task = state.teams[1].tasks.find((task) => task.id === guideTaskId);
-    assert.equal(previewContext().user.name, '이지원');
+    assert.equal(previewContext().user.name, '김영진');
     assert.equal(completedGuideStep(guide, guideHome), false);
     assert.equal(completedGuideStep(guide, `${guideHome}/tasks`), true);
     assert.deepEqual(task.assignees, [{ userId: previewContext().user.id, allocationPercent: 100 }]);
@@ -774,7 +774,7 @@ test('기여도 가이드는 공개된 본인 근거만 사용하고 누락·미
     assert.equal(contributionTaskGuideReady(report, userId, null, source), false);
     const steps = getGuideSteps(guide.scenarioId);
     assert.match(contributionGuideStep(steps[2], { criteriaRound: 'final' }).description, /최종 평가 결과를 열었습니다/);
-    assert.match(contributionGuideStep(steps[3], { openedTaskId: reportGuideTaskId }).description, /조사 결과 요약 문서/);
+    assert.match(contributionGuideStep(steps[3], { openedTaskId: reportGuideTaskId }).description, /종합 평가 리포트 연동 점검/);
     assert.match(contributionGuideStep(steps[3], { openedTaskId: reportGuideTaskId, source }).description, /현재 자료/);
     assert.equal(contributionGuideStep(steps[3], { openedTaskId: reportGuideTaskId, source: { ...source, ready: false, loading: true } }).actionTarget, null);
     const fresh = prepareGuide('contribution-report');
@@ -1008,7 +1008,7 @@ test('다른 작업이나 팀을 선택하면 해당 결과를 확인하도록 �
   const { managerGuideStep, managerGuideSteps, reportManagementGuideSteps } = await import('../src/mock/guide.js');
   for (const step of managerGuideSteps.filter((entry) => ['manager-member', 'manager-material'].includes(entry.id))) {
     const resolved = managerGuideStep(step, { member: { kind: 'member', task: { taskId: 102 } } });
-    assert.match(resolved.title, /사용자 인터뷰 계획.*선택/);
+    assert.match(resolved.title, /스페이스·팀 권한 설계.*선택/);
     assert.equal(resolved.target, null);
     assert.doesNotMatch(resolved.actionTarget, /confirm-manager/);
   }

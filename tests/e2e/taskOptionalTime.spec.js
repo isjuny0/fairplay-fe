@@ -127,7 +127,7 @@ for (const width of [1440, 390]) {
     }
     await editor.getByRole('button', { name: '다음', exact: true }).click();
     await editor
-      .getByRole('checkbox', { name: '김하늘 · 리더', exact: true })
+      .getByRole('checkbox', { name: '김준영 · 리더', exact: true })
       .check();
     await editor.getByRole('button', { name: '저장', exact: true }).click();
     await expect(editor).toHaveCount(0);

@@ -253,7 +253,7 @@ for (const [role, destination] of [
       .getByRole('button', {
         name: ['member', 'teammate'].includes(role)
           ? '팀 바로가기: 삼위일체'
-          : '스페이스 바로가기: 2026 서비스 디자인 프로젝트',
+          : '스페이스 바로가기: 2026 캡스톤디자인',
         exact: true,
       }).click();
     await expect(page).toHaveURL(destination);
