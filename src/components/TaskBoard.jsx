@@ -2,7 +2,7 @@ import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
 import { screenLoaders } from '../lib/routeScreens.js';
 import { deferScreen } from './DeferredScreen.jsx';
 import Icon from './Icon.jsx';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Maximize2, Minimize2 } from 'lucide-react';
 import RefreshButton from './RefreshButton.jsx';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router';
@@ -437,11 +437,13 @@ export default function TaskBoard({
           />
           <button
             ref={expandButton}
-            className="secondary-button"
+            className="secondary-button task-expand-schedule"
             aria-pressed={expanded}
+            title={expanded ? '원래 크기로' : '일정 넓게 보기'}
             onClick={() => setExpanded(!expanded)}
           >
-            {expanded ? '원래 크기로' : '일정 넓게 보기'}
+            {expanded ? <Minimize2 size={16} aria-hidden="true" /> : <Maximize2 size={16} aria-hidden="true" />}
+            <span>{expanded ? '원래 크기로' : '일정 넓게 보기'}</span>
           </button>
         </div>
       )}

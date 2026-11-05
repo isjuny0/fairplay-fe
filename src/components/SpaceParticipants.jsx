@@ -149,19 +149,19 @@ export default function SpaceParticipants({ space, user, onChanged }) {
                         <td data-label="소속 팀">
                           {member.team?.teamName || "미소속"}
                         </td>
-                        <td data-label="팀 역할">
+                        <td data-label="팀 역할" className="participant-advanced">
                           {member.team
                             ? member.team.role === "LEADER"
                               ? "리더"
                               : "팀원"
                             : "—"}
                         </td>
-                        <td data-label="가입일">
+                        <td data-label="가입일" className="participant-advanced">
                           <time dateTime={member.joinedAt}>
                             {formatDate(member.joinedAt)}
                           </time>
                         </td>
-                        <td data-label="관리">
+                        <td data-label="관리" className="participant-advanced">
                           <button
                             className="secondary-button danger"
                             aria-label={`${member.name} 참여자 삭제`}
@@ -180,6 +180,23 @@ export default function SpaceParticipants({ space, user, onChanged }) {
                               : "삭제"}
                           </button>
                           {hint && <small className="action-reason" id={`removal-reason-${member.userId}`}>{hint}</small>}
+                        </td>
+                        <td className="participant-mobile-details" colSpan={3}>
+                          <details>
+                            <summary>가입 정보·관리</summary>
+                            <dl>
+                              <div><dt>팀 역할</dt><dd>{member.team ? member.team.role === 'LEADER' ? '리더' : '팀원' : '—'}</dd></div>
+                              <div><dt>가입일</dt><dd><time dateTime={member.joinedAt}>{formatDate(member.joinedAt)}</time></dd></div>
+                            </dl>
+                            <button type="button" className="secondary-button danger"
+                              aria-label={`${member.name} 참여자 삭제`}
+                              aria-describedby={hint ? `mobile-removal-reason-${member.userId}` : undefined}
+                              disabled={!!hint || pendingId != null || resource.loading || !!accessError}
+                              onClick={() => remove(member)}>
+                              {deleting && pendingId === member.userId ? '삭제 중…' : '삭제'}
+                            </button>
+                            {hint && <small className="action-reason" id={`mobile-removal-reason-${member.userId}`}>{hint}</small>}
+                          </details>
                         </td>
                       </tr>
                     );

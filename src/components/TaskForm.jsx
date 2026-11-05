@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import DateTimeInput from './DateTimeInput.jsx';
 import TaskWorkloadHelp from './TaskWorkloadHelp.jsx';
 import { currentDateTime } from '../lib/dateTime.js';
+import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import useMobileLayout from '../hooks/useMobileLayout.js';
 import useSaveRecovery from '../hooks/useSaveRecovery.js';
 import { getTask, recommendTaskAssignees } from '../api/tasks.js';
@@ -42,6 +43,14 @@ function distributeEqually(assignees) {
 function withDefaultTime(value, fallback) {
   const [date, time] = value.split('T');
   return date ? `${date}T${time || fallback.split('T')[1]}` : '';
+}
+
+function reviewDate(value) {
+  if (!value) return '미입력';
+  const dateTime = fromDateInput(value);
+  return Number.isFinite(apiTimeToEpoch(dateTime))
+    ? formatDate(dateTime)
+    : '날짜·시간을 확인해 주세요.';
 }
 
 export default function TaskForm({
@@ -284,13 +293,13 @@ export default function TaskForm({
       <div>
         <dt>시작일</dt>
         <dd>
-          {startAt ? formatDate(fromDateInput(startAt)) : '미입력'}
+          {reviewDate(startAt)}
         </dd>
       </div>
       <div>
         <dt>마감</dt>
         <dd>
-          {dueAt ? formatDate(fromDateInput(dueAt)) : '미입력'}
+          {reviewDate(dueAt)}
         </dd>
       </div>
       <div>

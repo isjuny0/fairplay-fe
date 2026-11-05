@@ -8,6 +8,7 @@ import Icon from './Icon.jsx';
 import RefreshButton from './RefreshButton.jsx';
 import TeamMemberCount from './TeamMemberCount.jsx';
 import SpaceAnnouncementSummary from './SpaceAnnouncementSummary.jsx';
+import MobileDisclosure from './MobileDisclosure.jsx';
 import { ErrorNotice } from './ui.jsx';
 import '../space-home.css';
 
@@ -46,6 +47,8 @@ function SpaceSchedule({ space }) {
   const joinLocked = Boolean(space.membershipLockedAt) || space.teamBuildingStatus === 'LOCKED';
   return (
     <section className="space-home-periods" aria-label="프로젝트 일정">
+      <MobileDisclosure className="space-schedule-disclosure" summary={`프로젝트 일정 · 기존 팀 가입 ${joinLocked ? '구성 고정' : '신청 가능'}${closed ? ' · 팀 생성 마감' : ''}`}>
+      <div className="space-schedule-content">
       <div className="space-home-period-summary">
         <h2>기존 팀 가입</h2>
         <p className={`space-home-period-status ${joinLocked ? '' : 'is-open'}`}>
@@ -62,6 +65,8 @@ function SpaceSchedule({ space }) {
           countdown={teamBuildingCountdown(space.teamBuildingClosesAt, now)}
         />
       </dl>
+      </div>
+      </MobileDisclosure>
     </section>
   );
 }

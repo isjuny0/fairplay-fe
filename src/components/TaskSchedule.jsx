@@ -12,6 +12,7 @@ import {
   timelineWindow,
 } from '../lib/taskSchedule.js';
 import TaskSchedulePreview, { useTaskSchedulePreview } from './TaskSchedulePreview.jsx';
+import MobileDisclosure from './MobileDisclosure.jsx';
 
 const monthLabel = (month) =>
   `${Number(month.slice(0, 4))}년 ${Number(month.slice(5))}월`;
@@ -74,10 +75,11 @@ export function TimelineNavigation({
         </button>
         <label className="task-month-select">
           <span aria-hidden="true">
-            {monthLabel(month)}
+            <span className="schedule-month-label-long">{monthLabel(month)}
             {lastMonth !== month
               ? ` – ${monthLabel(lastMonth)}`
-              : ''}
+              : ''}</span>
+            <span className="schedule-month-label-short">{Number(month.slice(0, 4))}.{Number(month.slice(5))}–{Number(lastMonth.slice(0, 4))}.{Number(lastMonth.slice(5))}</span>
             <ChevronDown size={14} aria-hidden="true" />
           </span>
           <input
@@ -170,6 +172,7 @@ export function TaskTimeline({
   ).length;
   return (
     <section className="task-schedule" aria-label="작업 타임라인" style={{ '--timeline-label-width': `${labelWidth}px` }}>
+      <MobileDisclosure className="timeline-guide-disclosure" summary="상태 범례·지연 현황">
       <div className="timeline-overview">
         <div className="timeline-summary" aria-label="조회 기간 작업 현황">
           <button
@@ -185,6 +188,7 @@ export function TaskTimeline({
         </div>
         <ScheduleStatusLegend label="타임라인 상태 범례" />
       </div>
+      </MobileDisclosure>
       <div
         className="task-timeline-scroll"
         role="region"

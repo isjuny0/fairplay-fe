@@ -155,9 +155,9 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
         {state && (!allGenerated || validReportWeights(lockedWeights)) && weightContent}
         {state && !allGenerated && (
           <div className="report-generation-action">
-            <p>{state.canGenerate ? '팀별 결과를 검토한 뒤 전체 리포트를 한 번에 공개합니다.' :
-              data.generationBlockReasons.map(reportBlockMessage).join(' · ') || '전체 팀 현황을 확인해 주세요.'}</p>
+            <p id="report-generation-reason">{!state.canGenerate ? data.generationBlockReasons.map(reportBlockMessage).join(' · ') || '전체 팀 현황을 확인해 주세요.' : !weightsValid ? '반영 비율의 합계를 100%로 맞춰 주세요.' : guidedManagement && guide.stepId === 'management-report-weights' ? '비중과 생성 조건 확인을 먼저 완료해 주세요.' : '팀별 결과를 검토한 뒤 전체 리포트를 한 번에 공개합니다.'}</p>
             <button type="button" className="primary-button" data-guide="generate-all-reports"
+              aria-describedby="report-generation-reason"
               disabled={busy || resource.loading || Boolean(resource.error) || !state.canGenerate || !weightsValid
                 || (guidedManagement && guide.stepId === 'management-report-weights')}
               onClick={requestGeneration}>

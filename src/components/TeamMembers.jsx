@@ -74,6 +74,7 @@ export default function TeamMembers({
         <div className="member-directory-title">
           <h1>{readOnly ? '팀원 보기' : '팀원 관리'}</h1>
           {membersResource.data != null && !membersResource.error && <span className="member-directory-count" aria-label={`현재 팀원 ${members.length}명`}>{members.length}명</span>}
+          {isLeader && resource.data != null && !resource.error && <a className="member-pending-shortcut" href="#team-pending-applications">가입 대기 {applications.length}건</a>}
         </div>
         <RefreshButton
           onClick={reload}
@@ -109,7 +110,7 @@ export default function TeamMembers({
           </section>
         </ResourceState>
         {isLeader && (
-          <section className="member-directory-section application-directory">
+          <section className="member-directory-section application-directory" id="team-pending-applications">
             <div className="directory-section-heading">
               <div className="member-directory-title">
                 <h2>가입 신청</h2>

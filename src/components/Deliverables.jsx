@@ -616,7 +616,7 @@ export default function Deliverables({
         <div className="heading-actions">
           {isCollection && isApprovedMember(team) && (
             <button
-              className="secondary-button"
+              className="secondary-button materials-question-action materials-question-action-desktop"
               onClick={() =>
                 navigateToMaterials(
                   teamMenuPath(team.spaceId, team.id, "팀 자료 검색"),
@@ -839,6 +839,7 @@ export default function Deliverables({
                   </button>
                 </div>
               </form>
+              {isApprovedMember(team) && <button type="button" className="text-button materials-question-action materials-question-action-mobile" aria-label="자료에 질문하기" onClick={() => navigateToMaterials(teamMenuPath(team.spaceId, team.id, '팀 자료 검색'))}><Icon name="search" />질문하기</button>}
             </div>
           </div>
         </div>

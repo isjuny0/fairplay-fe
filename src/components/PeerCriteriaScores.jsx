@@ -23,7 +23,7 @@ export default function PeerCriteriaScores({ id, averages, renderHelp, colorLowS
           <strong className={[
             score === null ? 'is-unavailable' : '',
             colorLowScores && isLowScore ? 'is-low-score' : '',
-          ].filter(Boolean).join(' ') || undefined}>{score === null ? '집계 정보 없음' : <>{formatReportNumber(score)}<small> / 5점</small></>}</strong>
+          ].filter(Boolean).join(' ') || undefined}>{score === null ? '집계 정보 없음' : <>{formatReportNumber(score)}<small> / 5점</small>{colorLowScores && isLowScore && <small className="low-score-label">{lowScoreInclusive ? '3점 이하' : '3점 미만'}</small>}</>}</strong>
         </dd>
       </div>;
     })}
