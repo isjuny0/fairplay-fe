@@ -309,8 +309,6 @@
 .report-weight-input input { width: 100%; min-width: 0; font-variant-numeric: tabular-nums; }
 .report-weight-input > span { color: var(--text-muted); }
 .report-weight-total { display: inline-block; margin-left: 12px; font-variant-numeric: tabular-nums; }
-.report-weights-disclosure > summary { color: var(--text-muted); font-size: var(--text-support); cursor: pointer; }
-.report-weights-disclosure > summary > span { margin-left: 12px; font-size: var(--text-caption); }
 @media (max-width: 720px) {
   .report-weight-fields { grid-template-columns: minmax(0, 1fr); gap: 12px; }
 }

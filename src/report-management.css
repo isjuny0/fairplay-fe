@@ -2,7 +2,6 @@
 .report-batch-generation > .section-heading { align-items: flex-start; margin-bottom: 20px; }
 .report-batch-generation > .section-heading > div:first-child { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .report-batch-generation > .section-heading h2 { font-size: 16px; font-weight: 600; }
-.report-batch-generation > .section-heading p { margin: 0; font-size: 12px; }
 .report-generation-status { display: inline-flex; align-items: center; gap: 5px; padding-left: 12px; border-left: 1px solid var(--border); color: var(--text-muted); font-size: 12px; }
 .report-generation-status.is-ready { color: var(--brand-dark); }
 .report-review-page .report-batch-generation .round-readiness { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0 0 24px; }
@@ -14,6 +13,7 @@
 .report-review-page .round-readiness > li > span:last-child { grid-column: 2 / -1; }
 .report-review-page .report-weight-settings { margin: 0; padding: 12px 0 0; border: 0; }
 .report-review-page .report-weight-settings legend { padding: 0; font-size: 14px; }
+.report-batch-generation .report-confirmed-weights h3 { margin: 0 0 12px; font-size: var(--text-body); }
 .report-review-page .report-weight-fields { max-width: none; gap: 24px; }
 .report-review-page .report-weight-fields .form-field > span:first-child { font-size: 12px; }
 .report-review-page .report-weight-input input { max-width: 120px; height: 42px; min-height: 42px; padding-block: 8px; font-size: 18px; font-weight: 500; }
@@ -29,9 +29,6 @@
 .report-generation-action > button { flex-shrink: 0; }
 .report-review-page .report-batch-generation.is-generated { padding-bottom: 20px; }
 .report-batch-generation.is-generated > .section-heading { margin-bottom: 8px; align-items: center; }
-.report-review-page .report-weights-disclosure > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; padding-block: 4px; }
-.report-review-page .report-weights-disclosure > summary > span { margin: 0; font-size: 12px; }
-.report-weights-disclosure[open] .report-weight-settings { margin-top: 16px; }
 .report-results-section { display: grid; gap: 20px; min-width: 0; }
 .report-results-section > h2 { font-size: 16px; font-weight: 600; margin: 0; }
 .report-review-page .report-results-section .report-team-toolbar { padding: 0 0 16px; border-bottom: 1px solid var(--border); }
@@ -57,8 +54,6 @@
 .report-review-page .report-weight-fields .form-field:nth-child(2) .field-label > span:first-child::before { background: #66869d; }
 .report-review-page .report-weight-fields .form-field:nth-child(3) .field-label > span:first-child::before { background: #b19a64; }
 
-.report-weights-disclosure > summary > svg { flex-shrink: 0; }
-.report-weights-disclosure[open] > summary > svg { transform: rotate(180deg); }
 
 .report-list-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
 .report-list-heading > h2 { margin: 0; font-size: 16px; font-weight: 600; }
@@ -74,8 +69,6 @@
 .report-list-status.status-unpublished { background: #fff6e5; color: #856328; }
 .report-list-status.status-published { background: var(--brand-light); color: var(--brand-dark); }
 .report-list-empty { margin: 0; padding: 24px; color: var(--text-muted); text-align: center; font-size: 13px; }
-.report-review-page .report-weights-disclosure { margin-block: 16px; }
-.report-weights-edit-label { color: var(--brand); }
 .report-review-page .report-missing-teams { grid-column: 2 / -1; margin-top: 6px; }
 .report-missing-teams summary { color: var(--brand-dark); cursor: pointer; }
 .report-missing-teams ul { display: grid; gap: 8px; margin: 10px 0 0; padding: 0; list-style: none; }

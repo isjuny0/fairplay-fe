@@ -93,10 +93,12 @@ test('모바일 공개 리포트는 점수와 항목별 결과를 먼저 보여�
   await page.screenshot({path:info.outputPath('report.png'),fullPage:true,animations:'disabled'});
 });
 
-test('관리자는 평가와 리포트의 현재 처리 단계를 확인한다',async({page})=>{
+test('관리자는 평가 진행 단계와 접히지 않는 리포트 비중 설정을 확인한다',async({page})=>{
   await page.addInitScript(()=>localStorage.setItem('fairplay:preview-role','manager'));
   await page.goto('/preview/spaces/1/rounds');
   await expect(page.getByRole('list',{name:'중간 평가 진행 단계',exact:true}).locator('[aria-current="step"]')).toContainText('평가 종료');
   await page.goto('/preview/spaces/1/reports');
-  await expect(page.getByRole('list',{name:'리포트 처리 단계',exact:true}).locator('[aria-current="step"]')).toContainText('리포트 생성');
+  await expect(page.getByRole('list', { name: '리포트 처리 단계', exact: true })).toHaveCount(0);
+  await expect(page.locator('.report-batch-generation .workflow-next-action')).toHaveCount(0);
+  await expect(page.getByRole('spinbutton', { name: '작업 점수 평가 비중', exact: true })).toBeVisible();
 });

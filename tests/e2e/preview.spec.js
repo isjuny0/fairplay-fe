@@ -491,7 +491,6 @@ test('평가 완료 상황에서 관리자가 전체 리포트를 생성하고 �
   await expect(page.getByRole('region', { name: '팀별 리포트 결과', exact: true })).toHaveCount(0);
   const generate = page.getByRole('button', { name: '전체 리포트 생성', exact: true });
   await expect(generate).toBeEnabled();
-  await page.locator('.report-weights-disclosure > summary').click();
   const taskWeight = page.getByRole('spinbutton', { name: '작업 점수 평가 비중', exact: true });
   await expect(taskWeight).toBeEnabled();
   await taskWeight.fill('50');

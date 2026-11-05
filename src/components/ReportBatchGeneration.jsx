@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, ChevronDown, Clock3 } from 'lucide-react';
+import { Check, Clock3 } from 'lucide-react';
 import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { getSpaceReports, generateSpaceReports, publishSpaceReports, reportBlockMessage } from '../api/spaceReports.js';
 import { defaultReportWeights, reportWeightFields, sameReportWeights, validReportWeights } from '../lib/reportWeights.js';
 import useResource from '../hooks/useResource.js';
 import { useInteractions } from '../hooks/useInteractions.js';
 import { ErrorNotice, Field, Modal, ResourceState } from './ui.jsx';
-import WorkflowSteps from './WorkflowSteps.jsx';
 
 export default function ReportBatchGeneration({ context, onGenerated, onReadinessLoaded, refreshRevision = 0, onBusyChange }) {
   const guide = usePreviewGuide();
@@ -19,10 +18,6 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
   };
   useEffect(() => { onReadinessLoaded?.(data?.teams ?? null); }, [data, onReadinessLoaded]);
   const [busy, setBusy] = useState(false);
-  const [weightsOpen, setWeightsOpen] = useState(false);
-  useEffect(() => {
-    if (guidedManagement && guide.stepId !== 'management-report-weights') setWeightsOpen(false);
-  }, [guidedManagement, guide?.stepId]);
   useEffect(() => { onBusyChange?.(busy || resource.loading); }, [busy, resource.loading, onBusyChange]);
   const [error, setError] = useState(null);
   const [generationWeights, setGenerationWeights] = useState(null);
@@ -97,6 +92,7 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
     finalPercent: '최종 평가에서 받은 네 항목의 절대 평가 평균을 반영합니다.',
   };
   const weightSettings = lockedWeights ? <section className="report-confirmed-weights" aria-label="확정된 평가 비중">
+    <h3>적용된 평가 비중</h3>
     <dl>{reportWeightFields.map(({ key, label }) => <div key={key}><dt>{label}</dt><dd>{lockedWeights[key]}%</dd></div>)}</dl>
     <p className="field-help">첫 리포트 생성 시 확정되어 모든 팀에 동일하게 적용됩니다.</p>
   </section> : (
@@ -116,7 +112,7 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
         {weightsValid && reportWeightFields.map(({ key }, index) => <span key={key} className={`report-weight-segment report-weight-segment--${index}`} style={{ width: `${weights[key]}%` }} />)}
       </div>
       <p id="report-weight-guidance" className={weightsValid ? 'field-help' : 'notice'}>
-        {lockedWeights ? '스페이스 공통 비율이 확정되어 변경할 수 없습니다.' : weightsValid ? '첫 리포트 생성 성공 시 모든 팀에 적용할 비율이 확정됩니다.' : '각 항목은 0~100의 정수이며, 합계가 100%여야 합니다.'}
+        {weightsValid ? '첫 리포트 생성 성공 시 모든 팀에 적용할 비율이 확정됩니다.' : '각 항목은 0~100의 정수이며, 합계가 100%여야 합니다.'}
         <span className="report-weight-total">합계 {totalWeight}%</span>
       </p>
       <div className="report-score-example" aria-label="가상 점수 계산 예시">
@@ -135,12 +131,9 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
   </div>;
   return (
     <section className={`report-batch-generation${allGenerated ? ' is-generated' : ''}`} aria-label="전체 팀 리포트 생성" aria-busy={busy}>
-      {resource.data && <WorkflowSteps label="리포트 처리 단계" steps={['리포트 생성', '공개 준비', '전체 공개']} current={allPublished ? 3 : resource.data.canPublish ? 2 : allGenerated ? 1 : 0} />}
-      {state && <p className="workflow-next-action" role="status"><strong>다음 단계</strong>{allPublished ? '공개한 리포트와 팀별 결과를 확인할 수 있습니다.' : canPublish ? '공개할 수 있습니다. 팀별 결과를 확인한 뒤 공개하세요.' : allGenerated ? '아래 팀별 리포트에서 내용과 수행 근거를 검토하세요.' : state.canGenerate ? '반영 비율을 확인한 뒤 전체 리포트를 생성하세요.' : '아래 생성 대기 팀과 생성 제한 사유를 확인하세요.'}</p>}
       <div className="section-heading">
         <div>
           <h2>{allPublished ? '전체 리포트 공개 완료' : allGenerated ? '전체 리포트 생성 완료' : '전체 리포트 생성'}</h2>
-          {state && <p>생성 {data.generatedTeamCount} / {data.totalTeamCount}팀 · 공개 {data.publishedTeamCount} / {data.totalTeamCount}팀</p>}
           {state && !allGenerated && <span className={`report-generation-status${state.canGenerate ? ' is-ready' : ''}`}>
             {state.canGenerate ? <Check size={14} aria-hidden="true" /> : <Clock3 size={14} aria-hidden="true" />}
             {state.canGenerate ? '생성 가능' : '생성 대기'}
@@ -149,7 +142,7 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
       </div>
       <ErrorNotice error={confirmingPublication ? null : error} />
       <ResourceState resource={resource} label="전체 리포트 생성 조건">
-        {state && !allGenerated && <>
+        {state && !allGenerated && (
           <ul className="readiness-list round-readiness" aria-label="팀별 리포트 준비 상태">
             {state.teams.map((team) => <li key={team.teamId} className={team.canGenerate ? 'is-complete' : ''}>
               {team.canGenerate ? <Check size={16} aria-hidden="true" /> : <Clock3 size={16} aria-hidden="true" />}
@@ -158,12 +151,9 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
               {!team.canGenerate && <span>{team.generationBlockReasons.map(reportBlockMessage).join(' · ')}</span>}
             </li>)}
           </ul>
-          <details className="report-weights-disclosure" open={weightsOpen || (guidedManagement && guide.stepId === 'management-report-weights')}
-            onToggle={(event) => setWeightsOpen(event.currentTarget.open)}>
-            <summary>평가 비중 <span>{reportWeightFields.map(({ key, label }) => `${label} ${weights[key] ?? '—'}%`).join(' · ')}</span>
-              <span className="report-weights-edit-label">{lockedWeights ? '확정 비율 보기' : '변경'}</span><ChevronDown size={14} aria-hidden="true" /></summary>
-            {weightContent}
-          </details>
+        )}
+        {state && (!allGenerated || validReportWeights(lockedWeights)) && weightContent}
+        {state && !allGenerated && (
           <div className="report-generation-action">
             <p>{state.canGenerate ? '팀별 결과를 검토한 뒤 전체 리포트를 한 번에 공개합니다.' :
               data.generationBlockReasons.map(reportBlockMessage).join(' · ') || '전체 팀 현황을 확인해 주세요.'}</p>
@@ -174,11 +164,7 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
               {busy ? '처리 중…' : data.generatedTeamCount > 0 ? '미생성 팀 다시 생성' : '전체 리포트 생성'}
             </button>
           </div>
-        </>}
-        {state && allGenerated && validReportWeights(lockedWeights) && <details className="report-weights-disclosure">
-          <summary>적용된 평가 비중 <span>{reportWeightFields.map(({ key, label }) => `${label} ${weights[key]}%`).join(' · ')}</span><ChevronDown size={14} aria-hidden="true" /></summary>
-          {weightContent}
-        </details>}
+        )}
         {state && allGenerated && !validReportWeights(lockedWeights) && <p className="field-help">확정된 반영 비율 정보를 다시 불러와 주세요.</p>}
       </ResourceState>
       {data && allGenerated && <div className="report-generation-action report-publication-action" data-guide="space-report-publication">
