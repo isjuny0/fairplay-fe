@@ -85,7 +85,7 @@ export default function SpaceSettings({ space, onChanged }) {
     setError(null);
     const errors = collectFieldErrors(event.currentTarget, {
       ...(opensAt && closesAt && opensAt >= closesAt
-        ? { closesAt: '팀 빌딩 종료 시각을 시작 시각보다 늦게 지정해 주세요.' }
+        ? { closesAt: '팀 생성 종료 시각을 시작 시각보다 늦게 지정해 주세요.' }
         : {}),
     });
     setPeriodErrors(errors);
@@ -100,7 +100,7 @@ export default function SpaceSettings({ space, onChanged }) {
           teamBuildingClosesAt: fromDateInput(closesAt),
           expectedVersion: space.version,
         }),
-      '팀 빌딩 기간을 저장했습니다.',
+      '팀 생성 기간을 저장했습니다.',
     );
   };
   return (
@@ -112,7 +112,7 @@ export default function SpaceSettings({ space, onChanged }) {
         {activeTab === 'team-building' && <span className="status-badge">{buildingLabels[space.teamBuildingStatus]}</span>}
       </div>
       <SectionTabs id={tabsId} label="스페이스 관리 항목"
-        tabs={[["team-building", "팀 빌딩 기간"], ["join-code", "참여 코드"]]}
+        tabs={[["team-building", "팀 생성 기간"], ["join-code", "참여 코드"]]}
         activeTab={activeTab} onSelect={selectTab} />
       <dl className="settings-space-overview">
         <div>
@@ -135,15 +135,14 @@ export default function SpaceSettings({ space, onChanged }) {
       <div className="settings-tab-panel" role="tabpanel" id={`${tabsId}-team-building-panel`} aria-labelledby={`${tabsId}-team-building-tab`} hidden={activeTab !== 'team-building'}>
         <section className="panel settings-section">
           <div className="settings-section-heading">
-            <h2>팀 빌딩 기간</h2>
-            <p>팀 생성·가입 신청·가입 승인은 이 기간 안에서 가능합니다.</p>
-            <div className="experience-summary" aria-label="팀 빌딩 기간 적용 안내"><span>설정한 시작 시각부터 팀 생성·가입 신청·승인이 열리고, 종료 시각 이후에는 닫힙니다.</span></div>
+            <h2>팀 생성 기간</h2>
+            <p>새 팀은 설정한 기간에 만들 수 있습니다. 기존 팀 가입 신청과 승인은 팀 구성이 고정될 때까지 가능합니다.</p>
           </div>
           <div className="settings-section-content">
             {space.teamBuildingOpensAt && space.teamBuildingClosesAt ? (
               <dl
                 className="settings-current-period"
-                aria-label="저장된 팀 빌딩 기간"
+                aria-label="저장된 팀 생성 기간"
               >
                 <div>
                   <dt>시작</dt>
@@ -156,12 +155,12 @@ export default function SpaceSettings({ space, onChanged }) {
               </dl>
             ) : (
               <p className="field-help">
-                팀 빌딩 기간이 아직 설정되지 않았습니다.
+                팀 생성 기간이 아직 설정되지 않았습니다.
               </p>
             )}
             {space.teamBuildingStatus === 'LOCKED' && (
               <p className="notice">
-                평가 참여 구성이 고정되어 팀 빌딩 기간을 변경할 수 없습니다.
+                평가 참여 구성이 고정되어 팀 생성 기간을 변경할 수 없습니다.
               </p>
             )}
             {space.teamBuildingStatus !== 'LOCKED' && (
@@ -170,7 +169,7 @@ export default function SpaceSettings({ space, onChanged }) {
                   className="form-fields"
                   disabled={busy || space.teamBuildingStatus === 'LOCKED'}
                 >
-                  <Field label="팀 빌딩 시작" error={periodErrors.opensAt}>
+                  <Field label="팀 생성 시작" error={periodErrors.opensAt}>
                     <DateTimeInput
                       name="opensAt"
                       required
@@ -181,7 +180,7 @@ export default function SpaceSettings({ space, onChanged }) {
                       }}
                     />
                   </Field>
-                  <Field label="팀 빌딩 종료" error={periodErrors.closesAt}>
+                  <Field label="팀 생성 종료" error={periodErrors.closesAt}>
                     <DateTimeInput
                       name="closesAt"
                       required
@@ -210,8 +209,7 @@ export default function SpaceSettings({ space, onChanged }) {
           <div className="settings-section-heading">
             <h2>참여 코드</h2>
             <p>
-              스페이스에 참여할 사람에게 코드를 전달하세요. 팀 가입은 팀 빌딩
-              기간에 별도로 진행합니다.
+              스페이스에 참여할 사람에게 코드를 전달하세요. 스페이스 참여 후 팀 목록에서 가입을 신청할 수 있습니다.
             </p>
             <p>코드 철회는 이미 참여한 사용자의 소속을 제거하지 않습니다.</p>
           </div>

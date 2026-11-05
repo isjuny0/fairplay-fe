@@ -331,7 +331,8 @@ export default function Application({ previewRuntime, onPreviewExit }) {
                       >
                         <option value="active">평가 진행 중</option>
                         <option value="setup">평가 시작 전</option>
-                        <option value="building">팀 빌딩 진행 중</option>
+                        <option value="building">팀 생성 기간 진행 중</option>
+                        <option value="recruiting">팀 생성 마감 · 가입 가능</option>
                         <option value="evaluated">평가 완료·리포트 미생성</option>
                         <option value="review">리포트 검토</option>
                         <option value="published">리포트 공개 완료</option>

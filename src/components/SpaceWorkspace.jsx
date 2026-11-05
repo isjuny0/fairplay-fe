@@ -255,12 +255,12 @@ export default function SpaceWorkspace({
         ? ''
         : {
             NOT_CONFIGURED:
-              '관리자가 팀 빌딩 기간을 지정하면 팀을 만들 수 있습니다.',
-            SCHEDULED: `팀 빌딩이 시작되는 ${formatDate(space?.teamBuildingOpensAt)}부터 팀을 만들 수 있습니다.`,
-            CLOSED: '팀 빌딩 기간이 종료되어 팀을 만들 수 없습니다.',
+              '관리자가 팀 생성 기간을 지정하면 팀을 만들 수 있습니다.',
+            SCHEDULED: `팀 생성 기간이 시작되는 ${formatDate(space?.teamBuildingOpensAt)}부터 팀을 만들 수 있습니다.`,
+            CLOSED: '팀 생성 기간이 종료되어 팀을 만들 수 없습니다.',
             LOCKED: '평가가 시작되어 팀 구성이 고정되었습니다.',
           }[space?.teamBuildingStatus] ||
-          '현재 팀을 만들 수 없습니다. 최신 팀 빌딩 상태를 확인해 주세요.';
+          '현재 팀을 만들 수 없습니다. 최신 팀 생성 상태를 확인해 주세요.';
   const apply = async (target) => {
     if (busy || !directoryReady || joinedTeam || pendingTeam || !target.canApply) return;
     setBusy(true);

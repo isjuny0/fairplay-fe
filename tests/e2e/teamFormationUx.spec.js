@@ -147,9 +147,9 @@ for (const status of ['APPROVED', 'REJECTED']) {
 
 for (const [period, joined, reason] of [
   ['OPEN', true, '이미 삼위일체 팀에 소속되어 있습니다.'],
-  ['NOT_CONFIGURED', false, '관리자가 팀 빌딩 기간을 지정하면'],
-  ['SCHEDULED', false, '팀 빌딩이 시작되는'],
-  ['CLOSED', false, '팀 빌딩 기간이 종료되어'],
+  ['NOT_CONFIGURED', false, '관리자가 팀 생성 기간을 지정하면'],
+  ['SCHEDULED', false, '팀 생성 기간이 시작되는'],
+  ['CLOSED', false, '팀 생성 기간이 종료되어'],
   ['LOCKED', false, '평가가 시작되어 팀 구성이 고정'],
 ]) {
   test(`팀 생성 제한 ${period}·소속 ${joined} 이유와 소속 상태를 표시한다`, async ({

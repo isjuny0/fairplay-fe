@@ -395,7 +395,7 @@ test('팀 빌딩 상황에서는 가입 승인 및 미가입 참여자의 팀 �
   await page.goto('/preview/spaces/1');
   await expect(page.getByRole('button', { name: '팀 만들기', exact: true })).toHaveCount(0);
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.getByRole('region', { name: '내 팀', exact: true }).getByRole('status')).toContainText('팀 가입승인 대기 상태 이므로 팀을 만들 수 없습니다.');
+  await expect(page.getByRole('region', { name: '내 팀', exact: true }).getByRole('status')).toContainText('삼위일체 팀의 가입 승인을 기다리고 있습니다.');
   await page.getByRole('button', { name: '삼위일체 신청 취소', exact: true }).click();
   await expect(page.getByRole('button', { name: '삼위일체 가입 신청', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: '팀 만들기', exact: true }).click();
@@ -410,6 +410,27 @@ test('팀 빌딩 상황에서는 가입 승인 및 미가입 참여자의 팀 �
   await own.getByRole('button', { name: '새 프로젝트 팀 팀 홈으로 이동', exact: true }).click();
   await expect(page).toHaveURL(/\/preview\/spaces\/1\/teams\/\d+$/);
 });
+test('팀 생성 마감 후 기존 팀에 신청하고 리더 승인으로 팀 홈에 진입한다', async ({ page }) => {
+  const calls = await preview(page, { role: 'participant', scenario: 'recruiting', path: '/spaces/1' });
+  const schedule = page.getByRole('region', { name: '프로젝트 일정' });
+  await expect(schedule).toContainText('기존 팀 가입');
+  await expect(schedule).toContainText('신청 가능');
+  await expect(schedule).toContainText('마감');
+  await expect(page.getByRole('button', { name: '팀 만들기', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: '삼위일체 가입 신청', exact: true }).click();
+  const own = page.getByRole('region', { name: '내 팀', exact: true });
+  await expect(own.getByRole('status')).toContainText('삼위일체 팀의 가입 승인을 기다리고 있습니다.');
+  await selectPreviewOption(page, '미리보기 역할', 'leader');
+  await page.goto('/preview/spaces/1/teams/1/members');
+  await page.getByRole('button', { name: '가입 승인', exact: true }).click();
+  await expect(page.getByLabel('현재 팀원 4명', { exact: true })).toBeVisible();
+  await selectPreviewOption(page, '미리보기 역할', 'participant');
+  await page.goto('/preview/spaces/1');
+  await own.getByRole('button', { name: '삼위일체 팀 홈으로 이동', exact: true }).click();
+  await expect(page).toHaveURL(/\/preview\/spaces\/1\/teams\/1$/);
+  expect(calls).toEqual([]);
+});
+
 for (const width of [320, 768, 1440])
   test(`${width}px에서 팀·평가·관리자 화면이 가로로 넘치지 않는다`, async ({
     page,
