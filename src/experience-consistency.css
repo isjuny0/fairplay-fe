@@ -44,8 +44,6 @@
 .report-calculation-details { min-width: 0; border-bottom: 1px solid var(--border); }
 .report-calculation-details > summary { cursor: pointer; padding: 12px 0; font-weight: 600; }
 .workflow-steps li[data-complete='true'] { color: var(--brand-dark); }
-.dashboard-priority-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-.dashboard-priority-filters button[aria-pressed='true'] { background: var(--brand-light); border-color: var(--brand); color: var(--brand-dark); }
 .team-deletion-section.danger-zone { border-top: 2px solid #d9a4a4; padding-top: 24px; }
 .board-card-details-toggle { min-width: 36px; min-height: 36px; }
 .board-card-details-toggle:hover { background: var(--surface-secondary); }
