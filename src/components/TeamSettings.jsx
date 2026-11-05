@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import RefreshButton from './RefreshButton.jsx';
 import {
   createTeamDeletionRequest,
@@ -7,7 +7,6 @@ import {
   getTeamLeavePreview,
   updateTeamDeletionConsent,
 } from '../api/teams.js';
-import { listTasks } from '../api/tasks.js';
 import { formatDate, memberName, memberRole } from '../lib/domain.js';
 import { ErrorNotice, Field, Modal, ResourceState } from './ui.jsx';
 
@@ -32,11 +31,11 @@ export default function TeamSettings({
   onChanged,
   onRemoved,
 }) {
+  const handoffId = useId();
   const [confirmation, setConfirmation] = useState(null);
   const [nextLeaderId, setNextLeaderId] = useState('');
-  const [handoffToUserId, setHandoffToUserId] = useState('');
+  const [handoffRecipients, setHandoffRecipients] = useState({});
   const [leavePreview, setLeavePreview] = useState(null);
-  const [handoffDetails, setHandoffDetails] = useState(null);
   const [acknowledged, setAcknowledged] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -57,30 +56,23 @@ export default function TeamSettings({
     MEMBERSHIP_LOCKED: '중간 평가 대상이 확정되어 탈퇴할 수 없습니다.',
     LAST_MEMBER_MUST_DELETE_TEAM: '마지막 팀원은 팀 삭제 절차를 이용해 주세요.',
   }[leavePreview?.blockReason];
+  const handoffTasks = leavePreview?.handoffTasks ?? [];
+  const canSubmitLeave = leavePreview && !leavePreview.blockReason &&
+    (!leavePreview.requiresNextLeader || nextLeaderId) &&
+    handoffTasks.every((task) => handoffRecipients[task.id] && task.version != null);
+  const handoffOptions = leavePreview?.eligibleMembers.map((member) => (
+    <option key={member.userId} value={member.userId}>
+      {member.name} · 현재 미완료 {member.openTaskCount}건
+    </option>
+  ));
   const loadLeavePreview = async () => {
     setError(null);
     setLeavePreview(null);
-    setHandoffDetails(null);
     setNextLeaderId('');
-    setHandoffToUserId('');
+    setHandoffRecipients({});
     setBusy(true);
     try {
-      const preview = await getTeamLeavePreview(team.id);
-      if (!preview.blockReason && preview.handoffTasks.length) {
-        const tasks = await listTasks(team.id).catch(() => null);
-        if (tasks) {
-          const details = new Map();
-          const openCounts = new Map();
-          for (const task of tasks) {
-            if (task.status === 'DONE') continue;
-            details.set(task.id, task);
-            for (const { userId } of task.assignees)
-              openCounts.set(userId, (openCounts.get(userId) ?? 0) + 1);
-          }
-          setHandoffDetails({ tasks: details, openCounts });
-        }
-      }
-      setLeavePreview(preview);
+      setLeavePreview(await getTeamLeavePreview(team.id));
     } catch (requestError) {
       setError(requestError);
     } finally {
@@ -100,7 +92,7 @@ export default function TeamSettings({
   };
   const submit = async (event) => {
     event.preventDefault();
-    if (busy || (confirmation.type === 'leave' && (!leavePreview || leavePreview.blockReason))) return;
+    if (busy || (confirmation.type === 'leave' && !canSubmitLeave)) return;
     const type = confirmation.type;
     setBusy(true);
     setError(null);
@@ -115,7 +107,9 @@ export default function TeamSettings({
           confirmation.request.version,
         );
       else if (type === 'leave')
-        await leaveTeam(team.id, nextLeaderId, handoffToUserId);
+        await leaveTeam(team.id, nextLeaderId, handoffTasks.map((task) => ({
+          taskId: task.id, recipientId: handoffRecipients[task.id], expectedVersion: task.version,
+        })));
       setConfirmation(null);
       if (type === 'delete' || type === 'leave') onRemoved();
       else onChanged();
@@ -367,9 +361,10 @@ export default function TeamSettings({
             }[confirmationType]
           }
           busy={busy}
+          className={confirmationType === 'leave' ? 'team-leave-dialog' : ''}
           onClose={closeConfirmation}
         >
-          <form onSubmit={submit} className="stack">
+          <form onSubmit={submit} className={confirmationType === 'leave' ? 'team-leave-form' : 'stack'}>
             {confirmationType === 'create' && (
               <p>
                 삭제 요청을 만들면 작업 변경이 중단됩니다. 리더도 별도로
@@ -411,20 +406,17 @@ export default function TeamSettings({
             )}
             {confirmationType === 'leave' && (
               <>
-                <p>
-                  탈퇴하면 이 팀의 작업·자료 화면에 접근할 수 없습니다.
-                  스페이스 소속은 유지됩니다.
-                </p>
-                {busy && !leavePreview && <p>탈퇴 영향을 확인하고 있습니다.</p>}
+                <div className="team-leave-impact">
+                  <p>탈퇴하면 이 팀의 작업과 자료에 접근할 수 없습니다.</p>
+                  <p>스페이스 소속은 유지됩니다.</p>
+                  {Boolean(leavePreview?.completedTaskCount) && (
+                    <p>완료 작업 {leavePreview.completedTaskCount}개의 담당·수행 기록은 팀에 남습니다.</p>
+                  )}
+                </div>
+                {busy && !leavePreview && <p role="status">탈퇴 영향을 확인하고 있습니다.</p>}
                 {leaveBlockMessage && <p className="notice">{leaveBlockMessage}</p>}
-                {Boolean(leavePreview?.completedTaskCount) && (
-                  <p>완료 작업 {leavePreview.completedTaskCount}개의 담당·수행 기록은 팀에 남습니다.</p>
-                )}
                 {leavePreview?.requiresNextLeader && !leavePreview.blockReason && (
-                  <Field
-                    label="다음 리더"
-                    help="현재 승인된 다른 팀원 중 한 명을 지정해 주세요."
-                  >
+                  <Field label="다음 리더">
                     <select
                       required
                       value={nextLeaderId}
@@ -440,35 +432,44 @@ export default function TeamSettings({
                     </select>
                   </Field>
                 )}
-                {Boolean(leavePreview?.handoffTasks.length) && !leavePreview.blockReason && (
-                  <>
-                    <p>인계할 미완료 작업 {leavePreview.handoffTasks.length}개</p>
-                    <ul>
-                      {leavePreview.handoffTasks.map((task) => {
-                        const detail = handoffDetails?.tasks.get(task.id);
-                        const allocation = detail?.assignees.find(({ userId }) => userId === user.id);
-                        return <li key={task.id}>
-                          {task.title}
-                          {detail && <span className="field-help">
-                            {' · '}마감 {formatDate(detail.dueAt)}
-                            {allocation && ` · 인계 비율 ${allocation.allocationPercent}%`}
-                          </span>}
-                        </li>;
+                {handoffTasks.length > 0 && !leavePreview.blockReason && (
+                  <section className="team-leave-handoffs" aria-labelledby={`${handoffId}-heading`}>
+                    <h3 id={`${handoffId}-heading`}>
+                      인계할 미완료 작업 <span>{handoffTasks.length}개</span>
+                    </h3>
+                    <ul className="clean-list team-leave-task-list">
+                      {handoffTasks.map((task) => {
+                        const recipientId = `${handoffId}-task-${task.id}`;
+                        return (
+                          <li key={task.id} className="form-field team-leave-task">
+                            <div className="team-leave-task-info">
+                              <label className="field-label" htmlFor={recipientId}>
+                                {task.title}<span className="sr-only"> 인계 대상</span>
+                              </label>
+                              <div className="field-help team-leave-task-meta" id={`${recipientId}-meta`}>
+                                <span>마감 {formatDate(task.dueAt)}</span>
+                                <span>인계 비율 {task.allocationPercent}%</span>
+                              </div>
+                            </div>
+                            <select
+                              id={recipientId}
+                              aria-describedby={`${recipientId}-meta`}
+                              required
+                              disabled={busy}
+                              value={handoffRecipients[task.id] ?? ''}
+                              onChange={(event) => {
+                                const selectedUserId = event.target.value;
+                                setHandoffRecipients((current) => ({ ...current, [task.id]: selectedUserId }));
+                              }}
+                            >
+                              <option value="">인계할 팀원을 선택하세요</option>
+                              {handoffOptions}
+                            </select>
+                          </li>
+                        );
                       })}
                     </ul>
-                    {!handoffDetails && <p className="field-help">작업의 일정과 담당 현황을 불러오지 못했습니다.</p>}
-                    <Field label="작업 인계 대상" help="목록의 작업을 모두 선택한 팀원에게 인계합니다.">
-                      <select required disabled={busy} value={handoffToUserId}
-                        onChange={(event) => setHandoffToUserId(event.target.value)}>
-                        <option value="">인계할 팀원을 선택하세요</option>
-                        {leavePreview.eligibleMembers.map((member) => (
-                          <option key={member.userId} value={member.userId}>
-                            {member.name}{handoffDetails && ` · 현재 미완료 ${handoffDetails.openCounts.get(member.userId) ?? 0}건`}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                  </>
+                  </section>
                 )}
               </>
             )}
@@ -489,7 +490,7 @@ export default function TeamSettings({
               </button>
               <button
                 type="submit"
-                className="secondary-button danger"
+                className={confirmationType === 'leave' ? 'primary-button danger' : 'secondary-button danger'}
                 disabled={
                   busy ||
                   (confirmationType === 'create' &&
@@ -510,10 +511,7 @@ export default function TeamSettings({
                   (confirmationType === 'leave' &&
                     (membershipLocked ||
                       team.approvedMemberCount < 2 ||
-                      !leavePreview ||
-                      Boolean(leavePreview.blockReason) ||
-                      (leavePreview.requiresNextLeader && !nextLeaderId) ||
-                      (leavePreview.handoffTasks.length > 0 && !handoffToUserId)))
+                      !canSubmitLeave))
                 }
               >
                 {busy

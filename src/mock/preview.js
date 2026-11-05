@@ -364,22 +364,49 @@ async function executePreviewRequest(
       const blockReason = context.space.membershipLockedAt ? 'MEMBERSHIP_LOCKED'
         : !eligibleMembers.length ? 'LAST_MEMBER_MUST_DELETE_TEAM' : null;
       if (method === 'GET' && parts[5] === 'leave-preview') {
-        return { blockReason, requiresNextLeader, eligibleMembers, completedTaskCount,
-          handoffTasks: handoffTasks.map(({ id, title, status }) => ({ id, title, status })) };
+        const openTaskCounts = new Map();
+        for (const task of entry.tasks) {
+          if (task.status === 'DONE') continue;
+          for (const { userId } of task.assignees) {
+            openTaskCounts.set(userId, (openTaskCounts.get(userId) ?? 0) + 1);
+          }
+        }
+        return { blockReason, requiresNextLeader, completedTaskCount,
+          eligibleMembers: eligibleMembers.map((member) => ({
+            ...member, openTaskCount: openTaskCounts.get(member.userId) ?? 0,
+          })),
+          handoffTasks: handoffTasks.map(({ id, title, status, dueAt, version, assignees }) => ({
+            id, title, status, dueAt, version,
+            allocationPercent: assignees.find(({ userId }) => userId === context.user.id).allocationPercent,
+          })) };
       }
       if (blockReason) throw new MockError(blockReason, '현재 탈퇴할 수 없습니다.', 409);
-      const handoffToUserId = url.searchParams.get('handoffToUserId');
-      if (handoffTasks.length && !eligibleMembers.some((member) => member.userId === handoffToUserId)) {
+      const handoffsByTask = new Map(body.handoffs.map((handoff) => [handoff.taskId, handoff]));
+      if (handoffsByTask.size !== body.handoffs.length)
+        throw new MockError('INVALID_REQUEST', '중복된 작업이 있습니다.', 400);
+      if (handoffsByTask.size !== handoffTasks.length ||
+          handoffTasks.some((task) => handoffsByTask.get(task.id)?.expectedVersion !== task.version)) {
+        throw new MockError('TEAM_LEAVE_HANDOFF_CHANGED', '탈퇴 영향을 다시 확인해 주세요.', 409);
+      }
+      if ([...handoffsByTask.values()].some(({ recipientId }) =>
+        !eligibleMembers.some((member) => member.userId === recipientId))) {
         throw new MockError('INVALID_HANDOFF_RECIPIENT', '인계할 팀원을 지정해 주세요.', 400);
       }
+      const { nextLeaderId } = body;
+      if (requiresNextLeader && !eligibleMembers.some((member) => member.userId === nextLeaderId)) {
+        throw new MockError('INVALID_NEXT_LEADER', '후임 리더를 지정해 주세요.', 400);
+      }
+      if (!requiresNextLeader && nextLeaderId)
+        throw new MockError('INVALID_REQUEST', '일반 팀원은 후임을 지정할 수 없습니다.', 400);
       for (const task of handoffTasks) {
+        const { recipientId } = handoffsByTask.get(task.id);
         const departing = task.assignees.find((assignment) => assignment.userId === context.user.id);
-        const recipient = task.assignees.find((assignment) => assignment.userId === handoffToUserId);
+        const recipient = task.assignees.find((assignment) => assignment.userId === recipientId);
         task.assignees = task.assignees.filter((assignment) => assignment !== departing);
         if (recipient) recipient.allocationPercent += departing.allocationPercent;
-        else task.assignees.push({ userId: handoffToUserId, allocationPercent: departing.allocationPercent });
+        else task.assignees.push({ userId: recipientId, allocationPercent: departing.allocationPercent });
+        task.version++;
       }
-      const nextLeaderId = url.searchParams.get('nextLeaderId');
       if (entry.team.leaderId === context.user.id && nextLeaderId) {
         entry.team.leaderId = nextLeaderId;
         entry.members.forEach((member) => {
