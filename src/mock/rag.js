@@ -83,10 +83,10 @@ export function previewRag(context, state, parts, url, method, body) {
     if (!ready.length) return unavailable('NO_READY_SOURCES');
     if (state.ragScenario === 'no-evidence')
       return unavailable('NO_RELEVANT_SOURCES');
-    const term = body.question.includes('인터뷰')
-      ? '인터뷰'
-      : body.question.includes('설문')
-        ? '설문'
+    const term = /권한|참여 코드|팀 가입|결정/.test(body.question)
+      ? '권한'
+      : /검색|인용|원문/.test(body.question)
+        ? '검색'
         : '프로젝트';
     const selected =
       ready.find((item) => item.title.includes(term)) || ready[0];

@@ -93,7 +93,7 @@ for (const width of [1920, 1440, 1024, 768, 390, 320]) {
     await expect(trigger).toBeFocused();
     await expect(select).toHaveValue(original);
     await expect(editor.getByLabel('작업 제목', { exact: true })).toHaveValue(
-      '서비스 흐름 설계',
+      'AI 피드백 화면 개선',
     );
     await editor.getByRole('button', { name: '닫기', exact: true }).click();
     await expect(editor).toHaveCount(0);

@@ -267,6 +267,45 @@ export default function TaskForm({
       version,
     );
   };
+  const reviewFacts = (
+    <dl className="review-facts">
+      <div>
+        <dt>작업 제목</dt>
+        <dd>{form.title}</dd>
+      </div>
+      <div>
+        <dt>작업 설명</dt>
+        <dd className="preserve-lines">{form.description}</dd>
+      </div>
+      <div>
+        <dt>예상 작업량</dt>
+        <dd>{formatExpectedWorkload(form.weight)}</dd>
+      </div>
+      <div>
+        <dt>시작일</dt>
+        <dd>
+          {startAt ? formatDate(fromDateInput(startAt)) : '미입력'}
+        </dd>
+      </div>
+      <div>
+        <dt>마감</dt>
+        <dd>
+          {dueAt ? formatDate(fromDateInput(dueAt)) : '미입력'}
+        </dd>
+      </div>
+      <div>
+        <dt>담당 배분</dt>
+        <dd>
+          {form.assignees.map((assignment) => (
+            <span key={assignment.userId}>
+              {memberName(editingMembers, assignment.userId)}{' '}
+              {assignment.allocationPercent}%<br />
+            </span>
+          ))}
+        </dd>
+      </div>
+    </dl>
+  );
   return (
     <Modal
       title={task ? '작업 수정' : '새 작업 만들기'}
@@ -615,6 +654,12 @@ export default function TaskForm({
                   </p>
                 )}
             </section>
+            {creating && step === 1 && (
+              <details className="task-form-section task-form-review">
+                <summary><strong>생성할 작업 요약</strong></summary>
+                {reviewFacts}
+              </details>
+            )}
             {!creating && mobile && step === 2 && (
               <section
                 className="task-form-section task-form-review"
@@ -627,43 +672,7 @@ export default function TaskForm({
                 >
                   저장 전 확인
                 </h3>
-                <dl className="review-facts">
-                  <div>
-                    <dt>작업 제목</dt>
-                    <dd>{form.title}</dd>
-                  </div>
-                  <div>
-                    <dt>작업 설명</dt>
-                    <dd className="preserve-lines">{form.description}</dd>
-                  </div>
-                  <div>
-                    <dt>예상 작업량</dt>
-                    <dd>{formatExpectedWorkload(form.weight)}</dd>
-                  </div>
-                  <div>
-                    <dt>시작일</dt>
-                    <dd>
-                      {startAt ? formatDate(fromDateInput(startAt)) : '미입력'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>마감</dt>
-                    <dd>
-                      {dueAt ? formatDate(fromDateInput(dueAt)) : '미입력'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>담당 배분</dt>
-                    <dd>
-                      {form.assignees.map((assignment) => (
-                        <span key={assignment.userId}>
-                          {memberName(editingMembers, assignment.userId)}{' '}
-                          {assignment.allocationPercent}%<br />
-                        </span>
-                      ))}
-                    </dd>
-                  </div>
-                </dl>
+                {reviewFacts}
                 <div className="heading-actions">
                   <button
                     type="button"

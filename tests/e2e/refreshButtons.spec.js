@@ -2,11 +2,11 @@ import { test, expect } from '@playwright/test';
 
 const screens = [
   ['/main', '내 스페이스', '새로고침'],
-  ['/spaces/1', '2026 서비스 디자인 프로젝트', '팀 목록 새로고침'],
+  ['/spaces/1', '2026 캡스톤디자인', '팀 목록 새로고침'],
   ['/spaces/1/announcements', '공지사항', '새로고침'],
   ['/spaces/1/teams/1', '삼위일체', '현황 새로고침'],
   ['/spaces/1/teams/1/tasks', '작업', '새로고침'],
-  ['/spaces/1/teams/1/tasks/103', '서비스 흐름 설계', '새로고침'],
+  ['/spaces/1/teams/1/tasks/103', 'AI 피드백 화면 개선', '새로고침'],
   ['/spaces/1/teams/1/deliverables', '팀 자료', '새로고침'],
   ['/spaces/1/teams/1/materials-search', '팀 자료 검색', '팀 자료 새로고침'],
   ['/spaces/1/teams/1/members', '팀원 관리', '새로고침'],
@@ -25,7 +25,7 @@ const screens = [
   ['/spaces/1/settings#join-code', '스페이스 관리', '코드 새로고침', 'manager'],
   [
     '/spaces/1/manager/teams/1/members/00000000-0000-4000-8000-000000000001',
-    '김하늘님의 수행 상세',
+    '김준영님의 수행 상세',
     '수행 상세 새로고침',
     'manager',
   ],

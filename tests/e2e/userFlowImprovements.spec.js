@@ -27,7 +27,7 @@ test('새 화면은 상단과 제목에서 시작하고 목록 복귀는 필터�
   await page.setViewportSize({ width: 390, height: 650 });
   await preview(page, '/spaces/1/teams/1/tasks?mine=1');
   const task = page.getByRole('button', {
-    name: '사용자 인터뷰 계획',
+    name: '스페이스·팀 권한 설계',
     exact: true,
   });
   await task.scrollIntoViewIfNeeded();
@@ -35,7 +35,7 @@ test('새 화면은 상단과 제목에서 시작하고 목록 복귀는 필터�
   expect(position).toBeGreaterThan(300);
   await task.click();
   await expect(
-    page.getByRole('heading', { name: '사용자 인터뷰 계획', level: 1 }),
+    page.getByRole('heading', { name: '스페이스·팀 권한 설계', level: 1 }),
   ).toBeFocused();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
   await page.getByRole('button', { name: '← 목록으로', exact: true }).click();
@@ -79,13 +79,16 @@ test('완료 준비 상태는 미작성 담당자를 표시하고 전원 작성 
     readiness.getByRole('img', { name: '충족', exact: true }),
   ).toHaveCount(2);
   await expect(
-    readiness.getByRole('img', { name: '미충족', exact: true }),
-  ).toHaveCount(0);
+    readiness.getByRole('listitem').filter({ hasText: '수행 설명 1명 미작성' })
+      .getByRole('img', { name: '미충족', exact: true }),
+  ).toBeVisible();
   await expect(readiness.getByRole('checkbox')).toHaveCount(0);
   await expect(readiness).not.toContainText('✓');
   await expect(readiness).not.toContainText('○');
-  await expect(assignments.getByRole('row').filter({ hasText: '이지원' })).toContainText('미작성');
+  await expect(assignments.getByRole('row').filter({ hasText: '김영진' })).toContainText('미작성');
   await expect(readiness).toContainText('결과물 추가됨');
+  await expect(page.getByText(/미작성 · 담당자 표에서 확인/)).toHaveCount(0);
+  await expect(page.getByLabel('완료 준비 요약')).toHaveCount(0);
   await expect(
     page.getByRole('button', { name: '완료 처리', exact: true }),
   ).toBeDisabled();
@@ -97,15 +100,16 @@ test('완료 준비 상태는 미작성 담당자를 표시하고 전원 작성 
   await page
     .getByRole('button', { name: '수행 설명 저장', exact: true })
     .click();
-  await expect(assignments.getByRole('row').filter({ hasText: '이지원' })).toContainText('작성 완료');
+  await expect(assignments.getByRole('row').filter({ hasText: '김영진' })).toContainText('작성 완료');
   await expect(
     readiness.getByRole('img', { name: '충족', exact: true }),
-  ).toHaveCount(2);
+  ).toHaveCount(3);
   await expect(
     readiness.getByRole('img', { name: '미충족', exact: true }),
   ).toHaveCount(0);
+  await expect(readiness).toContainText('수행 설명 작성 완료');
   await preview(page, '/spaces/1/teams/1/tasks/102', 'leader');
-  await expect(assignments.getByRole('row').filter({ hasText: '이지원' })).toContainText('작성 완료');
+  await expect(assignments.getByRole('row').filter({ hasText: '김영진' })).toContainText('작성 완료');
   await expect(
     page.getByRole('button', { name: '완료 처리', exact: true }),
   ).toBeEnabled();
@@ -185,12 +189,12 @@ for (const width of [1440, 390])
     await page.setViewportSize({ width, height: 900 });
     await preview(page, '/spaces/1/teams/1/peer-evaluations');
     await page
-      .getByRole('button', { name: '이지원 평가 저장', exact: true })
+      .getByRole('button', { name: '김영진 평가 저장', exact: true })
       .click();
     await expect(
-      page.getByLabel('이지원 작업 수행 1점', { exact: true }),
+      page.getByLabel('김영진 작업 수행 1점', { exact: true }),
     ).toBeFocused();
-    const card = page.locator('.peer-card[aria-label="이지원 동료 평가 입력"]');
+    const card = page.locator('.peer-card[aria-label="김영진 동료 평가 입력"]');
     const criterion = card.getByRole('group', {
       name: '작업 수행',
       exact: true,
@@ -215,9 +219,9 @@ for (const width of [1440, 390])
       ).toBeLessThan(2);
     }
     for (const criterion of ['작업 수행', '책임감', '적극성', '의사소통'])
-      await page.getByLabel(`이지원 ${criterion} 2점`, { exact: true }).check();
+      await page.getByLabel(`김영진 ${criterion} 2점`, { exact: true }).check();
     await page
-      .getByRole('button', { name: '이지원 평가 저장', exact: true })
+      .getByRole('button', { name: '김영진 평가 저장', exact: true })
       .click();
     await expect(card.getByLabel('평가 사유', { exact: true })).toBeFocused();
     await expect(card.getByLabel('평가 사유', { exact: true })).toHaveAttribute(
@@ -260,28 +264,20 @@ test('완료 준비 목록에서 내 수행 설명으로 이동하고 변경된 
   ).toHaveCount(0);
 });
 
-test('연결된 결과물이 없으면 준비 목록에서 등록 영역으로 바로 이동한다', async ({
-  page,
-}) => {
-  await preview(page, '/spaces/1/teams/1/tasks/104', 'member');
+test('완료 준비에는 결과물 상태만 표시하고 결과물 탭에서 추가 창을 연다', async ({ page }) => {
+  await preview(page, '/spaces/1/teams/1/tasks/103', 'leader');
   const readiness = page.getByRole('list', { name: '완료 준비 상태' });
-  await expect(
-    readiness
-      .getByRole('listitem')
-      .filter({ hasText: '작업 진행 중' })
-      .getByRole('img', { name: '미충족', exact: true }),
-  ).toBeVisible();
-  await expect(
-    readiness
-      .getByRole('listitem')
-      .filter({ hasText: '결과물 없음' })
-      .getByRole('img', { name: '미충족', exact: true }),
-  ).toBeVisible();
-  await page.getByRole('button', { name: '결과물 확인', exact: true }).click();
-  await expect(page.locator('#task-deliverables-section')).toBeFocused();
-  await expect(
-    page.getByRole('button', { name: '결과물 추가', exact: true }),
-  ).toBeInViewport();
+  const missing = readiness.getByRole('listitem').filter({ hasText: '결과물 없음' });
+  await expect(missing.getByRole('img', { name: '미충족', exact: true })).toBeVisible();
+  await expect(readiness.getByRole('button')).toHaveCount(0);
+  await page.getByRole('tab', { name: '결과물', exact: true }).click();
+  await page.getByRole('button', { name: '결과물 추가', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '결과물 추가', exact: true });
+  await expect(dialog.getByRole('button', { name: /문서 작성/ })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: /파일 업로드/ })).toBeVisible();
+  await dialog.getByRole('button', { name: '닫기', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole('tab', { name: '결과물', exact: true })).toHaveAttribute('aria-selected', 'true');
 });
 
 test('팀 홈의 7일 내 마감 건수와 목록이 일치하고 위젯 설정은 유지된다', async ({ page }) => {
@@ -296,13 +292,13 @@ test('팀 홈의 7일 내 마감 건수와 목록이 일치하고 위젯 설정�
   await expect(page).toHaveURL(/tasks\?mine=1&due=week&view=list$/);
   const list = page.getByRole('table', { name: '정렬된 작업 목록' });
   await expect(list.locator('tbody tr')).toHaveCount(count);
-  await expect(list).not.toContainText('설문 결과 분석');
-  await expect(list).not.toContainText('프로토타입 사용성 검증');
-  await expect(list).not.toContainText('사용자 인터뷰 계획');
+  await expect(list).not.toContainText('팀 자료 검색 개선');
+  await expect(list).not.toContainText('전시 가이드 동선 점검');
+  await expect(list).not.toContainText('스페이스·팀 권한 설계');
   await page.reload();
   await expect(list.locator('tbody tr')).toHaveCount(count);
   await page.getByRole('button', { name: '7일 내 마감 해제', exact: true }).click();
-  await expect(list).toContainText('설문 결과 분석');
+  await expect(list).toContainText('팀 자료 검색 개선');
   await page.goto('/preview/spaces/1/teams/1');
   await clickDashboardControl(page, '위젯 추가');
   await expect(catalog.getByRole('button', { name: '다가오는 작업 추가', exact: true })).toBeEnabled();

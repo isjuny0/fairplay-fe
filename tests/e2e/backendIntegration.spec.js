@@ -469,7 +469,7 @@ test('실제 작업 상세는 완료 조건을 읽기 전용 체크리스트로 
   await page.goto('/spaces/1/teams/1/tasks/10');
   await expect(page.getByRole('heading', { name: '현재 작업', exact: true })).toBeVisible();
   const readiness = page.getByRole('list', { name: '완료 준비 상태' });
-  await expect(readiness.getByRole('img', { name: '충족', exact: true })).toHaveCount(1);
+  await expect(readiness.getByRole('img', { name: '충족', exact: true })).toHaveCount(2);
   await expect(readiness.getByRole('img', { name: '미충족', exact: true })).toHaveCount(1);
   await expect(readiness.getByRole('checkbox')).toHaveCount(0);
   await readiness.getByRole('img', { name: '미충족', exact: true }).click();
