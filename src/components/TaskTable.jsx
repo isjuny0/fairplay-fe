@@ -69,7 +69,7 @@ export default function TaskTable({ tasks, members, onOpenTask, now }) {
                   </span>
                 ))}
               </td>
-              <td title={formatExpectedWorkload(task.weight)}>{formatBoardWorkload(task.weight)}</td>
+              <td className="task-table-workload" title={formatExpectedWorkload(task.weight)}>{formatBoardWorkload(task.weight)}</td>
               <td>
                 <TaskDateTime value={task.startAt} />
               </td>
