@@ -36,7 +36,7 @@
   width: 180px;
 }
 .participant-table th:last-child {
-  width: 80px;
+  width: 112px;
 }
 .participant-table .secondary-button {
   min-height: 32px;
@@ -102,5 +102,50 @@
   }
   .participant-table td:nth-child(5) {
     grid-column: 1 / -1;
+  }
+}
+
+.participant-removal-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.participant-removal-help {
+  display: inline-flex;
+}
+.participant-removal-help-trigger {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.participant-removal-help-trigger:hover,
+.participant-removal-help-trigger:focus-visible {
+  background: var(--surface-secondary);
+  color: var(--brand);
+}
+.participant-removal-tooltip {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  color: var(--text-primary);
+  box-shadow: 0 4px 16px #193d2814;
+  font-size: var(--text-caption);
+  line-height: 1.6;
+}
+@media (max-width: 900px) {
+  .participant-removal-help-trigger {
+    width: 44px;
+    min-height: 44px;
   }
 }
