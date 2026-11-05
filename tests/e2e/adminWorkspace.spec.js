@@ -336,9 +336,10 @@ for (const width of [1440, 390]) {
     await expect(page.getByLabel('팀 정렬', { exact: true })).toHaveValue(
       'progress',
     );
-    await page
-      .getByLabel('팀 상태', { exact: true })
-      .selectOption('applications');
+    await expect(page.getByText('먼저 확인할 팀', { exact: true })).toHaveCount(0);
+    await expect(page.getByRole('group', { name: '확인이 필요한 팀 빠른 조회' })).toHaveCount(0);
+    await page.getByLabel('팀 상태', { exact: true }).selectOption('applications');
+    await expect(page.getByLabel('팀 상태', { exact: true })).toHaveValue('applications');
     await expect(
       page.getByText('조건에 맞는 팀이 없습니다.', { exact: true }),
     ).toBeVisible();
