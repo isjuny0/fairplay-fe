@@ -443,7 +443,6 @@ export default function TaskDetail({
                       <UsersRound size={18} aria-hidden="true" />
                       담당자·담당 비율
                     </h2>
-                    <p className="field-help">각 담당자가 이 작업에서 맡은 비율입니다.</p>
                     <table className="task-assignment-table" aria-label="담당자별 수행 상태">
                       <thead><tr><th scope="col">담당자</th><th scope="col">담당 비율</th><th scope="col">수행 설명</th></tr></thead>
                       <tbody id="task-assignment-rows">

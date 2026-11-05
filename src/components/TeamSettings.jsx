@@ -156,7 +156,7 @@ export default function TeamSettings({
       {!confirmation && <ErrorNotice error={error} />}
       <section className="panel settings-section team-deletion-section danger-zone">
         <div className="settings-section-heading">
-          <h2>팀 삭제 동의</h2>
+          <h2>팀 삭제</h2>
           <p>
             팀과 연결 자료를 함께 정리합니다. 현재 팀원 전원이 동의한 뒤 리더가
             최종 삭제합니다.

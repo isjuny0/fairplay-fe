@@ -219,9 +219,6 @@
 .home-quick-link:hover {
   border-color: var(--brand);
 }
-.directory-sidebar-heading strong {
-  color: var(--brand-dark);
-}
 .directory-shortcut-symbol {
   color: var(--brand);
   border-color: #bfd1c5;
