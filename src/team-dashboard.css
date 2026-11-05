@@ -30,11 +30,6 @@
   margin: 0;
   overflow-wrap: anywhere;
 }
-.dashboard-heading p {
-  margin: 9px 0 0;
-  font-size: 13px;
-  color: var(--text-muted);
-}
 .dashboard-heading-actions {
   display: flex;
   gap: 8px;
@@ -804,10 +799,6 @@
   .dashboard-heading {
     padding-bottom: 20px;
     margin-bottom: 20px;
-  }
-  .dashboard-heading p {
-    font-size: var(--text-support);
-    line-height: 1.7;
   }
   .dashboard-heading-actions {
     margin-left: 0;
