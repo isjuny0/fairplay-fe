@@ -329,7 +329,7 @@ function TeamDashboard({
           </div>
           <p className="dashboard-caption">
             {overdueCount || overview.soon.length
-              ? '내 담당 미완료 작업 · 선택하면 작업 목록으로 이동'
+              ? '내 담당 미완료 작업 기준'
               : '확인할 작업 없음'}
           </p>
         </ResourceState>
@@ -551,6 +551,9 @@ function TeamDashboard({
             <Plus size={16} />
             위젯 추가
           </button>
+          <p className="dashboard-settings-note">
+            일정은 팀원 모두와 공유됩니다. 위젯 구성과 메모는 내 계정에만 저장됩니다.
+          </p>
           </div>
           </details>
         </div>
@@ -639,15 +642,8 @@ function TeamDashboard({
         <Plus size={18} />
         <strong>필요한 위젯 추가하기</strong>
       </button>
-      <footer className="dashboard-local-note">
-        일정은 팀원 모두와 공유됩니다. 위젯 구성과 메모는 내 계정에만
-        저장됩니다.
-      </footer>
       {catalog && (
         <Modal title="위젯 추가" onClose={() => setCatalog(false)} wide>
-          <p className="dashboard-catalog-intro">
-            우리 팀 홈에 필요한 정보를 골라 보세요.
-          </p>
           <div className="dashboard-catalog">
             {dashboardWidgets.map((widget) => {
               const added = dashboard.widgets.includes(widget.id);

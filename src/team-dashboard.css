@@ -360,13 +360,6 @@
   background: var(--dashboard-soft);
   border-color: var(--brand);
 }
-.dashboard-local-note {
-  text-align: right;
-  font-size: 10px;
-  color: var(--text-muted);
-  margin-top: 20px;
-  line-height: 1.7;
-}
 .dashboard-storage-error {
   color: #b42318;
   font-size: 12px;
@@ -641,11 +634,6 @@
 .dashboard-work-metric .progress-track > span {
   background: var(--brand);
 }
-.dashboard-catalog-intro {
-  margin: 0 0 20px;
-  color: var(--text-muted);
-  font-size: 13px;
-}
 .dashboard-catalog {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -851,10 +839,6 @@
   }
   .dashboard-work-metric .progress-track {
     grid-column: 1 / -1;
-  }
-  .dashboard-local-note {
-    text-align: center;
-    font-size: 10px;
   }
   .dashboard-catalog {
     grid-template-columns: minmax(0, 1fr);
