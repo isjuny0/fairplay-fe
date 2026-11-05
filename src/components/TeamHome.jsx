@@ -407,19 +407,6 @@ function TeamDashboard({
     if (id === 'evaluation' || id === 'report')
       return (
         <>
-          <div className="dashboard-shortcut-art" aria-hidden="true">
-            <Icon name={id === 'evaluation' ? 'review' : 'chart'} />
-            <span>
-              {id === 'evaluation'
-                ? '서로의 협업을 돌아보는 시간'
-                : '함께 쌓은 기록을 한눈에'}
-            </span>
-          </div>
-          <p className="dashboard-caption">
-            {id === 'evaluation'
-              ? '동료의 노력과 협업 경험을 피드백으로 남겨 주세요.'
-              : '우리 팀의 공개된 기여도 리포트를 확인해 보세요.'}
-          </p>
           <button
             className="dashboard-shortcut-button"
             onClick={() =>
