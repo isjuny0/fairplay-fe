@@ -366,6 +366,8 @@ export default function Deliverables({
   tasks = [],
   tasksResource,
   taskId,
+  registerRequested = false,
+  onRegistrationClose,
   onChanged = () => {},
 }) {
   const { confirm, notify } = useInteractions();
@@ -509,7 +511,11 @@ export default function Deliverables({
       sort,
     ],
   );
-  const [editing, setEditing] = useState(undefined);
+  const [selectedEditor, setEditing] = useState(undefined);
+  const closeEditor = () => {
+    setEditing(undefined);
+    onRegistrationClose?.();
+  };
   const [selectedDeliverableId, setSelectedDeliverableId] = useState(null);
   const selectedDeliverable = resource.data?.find(
     (item) => item.id === selectedDeliverableId,
@@ -528,6 +534,7 @@ export default function Deliverables({
     isApprovedMember(team) &&
     !teamWorkBlocked(team) &&
     (taskId == null || eligibleTasks.some((task) => task.id === taskId));
+  const editing = registerRequested && canCreate ? null : selectedEditor;
   const openRegistration = () => {
     if (!canCreate || busy || !taskOptionsReady) return;
     setError(null);
@@ -546,7 +553,7 @@ export default function Deliverables({
       if (editing) await updateDeliverable(editing.id, input, file);
       else if (type === "FILE") await uploadDeliverable(team.id, input, file);
       else await createDeliverable(team.id, input);
-      setEditing(undefined);
+      closeEditor();
       notify(`${resourceName}${isCollection ? "를" : "을"} ${editing ? "수정" : isCollection ? "등록" : "추가"}했습니다.`);
       resource.reload();
       onChanged();
@@ -1068,7 +1075,7 @@ export default function Deliverables({
                 }
               : undefined
           }
-          onClose={() => setEditing(undefined)}
+          onClose={closeEditor}
           onSave={save}
         />
       )}

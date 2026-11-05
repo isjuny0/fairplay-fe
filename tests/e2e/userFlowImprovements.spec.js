@@ -260,7 +260,7 @@ test('완료 준비 목록에서 내 수행 설명으로 이동하고 변경된 
   ).toHaveCount(0);
 });
 
-test('연결된 결과물이 없으면 준비 목록에서 등록 영역으로 바로 이동한다', async ({
+test('연결된 결과물이 없으면 준비 목록에서 추가 창을 바로 열 수 있다', async ({
   page,
 }) => {
   await preview(page, '/spaces/1/teams/1/tasks/104', 'member');
@@ -277,11 +277,13 @@ test('연결된 결과물이 없으면 준비 목록에서 등록 영역으로 �
       .filter({ hasText: '결과물 없음' })
       .getByRole('img', { name: '미충족', exact: true }),
   ).toBeVisible();
-  await page.getByRole('button', { name: '결과물 확인', exact: true }).click();
-  await expect(page.locator('#task-deliverables-section')).toBeFocused();
-  await expect(
-    page.getByRole('button', { name: '결과물 추가', exact: true }),
-  ).toBeInViewport();
+  await readiness.getByRole('button', { name: '결과물 추가', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '결과물 추가', exact: true });
+  await expect(dialog.getByRole('button', { name: /문서 작성/ })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: /파일 업로드/ })).toBeVisible();
+  await dialog.getByRole('button', { name: '닫기', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole('tab', { name: '결과물', exact: true })).toHaveAttribute('aria-selected', 'true');
 });
 
 test('팀 홈의 7일 내 마감 건수와 목록이 일치하고 위젯 설정은 유지된다', async ({ page }) => {

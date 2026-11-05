@@ -152,12 +152,14 @@ export default function TaskDetail({
     setError(null);
   }, [resource.data]);
   const [editing, setEditing] = useState(false);
+  const [addingDeliverable, setAddingDeliverable] = useState(false);
   const [reopening, setReopening] = useState(false);
   const [revisionAssigneeId, setRevisionAssigneeId] = useState('');
   const [showAllAssignees, setShowAllAssignees] = useState(false);
   const [activeTab, setActiveTab] = useState('task-description-section');
   const [sectionToFocus, setSectionToFocus] = useState(null);
   useEffect(() => {
+    setAddingDeliverable(false);
     setShowAllAssignees(false);
     setReopening(false);
     setActiveTab('task-description-section');
@@ -228,6 +230,8 @@ export default function TaskDetail({
     !missingContributions.length &&
     hasDeliverables;
   const workClosed = task?.completionBlockReason === 'WORK_PERIOD_CLOSED';
+  const canAddDeliverable = !readOnly && task && !workClosed && isMutable(task)
+    && canModifyTeamWork(team) && isAssignee(task, user.id);
   const nextAction = !['IN_PROGRESS', 'REVISING'].includes(task?.status)
     ? ['작업 시작하기', 'task-progress-section']
     : !hasDeliverables ? ['결과물 등록하기', 'task-deliverables-section']
@@ -295,6 +299,10 @@ export default function TaskDetail({
       id === 'own-contribution-description' ? 'task-contributions-section' : ['task-progress-section', 'task-assignment-section'].includes(id) ? 'task-description-section' : id,
     );
     setSectionToFocus(id);
+  };
+  const openDeliverableRegistration = () => {
+    setActiveTab('task-deliverables-section');
+    setAddingDeliverable(true);
   };
   useEffect(() => {
     if (!guide?.guiding || Number(taskId) !== guide.taskId) return;
@@ -514,15 +522,9 @@ export default function TaskDetail({
                             {hasDeliverables
                               ? '결과물 추가됨'
                               : '결과물 없음'}
-                            {!hasDeliverables && (
-                              <button
-                                className="text-button readiness-link"
-                                onClick={() =>
-                                  focusTaskSection('task-deliverables-section')
-                                }
-                              >
-                                결과물 확인
-                              </button>
+                            {!hasDeliverables && canAddDeliverable && (
+                              <button type="button" className="text-button readiness-link"
+                                onClick={openDeliverableRegistration}>결과물 추가</button>
                             )}
                           </ReadinessItem>
 
@@ -579,7 +581,10 @@ export default function TaskDetail({
               {!readOnly && isAssignee(task, user.id) && task.status !== 'DONE' && <div className="experience-summary" aria-label="완료 준비 요약">
                 <strong>{completionReady && task.completionBlockReason === null ? '완료할 준비가 됐습니다' : '다음 할 일'}</strong>
                 <span>{completionBlockLabels[task.completionBlockReason] || (completionReady ? '완료 조건을 모두 갖췄습니다.' : '남은 조건을 확인해 주세요.')}</span>
-                <button type="button" className="text-button" onClick={() => focusTaskSection(workClosed ? 'task-progress-section' : nextAction[1])}>{workClosed ? '진행 조건 확인' : nextAction[0]}</button>
+                <button type="button" className="text-button" onClick={() => {
+                  if (canAddDeliverable && nextAction[1] === 'task-deliverables-section') openDeliverableRegistration();
+                  else focusTaskSection(workClosed ? 'task-progress-section' : nextAction[1]);
+                }}>{workClosed ? '진행 조건 확인' : nextAction[0]}</button>
               </div>}
             </header>
             {navigation}
@@ -615,6 +620,8 @@ export default function TaskDetail({
                     members={members}
                     tasks={[task]}
                     taskId={task.id}
+                    registerRequested={addingDeliverable}
+                    onRegistrationClose={() => setAddingDeliverable(false)}
                     onChanged={reload}
                   />
                 </div>
