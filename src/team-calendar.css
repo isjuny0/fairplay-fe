@@ -451,7 +451,7 @@
 }
 .team-calendar-entry-options .field-label,
 .team-calendar-category-control > span {
-  font-size: 10px;
+  font-size: var(--text-caption);
   color: #7c8a81;
   font-weight: 500;
 }
@@ -477,7 +477,7 @@
   min-width: 0;
 }
 .team-calendar-date-control > span {
-  font-size: 10px;
+  font-size: var(--text-caption);
   color: #7c8a81;
   font-weight: 500;
 }
@@ -1234,7 +1234,7 @@
   gap: 8px;
 }
 .team-calendar-composer .team-calendar-time-row .field-label {
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 500;
   color: #7c8a81;
   line-height: 14px;
