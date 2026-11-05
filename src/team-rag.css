@@ -140,14 +140,9 @@
 .rag-question-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 16px;
   margin-top: 6px;
-}
-.rag-question-footer > span {
-  color: #718076;
-  font-size: 12px;
-  line-height: 1.6;
 }
 .rag-question-footer button {
   white-space: nowrap;
@@ -501,8 +496,7 @@
   line-height: 20px;
 }
 .rag-question-tools {
-  height: 32px;
-  padding-top: 4px;
+  margin-top: 4px;
 }
 .rag-send-actions {
   display: flex;
@@ -793,10 +787,6 @@
   .rag-question-footer {
     align-items: flex-end;
     gap: 8px;
-  }
-  .rag-question-footer > span {
-    max-width: 165px;
-    font-size: 11px;
   }
   .rag-send-actions {
     gap: 8px;

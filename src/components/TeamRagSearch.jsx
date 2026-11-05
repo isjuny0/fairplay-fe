@@ -382,9 +382,7 @@ function TeamMaterialSearch({ context }) {
                 ? '자료에서 답변을 찾고 있습니다…'
                 : '예: 인터뷰에서 발견한 주요 문제는 무엇인가요?'}
               aria-invalid={Boolean(inputError)}
-              aria-describedby={inputError
-                ? 'rag-input-error rag-input-help'
-                : 'rag-input-help'}
+              aria-describedby={inputError ? 'rag-input-error' : undefined}
               onChange={(event) => {
                 setQuestion(event.target.value);
                 setInputError('');
@@ -403,7 +401,6 @@ function TeamMaterialSearch({ context }) {
               <p id="rag-input-error" className="field-error" role="alert">{inputError}</p>
             )}
             <div className="rag-question-footer">
-              <span id="rag-input-help">질문마다 팀 자료를 새로 검색합니다.</span>
               <div className="rag-send-actions">
                 <span className="rag-character-count" aria-label="질문 글자 수">{question.length.toLocaleString()} / 1,000</span>
                 <button
@@ -420,13 +417,13 @@ function TeamMaterialSearch({ context }) {
                 </button>
               </div>
             </div>
-            <div className="rag-question-tools">
-              {submittedQuestion && !busy && !permissionError && (
+            {submittedQuestion && !busy && !permissionError && (
+              <div className="rag-question-tools">
                 <button type="button" className="rag-reset-question" onClick={() => startQuestion()}>
                   새 질문으로 시작
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </form>
         </div>
         <div className="rag-side-panel" id="rag-materials-panel" ref={sidePanel}>

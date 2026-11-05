@@ -167,7 +167,7 @@ function DeliverableForm({
         <div className="deliverable-current-file" role="group" aria-label="현재 원본 파일">
           <span className="eyebrow">현재 원본</span><strong>{initial.file.originalFilename}</strong>
           <span className="field-help">{(initial.file.sizeBytes / 1024).toFixed(1)}KiB</span>
-          <p className="field-help">교체할 파일을 선택하지 않으면 현재 원본을 유지합니다. 파일을 교체하면 이전 원본은 삭제됩니다.</p>
+          <p className="field-help">교체할 파일을 선택하지 않으면 현재 원본을 유지합니다.</p>
         </div>
       )}
       <Field label={initial ? "교체할 파일 (선택)" : "파일"} error={fieldErrors.file}
@@ -187,7 +187,7 @@ function DeliverableForm({
         <div className="file-selection" role="status">
           <span className="eyebrow">{initial ? "교체할 파일" : "선택한 파일"}</span>
           <strong>{file.name}</strong>
-          <p>{(file.size / 1024).toFixed(1)}KiB · {initial ? "저장하면 기존 파일이 삭제되고 이 파일로 교체됩니다." : "등록하면 업로드됩니다."}</p>
+          <p>{(file.size / 1024).toFixed(1)}KiB{initial && " · 저장하면 기존 파일이 삭제되고 이 파일로 교체됩니다."}</p>
           <button type="button" className="secondary-button" onClick={clearSelectedFile}>파일 선택 해제</button>
         </div>
       )}
