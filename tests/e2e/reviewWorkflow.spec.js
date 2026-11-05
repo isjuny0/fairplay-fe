@@ -171,13 +171,13 @@ for (const width of [1440, 1280, 390]) {
     for (const criterion of ['작업 수행', '책임감', '적극성', '의사소통'])
       await page.getByLabel(`이지원 ${criterion} 4점`, { exact: true }).check();
     await dock
-      .getByRole('button', { name: '다음 팀원 · 박서연', exact: true })
+      .getByRole('button', { name: '다음 미작성 팀원 · 박서연', exact: true })
       .click();
     await expect(
       page.getByRole('heading', { name: '박서연', exact: true }),
     ).toBeFocused();
     await dock
-      .getByRole('button', { name: '다음 팀원 · 이지원', exact: true })
+      .getByRole('button', { name: '다음 미작성 팀원 · 이지원', exact: true })
       .click();
     await expect(
       page.getByLabel('이지원 작업 수행 4점', { exact: true }),

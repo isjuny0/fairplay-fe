@@ -278,11 +278,12 @@ function RoundResponses({ context, round, onSubmitted }) {
   const currentResponse = responses.find(
     (response) => response.targetId === currentTargetId,
   );
-  const nextTarget =
-    targets[
-      (targets.findIndex((target) => target.targetId === currentTargetId) + 1) %
-        targets.length
-    ];
+  const currentIndex = targets.findIndex((target) => target.targetId === currentTargetId);
+  const followingTargets = [...targets.slice(currentIndex + 1), ...targets.slice(0, currentIndex)];
+  const nextUnwritten = followingTargets.find(({ targetId }) =>
+    !responses.some((response) => response.targetId === targetId));
+  const nextTarget = nextUnwritten ?? followingTargets[0];
+  const nextTargetLabel = nextUnwritten ? '다음 미작성 팀원' : '다음 팀원';
   useEffect(() => {
     if (activeTargetId)
       document.getElementById(`peer-target-heading-${round.id}`)?.focus();
@@ -455,9 +456,9 @@ function RoundResponses({ context, round, onSubmitted }) {
                         disabled={busy || saving}
                         onClick={() => setActiveTargetId(nextTarget.targetId)}
                         data-guide={currentResponse && !currentState?.changed ? 'next-peer-target' : undefined}
-                        aria-label={`다음 팀원 · ${nextTarget.name}`}
+                        aria-label={`${nextTargetLabel} · ${nextTarget.name}`}
                       >
-                        다음 팀원 →
+                        {nextTargetLabel} →
                       </button>
                     )}
                   </div>
