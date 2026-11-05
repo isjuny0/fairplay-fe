@@ -92,7 +92,7 @@
   background: currentColor;
 }
 .task-table .task-date-is-overdue {
-  color: var(--notice-coral);
+  color: var(--notice-coral-text);
 }
 .team-home-visual .home-action-icon {
   background: transparent;

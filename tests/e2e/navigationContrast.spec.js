@@ -233,6 +233,13 @@ test('타임라인·목록은 밝은 상태 배경과 읽기 쉬운 글씨색을
   await expect(
     page.locator('.timeline-row.is-late .timeline-period').first(),
   ).toHaveCSS('border-bottom-color', 'rgb(255, 85, 92)');
+  const lateFilter = page.locator('.timeline-late-filter.is-overdue');
+  await expect(lateFilter).toBeVisible();
+  const lateFilterColors = await lateFilter.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return [style.color, style.backgroundColor];
+  });
+  expect(contrast(...lateFilterColors)).toBeGreaterThanOrEqual(4.5);
   await page.getByRole('button', { name: '목록', exact: true }).click();
   for (const [status, background, text] of palette) {
     const badge = page
@@ -243,7 +250,8 @@ test('타임라인·목록은 밝은 상태 배경과 읽기 쉬운 글씨색을
   }
   const overdue = page.locator('.task-table time.task-date-is-overdue');
   await expect(overdue).toHaveCount(1);
-  await expect(overdue).toHaveCSS('color', 'rgb(255, 85, 92)');
+  const overdueColor = await overdue.evaluate((element) => getComputedStyle(element).color);
+  expect(contrast(overdueColor, 'rgb(255, 255, 255)')).toBeGreaterThanOrEqual(4.5);
   await expect(page.locator('.task-table .is-overdue')).toHaveCount(0);
 
 });
