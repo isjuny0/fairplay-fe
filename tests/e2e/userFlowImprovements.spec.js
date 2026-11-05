@@ -79,13 +79,16 @@ test('완료 준비 상태는 미작성 담당자를 표시하고 전원 작성 
     readiness.getByRole('img', { name: '충족', exact: true }),
   ).toHaveCount(2);
   await expect(
-    readiness.getByRole('img', { name: '미충족', exact: true }),
-  ).toHaveCount(0);
+    readiness.getByRole('listitem').filter({ hasText: '수행 설명 1명 미작성' })
+      .getByRole('img', { name: '미충족', exact: true }),
+  ).toBeVisible();
   await expect(readiness.getByRole('checkbox')).toHaveCount(0);
   await expect(readiness).not.toContainText('✓');
   await expect(readiness).not.toContainText('○');
   await expect(assignments.getByRole('row').filter({ hasText: '김영진' })).toContainText('미작성');
   await expect(readiness).toContainText('결과물 추가됨');
+  await expect(page.getByText(/미작성 · 담당자 표에서 확인/)).toHaveCount(0);
+  await expect(page.getByLabel('완료 준비 요약')).toHaveCount(0);
   await expect(
     page.getByRole('button', { name: '완료 처리', exact: true }),
   ).toBeDisabled();
@@ -100,10 +103,11 @@ test('완료 준비 상태는 미작성 담당자를 표시하고 전원 작성 
   await expect(assignments.getByRole('row').filter({ hasText: '김영진' })).toContainText('작성 완료');
   await expect(
     readiness.getByRole('img', { name: '충족', exact: true }),
-  ).toHaveCount(2);
+  ).toHaveCount(3);
   await expect(
     readiness.getByRole('img', { name: '미충족', exact: true }),
   ).toHaveCount(0);
+  await expect(readiness).toContainText('수행 설명 작성 완료');
   await preview(page, '/spaces/1/teams/1/tasks/102', 'leader');
   await expect(assignments.getByRole('row').filter({ hasText: '김영진' })).toContainText('작성 완료');
   await expect(
@@ -260,28 +264,20 @@ test('완료 준비 목록에서 내 수행 설명으로 이동하고 변경된 
   ).toHaveCount(0);
 });
 
-test('연결된 결과물이 없으면 준비 목록에서 등록 영역으로 바로 이동한다', async ({
-  page,
-}) => {
-  await preview(page, '/spaces/1/teams/1/tasks/104', 'member');
+test('완료 준비에는 결과물 상태만 표시하고 결과물 탭에서 추가 창을 연다', async ({ page }) => {
+  await preview(page, '/spaces/1/teams/1/tasks/103', 'leader');
   const readiness = page.getByRole('list', { name: '완료 준비 상태' });
-  await expect(
-    readiness
-      .getByRole('listitem')
-      .filter({ hasText: '작업 진행 중' })
-      .getByRole('img', { name: '미충족', exact: true }),
-  ).toBeVisible();
-  await expect(
-    readiness
-      .getByRole('listitem')
-      .filter({ hasText: '결과물 없음' })
-      .getByRole('img', { name: '미충족', exact: true }),
-  ).toBeVisible();
-  await page.getByRole('button', { name: '결과물 확인', exact: true }).click();
-  await expect(page.locator('#task-deliverables-section')).toBeFocused();
-  await expect(
-    page.getByRole('button', { name: '결과물 추가', exact: true }),
-  ).toBeInViewport();
+  const missing = readiness.getByRole('listitem').filter({ hasText: '결과물 없음' });
+  await expect(missing.getByRole('img', { name: '미충족', exact: true })).toBeVisible();
+  await expect(readiness.getByRole('button')).toHaveCount(0);
+  await page.getByRole('tab', { name: '결과물', exact: true }).click();
+  await page.getByRole('button', { name: '결과물 추가', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '결과물 추가', exact: true });
+  await expect(dialog.getByRole('button', { name: /문서 작성/ })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: /파일 업로드/ })).toBeVisible();
+  await dialog.getByRole('button', { name: '닫기', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole('tab', { name: '결과물', exact: true })).toHaveAttribute('aria-selected', 'true');
 });
 
 test('팀 홈의 7일 내 마감 건수와 목록이 일치하고 위젯 설정은 유지된다', async ({ page }) => {

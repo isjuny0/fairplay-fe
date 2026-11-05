@@ -97,7 +97,7 @@ for (const width of [1440, 1045, 320]) {
     ).toHaveCount(2);
     await expect(
       readiness.getByRole('img', { name: '미충족', exact: true }),
-    ).toHaveCount(0);
+    ).toHaveCount(1);
     await readiness.screenshot({
       path: testInfo.outputPath('task-readiness-checklist.png'),
     });
