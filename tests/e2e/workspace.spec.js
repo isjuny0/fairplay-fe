@@ -1012,6 +1012,7 @@ test('탈퇴 화면에서 미완료 작업을 확인하고 인계 대상을 선�
   await expect(dialog.getByRole('alert')).toContainText('탈퇴 영향을 확인할 수 없습니다.');
   await dialog.getByRole('button', { name: '탈퇴 영향 다시 확인', exact: true }).click();
   await expect(dialog.getByText('인계할 미완료 작업 2개')).toBeVisible();
+  await expect(dialog.getByLabel('모든 작업에 인계 대상 적용')).toHaveCount(0);
   await expect(dialog.getByRole('listitem').filter({ hasText: '회원 탈퇴 구현' })).toContainText(/마감 .*인계 비율 100%/);
   await expect(dialog.getByLabel('회원 탈퇴 구현 인계 대상').locator('option[value="leader"]')).toContainText('현재 미완료 0건');
   await expect(dialog.getByRole('button', { name: '탈퇴 확정' })).toBeDisabled();
