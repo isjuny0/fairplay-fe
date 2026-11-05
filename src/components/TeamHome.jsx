@@ -271,13 +271,6 @@ function TeamDashboard({
               <>
                 <TeamProgressRing value={summary.teamProgressRate} />
                 <div className="dashboard-progress-copy">
-                  <strong>
-                    {summary.teamProgressRate == null
-                      ? '첫 작업을 기다리고 있어요'
-                      : Number(summary.teamProgressRate) >= 100
-                        ? '함께 목표에 도착했어요'
-                        : '조금씩, 함께 앞으로'}
-                  </strong>
                   <p>현재 등록된 작업의 예상 작업량 기준</p>
                 </div>
                 {summary.asOf && (

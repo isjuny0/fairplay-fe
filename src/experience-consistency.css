@@ -81,6 +81,20 @@
 .widget-attention .dashboard-attention small { margin-left: 6px; font-size: 13px; letter-spacing: 0; color: var(--text-muted); }
 .widget-attention .dashboard-attention > button:hover { background: var(--dashboard-soft); border-radius: 8px; }
 .widget-attention .dashboard-attention > button:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+@media (max-width: 560px) {
+  .dashboard-arrange-grid > .widget-attention .dashboard-attention {
+    grid-template-rows: repeat(2, auto);
+    gap: 4px;
+  }
+  .widget-attention .dashboard-attention > button {
+    min-height: 80px;
+    gap: 6px 8px;
+    padding: 10px 8px;
+  }
+  .widget-attention .dashboard-attention > button > strong {
+    font-size: 28px;
+  }
+}
 @media (max-width: 720px) {
   .mobile-workspace-context { flex: 1; min-width: 0; word-break: keep-all; }
   .workspace .workspace-sidebar.is-mobile-open .manager-workspace-navigation { display: grid; }

@@ -72,7 +72,11 @@ for (const width of [1920, 1440, 1024, 768, 390, 320]) {
         expect(attention.x + attention.width).toBeLessThan(progress.x);
       } else {
         expect(attention.y + attention.height).toBeLessThan(progress.y);
+        expect(calendar.height).toBeLessThan(448);
       }
+      await expect(home.locator('.dashboard-team-progress > time')).toHaveCSS('font-size', '12px');
+      await expect(home.locator('.dashboard-progress-copy p')).toHaveCSS('font-size', '13px');
+      await expect(home.locator('.team-calendar-legend')).toHaveCSS('font-size', '12px');
     },
   );
 }
