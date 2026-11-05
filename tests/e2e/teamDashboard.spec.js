@@ -205,9 +205,12 @@ test('미리보기 저장소 용량이 없어도 현재 탭의 캘린더와 위�
     };
   });
   await addDashboardWidgets(page, ['빠른 메모']);
-  await expect(page.locator('.dashboard-local-note')).toContainText(
+  const settings = page.getByRole('button', { name: '화면 설정', exact: true });
+  await settings.click();
+  await expect(page.locator('.dashboard-settings-note')).toContainText(
     '일정은 팀원 모두와 공유',
   );
+  await settings.click();
   await expect(page.locator('.widget-memo')).toBeVisible();
   await expect(
     page.locator('.team-calendar-grid > button').first(),
