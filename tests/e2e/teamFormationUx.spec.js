@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-async function teamFormation(page, { period = 'OPEN', joined = true, pending = true } = {}) {
+async function teamFormation(page, { period = 'OPEN', joined = true, pending = true, buildingClosesAt = '2030-01-01T00:00:00' } = {}) {
   const members = [
     { userId: 'leader', name: '김하늘', role: 'LEADER' },
     { userId: 'member', name: '이지원', role: 'MEMBER' },
@@ -26,7 +26,7 @@ async function teamFormation(page, { period = 'OPEN', joined = true, pending = t
     teamBuildingOpensAt:
       period === 'NOT_CONFIGURED' ? null : '2026-01-01T00:00:00',
     teamBuildingClosesAt:
-      period === 'NOT_CONFIGURED' ? null : '2030-01-01T00:00:00',
+      period === 'NOT_CONFIGURED' ? null : buildingClosesAt,
   };
   let applications = [
     {
@@ -117,6 +117,20 @@ async function teamFormation(page, { period = 'OPEN', joined = true, pending = t
     releaseMutation: () => releaseMutation(),
   };
 }
+
+test('팀 구성 고정 이후에도 팀 생성 기간이 끝났으면 마감 사유를 표시한다', async ({ page }) => {
+  await teamFormation(page, {
+    period: 'LOCKED',
+    joined: false,
+    pending: false,
+    buildingClosesAt: '2026-01-02T00:00:00',
+  });
+  await page.goto('/spaces/1');
+  const create = page.getByRole('button', { name: '팀 만들기', exact: true });
+  await expect(create).toBeDisabled();
+  await expect(create).toHaveAccessibleDescription('팀 생성 기간이 종료되어 팀을 만들 수 없습니다.');
+  await expect(page.getByRole('region', { name: '프로젝트 일정' })).toContainText('팀 구성 고정');
+});
 
 
 
