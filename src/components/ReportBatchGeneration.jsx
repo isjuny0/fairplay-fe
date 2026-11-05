@@ -40,6 +40,11 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
   const canPublish = Boolean(data?.canPublish && data.totalTeamCount > 0
     && data.generatedTeamCount === data.totalTeamCount && data.publishedTeamCount < data.totalTeamCount);
   const allPublished = Boolean(data?.totalTeamCount > 0 && data.publishedTeamCount === data.totalTeamCount);
+  const generationReason = !state ? '' : !state.canGenerate
+    ? data.generationBlockReasons.map(reportBlockMessage).join(' · ') || '전체 팀 현황을 확인해 주세요.'
+    : !weightsValid ? '반영 비율의 합계를 100%로 맞춰 주세요.'
+    : guidedManagement && guide.stepId === 'management-report-weights'
+      ? '비중과 생성 조건 확인을 먼저 완료해 주세요.' : '';
   const execute = async (action) => {
     if (running.current) return;
     running.current = true; setBusy(true); setError(null);
@@ -94,7 +99,6 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
   const weightSettings = lockedWeights ? <section className="report-confirmed-weights" aria-label="확정된 평가 비중">
     <h3>적용된 평가 비중</h3>
     <dl>{reportWeightFields.map(({ key, label }) => <div key={key}><dt>{label}</dt><dd>{lockedWeights[key]}%</dd></div>)}</dl>
-    <p className="field-help">첫 리포트 생성 시 확정되어 모든 팀에 동일하게 적용됩니다.</p>
   </section> : (
     <fieldset className="report-weight-settings" disabled={busy || resource.loading}>
       <legend>평가 비중 설정</legend>
@@ -112,7 +116,7 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
         {weightsValid && reportWeightFields.map(({ key }, index) => <span key={key} className={`report-weight-segment report-weight-segment--${index}`} style={{ width: `${weights[key]}%` }} />)}
       </div>
       <p id="report-weight-guidance" className={weightsValid ? 'field-help' : 'notice'}>
-        {weightsValid ? '첫 리포트 생성 성공 시 모든 팀에 적용할 비율이 확정됩니다.' : '각 항목은 0~100의 정수이며, 합계가 100%여야 합니다.'}
+        {!weightsValid && '각 항목은 0~100의 정수이며, 합계가 100%여야 합니다.'}
         <span className="report-weight-total">합계 {totalWeight}%</span>
       </p>
       <div className="report-score-example" aria-label="가상 점수 계산 예시">
@@ -155,9 +159,9 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
         {state && (!allGenerated || validReportWeights(lockedWeights)) && weightContent}
         {state && !allGenerated && (
           <div className="report-generation-action">
-            <p id="report-generation-reason">{!state.canGenerate ? data.generationBlockReasons.map(reportBlockMessage).join(' · ') || '전체 팀 현황을 확인해 주세요.' : !weightsValid ? '반영 비율의 합계를 100%로 맞춰 주세요.' : guidedManagement && guide.stepId === 'management-report-weights' ? '비중과 생성 조건 확인을 먼저 완료해 주세요.' : '팀별 결과를 검토한 뒤 전체 리포트를 한 번에 공개합니다.'}</p>
+            {generationReason && <p id="report-generation-reason">{generationReason}</p>}
             <button type="button" className="primary-button" data-guide="generate-all-reports"
-              aria-describedby="report-generation-reason"
+              aria-describedby={generationReason ? "report-generation-reason" : undefined}
               disabled={busy || resource.loading || Boolean(resource.error) || !state.canGenerate || !weightsValid
                 || (guidedManagement && guide.stepId === 'management-report-weights')}
               onClick={requestGeneration}>
@@ -167,8 +171,8 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
         )}
         {state && allGenerated && !validReportWeights(lockedWeights) && <p className="field-help">확정된 반영 비율 정보를 다시 불러와 주세요.</p>}
       </ResourceState>
-      {data && allGenerated && <div className="report-generation-action report-publication-action" data-guide="space-report-publication">
-        <p>{allPublished ? '모든 팀에 리포트가 공개되었습니다.' : canPublish ? '팀별 결과를 검토한 뒤 전체 팀에 공개하세요.' : data.publicationBlockReasons.map(reportBlockMessage).join(' · ') || '공개 조건을 확인해 주세요.'}</p>
+      {data && allGenerated && !allPublished && <div className="report-generation-action report-publication-action" data-guide="space-report-publication">
+        {!canPublish && <p>{data.publicationBlockReasons.map(reportBlockMessage).join(' · ') || '공개 조건을 확인해 주세요.'}</p>}
         {!allPublished && <button className="primary-button" data-guide="publish-all-reports" disabled={busy || !canPublish || (guidedManagement && guide.stepId !== 'management-report-publish')} onClick={openPublication}>전체 리포트 공개</button>}
       </div>}
       {guidedManagement && guide.stepId === 'management-report-result' && <div className="heading-actions">

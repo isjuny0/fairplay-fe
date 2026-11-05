@@ -26,7 +26,7 @@
 .report-review-page .report-weight-total { margin-left: 0; white-space: nowrap; }
 .report-generation-action { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 24px; }
 .report-generation-action > p { margin: 0; color: var(--text-muted); font-size: 12px; line-height: 1.6; }
-.report-generation-action > button { flex-shrink: 0; }
+.report-generation-action > button { flex-shrink: 0; margin-left: auto; }
 .report-review-page .report-batch-generation.is-generated { padding-bottom: 20px; }
 .report-batch-generation.is-generated > .section-heading { margin-bottom: 8px; align-items: center; }
 .report-results-section { display: grid; gap: 20px; min-width: 0; }
