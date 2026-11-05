@@ -506,7 +506,6 @@ function TeamDashboard({
             <LayoutDashboard size={14} />팀 홈
           </span>
           <h1>{context.team.name}</h1>
-          <p>우리 팀의 흐름을 한눈에, 필요한 정보는 내 방식대로.</p>
         </div>
         <div className="dashboard-heading-actions">
           <button
