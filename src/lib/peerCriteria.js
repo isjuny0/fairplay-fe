@@ -7,8 +7,8 @@ export const peerCriteria = {
 
 const lowScoreColor = 'var(--peer-criteria-low-score-color)';
 
-export function getPeerCriteriaScoreColor(score, { includeThreshold = false } = {}) {
-  if (!Number.isFinite(score) || score < 0 || (includeThreshold ? score > 3 : score >= 3)) return undefined;
+export function getPeerCriteriaScoreColor(score) {
+  if (!Number.isFinite(score) || score < 0 || score >= 3) return undefined;
   return lowScoreColor;
 }
 
