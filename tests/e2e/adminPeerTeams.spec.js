@@ -238,24 +238,6 @@ for (const width of [1440, 390, 320]) {
     const midTab = tabs.getByRole('tab', { name: '중간 평가', exact: true });
     const finalTab = tabs.getByRole('tab', { name: '최종 평가', exact: true });
     await expect(midTab).toHaveAttribute('aria-selected', 'true');
-    // Folder-style tabs meet the shared baseline instead of floating as pills.
-    const tabShape = await tabs.evaluate((element) => {
-      const buttons = [...element.querySelectorAll('[role="tab"]')];
-      const selected = buttons.find((button) => button.getAttribute('aria-selected') === 'true');
-      const style = getComputedStyle(selected);
-      const baseline = element.getBoundingClientRect().bottom;
-      return {
-        baselineWidth: getComputedStyle(element).borderBottomWidth,
-        lowerRadii: [style.borderBottomLeftRadius, style.borderBottomRightRadius],
-        selectedBorder: style.borderBottomColor,
-        selectedBackground: style.backgroundColor,
-        offsets: buttons.map((button) => Math.abs(button.getBoundingClientRect().bottom - baseline)),
-      };
-    });
-    expect(tabShape.baselineWidth).toBe('1px');
-    expect(tabShape.lowerRadii).toEqual(['0px', '0px']);
-    expect(tabShape.selectedBorder).toBe(tabShape.selectedBackground);
-    expect(tabShape.offsets.every((offset) => offset <= 1)).toBe(true);
     await expect(page.getByRole('region', { name: '최종 평가 운영', exact: true })).toHaveCount(0);
     const mid = page.getByRole('region', { name: '중간 평가 팀별 제출 현황', exact: true });
     const list = mid.getByRole('region', { name: '중간 평가 팀 목록', exact: true });

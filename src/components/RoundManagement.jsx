@@ -5,7 +5,6 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { useSearchParams } from 'react-router';
 import SectionTabs from './SectionTabs.jsx';
-import WorkflowSteps from './WorkflowSteps.jsx';
 import ManagerPeerResponses from './ManagerPeerResponses.jsx';
 import DateTimeInput from './DateTimeInput.jsx';
 import RoundTeamSubmissions from './RoundTeamSubmissions.jsx';
@@ -164,8 +163,6 @@ export default function RoundManagement({ context, onChanged }) {
               const stateLabel = { UNCONFIGURED: '미설정', DRAFT: '시작 예정', OPEN: '평가 진행 중', CLOSED: '평가 종료' }[status];
               return <div role="tabpanel" id={`${roundTabsId}-${type}-panel`} aria-labelledby={`${roundTabsId}-${type}-tab`} hidden={selectedRoundType !== type} key={type}>
                 {selectedRoundType === type && <section className={`round-operation-section is-${status.toLowerCase()}`} data-guide-round={type} aria-label={`${roundLabels[type]} 운영`}>
-                <WorkflowSteps label={`${roundLabels[type]} 진행 단계`} steps={['일정 설정', '시작 대기', '평가 진행', '평가 종료']} current={{UNCONFIGURED: 0, DRAFT: 1, OPEN: 2, CLOSED: 3}[status]} />
-                <p className="workflow-next-action" role="status"><strong>다음 단계</strong>{!round ? '평가 시작·마감 일정을 설정하세요.' : startBlockReasons.length ? '평가 시작을 막는 조건을 아래에서 확인하고 조정하세요.' : status === 'DRAFT' ? '저장된 시작 시각에 자동으로 열립니다. 일정을 확인하세요.' : status === 'OPEN' ? '아래 제출 현황에서 미제출 팀을 확인하세요.' : '동료 평가 결과 탭에서 팀별 응답을 확인하세요.'}</p>
                 <header className="round-section-heading">
                   <div><h2>{roundLabels[type]}</h2><span className={`status-badge round-lifecycle-${status.toLowerCase()}`}>{stateLabel}</span></div>
                   <div className="round-section-tools">
@@ -180,11 +177,8 @@ export default function RoundManagement({ context, onChanged }) {
                     </div>
                   </div>
                 </header>
-                {(!round || (['OPEN', 'CLOSED'].includes(status) && !hasSubmissions)) && <div className="round-section-content">
-                  {!round && <div className="round-section-schedule">
-                    {!round && <p className="round-empty-schedule">평가 일정을 설정해 주세요.</p>}
-                    {needsMidSchedule && <p className="round-opening-block">중간 평가 일정을 먼저 설정해 주세요.</p>}
-                  </div>}
+                {((!round && needsMidSchedule) || (['OPEN', 'CLOSED'].includes(status) && !hasSubmissions)) && <div className="round-section-content">
+                  {!round && needsMidSchedule && <p className="round-empty-schedule">중간 평가 일정을 먼저 설정해 주세요.</p>}
                   {['OPEN', 'CLOSED'].includes(status) && !hasSubmissions && <p className="round-table-note">{submissions.loading ? '제출 현황을 불러오는 중…' : submissions.error || !teamSubmissions ? '제출 현황을 다시 불러와 주세요.' : '참여 팀이 없습니다.'}</p>}
                 </div>}
                 {startBlockReasons.length > 0 && (
@@ -227,9 +221,8 @@ export default function RoundManagement({ context, onChanged }) {
       </ResourceState>
       <details className="round-operation-guide">
         <summary>평가 운영 기준</summary>
-        <p>저장한 시작 시각에 평가가 자동으로 열립니다. 중간 평가 시작 시 팀 구성과 평가 참여자가 고정됩니다. 모든 팀에 승인된 팀원 2명 이상이 필요하며, 팀 빌딩 기간 종료 후 설정한 평가 기간 내에 시작할 수 있습니다.</p>
-        <p>중간 평가 마감 후 예약된 시각에 최종 평가가 자동으로 시작됩니다. 최종 평가 마감 시각은 작업 집계 기준이며, 이 시각부터 작업 변경이 제한됩니다.</p>
-        <p>마감된 회차는 일정 수정·추가 제출·재개방을 제공하지 않습니다. 최종 결과는 팀별 리포트에서 검토하고 공개합니다.</p>
+        <p>중간 평가가 시작되면 팀 구성과 평가 참여자가 고정됩니다.</p>
+        <p>최종 평가 마감 이후에는 작업 변경과 추가 제출이 제한됩니다.</p>
       </details>
       </div>}
       </div>
