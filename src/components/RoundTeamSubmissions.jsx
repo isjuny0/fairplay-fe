@@ -48,6 +48,7 @@ export default function RoundTeamSubmissions({ round, teams, directory, loading,
     setParams(next);
   };
   const filtered = Boolean(query || status !== 'all' || sort !== 'missing');
+  const showResultCount = Boolean(query || status !== 'all' || hasMore);
   return <div className="round-team-manager" aria-busy={loading}>
     <div className="round-team-heading"><h3>팀별 제출 현황</h3>
       <div className="view-switch round-team-view" role="group" aria-label="팀 목록 보기 방식">
@@ -69,7 +70,12 @@ export default function RoundTeamSubmissions({ round, teams, directory, loading,
         <option value="missing">미제출 많은 순</option><option value="progress">제출률 낮은 순</option><option value="name">팀 이름 순</option>
       </select></Field>
     </div>
-    <div className="round-team-list-meta"><span role="status">전체 {view.summary.total}팀 중 {view.count}팀</span>{filtered && <button type="button" className="text-button" onClick={reset}>검색·필터 초기화</button>}</div>
+    {(showResultCount || filtered) && <div className="round-team-list-meta">
+      {showResultCount && <span role="status">{hasMore
+        ? `${visibleTeams.length} / ${view.count}팀 표시`
+        : `검색 결과 ${view.count}팀`}</span>}
+      {filtered && <button type="button" className="text-button" onClick={reset}>검색·필터 초기화</button>}
+    </div>}
     {view.count ? <div key={`${scope}:${mode}:${mode === 'page' ? view.page : ''}`} className="round-team-list-scroll" ref={scrollRoot} role="region" aria-label={`${roundLabels[round.type]} 팀 목록`} tabIndex={0}>
       <div className="round-team-columns" aria-hidden="true"><span>팀</span><span>제출 인원</span><span>제출률</span><span>상태</span><span /></div>
       <ul className="round-team-submissions">{visibleTeams.map((team) => <li key={team.teamId}>
@@ -81,7 +87,6 @@ export default function RoundTeamSubmissions({ round, teams, directory, loading,
       </li>)}</ul>
       {hasMore && <button ref={moreButton} type="button" className="secondary-button round-team-load-more" onClick={showMore}>{Math.min(50, view.count - visibleTeams.length)}팀 더 보기</button>}
     </div> : <div className="round-team-empty"><strong>조건에 맞는 팀이 없습니다.</strong><span>팀 이름이나 제출 상태를 변경해 보세요.</span></div>}
-    {mode === 'scroll' && view.count > 0 && <p className="round-team-scroll-count" role="status">{visibleTeams.length} / {view.count}팀 표시</p>}
     {mode === 'page' && view.pageCount > 1 && <nav className="round-team-pagination" aria-label={`${roundLabels[round.type]} 팀 목록 페이지`}>
       <button type="button" className="secondary-button" disabled={view.page === 1} onClick={() => update('Page', view.page - 1)}>이전</button>
       <span>{view.page} / {view.pageCount}페이지</span>

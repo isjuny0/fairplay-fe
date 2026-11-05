@@ -118,7 +118,8 @@ for (const width of [1440, 1280, 390]) {
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await page.screenshot({ path: testInfo.outputPath('open-round-deadline.png'), animations: 'disabled' });
     await page.getByText('평가 운영 기준', { exact: true }).click();
-    await expect(page.getByText('중간 평가 마감 후 예약된 시각에 최종 평가가 자동으로 시작됩니다.', { exact: false })).toBeVisible();
+    await expect(page.getByText('중간 평가가 시작되면 팀 구성과 평가 참여자가 고정됩니다.', { exact: true })).toBeVisible();
+    await expect(page.getByText('최종 평가 마감 이후에는 작업 변경과 추가 제출이 제한됩니다.', { exact: true })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
 }
