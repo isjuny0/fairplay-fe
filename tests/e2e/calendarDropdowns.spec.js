@@ -118,8 +118,8 @@ for (const width of [1440, 390, 320]) {
     await expect(
       time.getByRole('button', { name: '시간 적용', exact: true }),
     ).toHaveCSS('background-color', 'rgb(8, 124, 85)');
-    expect(applyBox.height).toBeLessThanOrEqual(24);
-    expect(applyBox.width).toBeLessThan(70);
+    await expect(time.getByRole('button', { name: '시간 적용', exact: true })).toHaveCSS('font-size', '12px');
+    expect(applyBox.height).toBeGreaterThanOrEqual(width <= 720 ? 44 : 36);
     await time.getByRole('button', { name: '10시', exact: true }).click();
     await time.getByRole('button', { name: '45분', exact: true }).click();
     await time.getByRole('button', { name: '시간 적용', exact: true }).click();

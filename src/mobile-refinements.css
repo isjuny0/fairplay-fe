@@ -27,8 +27,7 @@
 .meeting-open-row { cursor: pointer; }
 .meeting-open-row:hover { background: var(--surface-secondary); }
 .meeting-open-row:focus-within { outline: 2px solid var(--brand); outline-offset: -2px; }
-.member-pending-shortcut { font-size: 13px; white-space: nowrap; }
-.low-score-label { display: block; font-size: 11px; font-weight: 500; }
+.peer-criteria-scores dd .low-score-label { display: block; font-size: var(--text-caption); font-weight: 500; }
 .materials-question-action { display: inline-flex; align-items: center; gap: 6px; }
 .materials-question-action-mobile { display: none; }
 @media (min-width: 721px) and (max-width: 900px) {
@@ -116,7 +115,6 @@
   .participant-mobile-details dl { display: grid; gap: 6px; margin: 8px 0; }
   .participant-mobile-details dl > div { display: flex; gap: 12px; }
   .participant-mobile-details dd { margin: 0; }
-  .participant-mobile-details .action-reason { display: block; margin-top: 6px; }
   .main-content .meeting-detail { gap: 12px; }
   .meeting-detail .meeting-metadata { gap: 8px; padding: 12px; }
   .meeting-detail .meeting-attendees { margin-block: 0; }
@@ -126,7 +124,6 @@
   .announcement-search-toolbar:focus-within .announcement-search-scope { display: block; }
   .main-content .announcement-metadata { padding: 12px 16px; gap: 6px; }
   .member-directory-title { flex-wrap: wrap; }
-  .member-pending-shortcut { min-height: 44px; align-content: center; }
   .rag-question-footer { flex-wrap: wrap; gap: 8px; }
   .rag-send-actions { margin-left: auto; }
   .task-detail-header > .experience-summary { margin-block: 12px; }

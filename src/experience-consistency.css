@@ -25,7 +25,7 @@
 .workflow-steps li { word-break: keep-all; overflow-wrap: anywhere; }
 :is(.table-scroll,.collection-table-scroll,.task-table-scroll,.task-timeline-scroll)[data-horizontal-overflow='true'][data-scroll-end='false']::after {
   content: '좌우로 밀어서 나머지 정보를 확인하세요 →';
-  display: block; position: sticky; left: 0; bottom: 0; z-index: 5; width: 100%; padding: 7px 10px; box-sizing: border-box; text-align: right; font-size: 11px; color: var(--text-muted); background: #f8fafbeF; border-top: 1px solid var(--border); pointer-events: none;
+  display: block; position: sticky; left: 0; bottom: 0; z-index: 5; width: 100%; padding: 7px 10px; box-sizing: border-box; text-align: right; font-size: var(--text-caption); color: var(--text-muted); background: #f8fafbeF; border-top: 1px solid var(--border); pointer-events: none;
 }
 @media (max-width: 400px) {
   .workflow-steps li { flex: 1 1 calc(50% - 6px); }

@@ -34,7 +34,9 @@
   --space-8: 32px;
   --space-section: var(--space-6);
   --space-card: var(--space-4);
+  --space-summary-card: var(--space-4);
   --radius-card: 6px;
+  --radius-summary-card: 14px;
   --radius-control: 6px;
   --control-height: 36px;
   --header-height: 56px;

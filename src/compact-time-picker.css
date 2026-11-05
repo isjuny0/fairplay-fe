@@ -14,7 +14,7 @@
 }
 .compact-time-picker .time-picker-heading {
   color: #4d695a;
-  font-size: 11px;
+  font-size: var(--text-caption);
   padding-bottom: 6px;
 }
 .compact-time-picker .time-picker-heading > span {
@@ -52,25 +52,29 @@
   display: none;
 }
 .compact-time-picker .time-picker-footer > strong {
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 .compact-time-picker .time-picker-footer .primary-button {
   font-weight: 700;
   min-width: 0;
-  min-height: 24px;
-  height: 24px;
+  min-height: var(--control-height);
   justify-self: end;
   width: auto;
-  padding: 3px 6px;
+  padding: var(--space-1) var(--space-2);
   background: var(--brand);
   color: #fff;
   border-color: transparent;
-  font-size: 9px;
-  border-radius: 6px;
+  font-size: var(--text-caption);
+  border-radius: var(--radius-control);
 }
 .compact-time-picker .time-picker-footer .primary-button:hover {
   background: var(--brand-dark);
 }
 .compact-time-picker.time-picker-panel :focus-visible {
   outline-color: var(--brand);
+}
+@media (max-width: 720px) {
+  .compact-time-picker .time-picker-footer .primary-button {
+    min-height: 44px;
+  }
 }

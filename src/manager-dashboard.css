@@ -46,7 +46,7 @@
 .dashboard-work-signals .signal-overdue { color: #a23e32; }
 .dashboard-work-signals .signal-stale { color: #815d1a; }
 .dashboard-no-signal { color: var(--text-muted); }
-.dashboard-work-overview { display: grid; grid-template-columns: minmax(0, 1fr) 180px; align-items: center; gap: 24px; width: 100%; padding: 20px 24px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.dashboard-work-overview { display: grid; grid-template-columns: minmax(0, 1fr) 180px; align-items: center; gap: 24px; width: 100%; padding: var(--space-summary-card); border: 1px solid var(--border); border-radius: var(--radius-summary-card); background: var(--surface); }
 .dashboard-work-progress { display: grid; justify-items: center; align-content: center; gap: 10px; min-width: 0; padding-left: 24px; border-left: 1px solid var(--border); }
 .dashboard-work-progress h2 { display: flex; align-items: center; gap: 2px; font-size: 12px; font-weight: 500; color: var(--text-muted); margin: 0; white-space: nowrap; }
 .dashboard-work-progress .team-progress-ring--compact { width: 112px; height: 112px; }
@@ -108,7 +108,7 @@
   .manager-dashboard--team .dashboard-heading-actions .manager-team-links { width: auto; flex: 1; flex-wrap: nowrap; gap: 8px; }
   .manager-dashboard .dashboard-list-toolbar .form-field { flex: 1 1 130px; }
   .manager-dashboard .dashboard-list-toolbar .form-field:first-child { flex-basis: 100%; max-width: none; }
-  .dashboard-work-overview { grid-template-columns: minmax(0, 1fr) 100px; gap: 12px; padding: 14px; }
+  .dashboard-work-overview { grid-template-columns: minmax(0, 1fr) 100px; gap: 12px; }
   .dashboard-work-progress { padding-left: 12px; }
   .dashboard-work-progress .team-progress-ring--compact { width: 88px; height: 88px; }
   .dashboard-work-progress .team-progress-ring--compact strong { font-size: 18px; }
