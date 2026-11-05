@@ -133,7 +133,7 @@ test('기본 선택 상자의 비활성·필수 검증 스타일을 유지한다
   await expect(status).toHaveCSS('background-color', 'rgb(248, 249, 250)');
   await expect(status).toHaveCSS('cursor', 'not-allowed');
   await status.evaluate(el => { el.disabled = false; el.setAttribute('aria-invalid', 'true'); });
-  await expect(status).toHaveCSS('border-top-color', 'rgb(216, 59, 69)');
+  await expect(status).toHaveCSS('border-top-color', 'rgb(180, 35, 50)');
   await status.focus();
   await expect(status).toHaveCSS('outline-color', 'rgb(8, 124, 85)');
 });

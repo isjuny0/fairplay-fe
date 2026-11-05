@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { BookOpen, Monitor, X } from 'lucide-react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 import { getCurrentUser, loginWithGoogle, logout } from '../api/auth.js';
+import MobileDisclosure from './MobileDisclosure.jsx';
 import AppRoutes from './AppRoutes.jsx';
 import { loginReturnPath } from '../lib/routes.js';
 import { ErrorNotice } from './ui.jsx';
 import { useInteractions } from '../hooks/useInteractions.js';
-import { HeaderContext } from './HeaderContext.js';
+import { HeaderContext, MobileNavigationSlotContext } from './HeaderContext.js';
 import { invalidateSharedReads } from '../api/sharedReads.js';
 import googleLogo from '../assets/google-g.svg';
 import BrandLogo from './BrandLogo.jsx';
@@ -35,6 +36,7 @@ export default function Application({ previewRuntime, onPreviewExit }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [headerContext, setHeaderContext] = useState(null);
+  const [mobileNavigationTarget, setMobileNavigationTarget] = useState(null);
   const [currentWorkspace, setCurrentWorkspace] = useState(null);
   const currentHeader =
     headerContext?.pathname === location.pathname
@@ -177,11 +179,13 @@ export default function Application({ previewRuntime, onPreviewExit }) {
               <br />
               기여도를 근거와 함께 확인하세요.
             </p>
+            <MobileDisclosure className="login-benefits-disclosure" summary="서비스에서 할 수 있는 일" media="(max-width: 720px) and (max-height: 700px)">
             <ol className="login-benefits">
               <li>작업을 나누고 수행 내용을 기록</li>
               <li>결과물을 등록하고 직접 완료</li>
               <li>협업을 돌아보고 기여도 확인</li>
             </ol>
+            </MobileDisclosure>
           </div>
           <div className="login-actions">
             <h2>함께 만드는 프로젝트</h2>
@@ -215,6 +219,7 @@ export default function Application({ previewRuntime, onPreviewExit }) {
     );
   return (
     <HeaderContext.Provider value={setHeaderContext}>
+      <MobileNavigationSlotContext.Provider value={mobileNavigationTarget}>
       <div className="app-shell">
         <header className="topbar">
           <div className="topbar-brand">
@@ -227,6 +232,7 @@ export default function Application({ previewRuntime, onPreviewExit }) {
             </button>
           </div>
           <div className="context-info" aria-label="현재 화면 정보">
+            <span className="mobile-header-navigation-slot" ref={setMobileNavigationTarget} />
             <span className="context-dot" aria-hidden="true" />
             <div className="header-context-copy">
               <strong title={currentHeader.spaceName || currentHeader.title}>{currentHeader.spaceName || currentHeader.title}</strong>
@@ -399,6 +405,7 @@ export default function Application({ previewRuntime, onPreviewExit }) {
         />
         <ScrollAffordances />
       </div>
+      </MobileNavigationSlotContext.Provider>
     </HeaderContext.Provider>
   );
 }

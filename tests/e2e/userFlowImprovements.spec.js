@@ -178,7 +178,7 @@ test('모바일 고급 필터는 접혀 있고 통합 메뉴에 현재 위치를
   await page
     .getByRole('button', { name: '기여도 리포트', exact: true })
     .click();
-  await expect(page.locator('.mobile-menu-location')).toContainText('기여도 리포트');
+  await expect(page.locator('.mobile-space-toggle')).toHaveAttribute('title', '기여도 리포트 · 메뉴 열기');
   await expect(
     page.getByRole('button', { name: '리포트 새로고침', exact: true }),
   ).toBeVisible();

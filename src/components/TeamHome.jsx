@@ -295,6 +295,7 @@ function TeamDashboard({
         <ResourceState resource={taskResource} label="확인할 작업">
           <div className="dashboard-attention">
             <button
+              title="내가 담당한 마감 지연 작업 목록으로 이동"
               onClick={() =>
                 onNavigate('작업', { mine: '1', overdue: 'work', view: 'list' })
               }
@@ -310,6 +311,7 @@ function TeamDashboard({
               <ChevronRight size={16} />
             </button>
             <button
+              title="내가 담당한 7일 내 마감 작업 목록으로 이동"
               onClick={() =>
                 onNavigate('작업', { mine: '1', due: 'week', view: 'list' })
               }
@@ -327,7 +329,7 @@ function TeamDashboard({
           </div>
           <p className="dashboard-caption">
             {overdueCount || overview.soon.length
-              ? '내가 담당한 미완료 작업 기준이에요.'
+              ? '내 담당 미완료 작업 · 선택하면 작업 목록으로 이동'
               : '확인할 작업 없음'}
           </p>
         </ResourceState>

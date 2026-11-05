@@ -1,5 +1,7 @@
-import { useEffect, useId, useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { ChevronRight } from 'lucide-react';
+import MobileSideDrawer from './MobileSideDrawer.jsx';
+import HeaderMobileNavigation from './HeaderMobileNavigation.jsx';
 import Icon from './Icon.jsx';
 import useResource from '../hooks/useResource.js';
 import { listTeamsWithMembership } from '../api/teams.js';
@@ -61,6 +63,7 @@ export default function SpaceDirectorySidebar({
   userId,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const mobileToggle = useRef(null);
   const [collapsed, setCollapsed] = useState(readSidebarPreference);
   const [desktopLayout, setDesktopLayout] = useState(
     () => window.matchMedia('(min-width: 721px)').matches,
@@ -91,21 +94,26 @@ export default function SpaceDirectorySidebar({
         inert={sidebarCollapsed ? '' : undefined}
       >
         <div className="directory-sidebar-heading">
-          <div>
-            <span>WORKSPACE</span>
-            <strong>함께 만드는 공간</strong>
-          </div>
+          <HeaderMobileNavigation>
           <button
+            type="button"
             className="directory-sidebar-toggle"
+            ref={mobileToggle}
             aria-label="스페이스 메뉴"
             aria-expanded={menuOpen}
             aria-controls={menuId}
             onClick={() => setMenuOpen((value) => !value)}
           >
-            <ChevronDown size={17} aria-hidden="true" />
+            <span className={`sidebar-toggle-glyph ${menuOpen ? 'is-expanded' : 'is-collapsed'}`} aria-hidden="true" />
           </button>
+          </HeaderMobileNavigation>
+          <div>
+            <span>WORKSPACE</span>
+            <strong>함께 만드는 공간</strong>
+          </div>
         </div>
-        <div className="directory-sidebar-content" id={menuId}>
+        <MobileSideDrawer open={menuOpen} onClose={() => setMenuOpen(false)} triggerRef={mobileToggle} title="내 스페이스 메뉴" variant="directory">
+        <div className="directory-sidebar-content" id={menuId} onClick={(event) => { if (event.target.closest('button:not(:disabled)')) setMenuOpen(false); }}>
           <nav className="directory-sidebar-views" aria-label="스페이스 보기">
             {views.map((view) => (
               <button
@@ -178,6 +186,7 @@ export default function SpaceDirectorySidebar({
             우리 팀의 프로젝트를 함께.
           </p>
         </div>
+        </MobileSideDrawer>
       </aside>
       <div
         className={`space-directory-sidebar-rail ${sidebarCollapsed ? 'is-collapsed' : ''}`}

@@ -15,7 +15,7 @@ for(const width of [320,390,1440]) {
     await expect(page).toHaveURL(/meeting-minutes$/);
     await expect(page.getByRole('heading',{name:'팀 회의록',exact:true})).toBeVisible();
     if(width<721) {
-      await expect(page.locator('.mobile-menu-location')).toContainText('회의록');
+      await expect(page.locator('.mobile-space-toggle')).toHaveAttribute('title', '회의록 · 메뉴 열기');
       await page.getByRole('button',{name:'스페이스 메뉴 펼치기',exact:true}).click();
       await expect(navigation.getByRole('button',{name:'회의록',exact:true})).toHaveAttribute('aria-current','page');
       await page.screenshot({path:info.outputPath('unified-menu-open.png'),animations:'disabled'});
@@ -59,14 +59,17 @@ test('390px: 삭제할 수 없는 참여자는 버튼 근처에서 이유를 확
   await page.addInitScript(()=>localStorage.setItem('fairplay:preview-role','manager'));
   await page.goto('/preview/spaces/1/participants');
   const row=page.locator('.participant-table tbody tr').first();
-  const button=row.getByRole('button');await expect(button).toBeDisabled();
-  await expect(row.locator('.action-reason')).toBeVisible();
-  await expect(button).toHaveAttribute('aria-describedby',/^removal-reason-/);
+  await row.getByText('가입 정보·관리').click();
+  const details = row.locator('.participant-mobile-details');
+  const button=details.getByRole('button');await expect(button).toBeDisabled();
+  await expect(details.locator('.action-reason')).toBeVisible();
+  await expect(button).toHaveAttribute('aria-describedby',/^mobile-removal-reason-/);
 });
 
 test('390px: 공지 검색 범위와 알림 읽음 처리 결과를 확인한다',async({page})=>{
   await page.setViewportSize({width:390,height:844});
   await page.goto('/preview/spaces/1/announcements');
+  await page.getByRole('searchbox').focus();
   await expect(page.getByText('검색 범위: 현재 1페이지 · 제목·작성자',{exact:true})).toBeVisible();
   await page.goto('/preview/notifications');
   await page.getByRole('button',{name:/읽음으로 표시$/}).first().click();

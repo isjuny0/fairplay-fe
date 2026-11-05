@@ -295,7 +295,7 @@ for (const width of [1440, 1024, 768, 390, 320]) {
         sidebar.getByRole('button', { name: '내 스페이스', exact: true }),
       ).toBeVisible();
     } else {
-      const toggle = sidebar.getByRole('button', {
+      const toggle = page.getByRole('button', {
         name: '스페이스 메뉴',
         exact: true,
       });
@@ -309,11 +309,10 @@ for (const width of [1440, 1024, 768, 390, 320]) {
       ).toBeHidden();
       await toggle.click();
       await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-      await sidebar
+      await page.getByRole('dialog', { name: '내 스페이스 메뉴', exact: true })
         .getByRole('button', { name: '관리 중', exact: true })
         .click();
       await expect(page.getByLabel('내 역할 필터')).toHaveAttribute('data-value', 'MANAGER');
-      await toggle.click();
       await expect(toggle).toHaveAttribute('aria-expanded', 'false');
     }
     expect(

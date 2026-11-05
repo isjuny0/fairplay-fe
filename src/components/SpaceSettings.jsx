@@ -136,7 +136,8 @@ export default function SpaceSettings({ space, onChanged }) {
         <section className="panel settings-section">
           <div className="settings-section-heading">
             <h2>팀 생성 기간</h2>
-            <p>새 팀은 설정한 기간에 만들 수 있습니다. 기존 팀 가입 신청과 승인은 팀 구성이 고정될 때까지 가능합니다.</p>
+            <p>{space.teamBuildingStatus === 'LOCKED' ? '평가 참여 구성 고정 · 기간 변경 불가' : '기간 변경 가능 · 저장 후 적용'}</p>
+            <details className="compact-help"><summary>기간 적용 규칙</summary><p>새 팀은 설정한 기간에 만들 수 있습니다. 기존 팀 가입 신청과 승인은 팀 구성이 고정될 때까지 가능합니다.</p></details>
           </div>
           <div className="settings-section-content">
             {space.teamBuildingOpensAt && space.teamBuildingClosesAt ? (

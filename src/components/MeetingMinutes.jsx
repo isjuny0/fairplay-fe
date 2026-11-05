@@ -15,6 +15,7 @@ import { teamMenuPath } from "../lib/routes.js";
 import MeetingMinuteEditor from "./MeetingMinuteEditor.jsx";
 import MarkdownBody from "./MarkdownBody.jsx";
 import RefreshButton from "./RefreshButton.jsx";
+import MobileDisclosure from './MobileDisclosure.jsx';
 import { EmptyState, ErrorNotice, ResourceState } from "./ui.jsx";
 import "../meeting-minutes.css";
 
@@ -194,7 +195,9 @@ export default function MeetingMinutes({
                     </thead>
                     <tbody>
                       {resource.data.items.map((item) => (
-                        <tr key={item.id}>
+                        <tr key={item.id} className="meeting-open-row" onClick={(event) => {
+                          if (!event.target.closest('button, a')) navigate(`${base}/${item.id}${query}`);
+                        }}>
                           <th scope="row" className="collection-name-cell">
                             <h3>
                               <button
@@ -266,6 +269,7 @@ export default function MeetingMinutes({
                 </div>
               </dl>
               <section className="meeting-attendees" aria-label="회의 참석자">
+                <MobileDisclosure summary={`참석자 ${resource.data.attendees.length}명${resource.data.attendees.length ? ` · ${resource.data.attendees.slice(0, 2).map(person => person.name).join(', ')}${resource.data.attendees.length > 2 ? ' 외' : ''}` : ''}`}>
                 <h2>
                   참석자{" "}
                   <span className="field-help">
@@ -286,6 +290,7 @@ export default function MeetingMinutes({
                     <p className="field-help">기록된 참석자가 없습니다.</p>
                   )}
                 </div>
+                </MobileDisclosure>
               </section>
               {meetingSections.map(([key, label]) => (
                 <section
