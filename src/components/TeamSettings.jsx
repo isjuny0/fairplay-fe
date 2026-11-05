@@ -436,17 +436,6 @@ export default function TeamSettings({
                 {handoffTasks.length > 0 && !leavePreview.blockReason && (
                   <>
                     <p>인계할 미완료 작업 {handoffTasks.length}개</p>
-                    {handoffTasks.length > 1 && (
-                      <Field label="모든 작업에 인계 대상 적용" help="일괄 적용 후 작업마다 바꿀 수 있습니다.">
-                        <select disabled={busy} value="" onChange={(event) => {
-                          const recipientId = event.target.value;
-                          setHandoffRecipients(Object.fromEntries(handoffTasks.map((task) => [task.id, recipientId])));
-                        }}>
-                          <option value="" disabled>한 명에게 일괄 적용</option>
-                          {handoffOptions}
-                        </select>
-                      </Field>
-                    )}
                     <ul className="clean-list">
                       {handoffTasks.map((task) => (
                         <li key={task.id}>
