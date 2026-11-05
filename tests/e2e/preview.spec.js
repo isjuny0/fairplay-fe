@@ -465,8 +465,14 @@ test('평가 완료 상황에서 관리자가 전체 리포트를 생성하고 �
   await page.getByRole('spinbutton', { name: '중간 동료 평가 평가 비중', exact: true }).fill('20');
   await page.getByRole('spinbutton', { name: '최종 동료 평가 평가 비중', exact: true }).fill('30');
   await generate.click();
+  const confirmation = page.getByRole('dialog', { name: '리포트 생성 전 평가 비중 확인' });
+  await expect(confirmation.locator('dd')).toHaveText(['50%', '20%', '30%']);
+  await confirmation.getByRole('button', { name: '취소', exact: true }).click();
+  await expect(page.getByRole('region', { name: '팀별 리포트 결과', exact: true })).toHaveCount(0);
+  await generate.click();
+  await confirmation.getByRole('button', { name: '생성 확정', exact: true }).click();
   await expect(page.getByRole('heading', { name: '전체 리포트 생성 완료', exact: true })).toBeVisible();
-  await expect(page.getByRole('region', { name: '팀별 리포트 목록' })).toContainText('미공개');
+  await expect(page.getByRole('region', { name: '팀별 리포트 결과' })).toContainText('미공개');
   await page.reload();
   await expect(page.getByRole('heading', { name: '전체 리포트 생성 완료', exact: true })).toBeVisible();
   await page.getByRole('button', { name: '삼위일체 리포트 확인', exact: true }).click();

@@ -25,6 +25,7 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
   }, [guidedManagement, guide?.stepId]);
   useEffect(() => { onBusyChange?.(busy || resource.loading); }, [busy, resource.loading, onBusyChange]);
   const [error, setError] = useState(null);
+  const [generationWeights, setGenerationWeights] = useState(null);
   const [confirmingPublication, setConfirmingPublication] = useState(null);
   const [draftWeights, setDraftWeights] = useState(defaultReportWeights);
   const [confirmedWeights, setConfirmedWeights] = useState(null);
@@ -51,9 +52,9 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
     catch (requestError) { setError(requestError); }
     finally { resource.reload(); onGenerated(); setBusy(false); running.current = false; }
   };
-  const generateAll = () => {
-    if (!weightsValid || !state?.canGenerate) return;
-    const requestedWeights = { ...weights };
+  const generateAll = (requestedWeights) => {
+    if (!validReportWeights(requestedWeights) || !state?.canGenerate) return;
+    setGenerationWeights(null);
     execute(async () => {
       const latest = await getSpaceReports(context.space.id);
       if (latest.weightsConfirmed && !sameReportWeights(latest.weights, requestedWeights)) {
@@ -64,6 +65,11 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
       await generateSpaceReports(context.space.id, requestedWeights);
       notify('전체 리포트 생성 요청을 처리했습니다. 생성 현황을 확인해 주세요.');
     });
+  };
+  const requestGeneration = () => {
+    if (!weightsValid || !state?.canGenerate || busy) return;
+    if (lockedWeights) generateAll(lockedWeights);
+    else setGenerationWeights({ ...weights });
   };
   const openPublication = () => execute(async () => {
     const latest = await getSpaceReports(context.space.id);
@@ -129,8 +135,8 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
   </div>;
   return (
     <section className={`report-batch-generation${allGenerated ? ' is-generated' : ''}`} aria-label="전체 팀 리포트 생성" aria-busy={busy}>
-      {resource.data && <WorkflowSteps label="리포트 처리 단계" steps={['리포트 생성', '내용 검토', '전체 공개']} current={allPublished ? 3 : resource.data.canPublish ? 2 : allGenerated ? 1 : 0} />}
-      {state && <p className="workflow-next-action" role="status"><strong>다음 단계</strong>{allPublished ? '공개한 리포트와 팀별 결과를 확인할 수 있습니다.' : canPublish ? '팀별 검토를 마쳤습니다. 전체 공개를 진행하세요.' : allGenerated ? '아래 팀별 리포트에서 내용과 수행 근거를 검토하세요.' : state.canGenerate ? '반영 비율을 확인한 뒤 전체 리포트를 생성하세요.' : '아래 생성 대기 팀과 생성 제한 사유를 확인하세요.'}</p>}
+      {resource.data && <WorkflowSteps label="리포트 처리 단계" steps={['리포트 생성', '공개 준비', '전체 공개']} current={allPublished ? 3 : resource.data.canPublish ? 2 : allGenerated ? 1 : 0} />}
+      {state && <p className="workflow-next-action" role="status"><strong>다음 단계</strong>{allPublished ? '공개한 리포트와 팀별 결과를 확인할 수 있습니다.' : canPublish ? '공개할 수 있습니다. 팀별 결과를 확인한 뒤 공개하세요.' : allGenerated ? '아래 팀별 리포트에서 내용과 수행 근거를 검토하세요.' : state.canGenerate ? '반영 비율을 확인한 뒤 전체 리포트를 생성하세요.' : '아래 생성 대기 팀과 생성 제한 사유를 확인하세요.'}</p>}
       <div className="section-heading">
         <div>
           <h2>{allPublished ? '전체 리포트 공개 완료' : allGenerated ? '전체 리포트 생성 완료' : '전체 리포트 생성'}</h2>
@@ -164,7 +170,7 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
             <button type="button" className="primary-button" data-guide="generate-all-reports"
               disabled={busy || resource.loading || Boolean(resource.error) || !state.canGenerate || !weightsValid
                 || (guidedManagement && guide.stepId === 'management-report-weights')}
-              onClick={generateAll}>
+              onClick={requestGeneration}>
               {busy ? '처리 중…' : data.generatedTeamCount > 0 ? '미생성 팀 다시 생성' : '전체 리포트 생성'}
             </button>
           </div>
@@ -183,6 +189,17 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
         <button className="secondary-button" data-guide="confirm-management-report-result" disabled={!guide.reportManagementReady}
           onClick={() => guide.confirmReportManagementStep('management-report-result')}>공개 결과 확인 완료</button>
       </div>}
+      {generationWeights && <Modal title="리포트 생성 전 평가 비중 확인" onClose={() => setGenerationWeights(null)}>
+        <section className="report-confirmed-weights" data-guide="report-generation-weights" aria-label="생성에 적용할 평가 비중">
+          <dl>{reportWeightFields.map(({ key, label }) => <div key={key}><dt>{label}</dt><dd>{generationWeights[key]}%</dd></div>)}</dl>
+          <p>첫 생성이 성공하면 이 비중이 확정되어 스페이스의 모든 팀에 적용됩니다.</p>
+        </section>
+        <div className="heading-actions">
+          <button type="button" className="secondary-button" onClick={() => setGenerationWeights(null)}>취소</button>
+          <button type="button" className="primary-button" data-guide="confirm-generate-all-reports"
+            disabled={busy || !state?.canGenerate} onClick={() => generateAll(generationWeights)}>생성 확정</button>
+        </div>
+      </Modal>}
       {confirmingPublication && <Modal title="전체 리포트 공개" busy={busy} onClose={() => setConfirmingPublication(null)}>
         <p>미공개 {confirmingPublication.totalTeamCount - confirmingPublication.publishedTeamCount}개 팀의 리포트를 함께 공개합니다.</p>
         <p data-guide="report-publication-scope">각 팀원은 본인의 종합점수·평가 결과·작업 근거만 볼 수 있습니다. 공개 후에는 수정하거나 비공개로 되돌릴 수 없습니다.</p>

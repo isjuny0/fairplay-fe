@@ -248,6 +248,7 @@ for (const width of [390, 320]) {
     await expect(page.getByRole('list', { name: '팀별 리포트 준비 상태', exact: true }).getByRole('listitem')).toHaveCount(2);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.getByRole('button', { name: '전체 리포트 생성', exact: true }).click();
+    await page.getByRole('button', { name: '생성 확정', exact: true }).click();
     await expect(results).toBeVisible();
     await expect(page.getByRole('list', { name: '팀별 리포트 준비 상태', exact: true })).toHaveCount(0);
     await expect(results.getByRole('row').filter({ hasText: '삼위일체' })).toContainText('미공개');
@@ -308,6 +309,8 @@ for (const width of [1079, 390]) {
     await expect(page.locator('.report-weights-disclosure')).not.toHaveAttribute('open');
     await expect(callout).toContainText('아직 팀원에게 공개되지 않습니다.');
     await page.getByRole('button', { name: '전체 리포트 생성', exact: true }).click();
+    await expect(callout).toContainText('첫 생성이 성공하면');
+    await page.getByRole('button', { name: '생성 확정', exact: true }).click();
     await expect(callout).toContainText('삼위일체');
     await page.getByRole('button', { name: '삼위일체 리포트 확인', exact: true }).click();
     const report = page.getByRole('dialog', { name: '삼위일체 리포트', exact: true });

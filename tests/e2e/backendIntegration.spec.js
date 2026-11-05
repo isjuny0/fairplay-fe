@@ -1309,6 +1309,7 @@ test('전체 리포트를 생성하고 결과를 확인한 뒤 별도로 공개�
     page.getByRole('button', { name: '전체 리포트 생성', exact: true }),
   ).toBeEnabled();
   await page.getByRole('button', { name: '전체 리포트 생성', exact: true }).click();
+  await page.getByRole('button', { name: '생성 확정', exact: true }).click();
   await page.getByRole('button', { name: '실제 API 팀 리포트 확인', exact: true }).click();
   await expect(page.locator('.report-publication-status')).toHaveText('미공개');
   await expect(page.getByRole('button', { name: '전체 리포트 생성', exact: true })).toHaveCount(0);
@@ -1436,6 +1437,7 @@ test('표시상 마감 후에도 서버 마감 정리와 완료 작업 부족 �
   });
   await page.goto('/spaces/1/reports');
   await page.getByRole('button', { name: '전체 리포트 생성', exact: true }).click();
+  await page.getByRole('button', { name: '생성 확정', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('서버의 마감 정리');
   await expect(
     page.getByRole('list', { name: '팀별 리포트 준비 상태' }),
@@ -1455,6 +1457,7 @@ test('표시상 마감 후에도 서버 마감 정리와 완료 작업 부족 �
       : route.fallback(),
   );
   await page.getByRole('button', { name: '전체 리포트 생성', exact: true }).click();
+  await page.getByRole('button', { name: '생성 확정', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText(
     '완료 작업 또는 평가 입력이 부족',
   );
@@ -2152,6 +2155,7 @@ test('전체 팀의 필수 제출과 두 회차 마감이 모두 완료돼야 �
   await expect(generate).toBeEnabled();
   expect(fixture.generatedTeams).toEqual([]);
   await generate.click();
+  await page.getByRole('button', { name: '생성 확정', exact: true }).click();
   await expect(page.getByRole('heading', { name: '전체 리포트 생성 완료', exact: true })).toBeVisible();
   expect(fixture.generatedTeams).toEqual([1, 2]);
   expect([...fixture.reports.values()].every((report) => report.status === 'UNPUBLISHED')).toBe(true);
@@ -2161,9 +2165,11 @@ test('일괄 생성 실패는 전체 결과를 취소하며 재시도에서 전�
   const fixture = await batchReportBackend(page, { failSecondOnce: true });
   await page.goto('/spaces/1/reports');
   await page.getByRole('button', { name: '전체 리포트 생성', exact: true }).click();
+  await page.getByRole('button', { name: '생성 확정', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('완료 작업 또는 평가 입력이 부족');
   expect(fixture.reports.size).toBe(0);
   await page.getByRole('button', { name: '전체 리포트 생성', exact: true }).click();
+  await page.getByRole('button', { name: '생성 확정', exact: true }).click();
   await expect(page.getByRole('heading', { name: '전체 리포트 생성 완료', exact: true })).toBeVisible();
   expect(fixture.generatedTeams).toEqual([1, 2, 1, 2]);
   expect([...fixture.reports.values()].every((report) => report.status === 'UNPUBLISHED')).toBe(true);
@@ -2176,6 +2182,7 @@ test('생성 직전 전체 제출 조건을 다시 확인하고 변경되면 생
   await expect(generate).toBeEnabled();
   fixture.setMissing(true);
   await generate.click();
+  await page.getByRole('button', { name: '생성 확정', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('필수 동료 평가 제출');
   expect(fixture.generatedTeams).toEqual([]);
 });
@@ -2203,6 +2210,7 @@ test('관리자는 0을 포함한 정수 비율만 합계 100으로 설정하고
   await fillReportWeights(page, { '완료 작업': 0, '중간 동료 평가': 0, '최종 동료 평가': 100 });
   await expect(generate).toBeEnabled();
   await generate.click();
+  await page.getByRole('button', { name: '생성 확정', exact: true }).click();
   await expect(page.getByRole('heading', { name: '전체 리포트 생성 완료', exact: true })).toBeVisible();
   expect(fixture.generationWeights).toEqual([{ taskPercent: 0, midPercent: 0, finalPercent: 100 }, { taskPercent: 0, midPercent: 0, finalPercent: 100 }]);
   await page.locator('.report-weights-disclosure > summary').click();
@@ -2246,6 +2254,7 @@ test('다른 관리자가 먼저 확정한 비율을 생성 직전에 다시 확
   await expect(generate).toBeEnabled();
   fixture.setLockedWeights({ taskPercent: 60, midPercent: 0, finalPercent: 40 });
   await generate.click();
+  await page.getByRole('button', { name: '생성 확정', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('반영 비율이 이미 확정');
   expect(fixture.generatedTeams).toEqual([]);
   await page.locator('.report-weights-disclosure > summary').click();
@@ -2265,6 +2274,7 @@ test('일괄 생성 중 비율 충돌이 발생하면 재전송하지 않고 확
   });
   await page.goto('/spaces/1/reports');
   await page.getByRole('button', { name: '전체 리포트 생성', exact: true }).click();
+  await page.getByRole('button', { name: '생성 확정', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('스페이스 공통 반영 비율이 이미 확정');
   expect(attempts).toEqual([{ taskPercent: 70, midPercent: 10, finalPercent: 20 }]);
   await page.locator('.report-weights-disclosure > summary').click();
