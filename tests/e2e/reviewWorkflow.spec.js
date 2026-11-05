@@ -63,8 +63,8 @@ for (const width of [1440, 1280, 390]) {
     await expect(evidence.locator('.report-member-evidence-heading')).toHaveCount(0);
     await expect(evidence.locator('.evidence-task-summary')).toHaveCount(0);
     await expect(page.getByRole('button', { name: '내 완료 작업 보기', exact: true })).toHaveCount(0);
-    await expect(page.getByText('이지원', { exact: true })).toHaveCount(0);
-    await expect(page.getByText('박서연', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('김영진', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('박선우', { exact: true })).toHaveCount(0);
     const help = summary.getByRole('button', { name: '작업 점수 반영점수 설명', exact: true });
     await help.focus();
     await expect(summary.getByRole('tooltip')).toContainText('팀 평균 완료 작업량을 충족하면 작업 점수는 100점입니다.');
@@ -99,7 +99,7 @@ for (const width of [1440, 1280, 390]) {
     await expect(page.getByRole('list', { name: '팀별 리포트 준비 상태' })).toHaveCount(0);
     await memberButtons.nth(1).focus();
     await memberButtons.nth(1).press('Enter');
-    const evidence = page.getByRole('region', { name: '이지원님의 수행 근거', exact: true });
+    const evidence = page.getByRole('region', { name: '김영진님의 수행 근거', exact: true });
     await openCalculation(evidence);
     await expect(evidence.locator('.report-visual-breakdown')).toBeVisible();
     await expect(evidence.locator('.report-total-ring')).toHaveCount(0);
@@ -110,16 +110,16 @@ for (const width of [1440, 1280, 390]) {
     await expect(page.getByRole('dialog')).toHaveCount(1);
     await expect(evidence.getByText('종합점수 계산 보기', { exact: true })).toHaveCount(0);
     await evidence.getByRole('combobox', { name: '상세 조회 팀원', exact: true }).focus();
-    await evidence.getByRole('combobox', { name: '상세 조회 팀원', exact: true }).selectOption({ label: '김하늘' });
+    await evidence.getByRole('combobox', { name: '상세 조회 팀원', exact: true }).selectOption({ label: '김준영' });
     await expect(page.getByRole('combobox', { name: '상세 조회 팀원', exact: true })).toBeFocused();
-    await expect(page.getByRole('region', { name: '김하늘님의 수행 근거', exact: true })).toBeVisible();
+    await expect(page.getByRole('region', { name: '김준영님의 수행 근거', exact: true })).toBeVisible();
     await expect(evidence).toHaveCount(0);
-    const firstEvidence = page.getByRole('region', { name: '김하늘님의 수행 근거', exact: true });
+    const firstEvidence = page.getByRole('region', { name: '김준영님의 수행 근거', exact: true });
     await firstEvidence.locator('.evidence-task-toggle').first().click();
     await expect(firstEvidence.getByRole('heading', { name: '본인 수행 설명', exact: true })).toBeVisible();
     await expect(firstEvidence.getByRole('heading', { name: '현재 연결 자료', exact: true })).toBeVisible();
-    await firstEvidence.getByRole('combobox', { name: '상세 조회 팀원', exact: true }).selectOption({ label: '박서연' });
-    const emptyEvidence = page.getByRole('region', { name: '박서연님의 수행 근거', exact: true });
+    await firstEvidence.getByRole('combobox', { name: '상세 조회 팀원', exact: true }).selectOption({ label: '박선우' });
+    const emptyEvidence = page.getByRole('region', { name: '박선우님의 수행 근거', exact: true });
     await expect(emptyEvidence.getByRole('heading', { name: '반영된 완료 작업이 없습니다.', exact: true })).toBeVisible();
     await expect(emptyEvidence.locator('.report-personal-summary')).toBeVisible();
     expect(await toolbar.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
@@ -163,24 +163,24 @@ for (const width of [1440, 1280, 390]) {
       exact: true,
     });
     const save = dock.getByRole('button', {
-      name: '이지원 평가 저장',
+      name: '김영진 평가 저장',
       exact: true,
     });
     await expect(save).toBeEnabled();
     expect(await withinViewport(save)).toBe(true);
     for (const criterion of ['작업 수행', '책임감', '적극성', '의사소통'])
-      await page.getByLabel(`이지원 ${criterion} 4점`, { exact: true }).check();
+      await page.getByLabel(`김영진 ${criterion} 4점`, { exact: true }).check();
     await dock
-      .getByRole('button', { name: '다음 팀원 · 박서연', exact: true })
+      .getByRole('button', { name: '다음 팀원 · 박선우', exact: true })
       .click();
     await expect(
-      page.getByRole('heading', { name: '박서연', exact: true }),
+      page.getByRole('heading', { name: '박선우', exact: true }),
     ).toBeFocused();
     await dock
-      .getByRole('button', { name: '다음 팀원 · 이지원', exact: true })
+      .getByRole('button', { name: '다음 팀원 · 김영진', exact: true })
       .click();
     await expect(
-      page.getByLabel('이지원 작업 수행 4점', { exact: true }),
+      page.getByLabel('김영진 작업 수행 4점', { exact: true }),
     ).toBeChecked();
     await expect(
       page.getByRole('region', { name: '평가 최종 제출', exact: true }).getByRole('button', { name: '최종 제출', exact: true }),
@@ -205,9 +205,9 @@ for (const width of [1440, 1079, 768, 320]) {
     await page.setViewportSize({ width, height: 1000 });
     await preview(page, '/spaces/1/teams/1/peer-evaluations?roundId=11', 'member', 'published');
     await expect(page.getByRole('heading', { name: '마감된 평가 · 내가 저장한 응답', exact: true })).toBeVisible();
-    await expect(page.getByLabel('김하늘 작업 수행 4점', { exact: true })).toBeChecked();
-    await expect(page.getByLabel('김하늘 적극성 2점', { exact: true })).toBeChecked();
-    await expect(page.getByLabel('김하늘 작업 수행 4점', { exact: true })).toBeDisabled();
+    await expect(page.getByLabel('김준영 작업 수행 4점', { exact: true })).toBeChecked();
+    await expect(page.getByLabel('김준영 적극성 2점', { exact: true })).toBeChecked();
+    await expect(page.getByLabel('김준영 작업 수행 4점', { exact: true })).toBeDisabled();
     await expect(page.getByRole('textbox', { name: '평가 사유', exact: true }).first()).toBeDisabled();
     await expect(page.getByRole('region', { name: '평가 저장 및 제출', exact: true })).toHaveCount(0);
     const choices = page.getByRole('group', { name: '평가할 팀원 선택', exact: true });
@@ -216,9 +216,9 @@ for (const width of [1440, 1079, 768, 320]) {
       const second = await choices.getByRole('button').nth(1).boundingBox();
       expect(second.y).toBeGreaterThan(first.y);
     }
-    await choices.getByRole('button', { name: /^박서연/ }).click();
-    await expect(page.getByRole('heading', { name: '박서연', exact: true })).toBeFocused();
-    await expect(page.getByLabel('박서연 작업 수행 4점', { exact: true })).toBeDisabled();
+    await choices.getByRole('button', { name: /^박선우/ }).click();
+    await expect(page.getByRole('heading', { name: '박선우', exact: true })).toBeFocused();
+    await expect(page.getByLabel('박선우 작업 수행 4점', { exact: true })).toBeDisabled();
     const selectedRound = page.getByRole('group', { name: '평가 회차 선택', exact: true })
       .getByRole('button', { pressed: true });
     await selectedRound.click();
@@ -313,13 +313,13 @@ for (const width of [1079, 390]) {
     const report = page.getByRole('dialog', { name: '삼위일체 리포트', exact: true });
     await expect(report).toBeVisible();
     await expect(report.locator('[data-preview-guide-callout]')).toContainText('원점수 → 평가 비중 → 반영 점수');
-    const evidence = report.getByRole('region', { name: '김하늘님의 수행 근거', exact: true });
+    const evidence = report.getByRole('region', { name: '김준영님의 수행 근거', exact: true });
     await evidence.getByRole('button', { name: '점수 검토 완료', exact: true }).click();
     await expect(report).toBeVisible();
     const finishReview = report.getByRole('button', { name: '작업 근거 검토 완료', exact: true });
     await expect(finishReview).toBeDisabled();
     await evidence.locator('[data-guide-report-task="101"]').click();
-    await expect(callout).toContainText('연결된 ‘인터뷰 계획과 질문 목록’을 직접 누르세요.');
+    await expect(callout).toContainText('연결된 ‘스페이스·팀 권한 정리’를 직접 누르세요.');
     const material = evidence.locator('[data-guide-report-material="1002"]');
     await material.click();
     await expect(finishReview).toBeEnabled();
@@ -328,9 +328,9 @@ for (const width of [1079, 390]) {
     await expect(finishReview).toBeDisabled();
     await material.click();
     await expect(finishReview).toBeEnabled();
-    await evidence.getByRole('combobox', { name: '상세 조회 팀원', exact: true }).selectOption({ label: '이지원' });
+    await evidence.getByRole('combobox', { name: '상세 조회 팀원', exact: true }).selectOption({ label: '김영진' });
     await expect(finishReview).toBeDisabled();
-    await expect(callout).toContainText('김하늘님의 결과를 선택');
+    await expect(callout).toContainText('김준영님의 결과를 선택');
     await report.getByRole('button', { name: '가이드 안내 위치', exact: true }).click();
     await expect(evidence).toBeVisible();
     await expect(evidence.locator('[data-guide-report-task="101"]')).toHaveAttribute('aria-expanded', 'true');
@@ -374,7 +374,7 @@ for (const reducedMotion of ['no-preference', 'reduce']) {
     await page.getByRole('button', { name: '삼위일체 리포트 확인', exact: true }).click();
     const drawer = page.getByRole('dialog', { name: '삼위일체 리포트', exact: true });
     await expect(drawer).toBeVisible();
-    await expect(drawer.getByRole('region', { name: '김하늘님의 수행 근거', exact: true })).toBeVisible();
+    await expect(drawer.getByRole('region', { name: '김준영님의 수행 근거', exact: true })).toBeVisible();
     expect(await page.evaluate(() => window.reportMainAnimations)).toBe(0);
     expect(await main.boundingBox()).toEqual(before);
     expect(await drawer.evaluate((element) => getComputedStyle(element).animationName))
@@ -416,11 +416,11 @@ for (const width of [1079, 390]) {
     await expect(peerConfirm).toBeDisabled();
     await criteria.getByRole('button', { name: '최종 평가', exact: true }).click();
     await peerConfirm.click();
-    await expect(callout).toContainText('‘조사 결과 요약’을 직접 눌러');
+    await expect(callout).toContainText('‘종합 평가 리포트 연동’을 직접 눌러');
     const finish = page.getByRole('button', { name: '리포트 확인 마치기', exact: true });
     await expect(finish).toBeDisabled();
     await page.locator('[data-guide-report-task="106"]').click();
-    await expect(callout).toContainText('‘조사 결과 요약 문서’를 누르세요.');
+    await expect(callout).toContainText('‘종합 평가 리포트 연동 점검’을 누르세요.');
     const material = page.locator('[data-guide-report-material="1005"]');
     await expect(material).toHaveClass(/preview-guide-action-highlight/);
     await material.click();
@@ -429,7 +429,7 @@ for (const width of [1079, 390]) {
     await expect(page.locator('[data-guide="report-material-preview"] .markdown-body')).toBeVisible();
     await material.click();
     await expect(finish).toBeDisabled();
-    await expect(callout).toContainText('‘조사 결과 요약 문서’를 누르세요.');
+    await expect(callout).toContainText('‘종합 평가 리포트 연동 점검’을 누르세요.');
     await material.click();
     await expect(finish).toBeEnabled();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

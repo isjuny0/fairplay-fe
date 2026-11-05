@@ -38,7 +38,7 @@ test('저장 후 바꾼 평가는 제출을 막고 다시 저장한 최신 점�
   page,
 }) => {
   await openPreview(page, peerPath);
-  for (const member of ['이지원', '박서연']) {
+  for (const member of ['김영진', '박선우']) {
     await fillEvaluation(page, member);
     await page
       .getByRole('button', { name: `${member} 평가 저장`, exact: true })
@@ -48,15 +48,15 @@ test('저장 후 바꾼 평가는 제출을 막고 다시 저장한 최신 점�
     page.getByRole('button', { name: '최종 제출', exact: true }),
   ).toBeEnabled();
   await page
-    .getByRole('button', { name: '이지원 저장됨', exact: true })
+    .getByRole('button', { name: '김영진 저장됨', exact: true })
     .click();
-  await page.getByLabel('이지원 작업 수행 5점', { exact: true }).check();
-  await expect(page.getByRole('group', { name: '평가할 팀원 선택', exact: true }).getByRole('button', { name: '이지원 미저장', exact: true })).toBeVisible();
+  await page.getByLabel('김영진 작업 수행 5점', { exact: true }).check();
+  await expect(page.getByRole('group', { name: '평가할 팀원 선택', exact: true }).getByRole('button', { name: '김영진 미저장', exact: true })).toBeVisible();
   await expect(
     page.getByRole('button', { name: '최종 제출', exact: true }),
   ).toBeDisabled();
   await page
-    .getByRole('button', { name: '이지원 평가 저장', exact: true })
+    .getByRole('button', { name: '김영진 평가 저장', exact: true })
     .click();
   await page.getByRole('button', { name: '최종 제출', exact: true }).click();
   await page
@@ -67,8 +67,8 @@ test('저장 후 바꾼 평가는 제출을 막고 다시 저장한 최신 점�
     page.getByRole('heading', { name: '최종 제출 완료' }),
   ).toBeVisible();
   await page.reload();
-  await expect(page.getByLabel('이지원 작업 수행 5점', { exact: true })).toBeChecked();
-  await expect(page.getByLabel('이지원 작업 수행 5점', { exact: true })).toBeDisabled();
+  await expect(page.getByLabel('김영진 작업 수행 5점', { exact: true })).toBeChecked();
+  await expect(page.getByLabel('김영진 작업 수행 5점', { exact: true })).toBeDisabled();
   await expect(page.locator('input[type=radio]:enabled')).toHaveCount(0);
 });
 
@@ -77,12 +77,12 @@ test('미저장 평가의 메뉴 이동과 브라우저 뒤로가기를 취소�
 }) => {
   await openPreview(page, '/spaces/1/teams/1');
   await page.getByRole('button', { name: '동료 평가', exact: true }).click();
-  await page.getByLabel('이지원 작업 수행 5점', { exact: true }).check();
+  await page.getByLabel('김영진 작업 수행 5점', { exact: true }).check();
   await page.getByRole('button', { name: '작업', exact: true }).click();
   await expect(page.getByRole('dialog')).toContainText('저장하지 않은 입력');
   await page.getByRole('button', { name: '계속 작성', exact: true }).click();
   await expect(
-    page.getByLabel('이지원 작업 수행 5점', { exact: true }),
+    page.getByLabel('김영진 작업 수행 5점', { exact: true }),
   ).toBeChecked();
   await page.goBack();
   await expect(page.getByRole('dialog')).toContainText('저장하지 않은 입력');
@@ -137,29 +137,29 @@ for (const width of [1440, 390])
       await page.getByRole('button', {name:'스페이스 메뉴 펼치기',exact:true}).click();
     }
     await page.getByRole('button', { name: '동료 평가', exact: true }).click();
-    await fillEvaluation(page, '이지원');
+    await fillEvaluation(page, '김영진');
     await page
-      .getByRole('button', { name: '이지원 평가 저장', exact: true })
+      .getByRole('button', { name: '김영진 평가 저장', exact: true })
       .click();
-    await page.getByLabel('이지원 작업 수행 5점', { exact: true }).check();
+    await page.getByLabel('김영진 작업 수행 5점', { exact: true }).check();
     await page
-      .getByRole('button', { name: '박서연 작성 필요', exact: true })
+      .getByRole('button', { name: '박선우 작성 필요', exact: true })
       .click();
-    await fillEvaluation(page, '박서연');
+    await fillEvaluation(page, '박선우');
     await page
-      .getByRole('button', { name: '박서연 평가 저장', exact: true })
+      .getByRole('button', { name: '박선우 평가 저장', exact: true })
       .click();
     await expect(
       page.getByRole('button', { name: '최종 제출', exact: true }),
     ).toBeDisabled();
     await page
-      .getByRole('button', { name: '이지원 미저장', exact: true })
+      .getByRole('button', { name: '김영진 미저장', exact: true })
       .click();
     await expect(
-      page.getByLabel('이지원 작업 수행 5점', { exact: true }),
+      page.getByLabel('김영진 작업 수행 5점', { exact: true }),
     ).toBeChecked();
     await page
-      .getByRole('button', { name: '이지원 평가 저장', exact: true })
+      .getByRole('button', { name: '김영진 평가 저장', exact: true })
       .click();
     await expect(
       page.getByRole('button', { name: '최종 제출', exact: true }),
@@ -216,14 +216,14 @@ test('세 담당자 균등 배분으로 작업을 생성한다', async ({
     .fill('모든 담당자의 역할과 결과를 함께 확인합니다.');
   await fillDateTime(dialog, '마감', '2030-12-01T18:00');
   await dialog.getByRole('button', { name: '다음', exact: true }).click();
-  for (const member of ['김하늘 · 리더', '이지원 · 팀원', '박서연 · 팀원'])
+  for (const member of ['김준영 · 리더', '김영진 · 팀원', '박선우 · 팀원'])
     await dialog.getByLabel(member, { exact: true }).check();
   await dialog.getByRole('button', { name: '균등 배분', exact: true }).click();
   await expect(dialog.getByText('담당 3명', { exact: true })).toBeVisible();
   await expect(dialog.getByText('합계 100%', { exact: true })).toBeVisible();
-  await expect(dialog.getByLabel('김하늘 배분율')).toHaveValue('34');
-  await expect(dialog.getByLabel('이지원 배분율')).toHaveValue('33');
-  await expect(dialog.getByLabel('박서연 배분율')).toHaveValue('33');
+  await expect(dialog.getByLabel('김준영 배분율')).toHaveValue('34');
+  await expect(dialog.getByLabel('김영진 배분율')).toHaveValue('33');
+  await expect(dialog.getByLabel('박선우 배분율')).toHaveValue('33');
 
 
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
@@ -241,20 +241,20 @@ test('모바일 관리자 카드는 표 가로 스크롤 없이 수행 상세를
   await page.getByRole('button', { name: '삼위일체 현황 보기', exact: true }).click();
   await expect(page.getByRole('table')).toHaveCount(0);
   await page
-    .getByRole('button', { name: '김하늘 수행 상세', exact: true })
+    .getByRole('button', { name: '김준영 수행 상세', exact: true })
     .click();
   await expect(
-    page.getByRole('heading', { name: '김하늘님의 수행 상세', exact: true }),
+    page.getByRole('heading', { name: '김준영님의 수행 상세', exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole('button', { name: '작업 수정', exact: true }),
   ).toHaveCount(0);
   await page.getByLabel('조회할 작업 상태').selectOption('REVISING');
   await expect(
-    page.getByRole('heading', { name: '서비스 흐름 설계', exact: true }),
+    page.getByRole('heading', { name: 'AI 피드백 화면 개선', exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole('heading', { name: '사용자 인터뷰 계획', exact: true }),
+    page.getByRole('heading', { name: '스페이스·팀 권한 설계', exact: true }),
   ).toHaveCount(0);
 });
 
@@ -310,11 +310,11 @@ test('내 스페이스에서 공간을 전환하고 뒤로가기로 목록과 �
   ).toBeVisible();
   await page.getByRole('button', { name: '내 스페이스', exact: true }).click();
   await expect(page).toHaveURL(/preview\/main$/);
-  await page.locator('.space-list > li').filter({ hasText: '2026 서비스 디자인 프로젝트' }).getByRole('button').click();
+  await page.locator('.space-list > li').filter({ hasText: '2026 캡스톤디자인' }).getByRole('button').click();
   await expect(page).toHaveURL(/spaces\/1$/);
   await expect(
     page.getByRole('heading', {
-      name: '2026 서비스 디자인 프로젝트',
+      name: '2026 캡스톤디자인',
       exact: true,
     }),
   ).toBeVisible();
@@ -456,17 +456,17 @@ test('작업 제목 검색·정렬은 새로고침과 상세 복귀에도 유지
   page,
 }) => {
   await openPreview(page, '/spaces/1/teams/1/tasks');
-  await page.getByLabel('작업 제목 검색').fill('설문');
+  await page.getByLabel('작업 제목 검색').fill('팀 자료');
   await page.getByLabel('작업 정렬').selectOption('newest');
   await expect(page.locator('.board-task-card')).toHaveCount(1);
   await page.reload();
-  await expect(page.getByLabel('작업 제목 검색')).toHaveValue('설문');
+  await expect(page.getByLabel('작업 제목 검색')).toHaveValue('팀 자료');
   await expect(page.getByLabel('작업 정렬')).toHaveValue('newest');
   await page
-    .getByRole('button', { name: '설문 결과 분석', exact: true })
+    .getByRole('button', { name: '팀 자료 검색 개선', exact: true })
     .click();
   await page.getByRole('button', { name: '← 목록으로', exact: true }).click();
-  await expect(page.getByLabel('작업 제목 검색')).toHaveValue('설문');
+  await expect(page.getByLabel('작업 제목 검색')).toHaveValue('팀 자료');
   await page.getByLabel('작업 제목 검색').fill('없는 작업 제목');
   await expect(
     page.getByText('조건에 맞는 작업이 없습니다.', { exact: true }),
@@ -479,9 +479,9 @@ test('작업 제목 검색·정렬은 새로고침과 상세 복귀에도 유지
   await expect(page.getByLabel('작업 정렬')).toHaveValue('deadline');
   const completedTitles = page.locator('.task-state-done .task-title-button');
   await expect(completedTitles).toHaveText([
-    '조사 결과 요약',
-    '최종 발표 자료',
-    '사용자 인터뷰 계획',
+    '종합 평가 리포트 연동',
+    '작업 목록 페이지 이동',
+    '스페이스·팀 권한 설계',
   ]);
 });
 
@@ -512,17 +512,17 @@ test('모바일 작업 입력은 첫 오류로 초점을 옮기고 배분을 고
   await dialog
     .getByRole('button', { name: '다음', exact: true })
     .click();
-  await dialog.getByLabel('김하늘 · 리더', { exact: true }).check();
-  await dialog.getByLabel('김하늘 배분율', { exact: true }).fill('90');
+  await dialog.getByLabel('김준영 · 리더', { exact: true }).check();
+  await dialog.getByLabel('김준영 배분율', { exact: true }).fill('90');
   await dialog
     .getByRole('button', { name: '저장', exact: true })
     .click();
   await expect(dialog.getByText(/현재 합계는 90%/)).toBeVisible();
   await expect(
-    dialog.getByLabel('김하늘 · 리더', { exact: true }),
+    dialog.getByLabel('김준영 · 리더', { exact: true }),
   ).toBeFocused();
   await dialog.getByRole('button', { name: '균등 배분', exact: true }).click();
-  await expect(dialog.getByLabel('김하늘 배분율', { exact: true })).toHaveValue(
+  await expect(dialog.getByLabel('김준영 배분율', { exact: true })).toHaveValue(
     '100',
   );
   await dialog.getByRole('button', { name: '이전', exact: true }).click();
@@ -635,7 +635,7 @@ test('산출물 빈 작업과 마지막 페이지는 범위·페이지를 복구
     .getByRole('button', { name: '전체 팀 자료 보기', exact: true })
     .click();
   await expect(
-    page.getByRole('heading', { name: '프로젝트 기획서', exact: true }),
+    page.getByRole('heading', { name: 'Fairplay 프로젝트 소개', exact: true }),
   ).toBeVisible();
   await page.goto('/preview/spaces/1/teams/1/deliverables?page=1');
   await expect(
@@ -646,7 +646,7 @@ test('산출물 빈 작업과 마지막 페이지는 범위·페이지를 복구
     .click();
   await expect(page).toHaveURL(/deliverables$/);
   await expect(
-    page.getByRole('heading', { name: '프로젝트 기획서', exact: true }),
+    page.getByRole('heading', { name: 'Fairplay 프로젝트 소개', exact: true }),
   ).toBeVisible();
 });
 
@@ -665,7 +665,7 @@ test('팀 홈의 본인·마감 지연은 각 조건의 작업 목록으로 연�
     page.getByRole('table', { name: '정렬된 작업 목록' }).locator('tbody tr'),
   ).toHaveCount(1);
   await expect(
-    page.getByRole('button', { name: '설문 결과 분석', exact: true }),
+    page.getByRole('button', { name: '팀 자료 검색 개선', exact: true }),
   ).toBeVisible();
   await page.reload();
   await expect(page.getByLabel('마감 지난 작업만')).toBeChecked();
@@ -679,18 +679,18 @@ test('작업 목록은 상태를 가로질러 정렬하고 상세 복귀·초기
   await page.getByLabel('작업 정렬').selectOption('newest');
   const list = page.getByRole('table', { name: '정렬된 작업 목록' });
   await expect(list.getByRole('button')).toHaveText([
-    '조사 결과 요약',
-    '최종 발표 자료',
-    '프로토타입 사용성 검증',
-    '서비스 흐름 설계',
-    '설문 결과 분석',
-    '사용자 인터뷰 계획',
+    '종합 평가 리포트 연동',
+    '작업 목록 페이지 이동',
+    '전시 가이드 동선 점검',
+    'AI 피드백 화면 개선',
+    '팀 자료 검색 개선',
+    '스페이스·팀 권한 설계',
   ]);
   await page.getByLabel('작업 정렬').selectOption('deadline');
-  await expect(list.getByRole('button').first()).toHaveText('설문 결과 분석');
-  await page.getByLabel('작업 제목 검색').fill('설문');
+  await expect(list.getByRole('button').first()).toHaveText('팀 자료 검색 개선');
+  await page.getByLabel('작업 제목 검색').fill('팀 자료');
   await list
-    .getByRole('button', { name: '설문 결과 분석', exact: true })
+    .getByRole('button', { name: '팀 자료 검색 개선', exact: true })
     .click();
   await page.getByRole('button', { name: '← 목록으로', exact: true }).click();
   await expect(
@@ -844,7 +844,7 @@ for (const width of [1440, 320]) {
       list.getByRole('columnheader', { name: '등록자', exact: true }),
     ).toBeVisible();
     const title = list.getByRole('button', {
-      name: '인터뷰 계획과 질문 목록',
+      name: '스페이스·팀 권한 정리',
       exact: true,
     });
     await title.focus();
@@ -857,7 +857,7 @@ for (const width of [1440, 320]) {
       dialog.getByRole('region', { name: '자료 본문', exact: true }),
     ).toBeVisible();
     await expect(
-      dialog.getByText('사용자 인터뷰 계획', { exact: true }),
+      dialog.getByText('스페이스·팀 권한 설계', { exact: true }),
     ).toBeVisible();
     await expect(
       dialog.getByRole('button', { name: '수정', exact: true }),
@@ -875,19 +875,19 @@ for (const width of [1440, 320]) {
     await page.reload();
     await expect(page.getByLabel('작업별 조회')).toHaveValue('101');
     await expect(
-      list.getByRole('button', { name: width <= 720 ? '인터뷰 결과 기록 파일 파일 다운로드' : '파일 다운로드', exact: true }),
+      list.getByRole('button', { name: width <= 720 ? '팀 권한 점검표 파일 파일 다운로드' : '파일 다운로드', exact: true }),
     ).toBeVisible();
     await list
-      .getByRole('button', { name: '인터뷰 결과 기록 파일', exact: true })
+      .getByRole('button', { name: '팀 권한 점검표 파일', exact: true })
       .click();
     await expect(
-      dialog.getByText('인터뷰-기록.txt', { exact: true }),
+      dialog.getByText('팀-권한-점검표.txt', { exact: true }),
     ).toBeVisible();
     const downloaded = page.waitForEvent('download');
     await dialog
       .getByRole('button', { name: '파일 다운로드', exact: true })
       .click();
-    expect((await downloaded).suggestedFilename()).toBe('인터뷰-기록.txt');
+    expect((await downloaded).suggestedFilename()).toBe('팀-권한-점검표.txt');
   });
 }
 
@@ -899,7 +899,7 @@ test('팀 홈 수행 지연에서 완료 후 수정 중인 작업도 포함한�
   await expect(page.getByRole('button', { name: /내 마감 지연.*1건/ })).toBeVisible();
   const dueAt = koreanDateTime(await page.evaluate(() => Date.now()) - 60000);
   await page.evaluate((dueAt) => {
-    const key = 'fairplay:mock:v9:preview:1';
+    const key = 'fairplay:mock:v11:preview:1';
     const state = JSON.parse(localStorage.getItem(key));
     state.teams[1].tasks.find((task) => task.id === 103).dueAt = dueAt;
     localStorage.setItem(key, JSON.stringify(state));
@@ -910,10 +910,10 @@ test('팀 홈 수행 지연에서 완료 후 수정 중인 작업도 포함한�
   ).toBeVisible();
   await page.getByRole('button', { name: /내 마감 지연/ }).click();
   await expect(
-    page.getByRole('button', { name: '서비스 흐름 설계', exact: true }),
+    page.getByRole('button', { name: 'AI 피드백 화면 개선', exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole('button', { name: '설문 결과 분석', exact: true }),
+    page.getByRole('button', { name: '팀 자료 검색 개선', exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole('button', {
@@ -924,12 +924,12 @@ test('팀 홈 수행 지연에서 완료 후 수정 중인 작업도 포함한�
   await page.reload();
   expect(new URL(page.url()).searchParams.get('overdue')).toBe('work');
   await expect(
-    page.getByRole('button', { name: '서비스 흐름 설계', exact: true }),
+    page.getByRole('button', { name: 'AI 피드백 화면 개선', exact: true }),
   ).toBeVisible();
   await page.getByLabel('마감 지난 작업만').uncheck();
   await page.getByLabel('마감 지난 작업만').check();
   await expect(
-    page.getByRole('button', { name: '서비스 흐름 설계', exact: true }),
+    page.getByRole('button', { name: 'AI 피드백 화면 개선', exact: true }),
   ).toBeVisible();
 });
 
@@ -938,18 +938,18 @@ test('평가 마감 시각이 지나면 열린 작성 화면도 조회 전용으
 }) => {
   await page.clock.install({ time: new Date('2026-10-16T09:00:00+09:00') });
   await openPreview(page, peerPath);
-  await expect(page.getByLabel('이지원 작업 수행 5점', { exact: true })).toBeEnabled();
+  await expect(page.getByLabel('김영진 작업 수행 5점', { exact: true })).toBeEnabled();
   const closesAt = koreanDateTime(await page.evaluate(() => Date.now()) + 30000);
   await page.evaluate((closesAt) => {
-    const key = 'fairplay:mock:v9:preview:1';
+    const key = 'fairplay:mock:v11:preview:1';
     const state = JSON.parse(localStorage.getItem(key));
     state.rounds.find((round) => round.status === 'OPEN').closesAt = closesAt;
     localStorage.setItem(key, JSON.stringify(state));
   }, closesAt);
   await page.reload();
-  const score = page.getByLabel('이지원 작업 수행 5점', { exact: true });
+  const score = page.getByLabel('김영진 작업 수행 5점', { exact: true });
   await expect(score).toBeEnabled();
-  for (const member of ['이지원', '박서연']) {
+  for (const member of ['김영진', '박선우']) {
     await fillEvaluation(page, member);
     await page
       .getByRole('button', { name: `${member} 평가 저장`, exact: true })
@@ -969,10 +969,10 @@ test('평가 마감 시각이 지나면 열린 작성 화면도 조회 전용으
   ).toBeDisabled();
   await confirmation.getByRole('button', { name: '취소', exact: true }).click();
   await page
-    .getByRole('button', { name: '이지원 저장됨', exact: true })
+    .getByRole('button', { name: '김영진 저장됨', exact: true })
     .click();
   await expect(score).toBeDisabled();
-  await expect(page.getByLabel('이지원 작업 수행 4점', { exact: true })).toBeChecked();
+  await expect(page.getByLabel('김영진 작업 수행 4점', { exact: true })).toBeChecked();
   await expect(page.getByRole('textbox', { name: '평가 사유', exact: true })).toBeDisabled();
   await expect(
     page.getByText(

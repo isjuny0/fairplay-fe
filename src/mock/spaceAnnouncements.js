@@ -1,3 +1,4 @@
+import { previewUsers } from "./fixtures.js";
 import { koreanDateTime } from "../lib/koreanTime.js";
 import { validateAnnouncement } from "../lib/spaceAnnouncements.js";
 import { MockError } from "./planned.js";
@@ -38,11 +39,11 @@ export async function previewSpaceAnnouncements(
     {
       id: 1,
       spaceId: context.space.id,
-      authorId: "00000000-0000-4000-8000-000000000004",
-      authorName: "정민수",
+      authorId: previewUsers.manager.id,
+      authorName: previewUsers.manager.name,
       title: "프로젝트 진행 및 공지 확인 안내",
       content:
-        "프로젝트 공지는 이곳에서 확인해 주세요.\n팀별 작업과 제출 일정은 각 팀에서 관리합니다.",
+        "2026 캡스톤디자인 미리보기입니다. 삼위일체가 Fairplay를 개발하며 작업 보드, 회의록, 팀 자료를 활용하는 흐름을 체험해 보세요.\n노션과 GitHub의 개발 기록을 바탕으로 구성했으며, 담당 비율·작업 상태·평가 결과는 전시용 예시입니다.",
       pinned: true,
       version: 0,
       attachments: [],
@@ -52,10 +53,10 @@ export async function previewSpaceAnnouncements(
     {
       id: 2,
       spaceId: context.space.id,
-      authorId: "00000000-0000-4000-8000-000000000004",
-      authorName: "정민수",
+      authorId: previewUsers.manager.id,
+      authorName: previewUsers.manager.name,
       title: "팀별 진행 상황을 공유해 주세요",
-      content: "다음 회의 전에 팀별 진행 상황과 확인할 내용을 정리해 주세요.",
+      content: "팀 홈에서 진행률과 마감 작업을 확인하고, 작업에 결과물과 수행 설명을 남겨 주세요. 전시 시연에서는 팀 자료 검색의 인용·원문과 종합 평가 리포트를 확인합니다.",
       pinned: false,
       version: 0,
       attachments: [
@@ -79,6 +80,10 @@ export async function previewSpaceAnnouncements(
     },
   ];
   const announcements = state.spaceAnnouncements;
+  for (const announcement of announcements) {
+    if (announcement.authorId === previewUsers.manager.id && announcement.authorName === "정민수")
+      announcement.authorName = previewUsers.manager.name;
+  }
   if ((state.spaceAnnouncementAttachmentFixtureVersion || 0) < 2) {
     const sample = announcements.find(
       (item) =>

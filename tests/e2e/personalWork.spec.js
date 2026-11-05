@@ -62,7 +62,7 @@ test('통합 할 일 팝오버는 전체 작업·미제출 평가를 스크롤�
   })));
   await page.addInitScript((mockState) => {
     localStorage.setItem('fairplay:preview-role', 'leader');
-    localStorage.setItem('fairplay:mock:v9:preview:1', JSON.stringify(mockState));
+    localStorage.setItem('fairplay:mock:v11:preview:1', JSON.stringify(mockState));
   }, state);
   const calls = await enterPreview(page);
   await page.getByRole('button', { name: '할 일' }).click();
@@ -104,7 +104,7 @@ test('모바일에서도 헤더 할 일 카드 패널이 화면 너비를 넘지
   await expect(page.getByRole('button', { name: '할 일' })).toBeVisible();
   await page.getByRole('button', { name: '할 일' }).click();
   await expect(page.getByRole('region', { name: '할 일 미리보기' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /설문 결과 분석/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /팀 자료 검색 개선/ })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
 });
 

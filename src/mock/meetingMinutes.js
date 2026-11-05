@@ -1,6 +1,7 @@
 import { koreanDateTime } from "../lib/koreanTime.js";
 import { validateMeetingMinute } from "../lib/meetingMinutes.js";
 import { MockError } from "./planned.js";
+import { capstoneReviewDate } from "./fixtures.js";
 
 const fail = (code, message, status = 409) => {
   throw new MockError(code, message, status);
@@ -22,17 +23,17 @@ export function previewMeetingMinutes(
     .map((entry) => ({
       id: entry.team.id,
       teamId: entry.team.id,
-      title: "주간 진행 상황 공유",
-      meetingAt: "2026-10-27T19:00:00",
+      title: entry.team.id === 1 ? "UI/UX 회의" : "주간 진행 상황 공유",
+      meetingAt: `${capstoneReviewDate}T12:00:00`,
       authorId: entry.members[0].userId,
       authorName: entry.members[0].name,
       attendees: entry.members.map(({ userId, name }) => ({ userId, name })),
-      agenda: "- 작업 진행 상황 공유\n- 다음 일정 확인",
-      content: "각 담당 작업의 진행 상황과 확인할 내용을 공유했습니다.",
-      decisions: "- [ ] 다음 회의 전까지 보완안을 정리합니다.",
+      agenda: "- 스페이스 홈과 팀 이동 흐름 확인\n- 작업 보드와 상세 화면 개선",
+      content: "팀 홈의 지표 설명, 작업 상세 댓글, 결과물 등록 화면의 개선 항목을 정리했습니다.",
+      decisions: "- 완료 승인 제거와 완료 작업의 수정 흐름을 화면에 반영합니다.\n- 주요 화면의 제목과 레이아웃을 맞춥니다.",
       version: 0,
-      createdAt: "2026-10-27T09:00:00",
-      updatedAt: "2026-10-27T09:00:00",
+      createdAt: `${capstoneReviewDate}T12:00:00`,
+      updatedAt: `${capstoneReviewDate}T12:00:00`,
     }));
   const byTeam = parts[1] === "teams";
   if (!positiveId(parts[2]) || parts.length !== (byTeam ? 4 : 3))

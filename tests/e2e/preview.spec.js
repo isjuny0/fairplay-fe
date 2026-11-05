@@ -27,10 +27,10 @@ async function preview(
 
 for (const [path, heading, role] of [
   ['/main', '내 스페이스', 'leader'],
-  ['/spaces/1', '2026 서비스 디자인 프로젝트', 'leader'],
+  ['/spaces/1', '2026 캡스톤디자인', 'leader'],
   ['/spaces/1/teams/1', '삼위일체', 'leader'],
   ['/spaces/1/teams/1/tasks', '작업', 'leader'],
-  ['/spaces/1/teams/1/tasks/101', '사용자 인터뷰 계획', 'leader'],
+  ['/spaces/1/teams/1/tasks/101', '스페이스·팀 권한 설계', 'leader'],
   ['/spaces/1/teams/1/deliverables', '팀 자료', 'leader'],
   ['/spaces/1/teams/1/meeting-minutes', '팀 회의록', 'leader'],
   ['/spaces/1/teams/1/materials-search', '팀 자료 검색', 'leader'],
@@ -46,7 +46,7 @@ for (const [path, heading, role] of [
   ['/spaces/1/settings', '스페이스 관리', 'manager'],
   [
     '/spaces/1/manager/teams/1/members/00000000-0000-4000-8000-000000000001',
-    '김하늘님의 수행 상세',
+    '김준영님의 수행 상세',
     'manager',
   ],
 ])
@@ -86,11 +86,11 @@ test('팀 홈과 관리자 현황은 가중치 숫자 대신 비율과 계산 �
   ).toHaveCount(0);
   await expect(
     page.getByRole('row').filter({
-      has: page.getByRole('rowheader', { name: '김하늘 수행 상세', exact: true }),
+      has: page.getByRole('rowheader', { name: '김준영 수행 상세', exact: true }),
     }),
   ).toContainText('80.00%');
   await page.evaluate(() => {
-    const key = 'fairplay:mock:v9:preview:1';
+    const key = 'fairplay:mock:v11:preview:1';
     const state = JSON.parse(localStorage.getItem(key));
     for (const team of Object.values(state.teams))
       for (const task of team.tasks) task.status = 'TODO';
@@ -108,7 +108,7 @@ test('대상별 평가를 저장하고 제출하면 새로고침 후에도 수�
   const calls = await preview(page, {
     path: '/spaces/1/teams/1/peer-evaluations',
   });
-  for (const member of ['이지원', '박서연']) {
+  for (const member of ['김영진', '박선우']) {
     await page.getByRole('group', { name: '평가할 팀원 선택', exact: true }).getByRole('button', { name: new RegExp(`^${member}`) }).click();
     for (const criterion of ['작업 수행', '책임감', '적극성', '의사소통'])
       await page
@@ -127,8 +127,8 @@ test('대상별 평가를 저장하고 제출하면 새로고침 후에도 수�
     page.getByRole('heading', { name: '최종 제출 완료' }),
   ).toBeVisible();
   await page.reload();
-  await expect(page.getByLabel('이지원 작업 수행 4점', { exact: true })).toBeChecked();
-  await expect(page.getByLabel('이지원 작업 수행 4점', { exact: true })).toBeDisabled();
+  await expect(page.getByLabel('김영진 작업 수행 4점', { exact: true })).toBeChecked();
+  await expect(page.getByLabel('김영진 작업 수행 4점', { exact: true })).toBeDisabled();
   await expect(page.getByRole('radio')).toHaveCount(20);
   await expect(page.locator('input[type=radio]:enabled')).toHaveCount(0);
   await expect(page.getByRole('textbox', { name: '평가 사유', exact: true })).toBeDisabled();
@@ -139,9 +139,9 @@ test('저점 사유 누락을 안내하고 공개 전 리포트는 팀원에게 
 }) => {
   await preview(page, { path: '/spaces/1/teams/1/peer-evaluations' });
   for (const criterion of ['작업 수행', '책임감', '적극성', '의사소통'])
-    await page.getByLabel(`이지원 ${criterion} 2점`, { exact: true }).check();
+    await page.getByLabel(`김영진 ${criterion} 2점`, { exact: true }).check();
   await page
-    .getByRole('button', { name: '이지원 평가 저장', exact: true })
+    .getByRole('button', { name: '김영진 평가 저장', exact: true })
     .click();
   await expect(page.getByRole('alert')).toContainText('10~500자');
   await selectPreviewOption(page, '미리보기 상황', 'review');
@@ -188,7 +188,7 @@ test('관리자가 리포트를 공개하면 팀원은 본인 완료 작업과 �
   await expect(page.getByRole('region', { name: '팀원별 종합 평가', exact: true })).toHaveCount(0);
   const evidence = page.getByRole('region', { name: '나의 수행 근거', exact: true });
   await expect(evidence).toBeVisible();
-  await evidence.getByRole('button', { name: /조사 결과 요약/ }).click();
+  await evidence.getByRole('button', { name: /종합 평가 리포트 연동/ }).click();
   await expect(evidence).toContainText('본인 수행 설명');
   await expect(evidence).toContainText('현재 연결 자료');
   await expect(evidence.locator('.evidence-time-note')).toHaveCount(0);
@@ -196,8 +196,8 @@ test('관리자가 리포트를 공개하면 팀원은 본인 완료 작업과 �
   await evidence.getByRole('link', { name: '현재 내 완료 작업 목록' }).click();
   await expect(page).toHaveURL(/\/preview\/spaces\/1\/teams\/1\/tasks\?view=list&status=DONE&mine=1$/);
   await expect(page.getByRole('heading', { name: '작업', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: '조사 결과 요약', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: '사용자 인터뷰 계획', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '종합 평가 리포트 연동', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '스페이스·팀 권한 설계', exact: true })).toHaveCount(0);
   expect(calls).toEqual([]);
 });
 test('AI 검토는 담당자만 조회하고 비담당 팀원에게 표시하지 않는다', async ({
@@ -226,11 +226,11 @@ test('팀원 직접 관리자 주소 접근은 차단하고 관리자는 수행 
   await selectPreviewOption(page, '미리보기 역할', 'manager');
   await page.goto('/preview/spaces/1/dashboard');
   await page.getByRole('button', { name: '삼위일체 현황 보기', exact: true }).click();
-  await page.getByRole('button', { name: '김하늘 수행 상세' }).click();
-  await page.getByText('인터뷰 결과 기록 파일 · 파일', { exact: true }).click();
+  await page.getByRole('button', { name: '김준영 수행 상세' }).click();
+  await page.getByText('팀 권한 점검표 파일 · 파일', { exact: true }).click();
   const downloaded = page.waitForEvent('download');
   await page.getByRole('button', { name: '파일 다운로드' }).click();
-  expect((await downloaded).suggestedFilename()).toBe('인터뷰-기록.txt');
+  expect((await downloaded).suggestedFilename()).toBe('팀-권한-점검표.txt');
   await expect(
     page.getByRole('button', { name: '작업 수정', exact: true }),
   ).toHaveCount(0);
@@ -343,6 +343,16 @@ test('공개 화면에는 가이드를 표시하지 않고 전시 링크로만 �
   expect(apiCalls.length).toBe(initialCalls);
 });
 
+test('캡스톤디자인 미리보기는 팀 자료 검색에서 예시 답변과 연결 원문을 제공한다', async ({ page }) => {
+  const calls = await preview(page, { path: '/spaces/1/teams/1/materials-search' });
+  await expect(page.getByLabel('현재 화면 정보')).toContainText('2026 캡스톤디자인');
+  await page.locator('#rag-question').fill('팀 가입과 작업 조회 권한을 알려줘.');
+  await page.getByRole('button', { name: '질문 보내기', exact: true }).click();
+  await page.getByRole('button', { name: '스페이스·팀 권한 정리 원문 확인', exact: true }).click();
+  await expect(page.locator('.rag-original')).toContainText('참여 코드로 스페이스에 입장한 뒤 팀 가입을 별도로 신청합니다.');
+  expect(calls).toEqual([]);
+});
+
 test('미리보기 AI 검토는 피드백과 근거를 제공하고 작업 완료 후 추가 요청을 제공하지 않는다', async ({
   page,
 }) => {
@@ -356,7 +366,7 @@ test('미리보기 AI 검토는 피드백과 근거를 제공하고 작업 완�
   await expect(page.getByText('검토 대기', { exact: true })).toBeVisible();
   await page.clock.fastForward(5100);
   await expect(
-    page.getByText('주요 발견과 다음 단계 제안이 연결되어 있다고 가정한 예시입니다.', { exact: false }),
+    page.getByText('점검 항목과 결과를 함께 기록하면 다른 팀원이 같은 화면에서 다시 확인할 수 있습니다.', { exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole('heading', { name: '확인하지 못한 범위', exact: true }),
@@ -460,9 +470,11 @@ test('일반 팀원은 이름·본인 표시·역할이 정렬된 목록을 보�
   const calls = await preview(page, { role: 'member', path: '/spaces/1/teams/1/members' });
   const roster = page.getByRole('list', { name: '현재 팀원', exact: true });
   await expect(roster.getByRole('listitem')).toHaveCount(3);
-  await expect(roster.locator('.is-self')).toContainText('이지원');
+  for (const name of ['김준영', '김영진', '박선우'])
+    await expect(roster.getByText(name, { exact: true })).toBeVisible();
+  await expect(roster.locator('.is-self')).toContainText('김영진');
   await expect(roster.locator('.member-self')).toHaveCount(0);
-  await expect(roster.locator('.is-self .self-identity')).toHaveText('이지원');
+  await expect(roster.locator('.is-self .self-identity')).toHaveText('김영진');
   await expect(roster.locator('.member-roster-role')).toHaveText(['리더', '팀원', '팀원']);
   await expect(page.getByRole('button', { name: '가입 승인', exact: true })).toHaveCount(0);
   for (const width of [1006, 390, 320]) {

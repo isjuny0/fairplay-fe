@@ -20,9 +20,9 @@ for (const width of [1440, 320]) {
     await page.getByRole('tab', { name: '동료 평가 결과', exact: true }).click();
     await expect(page).toHaveURL(/rounds\?tab=peer-responses/);
     const panel = page.getByRole('region', { name: '관리자 동료 평가 상세' });
-    await panel.getByRole('button', { name: '김하늘 받은 평가 2건', exact: true }).click();
-    const table = panel.getByRole('table', { name: '김하늘님이 받은 최종 제출 평가', exact: true });
-    await expect(table.getByRole('rowheader')).toHaveText(['이지원', '박서연']);
+    await panel.getByRole('button', { name: '김준영 받은 평가 2건', exact: true }).click();
+    const table = panel.getByRole('table', { name: '김준영님이 받은 최종 제출 평가', exact: true });
+    await expect(table.getByRole('rowheader')).toHaveText(['김영진', '박선우']);
     for (const criterion of ['작업 수행', '책임감', '적극성', '의사소통'])
       await expect(table.getByRole('columnheader', { name: criterion, exact: true })).toHaveCount(1);
     await expect(table.getByText('작성한 사유', { exact: true })).toHaveCount(2);
@@ -43,18 +43,18 @@ for (const width of [1440, 1280, 390]) {
     await expect(targets.getByRole('button')).toHaveCount(3);
     const selected = panel.getByRole('region', { name: '선택한 팀원 받은 평가', exact: true });
     await expect(selected.getByRole('table')).toHaveCount(1);
-    await expect(selected.getByRole('heading', { name: '이지원님이 받은 평가', exact: true })).toBeVisible();
+    await expect(selected.getByRole('heading', { name: '김영진님이 받은 평가', exact: true })).toBeVisible();
     await expect(selected.locator('.manager-peer-reason-row')).toHaveCount(2);
-    const next = targets.getByRole('button', { name: '김하늘 받은 평가 2건', exact: true });
+    const next = targets.getByRole('button', { name: '김준영 받은 평가 2건', exact: true });
     await next.focus();
     await next.press('Enter');
     await expect(next).toHaveAttribute('aria-pressed', 'true');
     await expect(next).toBeFocused();
-    await expect(selected.getByRole('heading', { name: '김하늘님이 받은 평가', exact: true })).toBeVisible();
-    await expect(selected.getByRole('table', { name: '이지원님이 받은 최종 제출 평가' })).toHaveCount(0);
+    await expect(selected.getByRole('heading', { name: '김준영님이 받은 평가', exact: true })).toBeVisible();
+    await expect(selected.getByRole('table', { name: '김영진님이 받은 최종 제출 평가' })).toHaveCount(0);
     await expect(selected.getByText('작성한 사유', { exact: true })).toHaveCount(2);
     await panel.getByRole('button', { name: '평가 결과 새로고침', exact: true }).click();
-    await expect(selected.getByRole('table', { name: '김하늘님이 받은 최종 제출 평가', exact: true })).toBeVisible();
+    await expect(selected.getByRole('table', { name: '김준영님이 받은 최종 제출 평가', exact: true })).toBeVisible();
     await panel.getByRole('combobox', { name: '결과 조회 회차', exact: true }).selectOption('12');
     await expect(page).toHaveURL(/tab=peer-responses/);
     await expect(page).toHaveURL(/teamId=1/);
@@ -157,11 +157,11 @@ for (const width of [1440, 1280, 390]) {
     }
     if (width > 720) {
       const row = page.getByRole('table', { name: '팀 관리', exact: true }).locator('tbody tr').first();
-      await expect(row.locator('.dashboard-team-meta > span')).toHaveText(['리더 김하늘', '팀원 3명']);
+      await expect(row.locator('.dashboard-team-meta > span')).toHaveText(['리더 김준영', '팀원 3명']);
       await row.locator('.dashboard-team-work-counts').click();
     } else {
       const card = page.locator('.mobile-data-cards .dashboard-team-card').filter({ has: page.getByRole('button', { name: '삼위일체 현황 보기', exact: true }) });
-      await expect(card.locator('.dashboard-team-meta > span')).toHaveText(['리더 김하늘', '팀원 3명']);
+      await expect(card.locator('.dashboard-team-meta > span')).toHaveText(['리더 김준영', '팀원 3명']);
       // Expanding the participation details must not activate the card.
       await card.getByText('자료·팀 참여 상태', { exact: true }).click();
       await expect(page.getByRole('heading', { name: '팀 관리', exact: true })).toBeVisible();
@@ -206,16 +206,16 @@ for (const width of [1440, 1280, 390]) {
     await expect(page.getByRole('tooltip')).toHaveCount(0);
     await page.reload();
     await expect(page.getByRole('heading', { name: '팀원 수행 현황', exact: true })).toBeVisible();
-    await page.getByRole('button', { name: '김하늘 수행 상세', exact: true }).click();
-    await expect(page.getByRole('heading', { name: '김하늘님의 수행 상세', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: '김준영 수행 상세', exact: true }).click();
+    await expect(page.getByRole('heading', { name: '김준영님의 수행 상세', exact: true })).toBeVisible();
     if (width > 720) {
       const breadcrumb = page.getByRole('navigation', { name: '현재 위치', exact: true });
       await expect(breadcrumb.getByRole('button')).toHaveText(['팀 관리', '삼위일체']);
-      await expect(breadcrumb.locator('[aria-current="page"]')).toHaveText('김하늘님의 수행 상세');
+      await expect(breadcrumb.locator('[aria-current="page"]')).toHaveText('김준영님의 수행 상세');
       await breadcrumb.getByRole('button', { name: '삼위일체', exact: true }).click();
       await expect(page.getByRole('heading', { name: '삼위일체', exact: true })).toBeVisible();
       await expect(page.getByLabel('조회할 팀')).toHaveCount(0);
-      await page.getByRole('button', { name: '김하늘 수행 상세', exact: true }).click();
+      await page.getByRole('button', { name: '김준영 수행 상세', exact: true }).click();
     }
     await page.getByRole('button', { name: '← 팀 관리', exact: true }).click();
     await expect(page.getByRole('heading', { name: '삼위일체', exact: true })).toBeVisible();
@@ -429,8 +429,8 @@ for (const width of [1440, 390, 320]) {
       await expect(breadcrumb.locator('[aria-current="page"]')).toHaveText('작업');
     }
     await page.getByRole('group', { name: '작업 보기 방식' }).getByRole('button', { name: '목록', exact: true }).click();
-    await page.getByRole('button', { name: '서비스 흐름 설계', exact: true }).click();
-    await expect(page.getByRole('heading', { name: '서비스 흐름 설계', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'AI 피드백 화면 개선', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'AI 피드백 화면 개선', exact: true })).toBeVisible();
     for (const label of ['작업 수정', '작업 삭제', '완료 처리', '수정 중으로 전환', '수행 설명 저장'])
       await expect(page.getByRole('button', { name: label, exact: true })).toHaveCount(0);
     await expect(page.getByRole('tab', { name: 'AI 피드백', exact: true })).toHaveCount(0);

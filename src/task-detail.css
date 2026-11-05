@@ -365,13 +365,6 @@
 .readiness-item-content {
   min-width: 0;
 }
-.readiness-link {
-  display: block;
-  margin-top: 4px;
-  padding: 0;
-  font-size: var(--text-caption);
-  text-align: left;
-}
 .task-assignment-panel .field-help {
   margin: 0 0 8px;
   font-size: var(--text-caption);
