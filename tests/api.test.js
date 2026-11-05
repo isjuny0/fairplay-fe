@@ -380,30 +380,27 @@ test('팀 삭제 현황은 단수 경로이고 생성과 동의는 CSRF를 포�
   assert.deepEqual(JSON.parse(calls[3].body), { agree: false });
   assert.equal(calls[3].headers['X-CSRF-TOKEN'], 'token');
 });
-test('팀 삭제와 탈퇴는 본문 없이 쿼리를 전송하고 204를 처리한다', async () => {
+test('팀 삭제는 쿼리를 사용하고 탈퇴는 후임과 작업별 인계 계획을 전송한다', async () => {
   globalThis.fetch = async (url, options) => {
     calls.push({ url, ...options });
     return url.endsWith('/csrf')
       ? jsonResponse({ headerName: 'X-CSRF-TOKEN', token: 'token' })
       : new Response(null, { status: 204 });
   };
+  const handoffs = [{ taskId: 1, recipientId: 'member', expectedVersion: 0 }];
   assert.equal(await deleteTeam(7, 12, 0), null);
-  assert.equal(await leaveTeam(7), null);
-  assert.equal(await leaveTeam(7, 'next-leader'), null);
-  assert.equal(
-    calls[1].url,
-    '/api/teams/7?deletionRequestId=12&expectedVersion=0',
-  );
-  assert.equal(calls[2].url, '/api/teams/7/members/me');
-  assert.equal(
-    calls[3].url,
-    '/api/teams/7/members/me?nextLeaderId=next-leader',
-  );
-  for (const call of calls.slice(1)) {
-    assert.equal(call.method, 'DELETE');
-    assert.equal(call.body, undefined);
+  assert.equal(await leaveTeam(7, '', []), null);
+  assert.equal(await leaveTeam(7, 'next-leader', handoffs), null);
+  assert.equal(calls[1].url, '/api/teams/7?deletionRequestId=12&expectedVersion=0');
+  assert.equal(calls[1].method, 'DELETE');
+  assert.equal(calls[1].body, undefined);
+  for (const call of calls.slice(2)) {
+    assert.equal(call.method, 'POST');
+    assert.equal(call.url, '/api/teams/7/members/me/leave');
     assert.equal(call.headers['X-CSRF-TOKEN'], 'token');
   }
+  assert.deepEqual(JSON.parse(calls[2].body), { handoffs: [] });
+  assert.deepEqual(JSON.parse(calls[3].body), { nextLeaderId: 'next-leader', handoffs });
 });
 test('파일 업로드는 정확한 multipart 필드와 CSRF를 전송한다', async () => {
   await uploadDeliverable(
