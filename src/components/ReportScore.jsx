@@ -78,7 +78,7 @@ export function ReportCriteriaResults({ details, guide }) {
     <div className="section-heading"><h3>동료 평가 항목별 결과</h3><div className="composite-round-tabs" role="group" aria-label="평가 결과 회차">
       {[['mid', '중간 평가'], ['final', '최종 평가']].map(([key, label]) => <button key={key} type="button" data-guide={key === 'final' ? 'report-final-criteria' : undefined} aria-pressed={round === key} aria-controls={id} onClick={() => setRound(key)}>{label}</button>)}
     </div></div>
-    <PeerCriteriaScores id={id} averages={details[`${round}CriteriaAverages`]} colorLowScores lowScoreInclusive showReadingNote />
+    <PeerCriteriaScores id={id} averages={details[`${round}CriteriaAverages`]} colorLowScores />
     {guide?.stepId === 'report-peer-results' && <div className="heading-actions preview-guide-inline-action"><button className="secondary-button" data-guide="confirm-report-peer-results" disabled={!guide.reportReady || round !== 'final'} onClick={() => guide.confirmReportStep('report-peer-results')}>동료 평가 확인 완료</button></div>}
   </section>;
 }
