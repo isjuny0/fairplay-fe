@@ -109,7 +109,6 @@ export default function SpaceDirectorySidebar({
           </HeaderMobileNavigation>
           <div>
             <span>WORKSPACE</span>
-            <strong>함께 만드는 공간</strong>
           </div>
         </div>
         <MobileSideDrawer open={menuOpen} onClose={() => setMenuOpen(false)} triggerRef={mobileToggle} title="내 스페이스 메뉴" variant="directory">
@@ -180,11 +179,6 @@ export default function SpaceDirectorySidebar({
               </p>
             )}
           </nav>
-          <p className="directory-sidebar-note">
-            하나의 공간에서
-            <br />
-            우리 팀의 프로젝트를 함께.
-          </p>
         </div>
         </MobileSideDrawer>
       </aside>
