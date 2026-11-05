@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router';
-import { ChevronDown } from 'lucide-react';
+import MobileSideDrawer from './MobileSideDrawer.jsx';
+import HeaderMobileNavigation from './HeaderMobileNavigation.jsx';
 import useAppNavigate from '../hooks/useAppNavigate.js';
 import { isApprovedMember } from '../lib/domain.js';
 import { announcementsPath, spacePath, teamMenuPath } from '../lib/routes.js';
@@ -91,28 +92,21 @@ export default function WorkspaceNavigation({
         aria-hidden={sidebarCollapsed || undefined}
         inert={sidebarCollapsed ? '' : undefined}
       >
+      <HeaderMobileNavigation>
       <button
+        type="button"
         className="mobile-space-toggle"
         ref={mobileToggle}
         aria-expanded={open}
         aria-controls="workspace-navigation"
         aria-label={`스페이스 메뉴 ${open ? '접기' : '펼치기'}`}
+        title={`${currentMenuLabel} · 메뉴 ${open ? '닫기' : '열기'}`}
         onClick={() => setOpen(!open)}
       >
-        <span className="mobile-workspace-context">
-          <strong>{space?.name || '스페이스'}</strong>
-          {team && (
-            <span>
-              {teamRole === '리더' ? team.name : `${team.name} · ${teamRole}`}
-            </span>
-          )}
-        </span>
-        <span className="mobile-menu-location">
-          <span className="mobile-menu-current">{currentMenuLabel}</span>
-          <span className="mobile-menu-action">메뉴</span>
-          <ChevronDown size={14} aria-hidden="true" />
-        </span>
+        <span className={`sidebar-toggle-glyph ${open ? 'is-expanded' : 'is-collapsed'}`} aria-hidden="true" />
       </button>
+      </HeaderMobileNavigation>
+      <MobileSideDrawer open={open} onClose={() => setOpen(false)} triggerRef={mobileToggle} title="스페이스 메뉴">
       <nav id="workspace-navigation" aria-label="스페이스 메뉴">
         <div className="workspace-navigation-context">
           <button
@@ -196,6 +190,7 @@ export default function WorkspaceNavigation({
           </div>
         </div>
       </nav>
+      </MobileSideDrawer>
       </aside>
       <div
         className={`workspace-sidebar-rail ${sidebarCollapsed ? 'is-collapsed' : ''}`}
