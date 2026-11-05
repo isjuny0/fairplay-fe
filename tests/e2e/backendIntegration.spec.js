@@ -2188,8 +2188,6 @@ test('생성 직전 전체 제출 조건을 다시 확인하고 변경되면 생
 });
 
 async function fillReportWeights(page, values) {
-  const disclosure = page.locator('.report-weights-disclosure');
-  if (!(await disclosure.evaluate((element) => element.open))) await disclosure.locator('summary').click();
   for (const [label, value] of Object.entries(values))
     await page.getByRole('spinbutton', { name: `${label === '완료 작업' ? '작업 점수' : label} 평가 비중`, exact: true }).fill(String(value));
 }
@@ -2213,7 +2211,6 @@ test('관리자는 0을 포함한 정수 비율만 합계 100으로 설정하고
   await page.getByRole('button', { name: '생성 확정', exact: true }).click();
   await expect(page.getByRole('heading', { name: '전체 리포트 생성 완료', exact: true })).toBeVisible();
   expect(fixture.generationWeights).toEqual([{ taskPercent: 0, midPercent: 0, finalPercent: 100 }, { taskPercent: 0, midPercent: 0, finalPercent: 100 }]);
-  await page.locator('.report-weights-disclosure > summary').click();
   await expect(page.getByRole('region', { name: '확정된 평가 비중', exact: true })).toBeVisible();
   await expect(page.getByRole('spinbutton')).toHaveCount(0);
   await expect(page.getByRole('region', { name: '확정된 평가 비중', exact: true }).locator('dl > div').filter({ hasText: '작업 점수' })).toContainText('0%');
@@ -2227,7 +2224,6 @@ test('관리자는 0을 포함한 정수 비율만 합계 100으로 설정하고
   await page.getByRole('dialog', { name: '테스트 1팀 리포트', exact: true }).press('Escape');
   await expect(page.getByText('집계 기준과 계산 방식', { exact: true })).toHaveCount(0);
   await page.reload();
-  await page.locator('.report-weights-disclosure > summary').click();
   await expect(page.getByRole('region', { name: '확정된 평가 비중', exact: true }).locator('dl > div').filter({ hasText: '최종 동료 평가' })).toContainText('100%');
   await expect(page.getByRole('region', { name: '확정된 평가 비중', exact: true })).toBeVisible();
   await expect(page.getByRole('spinbutton')).toHaveCount(0);
@@ -2237,7 +2233,6 @@ test('기존 개별 생성 결과가 있으면 비율을 유지하고 미생성 
   const weights = { taskPercent: 50, midPercent: 20, finalPercent: 30 };
   const fixture = await batchReportBackend(page, { partial: true, lockedWeights: weights });
   await page.goto('/spaces/1/reports');
-  await page.locator('.report-weights-disclosure > summary').click();
   await expect(page.getByRole('region', { name: '확정된 평가 비중', exact: true }).locator('dl > div').filter({ hasText: '작업 점수' })).toContainText('50%');
   await expect(page.getByRole('region', { name: '확정된 평가 비중', exact: true })).toBeVisible();
   await expect(page.getByRole('spinbutton')).toHaveCount(0);
@@ -2257,7 +2252,6 @@ test('다른 관리자가 먼저 확정한 비율을 생성 직전에 다시 확
   await page.getByRole('button', { name: '생성 확정', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('반영 비율이 이미 확정');
   expect(fixture.generatedTeams).toEqual([]);
-  await page.locator('.report-weights-disclosure > summary').click();
   await expect(page.getByRole('region', { name: '확정된 평가 비중', exact: true }).locator('dl > div').filter({ hasText: '작업 점수' })).toContainText('60%');
   await expect(page.getByRole('region', { name: '확정된 평가 비중', exact: true })).toBeVisible();
   await expect(page.getByRole('spinbutton')).toHaveCount(0);
@@ -2277,7 +2271,6 @@ test('일괄 생성 중 비율 충돌이 발생하면 재전송하지 않고 확
   await page.getByRole('button', { name: '생성 확정', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('스페이스 공통 반영 비율이 이미 확정');
   expect(attempts).toEqual([{ taskPercent: 70, midPercent: 10, finalPercent: 20 }]);
-  await page.locator('.report-weights-disclosure > summary').click();
   await expect(page.getByRole('region', { name: '확정된 평가 비중', exact: true }).locator('dl > div').filter({ hasText: '작업 점수' })).toContainText('80%');
   await expect(page.getByRole('region', { name: '확정된 평가 비중', exact: true })).toBeVisible();
   await expect(page.getByRole('spinbutton')).toHaveCount(0);
@@ -2363,7 +2356,6 @@ test('종합점수는 서버의 확정값을 표시하고 작업 산정 대상 �
 test('평가 비중 예시는 96점에서 변경 비중에 따라 갱신되며 합계 오류 시 생성을 막는다', async ({ page }) => {
   await reportBackend(page);
   await page.goto('/spaces/1/reports');
-  await page.locator('.report-weights-disclosure > summary').click();
   const example = page.getByLabel('가상 점수 계산 예시', { exact: true });
   await expect(example).toContainText('96.0 / 100점');
   const generate = page.getByRole('button', { name: '전체 리포트 생성', exact: true });

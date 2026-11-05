@@ -243,6 +243,7 @@ for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 1000 });
     await preview(page, '/spaces/1/reports', 'manager', 'evaluated');
     const results = page.getByRole('region', { name: '팀별 리포트 결과', exact: true });
+    await expect(page.getByRole('spinbutton', { name: '작업 점수 평가 비중', exact: true })).toBeVisible();
     await expect(results).toHaveCount(0);
     await expect(page.getByRole('combobox', { name: '리포트 대상 팀', exact: true })).toHaveCount(0);
     await expect(page.getByRole('list', { name: '팀별 리포트 준비 상태', exact: true }).getByRole('listitem')).toHaveCount(2);
@@ -252,11 +253,9 @@ for (const width of [390, 320]) {
     await expect(results).toBeVisible();
     await expect(page.getByRole('list', { name: '팀별 리포트 준비 상태', exact: true })).toHaveCount(0);
     await expect(results.getByRole('row').filter({ hasText: '삼위일체' })).toContainText('미공개');
-    await page.locator('.report-weights-disclosure > summary').click();
     await expect(page.getByRole('region', { name: '확정된 평가 비중', exact: true })).toBeVisible();
     await expect(page.getByRole('spinbutton')).toHaveCount(0);
     await expect(page.getByLabel('가상 점수 계산 예시')).toHaveCount(0);
-    await page.locator('.report-weights-disclosure > summary').click();
     await page.getByRole('button', { name: '삼위일체 리포트 확인', exact: true }).click();
     await page.getByRole('button', { name: '목록으로 돌아가기', exact: true }).click();
     await page.getByRole('button', { name: '전체 리포트 공개', exact: true }).click();
@@ -306,7 +305,7 @@ for (const width of [1079, 390]) {
     await page.getByRole('spinbutton', { name: '중간 동료 평가 평가 비중', exact: true }).fill('20');
     await expect(initialConfirm).toBeEnabled();
     await initialConfirm.click();
-    await expect(page.locator('.report-weights-disclosure')).not.toHaveAttribute('open');
+    await expect(page.getByRole('spinbutton', { name: '작업 점수 평가 비중', exact: true })).toBeVisible();
     await expect(callout).toContainText('아직 팀원에게 공개되지 않습니다.');
     await page.getByRole('button', { name: '전체 리포트 생성', exact: true }).click();
     await expect(callout).toContainText('첫 생성이 성공하면');
