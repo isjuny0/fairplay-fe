@@ -179,16 +179,16 @@ test('선택 메뉴와 상태 배지는 연한 배경·진한 글씨로 구분�
     );
 });
 
-test('팀 홈의 마감 지연은 빨간색 아이콘으로 표시한다', async ({
+test('팀 홈의 마감 지연은 건수에 강조색을 적용한다', async ({
   page,
 }) => {
   await page.goto('/preview/spaces/1/teams/1');
   await addDashboardWidgets(page, ['지금 확인할 작업']);
   const overdue = page.getByRole('button', { name: /내 마감 지연/ });
   const icon = overdue.locator('.dashboard-icon');
-  await expect(icon).toHaveCSS('background-color', 'rgb(255, 240, 240)');
+  await expect(icon).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await expect(icon.locator('svg')).toBeVisible();
-  await expect(icon).toHaveCSS('color', 'rgb(220, 38, 38)');
+  await expect(icon).toHaveCSS('color', 'rgb(85, 97, 112)');
   await expect(overdue.locator('strong')).toHaveCSS('color', 'rgb(220, 38, 38)');
 });
 

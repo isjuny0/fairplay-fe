@@ -18,13 +18,15 @@
 .dashboard-arrange-grid > .widget-mywork {
   grid-column: span 2;
 }
-.dashboard-arrange-grid
-  > :is(.widget-calendar, .widget-progress, .widget-contribution) {
-  height: 448px;
-}
-.dashboard-arrange-grid
-  > :is(.widget-calendar, .widget-progress, .widget-contribution).is-editing {
-  height: 488px;
+@media (width > 560px) {
+  .dashboard-arrange-grid
+    > :is(.widget-calendar, .widget-progress, .widget-contribution) {
+    height: 448px;
+  }
+  .dashboard-arrange-grid
+    > :is(.widget-calendar, .widget-progress, .widget-contribution).is-editing {
+    height: 488px;
+  }
 }
 .dashboard-arrange-grid .dashboard-card {
   padding: 16px;
@@ -38,8 +40,8 @@
   flex-wrap: nowrap;
 }
 .dashboard-arrange-grid .dashboard-title h2 {
-  font-size: 13px;
-  white-space: nowrap;
+  font-size: var(--text-body);
+  word-break: keep-all;
 }
 .dashboard-arrange-grid .dashboard-icon {
   width: 27px;
@@ -64,19 +66,16 @@
   font-size: 29px;
 }
 .dashboard-arrange-grid .dashboard-progress-ring small {
-  font-size: 9px;
+  font-size: var(--text-caption);
 }
 .dashboard-arrange-grid .dashboard-team-progress .dashboard-progress-copy {
   align-self: stretch;
   margin: 15px 0 0;
   text-align: center;
 }
-.dashboard-arrange-grid .dashboard-progress-copy > strong {
-  font-size: 14px;
-}
 .dashboard-arrange-grid .dashboard-progress-copy p {
-  font-size: 10px;
-  line-height: 1.8;
+  font-size: var(--text-support);
+  line-height: 1.6;
 }
 .dashboard-arrange-grid
   :is(.dashboard-team-progress, .dashboard-contribution)
@@ -88,7 +87,7 @@
 .dashboard-arrange-grid .dashboard-team-progress > time {
   align-self: stretch;
   margin: 10px 0 12px;
-  font-size: 9px;
+  font-size: var(--text-caption);
   text-align: center;
 }
 .dashboard-arrange-grid .team-calendar .dashboard-card-heading {
@@ -108,7 +107,7 @@
   font-size: 25px;
 }
 .dashboard-arrange-grid .calendar-period-up small {
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 400;
   color: var(--calendar-muted);
 }
@@ -163,7 +162,7 @@
 }
 .dashboard-arrange-grid .team-calendar-year {
   order: 2;
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .dashboard-arrange-grid .team-calendar-month h3 {
   margin: 0;
@@ -171,11 +170,11 @@
   gap: 8px;
 }
 .dashboard-arrange-grid .team-calendar-month-count {
-  font-size: 9px;
+  font-size: var(--text-caption);
 }
 .dashboard-arrange-grid .team-calendar-weekdays {
   margin-bottom: 6px;
-  font-size: 10px;
+  font-size: var(--text-caption);
 }
 .dashboard-arrange-grid .team-calendar-weekdays > span {
   text-align: left;
@@ -202,7 +201,7 @@
 .dashboard-arrange-grid .team-calendar-day-number {
   width: 22px;
   height: 22px;
-  font-size: 11px;
+  font-size: var(--text-caption);
   margin-bottom: 1px;
 }
 .dashboard-arrange-grid .team-calendar-day-events {
@@ -220,8 +219,8 @@
   border-radius: 6px;
   padding: 5px 8px;
   background: transparent;
-  color: #7a8e81;
-  font-size: 10px;
+  color: var(--text-muted);
+  font-size: var(--text-caption);
 }
 .team-calendar-view-switch > button[aria-pressed='true'] {
   background: #fff;
@@ -287,11 +286,11 @@
   gap: 7px;
 }
 .dashboard-arrange-grid .team-calendar-footer > span {
-  font-size: 8px;
+  font-size: var(--text-caption);
 }
 .dashboard-arrange-grid .team-calendar-legend {
   gap: 8px;
-  font-size: 8px;
+  font-size: var(--text-caption);
 }
 .dashboard-arrange-grid .dashboard-widget-controls {
   display: flex;
@@ -314,7 +313,7 @@
   background: transparent;
   color: var(--brand);
   cursor: grab;
-  font-size: 10px;
+  font-size: var(--text-caption);
   text-align: left;
 }
 .dashboard-drag-handle:active {
@@ -384,7 +383,7 @@
 .dashboard-metric-explanation dd small {
   display: block;
   margin-top: 3px;
-  font-size: 11px;
+  font-size: var(--text-caption);
   color: var(--brand);
 }
 .dashboard-contribution {
@@ -409,7 +408,7 @@
   letter-spacing: -1px;
 }
 .dashboard-contribution-result > p {
-  font-size: 11px;
+  font-size: var(--text-support);
   color: var(--text-muted);
   line-height: 1.9;
   margin: 0;
@@ -432,7 +431,7 @@
   background: #a9bdb0;
 }
 .dashboard-contribution > .dashboard-caption {
-  font-size: 9px;
+  font-size: var(--text-caption);
   text-align: center;
   margin: 9px 0 19px;
 }
@@ -457,23 +456,25 @@
   .dashboard-arrange-grid > .widget-mywork {
     grid-column: auto;
   }
-  .dashboard-arrange-grid > :is(.widget-progress, .widget-contribution) {
-    height: 350px;
+  .dashboard-arrange-grid .team-calendar-square-face .team-calendar-grid {
+    grid-template-rows: repeat(var(--calendar-week-count, 6), minmax(46px, auto));
   }
-  .dashboard-arrange-grid
-    > :is(.widget-progress, .widget-contribution).is-editing {
-    height: 390px;
+  .dashboard-arrange-grid .team-calendar-square-face .team-calendar-grid > :is(button, span) {
+    height: auto;
   }
   .dashboard-arrange-grid .dashboard-progress-ring {
-    width: 145px;
-    height: 145px;
+    width: 128px;
+    height: 128px;
+    margin: 8px auto 0;
   }
-  .dashboard-arrange-grid > .widget-progress {
-    height: auto;
-    min-height: 350px;
+  .dashboard-arrange-grid .dashboard-team-progress .dashboard-progress-copy {
+    margin-top: 10px;
   }
-  .dashboard-arrange-grid > .widget-progress.is-editing {
-    height: auto;
-    min-height: 390px;
+  .dashboard-arrange-grid .dashboard-team-progress > time {
+    margin: 6px 0 12px;
+  }
+  .dashboard-arrange-grid .dashboard-contribution-result {
+    gap: 8px;
+    padding-block: 12px;
   }
 }

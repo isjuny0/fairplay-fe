@@ -24,7 +24,7 @@ export default function TeamProgressRing({ value, label = '예상 작업량을 �
       </svg>
       <div>
         <strong>{available ? displayPercent : '—'}</strong>
-        {!compact && <small>{available ? '완료한 만큼, 한 걸음 더' : '계산할 작업 없음'}</small>}
+        {!compact && !available && <small>계산할 작업 없음</small>}
       </div>
     </div>
   );
