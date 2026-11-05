@@ -46,11 +46,6 @@
   font-size: 23px;
   font-weight: 500;
 }
-.report-score-caption {
-  margin-top: 8px;
-  color: var(--text-muted);
-  font-size: var(--text-caption);
-}
 .report-score-components > p {
   display: flex;
   justify-content: space-between;

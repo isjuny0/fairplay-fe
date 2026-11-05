@@ -89,7 +89,6 @@ export function ResultSummary({ name, totalScore, details, weights, evaluatedMem
   return <section className={`report-score-summary composite-summary${own ? ' report-personal-summary' : ''}`} aria-label={`${name} 종합 평가 요약`}>
     <div className="report-score-total"><h2>{name} 최종 종합점수</h2>
       <strong>{formatReportNumber(totalScore)}<span> / 100점</span></strong>
-      <span className="report-score-caption">개인별 100점 만점</span>
       {guide?.stepId === 'report-overview' && <button className="secondary-button" data-guide="confirm-report-overview" disabled={!guide.reportReady} onClick={() => guide.confirmReportStep('report-overview')}>종합점수 확인 완료</button>}
     </div>
     <details className="report-calculation-details" open={!mobile || Boolean(guide?.guiding)}><summary>점수 계산 내역</summary>
