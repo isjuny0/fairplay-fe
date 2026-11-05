@@ -75,7 +75,7 @@ test('사이드바는 스페이스 선택 없이 내 스페이스로 돌아간�
   await page.goto('/preview/spaces/1/teams/1/tasks');
   await expect(page.getByRole('combobox', { name: '스페이스 선택', exact: true })).toHaveCount(0);
   await expect(page.locator('.workspace-selectors')).toHaveCount(0);
-  await expect(page.locator('.topbar .header-context-copy strong')).toHaveText('2026 서비스 디자인 프로젝트');
+  await expect(page.locator('.topbar .header-context-copy strong')).toHaveText('2026 캡스톤디자인');
   await page.getByRole('button', { name: '내 스페이스', exact: true }).click();
   await expect(page).toHaveURL(/preview\/main$/);
 });

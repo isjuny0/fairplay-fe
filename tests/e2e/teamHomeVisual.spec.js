@@ -124,7 +124,7 @@ test('6주인 달과 계산 기준을 펼친 상태에서도 두 기본 카드 �
   await clickDashboardControl(page, '편집 완료');
   await page.evaluate(async () => {
     const key = Object.keys(localStorage).find((key) =>
-      key.startsWith('fairplay:mock:v9:'),
+      key.startsWith('fairplay:mock:v11:preview:'),
     );
     const state = JSON.parse(localStorage.getItem(key));
     state.events = Array.from({ length: 5 }, (_, index) => ({

@@ -28,7 +28,7 @@ for (const width of [1440, 320]) {
     await expect(profile).toHaveCSS('color', 'rgb(32, 36, 43)');
     await expect(profile).toHaveCSS('width', '32px');
     await expect(profile).toHaveCSS('height', '32px');
-    await expect(page.locator('.profile-name')).toHaveText('김하늘');
+    await expect(page.locator('.profile-name')).toHaveText('김준영');
     await expect(
       page.getByRole('button', { name: '미리보기 종료', exact: true }),
     ).toBeEnabled();

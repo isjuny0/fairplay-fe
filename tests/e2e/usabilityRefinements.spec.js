@@ -53,11 +53,11 @@ for (const width of [320, 390]) {
     const cell = await date.boundingBox();
     expect(cell.x + cell.width).toBeLessThanOrEqual(region.x + region.width + 1);
     await page.goto('/preview/spaces/1/teams/1/deliverables');
-    const download = page.getByRole('button', { name: '인터뷰 결과 기록 파일 파일 다운로드', exact: true });
+    const download = page.getByRole('button', { name: '팀 권한 점검표 파일 파일 다운로드', exact: true });
     await expect(download).toBeInViewport();
     const ready = page.waitForEvent('download');
     await download.click();
-    expect((await ready).suggestedFilename()).toBe('인터뷰-기록.txt');
+    expect((await ready).suggestedFilename()).toBe('팀-권한-점검표.txt');
   });
 }
 

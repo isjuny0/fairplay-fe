@@ -15,14 +15,14 @@ for (const width of [1440, 1024, 768, 390, 320]) {
     await page.setViewportSize({ width, height: 1000 });
     await openPreview(page, '/spaces/1/teams/1/tasks/103');
     await expect(
-      page.getByRole('heading', { name: '서비스 흐름 설계', exact: true }),
+      page.getByRole('heading', { name: 'AI 피드백 화면 개선', exact: true }),
     ).toBeVisible();
     const identity = page.locator('.topbar .profile-identity');
     const name = identity.locator('.profile-name');
     const role = page.locator('.topbar .header-context-role');
     if (width > 800) await expect(name).toBeVisible();
     else await expect(name).toBeHidden();
-    await expect(name).toHaveText('김하늘');
+    await expect(name).toHaveText('김준영');
     await expect(role).toHaveText('리더');
     await expect(page.locator('.breadcrumb-role')).toHaveCount(0);
     await expect(page.locator('.mobile-workspace-context')).not.toContainText(
@@ -123,7 +123,7 @@ test('다른 팀으로 이동해도 이전 팀의 리더 표시가 남지 않는
   await page.getByRole('button', { name: '내 스페이스', exact: true }).click();
   await expect(page.locator('.header-context-role').filter({ hasText: '리더' })).toHaveCount(0);
   await page.goto('/preview/spaces/1/teams/2');
-  await expect(page.locator('.topbar .profile-name')).toHaveText('김하늘');
+  await expect(page.locator('.topbar .profile-name')).toHaveText('김준영');
   await expect(page.locator('.header-context-role').filter({ hasText: '리더' })).toHaveCount(0);
 });
 
@@ -143,7 +143,7 @@ for (const [path, selector, text] of [
 
 for (const [path, heading, role = 'leader'] of [
   ['/spaces/1/teams/1/tasks', '작업'],
-  ['/spaces/1/teams/1/tasks/103', '서비스 흐름 설계'],
+  ['/spaces/1/teams/1/tasks/103', 'AI 피드백 화면 개선'],
   ['/spaces/1/teams/1/deliverables', '팀 자료'],
   ['/spaces/1/teams/1/meeting-minutes', '팀 회의록'],
   ['/spaces/1/teams/1/materials-search', '팀 자료 검색'],
@@ -159,7 +159,7 @@ for (const [path, heading, role = 'leader'] of [
   ['/spaces/1/settings', '스페이스 관리', 'manager'],
   [
     '/spaces/1/manager/teams/1/members/00000000-0000-4000-8000-000000000001',
-    '김하늘님의 수행 상세',
+    '김준영님의 수행 상세',
     'manager',
   ],
 ]) {

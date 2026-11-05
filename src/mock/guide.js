@@ -1,3 +1,4 @@
+import { previewUsers } from './fixtures.js';
 import { validReportScore } from '../lib/reportScore.js';
 import { getMockState, resetMockState, saveMockState } from './planned.js';
 import { previewContext, previewRole, setPreviewRole } from './preview.js';
@@ -12,7 +13,8 @@ export const guideHome = '/preview/spaces/1/teams/1';
 export const guideTask = `${guideHome}/tasks/${guideTaskId}`;
 export const materialsGuidePath = `${guideHome}/materials-search`;
 export const managerGuidePath = '/preview/spaces/1/dashboard';
-export const managerGuideMemberId = '00000000-0000-4000-8000-000000000001';
+export const managerGuideMemberId = previewUsers.leader.id;
+const managerGuideMemberName = previewUsers.leader.name;
 export const managerGuideMemberPath = `/preview/spaces/1/manager/teams/1/members/${managerGuideMemberId}`;
 export const managerGuideTaskId = 101;
 export const managerGuideDeliverableId = 1002;
@@ -28,17 +30,17 @@ export const guideExamples = {
   peerScores: { taskExecution: 4, responsibility: 4, collaboration: 3, communication: 4 },
   peerReason: '담당한 작업의 진행 상황을 공유하고 필요한 자료를 정리해 팀의 작업을 도왔습니다.',
   question: '우리 프로젝트의 목표와 범위는 무엇인가요?',
-  contributionDescription: '사용자 조사 응답을 주제별로 분류하고, 팀이 우선 해결할 문제와 다음 단계 제안을 문서로 정리했습니다.',
+  contributionDescription: '전시 링크로 들어와 팀원 가이드를 실행하고, 작업 목록에서 결과물 등록과 완료 처리까지 확인했습니다.',
   deliverable: {
-    title: '사용자 조사 결과 요약',
-    description: '조사에서 확인한 핵심 발견과 다음 단계 제안을 정리한 예시 문서입니다.',
+    title: '전시 체험 점검 기록',
+    description: 'Fairplay 전시용 가이드의 주요 동선과 확인 항목을 정리한 예시 문서입니다.',
     type: 'TEXT',
-    text: '## 핵심 발견\n\n- 팀원은 작업의 담당자와 진행 상황을 한눈에 확인하고 싶어 합니다.\n- 수행한 내용과 결과물이 작업에 함께 연결되면 진행 상황을 이해하기 쉽습니다.\n\n## 다음 단계\n\n작업별 수행 설명과 결과물을 남기고, 완료 후 팀 진행률에 반영되는 흐름을 확인합니다.',
+    text: '## 확인한 흐름\n\n- 전시 링크에서 팀원·관리자 가이드를 선택합니다.\n- 팀원 가이드에서 작업 열기, 결과물 추가, 수행 설명 저장, 완료 처리를 확인합니다.\n\n## 다음 점검\n\n좁은 화면에서도 강조 위치와 버튼이 잘 보이는지 확인합니다.',
   },
 };
 export const guideSteps = [
   { id: 'team-progress', title: '우리 팀의 진행률을 확인하세요', description: '작업을 완료하면 예상 작업량을 반영한 팀 진행률이 달라집니다. 현재 값을 확인한 뒤, 강조된 ‘작업 보드 보기’ 버튼을 직접 눌러 주세요.', path: guideHome, target: '[data-guide="team-progress"]', actionTarget: '[data-guide="open-tasks"]', action: '강조 위치 보기' },
-  { id: 'task', title: '예시 작업을 열어 보세요', description: '‘예시 작업: 조사 결과 정리’는 내가 단독으로 담당하는 작업입니다. 강조된 작업 제목을 직접 눌러 내용을 확인하세요.', path: `${guideHome}/tasks?view=list&mine=1`, actionTarget: '[data-guide-task-id="109"]', action: '강조 위치 보기' },
+  { id: 'task', title: '예시 작업을 열어 보세요', description: '‘예시 작업: 전시 체험 점검’은 내가 단독으로 담당하는 작업입니다. 강조된 작업 제목을 직접 눌러 내용을 확인하세요.', path: `${guideHome}/tasks?view=list&mine=1`, actionTarget: '[data-guide-task-id="109"]', action: '강조 위치 보기' },
   { id: 'deliverable', title: '결과물을 문서로 남기세요', description: '강조된 ‘결과물 추가’ 버튼을 눌러 주세요. 자동 입력된 문서 내용을 확인한 뒤 추가 창의 ‘결과물 추가’를 직접 누르면 작업에 연결됩니다.', path: guideTask, section: 'task-deliverables-section', target: '#task-deliverables-section', actionTarget: '[data-guide="open-deliverable"]', dialogTitle: '문서 작성', dialogCalloutContainer: '.deliverable-editor-scroll', dialogDescription: '예시 문서의 제목과 본문이 자동 입력되었습니다. 내용을 확인하거나 수정한 뒤 하단의 ‘결과물 추가’를 눌러 작업에 연결하세요.', dialogTarget: 'input[name="title"], textarea[name="text"]', dialogActionTarget: 'button[type="submit"]', action: '강조 위치 보기' },
   { id: 'ai-feedback', title: '결과물의 AI 피드백을 확인하세요', description: '‘피드백 받기’를 눌러 예시 피드백을 확인하세요. 실제 AI를 호출하지 않습니다. AI 피드백은 작업 완료의 필수 조건이 아닙니다.', readyDescription: '핵심 요약과 중요한 피드백을 읽고, 근거 자료를 확인한 뒤, 결과 아래의 ‘피드백 확인 완료’를 직접 눌러 주세요.', path: guideTask, section: 'task-ai-review-section', target: '.ai-review-panel', actionTarget: '[data-guide="request-ai-review"]', readyTarget: '.ai-review-result', readyActionTarget: '[data-guide="confirm-ai-feedback"]', action: '강조 위치 보기' },
   { id: 'contribution', title: '내가 수행한 내용을 기록하세요', description: '예시 수행 설명을 자동으로 채웠습니다. 내용을 확인한 뒤 화면의 ‘수행 설명 저장’ 버튼을 직접 눌러 주세요. 직접 수정해도 됩니다.', path: guideTask, section: 'task-contributions-section', target: '#own-contribution-description', calloutTarget: '#own-contribution-description', calloutAvoidClosest: 'form', calloutPlacement: 'flow', actionTarget: '[data-guide="save-contribution"]', action: '강조 위치 보기' },
@@ -72,7 +74,7 @@ export const contributionGuideSteps = [
   { id: 'report-overview', title: '본인의 종합점수를 확인하세요', description: '종합점수는 개인별 100점 만점입니다. 다른 팀원과 나눠 갖는 비율이 아닙니다. 점수를 확인한 뒤 ‘종합점수 확인 완료’를 누르세요.', path: contributionGuidePath, target: '.report-personal-summary .report-score-total', calloutAvoidClosest: '.report-personal-summary', calloutPlacement: 'flow', actionTarget: '[data-guide="confirm-report-overview"]', action: '강조 위치 보기' },
   { id: 'report-components', title: '원점수가 반영되는 과정을 확인하세요', description: '원점수 → 평가 비중 → 반영 점수 순서로 읽어 보세요. 완료 작업량 비율은 작업 점수와 다르며, 작업 점수 옆 도움말에서 환산 방식을 확인할 수 있습니다. ‘반영 점수 확인 완료’를 누르면 동료 평가로 이동합니다.', path: contributionGuidePath, target: '.report-score-components > dl', calloutTarget: '.report-score-components', calloutContainer: '.report-score-components', calloutPlacement: 'flow', actionTarget: '[data-guide="confirm-report-components"]', action: '강조 위치 보기' },
   { id: 'report-peer-results', title: '최종 평가 결과로 전환해 보세요', description: '지금은 중간 평가에서 받은 네 항목의 평균입니다. ‘최종 평가’를 직접 눌러 다른 회차의 결과를 확인하세요. 각 항목은 5점 만점이며 반영 점수와는 다른 값입니다.', path: contributionGuidePath, target: '.composite-criteria .peer-criteria-scores', calloutTarget: '.composite-criteria', calloutContainer: '.composite-criteria', calloutPlacement: 'flow', actionTarget: '[data-guide="report-final-criteria"]', action: '강조 위치 보기' },
-  { id: 'report-tasks', title: '점수에 반영된 완료 작업을 펼쳐 보세요', description: '‘조사 결과 요약’을 직접 눌러 담당 비율과 수행 설명을 확인하세요. 이어서 연결된 문서를 열어 실제 결과물까지 살펴봅니다.', path: contributionGuidePath, target: `[data-guide-report-task="${reportGuideTaskId}"]`, calloutTarget: '.contribution-evidence-list', calloutContainer: '.contribution-evidence-list', calloutPlacement: 'flow', actionTarget: `[data-guide-report-task="${reportGuideTaskId}"]`, action: '강조 위치 보기' },
+  { id: 'report-tasks', title: '점수에 반영된 완료 작업을 펼쳐 보세요', description: '‘종합 평가 리포트 연동’을 직접 눌러 담당 비율과 수행 설명을 확인하세요. 이어서 연결된 문서를 열어 실제 결과물까지 살펴봅니다.', path: contributionGuidePath, target: `[data-guide-report-task="${reportGuideTaskId}"]`, calloutTarget: '.contribution-evidence-list', calloutContainer: '.contribution-evidence-list', calloutPlacement: 'flow', actionTarget: `[data-guide-report-task="${reportGuideTaskId}"]`, action: '강조 위치 보기' },
 ];
 export function contributionGuideStep(step, { criteriaRound, openedTaskId, source } = {}) {
   if (step.id === 'report-peer-results' && criteriaRound === 'final') return { ...step,
@@ -88,7 +90,7 @@ export function contributionGuideStep(step, { criteriaRound, openedTaskId, sourc
       target: '[data-guide="report-material-preview"]', actionTarget: null };
   }
   return { ...step, title: '연결된 문서를 직접 열어 보세요',
-    description: '작업의 수행 설명을 확인한 뒤 ‘조사 결과 요약 문서’를 누르세요. 점수에 반영된 작업과 실제 결과물을 함께 확인합니다.',
+    description: '작업의 수행 설명을 확인한 뒤 ‘종합 평가 리포트 연동 점검’을 누르세요. 점수에 반영된 작업과 실제 결과물을 함께 확인합니다.',
     target: `[data-guide-report-task-body="${reportGuideTaskId}"]`, actionTarget: `[data-guide-report-material="${reportGuideMaterialId}"]` };
 }
 export function contributionTaskGuideReady(report, userId, openedTaskId, source) {
@@ -103,9 +105,9 @@ export function contributionGuideReady(report, userId) {
 }
 export const managerGuideSteps = [
   { id: 'manager-select-team', title: '진행 상황을 확인할 팀을 선택하세요', description: '팀 관리 목록에서 삼위일체의 진행률과 작업 현황을 살펴보고, 강조된 팀 이름을 직접 눌러 주세요.', path: managerGuidePath, target: '[data-guide-manager-team-row="1"]', calloutAvoidClosest: '[data-guide-manager-team-row]', calloutPlacement: 'vertical', actionTarget: '[data-guide-manager-team="1"]', action: '강조 위치 보기' },
-  { id: 'manager-overview', title: '팀의 진행 상황을 살펴보세요', description: '팀 진행률·작업 현황과 마감 지연·장기 정체를 확인하세요. 진행률과 완료 작업 비중은 최종 종합점수와 다른 지표입니다. 팀원 수행 현황에서 ‘김하늘 수행 상세’를 직접 눌러 주세요.', path: `${managerGuidePath}?teamId=1`, target: '.dashboard-work-overview, .dashboard-team-notices', actionTarget: `[data-guide-manager-member="${managerGuideMemberId}"]`, action: '강조 위치 보기' },
-  { id: 'manager-member', title: '팀원의 수행 기록을 확인하세요', description: '작업 기록에서 ‘사용자 인터뷰 계획’의 상태·담당 배분·수행 설명을 확인하세요. 확인한 뒤 ‘수행 기록 확인 완료’를 누르면 연결된 결과물을 살펴봅니다. 관리자는 수행 내용을 수정하지 않습니다.', path: `${managerGuideMemberPath}?taskId=${managerGuideTaskId}`, target: '.member-task-record', actionTarget: `[data-guide-manager-task="${managerGuideTaskId}"], [data-guide="confirm-manager-member"]`, action: '강조 위치 보기' },
-  { id: 'manager-material', title: '연결된 결과물을 직접 펼쳐 보세요', description: '‘인터뷰 계획과 질문 목록’을 눌러 원문을 확인하세요. 수행 설명과 실제 결과물을 함께 살펴본 뒤 ‘결과물 확인 완료’를 누르면 가이드를 마칩니다.', path: `${managerGuideMemberPath}?taskId=${managerGuideTaskId}`, target: '[data-guide="manager-material-content"]', actionTarget: `[data-guide-manager-task="${managerGuideTaskId}"], details:not([open]) > [data-guide-manager-deliverable="${managerGuideDeliverableId}"], [data-guide="confirm-manager-material"]`, action: '강조 위치 보기' },
+  { id: 'manager-overview', title: '팀의 진행 상황을 살펴보세요', description: `팀 진행률·작업 현황과 마감 지연·장기 정체를 확인하세요. 진행률과 완료 작업 비중은 최종 종합점수와 다른 지표입니다. 팀원 수행 현황에서 ‘${managerGuideMemberName} 수행 상세’를 직접 눌러 주세요.`, path: `${managerGuidePath}?teamId=1`, target: '.dashboard-work-overview, .dashboard-team-notices', actionTarget: `[data-guide-manager-member="${managerGuideMemberId}"]`, action: '강조 위치 보기' },
+  { id: 'manager-member', title: '팀원의 수행 기록을 확인하세요', description: '작업 기록에서 ‘스페이스·팀 권한 설계’의 상태·담당 배분·수행 설명을 확인하세요. 확인한 뒤 ‘수행 기록 확인 완료’를 누르면 연결된 결과물을 살펴봅니다. 관리자는 수행 내용을 수정하지 않습니다.', path: `${managerGuideMemberPath}?taskId=${managerGuideTaskId}`, target: '.member-task-record', actionTarget: `[data-guide-manager-task="${managerGuideTaskId}"], [data-guide="confirm-manager-member"]`, action: '강조 위치 보기' },
+  { id: 'manager-material', title: '연결된 결과물을 직접 펼쳐 보세요', description: '‘스페이스·팀 권한 정리’를 눌러 원문을 확인하세요. 수행 설명과 실제 결과물을 함께 살펴본 뒤 ‘결과물 확인 완료’를 누르면 가이드를 마칩니다.', path: `${managerGuideMemberPath}?taskId=${managerGuideTaskId}`, target: '[data-guide="manager-material-content"]', actionTarget: `[data-guide-manager-task="${managerGuideTaskId}"], details:not([open]) > [data-guide-manager-deliverable="${managerGuideDeliverableId}"], [data-guide="confirm-manager-material"]`, action: '강조 위치 보기' },
 ];
 export function managerGuideReady(stepId, state, source) {
   if (stepId === 'manager-select-team') return Boolean(state?.kind === 'team' && state.team?.teamId === 1
@@ -147,8 +149,8 @@ export function evaluationGuideReady(stepId, state) {
 export const reportManagementGuideSteps = [
   { id: 'management-report-weights', title: '모든 팀에 적용할 평가 비중을 확인하세요', description: '중간·최종 평가가 마감되고 전원 제출한 예시입니다. 세 비중의 합계를 100%로 맞춘 뒤 ‘생성 조건 확인 완료’를 누르세요. 첫 생성 성공 후에는 비중을 바꿀 수 없습니다.', path: reportManagementGuidePath, target: '.report-weight-fields', calloutTarget: '[data-guide="report-weight-content"]', calloutContainer: '[data-guide="report-weight-content"]', calloutPlacement: 'flow', actionTarget: '[data-guide="confirm-management-report-weights"]', action: '강조 위치 보기' },
   { id: 'management-report-generate', title: '전체 팀의 리포트를 미공개로 생성하세요', description: '‘전체 리포트 생성’을 직접 누르세요. 모든 팀의 종합점수를 함께 생성하며, 아직 팀원에게 공개되지 않습니다. 생성이 끝나면 팀별 결과를 검토합니다.', path: reportManagementGuidePath, target: '[data-guide="generate-all-reports"]', calloutTarget: '.report-batch-generation', calloutContainer: '.report-batch-generation', calloutPlacement: 'flow', actionTarget: '[data-guide="generate-all-reports"]', action: '강조 위치 보기' },
-  { id: 'management-report-review', title: '팀원별 종합점수와 반영 점수를 검토하세요', description: '삼위일체의 ‘리포트 확인’을 눌러 팀원별 종합점수와 세부 평가를 확인합니다. 이 가이드에서는 김하늘님의 결과를 검토합니다.', path: `${reportManagementGuidePath}?teamId=1`, section: 'report-guide-member', target: '.report-team-result', calloutContainer: '.report-team-result', calloutPlacement: 'flow', actionTarget: '[data-guide="choose-report-guide-team"]', action: '강조 위치 보기' },
-  { id: 'management-report-evidence', title: '점수에 반영된 작업을 펼쳐 보세요', description: '‘사용자 인터뷰 계획’을 직접 눌러 수행 설명과 담당 비율을 확인합니다. 이어서 연결된 문서를 열어 실제 결과물까지 살펴봅니다.', path: `${reportManagementGuidePath}?teamId=1`, section: 'report-guide-evidence', target: `[data-guide-report-task="${managerGuideTaskId}"]`, calloutTarget: '.contribution-evidence-list', calloutContainer: '.contribution-evidence-list', calloutPlacement: 'flow', actionTarget: `[data-guide-report-task="${managerGuideTaskId}"]`, action: '강조 위치 보기' },
+  { id: 'management-report-review', title: '팀원별 종합점수와 반영 점수를 검토하세요', description: `삼위일체의 ‘리포트 확인’을 눌러 팀원별 종합점수와 세부 평가를 확인합니다. 이 가이드에서는 ${managerGuideMemberName}님의 결과를 검토합니다.`, path: `${reportManagementGuidePath}?teamId=1`, section: 'report-guide-member', target: '.report-team-result', calloutContainer: '.report-team-result', calloutPlacement: 'flow', actionTarget: '[data-guide="choose-report-guide-team"]', action: '강조 위치 보기' },
+  { id: 'management-report-evidence', title: '점수에 반영된 작업을 펼쳐 보세요', description: '‘스페이스·팀 권한 설계’를 직접 눌러 수행 설명과 담당 비율을 확인합니다. 이어서 연결된 문서를 열어 실제 결과물까지 살펴봅니다.', path: `${reportManagementGuidePath}?teamId=1`, section: 'report-guide-evidence', target: `[data-guide-report-task="${managerGuideTaskId}"]`, calloutTarget: '.contribution-evidence-list', calloutContainer: '.contribution-evidence-list', calloutPlacement: 'flow', actionTarget: `[data-guide-report-task="${managerGuideTaskId}"]`, action: '강조 위치 보기' },
   { id: 'management-report-publish', title: '전체 팀에 공개할 준비가 됐는지 확인하세요', description: '예시 팀의 검토를 마쳤습니다. 실제 운영에서는 다른 팀도 검토한 뒤 ‘전체 리포트 공개’를 누르세요. 확인 창에서 공개 범위를 확인하고 최종 확정합니다.', path: reportManagementGuidePath, target: '[data-guide="space-report-publication"]', calloutTarget: '.report-batch-generation', calloutContainer: '.report-batch-generation', calloutPlacement: 'flow', actionTarget: '[data-guide="publish-all-reports"]', dialogTitle: '전체 리포트 공개', dialogDescription: '전체 팀에 함께 공개합니다. 각 팀원은 본인의 종합점수·평가 결과·작업 근거만 볼 수 있습니다. 공개 후 되돌릴 수 없으므로 확인한 뒤 ‘전체 공개 확정’을 누르세요.', dialogTarget: '[data-guide="report-publication-scope"]', dialogActionTarget: '[data-guide="confirm-publish-all-reports"]', action: '강조 위치 보기' },
   { id: 'management-report-result', title: '모든 팀의 공개 완료 상태를 확인하세요', description: '팀별 리포트 상태가 모두 ‘공개 완료’로 바뀌었습니다. ‘공개 결과 확인 완료’를 누르면 가이드를 마칩니다. 실제 계정의 리포트에는 반영되지 않습니다.', path: reportManagementGuidePath, target: '.report-management-table .report-list-status', calloutTarget: '.report-results-section', calloutContainer: '.report-results-section', calloutPlacement: 'flow', actionTarget: '[data-guide="confirm-management-report-result"]', action: '강조 위치 보기' },
 ];
@@ -195,8 +197,8 @@ export function managerGuideStep(step, { member, source, reportResult, reportRev
   const current = placement ? { ...step, ...placement } : step;
   if (['manager-member', 'manager-material'].includes(step.id) && member?.kind === 'member'
     && member.task?.taskId !== managerGuideTaskId) return {
-    ...current, title: '‘사용자 인터뷰 계획’을 선택하세요',
-    description: '지금은 다른 작업을 보고 있습니다. 작업 목록에서 ‘사용자 인터뷰 계획’을 선택해 주세요. 목록에 없다면 ‘안내 위치’를 누르면 작업 필터와 선택을 복원합니다.',
+    ...current, title: '‘스페이스·팀 권한 설계’를 선택하세요',
+    description: '지금은 다른 작업을 보고 있습니다. 작업 목록에서 ‘스페이스·팀 권한 설계’를 선택해 주세요. 목록에 없다면 ‘안내 위치’를 누르면 작업 필터와 선택을 복원합니다.',
     target: null, actionTarget: `[data-guide-manager-task="${managerGuideTaskId}"]`, calloutAvoidClosest: null,
   };
   if (step.id === 'manager-material' && source?.expanded && source.teamId === 1
@@ -221,7 +223,7 @@ export function managerGuideStep(step, { member, source, reportResult, reportRev
       target: null, actionTarget: '[data-guide="choose-report-guide-team"]', calloutTarget: '.report-results-section', calloutContainer: '.report-results-section',
     };
     if (reportReview && reportReview.memberId !== managerGuideMemberId) return {
-      ...current, title: '김하늘님의 결과를 선택하세요', description: '상세 조회 팀원에서 ‘김하늘’을 선택하세요. 상단의 ‘가이드 안내 위치’를 눌러 가이드의 팀원으로 돌아갈 수도 있습니다.',
+      ...current, title: `${managerGuideMemberName}님의 결과를 선택하세요`, description: `상세 조회 팀원에서 ‘${managerGuideMemberName}’을 선택하세요. 상단의 ‘가이드 안내 위치’를 눌러 가이드의 팀원으로 돌아갈 수도 있습니다.`,
       target: '[data-guide="report-member-selector"]', actionTarget: '[data-guide="report-member-selector"]',
       calloutTarget: '.report-member-evidence-heading', calloutContainer: '.report-member-evidence',
     };
@@ -232,7 +234,7 @@ export function managerGuideStep(step, { member, source, reportResult, reportRev
       ...current, target: '.report-member-evidence .report-score-total, .report-member-evidence .report-score-components > dl',
       calloutTarget: '.report-member-evidence', calloutContainer: '.report-member-evidence',
       actionTarget: '[data-guide="confirm-management-report-review"]',
-      description: '김하늘님의 종합점수와 원점수 → 평가 비중 → 반영 점수를 확인하세요. 아래에서 중간·최종 평가 결과도 전환할 수 있습니다. 확인한 뒤 ‘점수 검토 완료’를 누르면 작업 근거로 이동합니다.',
+      description: `${managerGuideMemberName}님의 종합점수와 원점수 → 평가 비중 → 반영 점수를 확인하세요. 아래에서 중간·최종 평가 결과도 전환할 수 있습니다. 확인한 뒤 ‘점수 검토 완료’를 누르면 작업 근거로 이동합니다.`,
     };
     if (step.id === 'management-report-evidence' && reportEvidence?.openedTaskId === managerGuideTaskId) {
       const source = reportEvidence.source;
@@ -245,8 +247,8 @@ export function managerGuideStep(step, { member, source, reportResult, reportRev
           description: source.loading ? '본문을 불러온 뒤 수행 설명과 비교할 수 있습니다. 잠시 기다려 주세요.' : '문서를 불러오지 못했습니다. 문서 영역에서 다시 불러온 뒤 검토를 마쳐 주세요.',
           target: '[data-guide="report-material-preview"]', actionTarget: null };
       }
-      return { ...current, title: '‘인터뷰 계획과 질문 목록’을 열어 보세요',
-        description: '수행 설명을 확인한 뒤 연결된 ‘인터뷰 계획과 질문 목록’을 직접 누르세요. 원문을 정상적으로 불러와야 검토를 완료할 수 있습니다.',
+      return { ...current, title: '‘스페이스·팀 권한 정리’를 열어 보세요',
+        description: '수행 설명을 확인한 뒤 연결된 ‘스페이스·팀 권한 정리’를 직접 누르세요. 원문을 정상적으로 불러와야 검토를 완료할 수 있습니다.',
         target: `[data-guide-report-task-body="${managerGuideTaskId}"]`, actionTarget: `[data-guide-report-material="${managerGuideDeliverableId}"]` };
     }
   }
@@ -332,8 +334,8 @@ export function prepareGuide(scenarioId = 'task-completion') {
   const entry = state.teams[1];
   const now = Date.now();
   if (scenarioId === 'task-completion') entry.tasks.push({
-    ...entry.tasks[0], id: guideTaskId, title: '예시 작업: 조사 결과 정리',
-    description: '조사 결과에서 핵심 발견을 정리하고 다음 단계 제안을 문서로 남겨 주세요.',
+    ...entry.tasks[0], id: guideTaskId, title: '예시 작업: 전시 체험 점검',
+    description: '전시 링크에서 가이드를 열어 작업 완료 동선을 확인하고 점검 결과를 문서로 남겨 주세요.',
     status: 'IN_PROGRESS', version: 0, weight: 3,
     startAt: koreanDateTime(now - 86400000), dueAt: koreanDateTime(now + 7 * 86400000),
     createdAt: koreanDateTime(), updatedAt: koreanDateTime(), lastActivityAt: koreanDateTime(), completedAt: null,
@@ -342,8 +344,8 @@ export function prepareGuide(scenarioId = 'task-completion') {
   });
   if (scenarioId === 'contribution-report') {
     entry.deliverables.push({ id: reportGuideMaterialId, teamId: 1, taskId: reportGuideTaskId,
-      title: '조사 결과 요약 문서', description: '수행 기록과 함께 확인하는 가이드 예시 자료',
-      type: 'TEXT', text: guideExamples.deliverable.text, version: 1,
+      title: '종합 평가 리포트 연동 점검', description: '수행 기록과 함께 확인하는 가이드 예시 자료',
+      type: 'TEXT', text: '공개 리포트에서 본인 종합점수, 동료 평가 항목과 반영된 완료 작업을 확인합니다.\n다른 팀원의 상세 점수와 근거는 관리자 화면에서만 확인합니다.', version: 1,
       authorId: context.user.id, createdAt: koreanDateTime(), updatedAt: koreanDateTime() });
   }
   if (scenarioId === 'peer-evaluation') {

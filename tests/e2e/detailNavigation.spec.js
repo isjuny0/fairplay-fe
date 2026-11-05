@@ -16,7 +16,7 @@ async function seed(page, role = 'leader') {
   await page.addInitScript(
     ({ state, role }) => {
       localStorage.setItem('fairplay:preview-role', role);
-      localStorage.setItem('fairplay:mock:v9:preview:1', JSON.stringify(state));
+      localStorage.setItem('fairplay:mock:v11:preview:1', JSON.stringify(state));
     },
     { state, role },
   );
@@ -29,10 +29,10 @@ for (const width of [1440, 1045, 320]) {
     await page.setViewportSize({ width, height: 900 });
     await seed(page);
     await page.goto(
-      '/preview/spaces/1/teams/1/tasks?view=list&q=설문&status=IN_PROGRESS',
+      '/preview/spaces/1/teams/1/tasks?view=list&q=팀+자료&status=IN_PROGRESS',
     );
     await page
-      .getByRole('button', { name: '설문 결과 분석', exact: true })
+      .getByRole('button', { name: '팀 자료 검색 개선', exact: true })
       .click();
     const originalUrl = page.url();
     const navigation = page.getByRole('tablist', {
@@ -150,10 +150,10 @@ for (const width of [1440, 1045, 320]) {
       '아직 저장하지 않은 분석 수행 내용과 검증 결과입니다.',
     );
     await description.fill(
-      '조사 자료를 정리하고 주요 발견과 개선안을 검토했습니다.',
+      '검색 답변에 표시되는 인용 위치를 원문과 대조하고, 근거가 부족할 때의 안내를 정리했습니다.',
     );
     await page.getByRole('button', { name: '← 목록으로', exact: true }).click();
-    await expect(page.getByLabel('작업 제목 검색')).toHaveValue('설문');
+    await expect(page.getByLabel('작업 제목 검색')).toHaveValue('팀 자료');
     expect(new URL(page.url()).searchParams.get('status')).toBe('IN_PROGRESS');
     expect(new URL(page.url()).searchParams.get('view')).toBe('list');
   });
@@ -244,7 +244,7 @@ test('긴 팀 자료 상세는 다운로드·닫기와 목록 초점 복귀를 �
   await seed(page);
   await page.goto('/preview/spaces/1/teams/1/deliverables?taskId=101');
   const title = page.getByRole('button', {
-    name: '인터뷰 결과 기록 파일',
+    name: '팀 권한 점검표 파일',
     exact: true,
   });
   await title.click();
@@ -258,7 +258,7 @@ test('긴 팀 자료 상세는 다운로드·닫기와 목록 초점 복귀를 �
   await expect(download).toBeInViewport();
   const downloaded = page.waitForEvent('download');
   await download.click();
-  expect((await downloaded).suggestedFilename()).toBe('인터뷰-기록.txt');
+  expect((await downloaded).suggestedFilename()).toBe('팀-권한-점검표.txt');
   await dialog
     .getByRole('button', { name: '닫기', exact: true })
     .last()
