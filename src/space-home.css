@@ -1,15 +1,19 @@
 .main-content > .space-home {
+  --space-home-section-gap: var(--space-8);
   display: grid;
-  gap: 32px;
+  gap: var(--space-home-section-gap);
   min-height: 0;
   padding-bottom: 24px;
+}
+.main-content .space-home-intro.space-page-header {
+  padding-bottom: var(--space-6);
 }
 .space-home-periods {
   display: grid;
   grid-template-columns: 160px minmax(0, 1fr);
   grid-template-rows: repeat(2, auto);
   gap: 18px 32px;
-  padding: 0 0 24px;
+  padding: 0 0 var(--space-home-section-gap);
   border-bottom: 1px solid var(--border);
 }
 .space-home-period-summary {
@@ -602,7 +606,7 @@
 }
 @media (max-width: 600px) {
   .main-content > .space-home {
-    gap: 28px;
+    --space-home-section-gap: 28px;
   }
   .space-home-period {
     grid-template-columns: 92px minmax(0, 1fr);
