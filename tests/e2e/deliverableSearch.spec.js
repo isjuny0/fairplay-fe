@@ -52,7 +52,7 @@ async function fixture(page) {
 const rows = (page) =>
   page
     .getByRole("region", { name: "팀 자료 목록", exact: true })
-    .locator("tbody tr");
+    .locator("tbody tr, .mobile-material-list > li");
 
 test("다른 페이지의 원본 파일명을 서버 검색으로 찾아 조건과 상세를 유지한다", async ({
   page,
@@ -232,25 +232,32 @@ test("웹과 좁은 화면에서 모든 탐색 제어를 사용할 수 있고 �
       name: "팀 자료 목록",
       exact: true,
     });
-    const actions = rows(page).first().locator('td:last-child');
-    await expect(actions).toHaveCSS('position', 'sticky');
-    const before = await actions.boundingBox();
-    await table.evaluate((element) => { element.scrollLeft = element.scrollWidth; });
-    const after = await actions.boundingBox();
-    expect(Math.abs(before.x - after.x)).toBeLessThanOrEqual(1);
-    expect(after.x + after.width).toBeLessThanOrEqual(width);
-    await table.evaluate((element) => { element.scrollLeft = 0; });
-    await expect(table.getByRole("columnheader").first()).toHaveCSS(
-      "text-align",
-      "left",
-    );
-    await expect(table.getByRole("columnheader").nth(1)).toHaveCSS(
-      "text-align",
-      "center",
-    );
-    await expect(
-      table.locator("tbody tr").first().locator("td").first(),
-    ).toHaveCSS("text-align", "center");
+    if (width <= 720) {
+      await expect(table.locator('.mobile-material-list > li')).toHaveCount(20);
+      await rows(page).first().locator('summary').click();
+      await expect(rows(page).first().locator('.mobile-record-pairs')).toBeVisible();
+      expect(await table.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+    } else {
+      const actions = rows(page).first().locator('td:last-child');
+      await expect(actions).toHaveCSS('position', 'sticky');
+      const before = await actions.boundingBox();
+      await table.evaluate((element) => { element.scrollLeft = element.scrollWidth; });
+      const after = await actions.boundingBox();
+      expect(Math.abs(before.x - after.x)).toBeLessThanOrEqual(1);
+      expect(after.x + after.width).toBeLessThanOrEqual(width);
+      await table.evaluate((element) => { element.scrollLeft = 0; });
+      await expect(table.getByRole("columnheader").first()).toHaveCSS(
+        "text-align",
+        "left",
+      );
+      await expect(table.getByRole("columnheader").nth(1)).toHaveCSS(
+        "text-align",
+        "center",
+      );
+      await expect(
+        table.locator("tbody tr").first().locator("td").first(),
+      ).toHaveCSS("text-align", "center");
+    }
     expect(
       await page
         .getByRole("button", { name: "검색", exact: true })

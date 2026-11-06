@@ -26,6 +26,8 @@ import {
   currentTaskMonth,
   isTaskMonth,
   nearestTaskMonth,
+  timelineTaskPeriod,
+  timelineWindow,
 } from '../lib/taskSchedule.js';
 import { EmptyState, ResourceState } from './ui.jsx';
 import { isTaskDueWithinWeek } from '../lib/teamDashboard.js';
@@ -84,8 +86,6 @@ export default function TaskBoard({
     }, { replace: true, state: location.state });
   }, [view, urlView, taskId, setSearchParams]);
   const timelineLabelWidth = preferences.labelWidth;
-  const setTimelineLabelWidth = (labelWidth) =>
-    setPreferences((current) => ({ ...current, labelWidth }));
   useEffect(() => {
     saveTaskViewPreferences({ view, labelWidth: timelineLabelWidth });
     if (preferences.view !== view)
@@ -229,6 +229,10 @@ export default function TaskBoard({
     );
 
   const isSchedule = view === 'timeline';
+  const countWindow = isSchedule ? timelineWindow(month, timelineMonths) : null;
+  const countTasks = isSchedule
+    ? matchingTasks.filter((task) => timelineTaskPeriod(task, countWindow, now))
+    : matchingTasks;
   const nearestMonth = nearestTaskMonth(tasks, `${month}-01`);
   const hasSearchFilters = filter !== 'ALL' || onlyMine || onlyOverdue || onlyDueWithinWeek || Boolean(query.trim());
   const activeFilters = [
@@ -243,16 +247,6 @@ export default function TaskBoard({
     <button type="button" className="text-button collection-reset-button task-filter-reset" disabled={!hasFilters} onClick={clearFilters}>
       {isSchedule ? '검색·필터 초기화' : '필터 초기화'}
     </button>
-  );
-  const timelineStatusFilters = (
-    <div className="timeline-status-filters" role="group" aria-label="타임라인 상태 필터">
-      {Object.entries(statusLabels).map(([status, label]) => (
-        <button type="button" key={status} className={`schedule-task-${status.toLowerCase()}`}
-          aria-pressed={filter === status} onClick={() => setFilter(filter === status ? 'ALL' : status)}>
-          <span className="status-dot" aria-hidden="true" />{label}
-        </button>
-      ))}
-    </div>
   );
   const timelineEmpty = (
     <div className="timeline-empty" role="status">
@@ -449,7 +443,6 @@ export default function TaskBoard({
               className={timelineMonths === count ? 'active' : ''}
               onClick={() => setListOption('months', count === 3 ? '3' : '')}>{count}개월</button>)}
           </div>
-          {timelineStatusFilters}
           {!readOnly && <button className={`secondary-button timeline-mine-toggle${onlyMine ? ' active' : ''}`} type="button" aria-pressed={onlyMine}
             onClick={() => setOnlyMine(!onlyMine)}>내 담당</button>}
         </div>
@@ -476,18 +469,20 @@ export default function TaskBoard({
         </div>
       )}
       <ResourceState resource={resource} label="작업 목록">
-        {view === 'board' && <div className="task-board-status-navigation">
-          <div className="task-board-status-buttons" role="group" aria-label="보드 상태 선택">
+        {(isBoard || isSchedule) && <div className={`task-board-status-navigation${isSchedule ? ' timeline-status-navigation' : ''}`}>
+          <div className={`task-board-status-buttons${isSchedule ? ' timeline-status-counts' : ''}`} role="group" aria-label={isSchedule ? '타임라인 상태 필터' : '보드 상태 선택'}>
             {Object.entries(statusLabels).map(([status, label]) => (
               <button
                 key={status}
                 type="button"
                 className={`task-board-status-button task-state-${status.toLowerCase()}`}
+                aria-label={isSchedule ? label : undefined}
+                aria-description={isSchedule ? `${countTasks.filter((task) => task.status === status).length}개 작업` : undefined}
                 aria-pressed={filter === status}
                 onClick={() => setFilter(filter === status ? 'ALL' : status)}
               >
                 <span className="task-board-status-title"><span className="status-dot" />{label}</span>
-                <span className="task-board-status-count">{matchingTasks.filter((task) => task.status === status).length}</span>
+                <span className="task-board-status-count">{countTasks.filter((task) => task.status === status).length}</span>
               </button>
             ))}
           </div>
@@ -495,8 +490,6 @@ export default function TaskBoard({
         {view === 'timeline' ? (
           <TaskTimeline
             now={now}
-            labelWidth={timelineLabelWidth}
-            onLabelWidthChange={setTimelineLabelWidth}
             emptyState={timelineEmpty}
             tasks={tasks}
             month={month}

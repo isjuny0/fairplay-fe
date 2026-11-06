@@ -1,0 +1,36 @@
+/* Mobile records expose the essentials first, with full metadata on demand. */
+.mobile-list-region { min-width: 0; border-block: 1px solid var(--border); }
+.mobile-record-list { list-style: none; margin: 0; padding: 0; }
+.mobile-record { min-width: 0; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.mobile-record:last-child { border-bottom: 0; }
+.mobile-record-heading { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+.mobile-record .collection-title-button {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.mobile-record-heading > :is(.status-badge, .mobile-record-type) { flex-shrink: 0; margin-top: 9px; white-space: nowrap; font-size: 12px; }
+.mobile-record-type { padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; color: var(--text-muted); }
+.mobile-record-download { flex: 0 0 36px; width: 36px; height: 44px; padding: 6px; }
+.mobile-record-meta, .mobile-record-pairs { display: grid; gap: 7px; margin: 4px 0 0; font-size: 12px; line-height: 1.6; }
+.mobile-record-meta > div, .mobile-record-pairs > div { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 8px; }
+.mobile-record-pairs > div { grid-template-columns: 72px minmax(0, 1fr); }
+.mobile-record :is(dt, dd) { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.mobile-record dt { color: var(--text-muted); }
+.mobile-record time { font-variant-numeric: tabular-nums; }
+.mobile-record-details { margin-top: 4px; }
+.mobile-record-details > summary { min-height: 44px; align-content: center; width: fit-content; max-width: 100%; cursor: pointer; color: var(--brand-dark); font-size: 12px; }
+.mobile-record-details > summary:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.mobile-record-pairs { margin: 0; padding: 12px; border-radius: 6px; background: var(--surface-secondary); }
+.mobile-record-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.mobile-record-actions button { min-height: 44px; }
+.mobile-record-inline-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; min-width: 0; font-size: 12px; line-height: 1.6; color: var(--text-muted); }
+.mobile-record-inline-meta > * { min-width: 0; overflow-wrap: anywhere; }
+.mobile-record-inline-meta > :not(:first-child)::before { content: '·'; margin-right: 8px; }

@@ -64,8 +64,8 @@
   .task-board-page .task-schedule-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .task-board-page .task-month-navigation { flex: 1; min-width: 0; gap: 6px; }
   .task-board-page .task-month-navigation > .heading-actions { display: flex; flex-wrap: nowrap; width: 100%; gap: 4px; }
-  .task-board-page .task-month-select { flex: 1; min-width: 0; }
-  .task-board-page .task-month-select > span { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .task-board-page .task-month-select { flex: 1; min-width: 0; justify-content: center; }
+  .task-board-page .task-month-select > span { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .task-board-page .task-month-select > span { gap: 4px; }
   .schedule-month-label-short { display: inline; }
   .schedule-month-label-long { display: none; }

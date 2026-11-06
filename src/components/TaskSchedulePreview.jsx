@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { formatDate, memberName, statusLabels } from '../lib/domain.js';
 import { taskScheduleStatus } from '../lib/taskSchedule.js';
+import { Modal } from './ui.jsx';
 
 export function useTaskSchedulePreview(tasks, month) {
   const [preview, setPreview] = useState(null);
@@ -134,7 +135,6 @@ export default function TaskSchedulePreview({
 }) {
   const { preview, previewId, cancelClose, closePreview } = controller;
   if (!preview) return null;
-  const status = taskScheduleStatus(preview.task, now);
   return createPortal(
     <div
       id={previewId}
@@ -154,32 +154,41 @@ export default function TaskSchedulePreview({
       onMouseEnter={cancelClose}
       onMouseLeave={closePreview}
     >
+      <TaskPreviewContent task={preview.task} members={members} now={now} />
+    </div>,
+    document.body,
+  );
+}
+
+function TaskPreviewContent({ task, members, now }) {
+  const status = taskScheduleStatus(task, now);
+  return <>
       <div className="task-schedule-preview-heading">
         <span
-          className={`status-badge task-state-${preview.task.status.toLowerCase()}`}
+          className={`status-badge task-state-${task.status.toLowerCase()}`}
         >
-          {statusLabels[preview.task.status]}
+          {statusLabels[task.status]}
         </span>
       </div>
       <strong>
-        {preview.task.title}
+        {task.title}
       </strong>
       <dl>
         <div>
           <dt>담당</dt>
           <dd>
-            {preview.task.assignees
+            {task.assignees
               .map(({ userId }) => memberName(members, userId))
               .join(' · ')}
           </dd>
         </div>
         <div>
           <dt>시작일</dt>
-          <dd>{formatDate(preview.task.startAt)}</dd>
+          <dd>{formatDate(task.startAt)}</dd>
         </div>
         <div>
           <dt>마감일</dt>
-          <dd>{formatDate(preview.task.dueAt)}</dd>
+          <dd>{formatDate(task.dueAt)}</dd>
         </div>
       </dl>
       {status.label && (
@@ -191,7 +200,21 @@ export default function TaskSchedulePreview({
           {status.label}
         </span>
       )}
-    </div>,
-    document.body,
+  </>;
+}
+
+export function TaskScheduleTouchPreview({ task, members, now, onClose, onOpenTask }) {
+  return createPortal(
+    <Modal title="작업 미리보기" closeLabel="미리보기 닫기" className="timeline-touch-preview"
+      restoreFocusWithoutScroll onClose={onClose}>
+      <div className="timeline-touch-preview-content">
+        <TaskPreviewContent task={task} members={members} now={now} />
+      </div>
+      <div className="timeline-touch-preview-actions">
+        <button type="button" className="primary-button" onClick={() => onOpenTask(task.id)}>
+          작업 상세 보기
+        </button>
+      </div>
+    </Modal>, document.body,
   );
 }
