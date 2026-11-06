@@ -1327,8 +1327,9 @@ h1[tabindex="-1"]:focus {
 .timeline-scale { position: relative; min-width: 0; overflow: hidden; }
 .timeline-months { position: relative; height: 32px; border-bottom: 1px solid #e5e9ef; }
 .timeline-months > span { position: absolute; height: 32px; padding: 8px 4px; border-right: 1px solid #e0e5ed; text-align: center; white-space: nowrap; }
-.timeline-weeks { position: relative; height: 50px; background: #fcfdfe; }
-.timeline-weeks > span { position: absolute; padding: 6px 4px; color: #626e7d; font-size: 12px; font-weight: 400; white-space: nowrap; }
+.timeline-weeks { position: relative; height: 28px; background: #fcfdfe; }
+.timeline-scale.has-today .timeline-weeks { height: 40px; }
+.timeline-weeks > span { position: absolute; padding: 0 4px; color: #626e7d; font-size: 12px; line-height: 18px; font-weight: 400; white-space: nowrap; }
 .timeline-track { position: relative; min-width: 0; overflow: hidden; }
 .timeline-month-band { position: absolute; top: 0; bottom: 0; border-right: 1px solid #e1e6ee; background: #f9fbfd; pointer-events: none; }
 .timeline-month-band:nth-child(even) { background: #fff; }
@@ -1350,10 +1351,8 @@ h1[tabindex="-1"]:focus {
 .timeline-continuation { font-size: 15px; line-height: 1; }
 .timeline-row.is-late .timeline-period { box-shadow: inset 0 0 0 1px #b04e46; }
 .timeline-delay { position: absolute; top: calc(50% - 6px); height: 12px; border: 1px dashed #bd6356; background: repeating-linear-gradient(135deg, #fcf1ee, #fcf1ee 4px, #fff 4px, #fff 8px); }
-.timeline-today-line { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--brand); z-index: 2; pointer-events: none; }
+.timeline-today-line { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--brand); z-index: 4; pointer-events: none; }
 .timeline-today-label { position: absolute; bottom: 3px; z-index: 2; padding: 2px 4px; background: var(--brand); color: #fff; border-radius: 3px; font-size: 10px; line-height: 1.4; transform: translateX(-50%); }
-.timeline-summary { display: flex; flex-wrap: wrap; gap: 10px 24px; padding: 10px 0; font-size: 13px; }
-.timeline-summary strong { margin-left: 6px; font-variant-numeric: tabular-nums; }
 .timeline-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 14px; color: #626e7d; font-size: 12px; }
 .timeline-legend > span { display: inline-flex; align-items: center; gap: 5px; }
 .timeline-legend .status-dot { width: 6px; height: 6px; background: var(--schedule-color); }
@@ -1393,13 +1392,8 @@ h1[tabindex="-1"]:focus {
 .task-month-navigation input { font-size: 13px; min-height: 34px; padding: 5px 6px; width: 136px; }
 .task-board-page .task-view-controls .secondary-button { min-height: 34px; padding: 5px 9px; }
 .task-board-page .list-summary { margin: 0; font-size: 12px; color: #626e7d; }
-.timeline-summary { padding: 0 0 8px; align-items: center; gap: 8px 20px; }
-.timeline-late-filter { border: 1px solid #e1e5ea; background: #fff; color: #626e7d; border-radius: 5px; font: inherit; padding: 5px 9px; cursor: pointer; }
-.timeline-late-filter.is-overdue { color: #a5473b; }
-.timeline-late-filter:hover, .timeline-late-filter[aria-pressed='true'] { background: #fcf1ee; border-color: #c38075; }
-.timeline-late-filter:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-.task-timeline-scroll { max-height: 560px; overflow: auto; scroll-padding: 66px 0 12px 300px; }
-.timeline-header { position: sticky; top: 0; z-index: 5; }
+.task-timeline-scroll { overflow: auto; scroll-padding: 66px 0 12px 300px; }
+.timeline-header { position: sticky; top: 0; z-index: 5; transform: translateY(var(--timeline-header-offset, 0px)); }
 .timeline-header .timeline-task-label { z-index: 6; }
 .timeline-task-label { min-height: 58px; gap: 4px; }
 .timeline-task-meta > .timeline-late-label,
@@ -1441,7 +1435,7 @@ h1[tabindex="-1"]:focus {
 .task-schedule-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .task-timeline { min-width: calc(var(--timeline-label-width, 300px) + 640px); }
 .timeline-row { grid-template-columns: var(--timeline-label-width, 300px) minmax(640px, 1fr); }
-.task-timeline-scroll { max-height: clamp(260px, 55dvh, 680px); scroll-padding-left: var(--timeline-label-width, 300px); }
+.task-timeline-scroll { scroll-padding-left: var(--timeline-label-width, 300px); }
 .timeline-column-resizer { position: absolute; right: -5px; top: 0; bottom: 0; z-index: 7; width: 10px; cursor: col-resize; touch-action: none; }
 .timeline-column-resizer::after { content: ''; position: absolute; top: 12px; bottom: 12px; left: 4px; width: 2px; background: #bbc7d4; border-radius: 2px; }
 .timeline-column-resizer:hover::after,
@@ -1456,13 +1450,6 @@ h1[tabindex="-1"]:focus {
 .modal-backdrop:has(.modal-fullscreen) { padding: 12px; }
 .real-modal.modal-fullscreen { width: calc(100vw - 24px); height: calc(100dvh - 24px); max-width: none; max-height: none; }
 .modal-fullscreen .modal-body { display: flex; flex: 1; min-height: 0; padding: 12px 20px 16px; }
-.modal-fullscreen .task-board-page { display: flex; flex-direction: column; width: 100%; min-height: 0; gap: 12px; }
-.modal-fullscreen .task-board-page > .page-heading { display: none; }
-.modal-fullscreen .task-schedule { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-.modal-fullscreen .task-timeline-scroll { flex: 1; min-height: 140px; max-height: none; }
-.modal-fullscreen .timeline-summary { padding-bottom: 4px; }
-.modal-fullscreen .timeline-legend { margin-bottom: 8px; }
-.modal-fullscreen .task-schedule > .field-help { flex-shrink: 0; }
 @media (max-width: 720px) {
   .task-schedule-controls { width: 100%; }
   .modal-fullscreen .modal-body { padding: 12px; }
@@ -1580,49 +1567,6 @@ h1[tabindex="-1"]:focus {
   min-height: 0;
 }
 .task-schedule-preview-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
-
-/* Contextual schedule guidance stays beside the month picker instead of adding vertical space below the view. */
-.schedule-help-trigger {
-  position: relative;
-  display: inline-grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  border: 1px solid #aeb8c4;
-  border-radius: 50%;
-  color: #536575;
-  background: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1;
-  cursor: help;
-}
-.schedule-help-trigger:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-.schedule-help-tooltip {
-  position: absolute;
-  z-index: 20;
-  top: calc(100% + 8px);
-  left: 50%;
-  width: min(360px, calc(100vw - 32px));
-  padding: 9px 10px;
-  border: 1px solid #d7dee6;
-  border-radius: 6px;
-  background: #fff;
-  box-shadow: 0 5px 16px #1d293920;
-  color: #536575;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 1.55;
-  pointer-events: none;
-  opacity: 0;
-  transform: translate(-50%, -3px);
-  transition: opacity .16s ease, transform .16s ease;
-}
-.schedule-help-trigger:hover .schedule-help-tooltip,
-.schedule-help-trigger:focus .schedule-help-tooltip {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
 
 /* Status is represented by a dot both beside the task and within its timeline bar. */
 .timeline-task-state {

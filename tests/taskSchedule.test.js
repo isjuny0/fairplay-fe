@@ -45,7 +45,7 @@ test('가까운 마감은 다음 마감부터 찾고 과거 작업뿐이면 마�
 });
 
 test('3개월 범위는 연말·윤년·지원 연도 경계와 주간 눈금을 처리한다', () => {
-  const window = timelineWindow('2026-11');
+  const window = timelineWindow('2026-11', 3);
   assert.deepEqual(window.months, ['2026-11', '2026-12', '2027-01']);
   assert.equal(window.first, '2026-11-01');
   assert.equal(window.last, '2027-01-31');
@@ -54,12 +54,12 @@ test('3개월 범위는 연말·윤년·지원 연도 경계와 주간 눈금을
     window.weeks.slice(0, 2).map(({ date }) => date),
     ['2026-11-01', '2026-11-08'],
   );
-  assert.equal(timelineWindow('2028-01').dayCount, 91);
-  assert.equal(timelineWindow('9999-12').months.length, 1);
-  assert.equal(timelineWindow('0001-01').first, '0001-01-01');
+  assert.equal(timelineWindow('2028-01', 3).dayCount, 91);
+  assert.equal(timelineWindow('9999-12', 3).months.length, 1);
+  assert.equal(timelineWindow('0001-01', 3).first, '0001-01-01');
 });
 test('3개월을 가로지르는 기간은 양 끝을 자르고 같은 날 일정도 유지한다', () => {
-  const window = timelineWindow('2026-11'),
+  const window = timelineWindow('2026-11', 3),
     now = Date.parse('2026-10-15T00:00:00Z');
   const task = {
     status: 'TODO',
@@ -81,7 +81,7 @@ test('3개월을 가로지르는 기간은 양 끝을 자르고 같은 날 일�
     ).planned.width,
     100 / 92,
   );
-  assert.equal(timelineTaskPeriod(task, timelineWindow('2028-01'), now), null);
+  assert.equal(timelineTaskPeriod(task, timelineWindow('2028-01', 3), now), null);
 });
 test('완료 작업은 지연으로 판단하지 않고 미완료의 마감·시작 예정일 경과를 구분한다', () => {
   const now = Date.parse('2026-11-15T09:00:00Z');
@@ -122,7 +122,7 @@ test('이전 기간 마감 후 미완료 작업은 오늘까지 지연 구간이
   };
   const period = timelineTaskPeriod(
     task,
-    timelineWindow('2026-11'),
+    timelineWindow('2026-11', 3),
     Date.parse('2026-11-15T00:00:00Z'),
   );
   assert.equal(period.planned, null);
@@ -131,7 +131,7 @@ test('이전 기간 마감 후 미완료 작업은 오늘까지 지연 구간이
   assert.equal(
     timelineTaskPeriod(
       { ...task, status: 'DONE' },
-      timelineWindow('2026-11'),
+      timelineWindow('2026-11', 3),
       Date.parse('2026-11-15T00:00:00Z'),
     ),
     null,
@@ -142,4 +142,14 @@ test('이전 캘린더 보기는 목록으로 전환하고 지원하지 않는 �
   assert.equal(normalizeTaskView('calendar'), 'list');
   for (const view of ['board', 'list', 'timeline']) assert.equal(normalizeTaskView(view), view);
   for (const view of [null, undefined, 'unknown', '']) assert.equal(normalizeTaskView(view), 'board');
+});
+
+test('기본 1개월 범위는 월말과 윤년을 처리하고 3개월로 전환할 수 있다', () => {
+  assert.deepEqual(timelineWindow('2026-11').months, ['2026-11']);
+  assert.equal(timelineWindow('2026-11').last, '2026-11-30');
+  assert.equal(timelineWindow('2026-11').dayCount, 30);
+  assert.equal(timelineWindow('2028-02', 1).dayCount, 29);
+  assert.equal(timelineWindow('2027-02', 1).dayCount, 28);
+  assert.equal(timelineWindow('2026-11', 3).dayCount, 92);
+  assert.equal(timelineWindow('9999-12', 3).last, '9999-12-31');
 });

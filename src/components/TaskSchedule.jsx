@@ -1,18 +1,16 @@
 import { koreanDateTime } from '../lib/koreanTime.js';
-import { useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDate, memberName, statusLabels } from '../lib/domain.js';
 import {
   currentTaskMonth,
   isTaskMonth,
   moveTaskMonth,
-  nearestTaskMonth,
   taskDate,
   timelineTaskPeriod,
   timelineWindow,
 } from '../lib/taskSchedule.js';
 import TaskSchedulePreview, { useTaskSchedulePreview } from './TaskSchedulePreview.jsx';
-import MobileDisclosure from './MobileDisclosure.jsx';
 
 const monthLabel = (month) =>
   `${Number(month.slice(0, 4))}년 ${Number(month.slice(5))}월`;
@@ -21,53 +19,20 @@ const shortDate = (date) =>
 const scheduleLabel = (task) =>
   `${task.title} · 시작일 ${formatDate(task.startAt)} · 마감 ${formatDate(task.dueAt)}`;
 
-function ScheduleHelp({ text }) {
-  return (
-    <span
-      className="schedule-help-trigger"
-      tabIndex={0}
-      aria-label={`일정 읽는 법 도움말: ${text}`}
-    >
-      <span aria-hidden="true">?</span>
-      <span className="schedule-help-tooltip" role="tooltip">
-        {text}
-      </span>
-    </span>
-  );
-}
-
-function ScheduleStatusLegend({ label }) {
-  return (
-    <div className="timeline-legend" aria-label={label}>
-      {Object.entries(statusLabels).map(([status, statusLabel]) => (
-        <span
-          key={status}
-          className={`schedule-task-${status.toLowerCase()}`}
-        >
-          <span className="status-dot" aria-hidden="true" />
-          {statusLabel}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 export function TimelineNavigation({
   month,
+  monthCount = 1,
   onMonthChange,
-  tasks,
-  helpText,
 }) {
-  const previous = moveTaskMonth(month, -3),
-    next = moveTaskMonth(month, 3);
-  const nearest = nearestTaskMonth(tasks);
-  const lastMonth = timelineWindow(month).months.at(-1);
+  const previous = moveTaskMonth(month, -1),
+    next = moveTaskMonth(month, 1);
+  const lastMonth = timelineWindow(month, monthCount).months.at(-1);
   return (
     <div className="task-month-navigation">
       <div className="heading-actions">
         <button
           className="secondary-button"
-          aria-label="이전 3개월"
+          aria-label="이전 1개월"
           disabled={!previous}
           onClick={() => onMonthChange(previous)}
         >
@@ -79,7 +44,7 @@ export function TimelineNavigation({
             {lastMonth !== month
               ? ` – ${monthLabel(lastMonth)}`
               : ''}</span>
-            <span className="schedule-month-label-short">{Number(month.slice(0, 4))}.{Number(month.slice(5))}–{Number(lastMonth.slice(0, 4))}.{Number(lastMonth.slice(5))}</span>
+            <span className="schedule-month-label-short">{Number(month.slice(0, 4))}.{Number(month.slice(5))}{lastMonth !== month ? `–${Number(lastMonth.slice(0, 4))}.${Number(lastMonth.slice(5))}` : ''}</span>
             <ChevronDown size={14} aria-hidden="true" />
           </span>
           <input
@@ -99,7 +64,7 @@ export function TimelineNavigation({
         </label>
         <button
           className="secondary-button"
-          aria-label="다음 3개월"
+          aria-label="다음 1개월"
           disabled={!next}
           onClick={() => onMonthChange(next)}
         >
@@ -123,12 +88,7 @@ export function TimelineNavigation({
           오늘
         </button>
       </div>
-      {helpText && <ScheduleHelp text={helpText} />}
-      {nearest && nearest !== month && (
-        <button className="text-button" onClick={() => onMonthChange(nearest)}>
-          가까운 마감으로
-        </button>
-      )}
+
     </div>
   );
 }
@@ -137,18 +97,49 @@ export function TaskTimeline({
   now,
   tasks,
   month,
+  monthCount = 1,
   onOpenTask,
   members,
-  sortLabel,
-  onlyOverdue,
-  onToggleOverdue,
+  emptyState,
   labelWidth,
   onLabelWidthChange,
 }) {
-  const previewController = useTaskSchedulePreview(tasks, month);
+  const previewController = useTaskSchedulePreview(tasks, `${month}:${monthCount}`);
   const { previewEvents } = previewController;
   const resizeStart = useRef(null);
-  const window = timelineWindow(month);
+  const scrollRegion = useRef(null);
+  useLayoutEffect(() => {
+    const region = scrollRegion.current;
+    if (!region) return;
+    const header = region.querySelector('.timeline-header');
+    const viewport = region.ownerDocument.defaultView;
+    let frame = null;
+    const update = () => {
+      frame = null;
+      const topbarBottom = Math.max(0, document.querySelector('.topbar')?.getBoundingClientRect().bottom || 0);
+      const bounds = region.getBoundingClientRect();
+      // Horizontal overflow makes native sticky follow this region instead of the page.
+      const offset = Math.max(0,
+        Math.min(topbarBottom - bounds.top - region.clientTop, region.clientHeight - header.offsetHeight));
+      region.style.setProperty('--timeline-header-offset', `${offset}px`);
+    };
+    const schedule = () => { if (frame == null) frame = requestAnimationFrame(update); };
+    const observer = new ResizeObserver(schedule);
+    observer.observe(region);
+    observer.observe(header);
+    const topbar = document.querySelector('.topbar');
+    if (topbar) observer.observe(topbar);
+    viewport.addEventListener('scroll', schedule, true);
+    viewport.addEventListener('resize', schedule);
+    update();
+    return () => {
+      observer.disconnect();
+      viewport.removeEventListener('scroll', schedule, true);
+      viewport.removeEventListener('resize', schedule);
+      if (frame != null) cancelAnimationFrame(frame);
+    };
+  }, []);
+  const window = timelineWindow(month, monthCount);
   const visible = tasks
     .map((task) => ({ task, period: timelineTaskPeriod(task, window, now) }))
     .filter(({ period }) => period);
@@ -166,30 +157,10 @@ export function TaskTimeline({
       width: next ? window.position(`${next}-01`) - left : 100 - left,
     };
   });
-  const lateCount = visible.filter(({ period }) => period.overdue).length;
-  const startPassedCount = visible.filter(
-    ({ period }) => period.startPassed,
-  ).length;
   return (
-    <section className="task-schedule" aria-label="작업 타임라인" style={{ '--timeline-label-width': `${labelWidth}px` }}>
-      <MobileDisclosure className="timeline-guide-disclosure" summary="상태 범례·지연 현황">
-      <div className="timeline-overview">
-        <div className="timeline-summary" aria-label="조회 기간 작업 현황">
-          <button
-            className={`timeline-late-filter${lateCount ? ' is-overdue' : ''}`}
-            aria-pressed={onlyOverdue}
-            onClick={onToggleOverdue}
-          >
-            마감 지남 <strong>{lateCount}</strong>
-          </button>
-          <span>
-            시작 예정일 지남 <strong>{startPassedCount}</strong>
-          </span>
-        </div>
-        <ScheduleStatusLegend label="타임라인 상태 범례" />
-      </div>
-      </MobileDisclosure>
+    <section className="task-schedule" data-month-count={monthCount} aria-label="작업 타임라인" style={{ '--timeline-label-width': `${labelWidth}px` }}>
       <div
+        ref={scrollRegion}
         className="task-timeline-scroll"
         role="region"
         aria-label="작업 계획 타임라인"
@@ -198,7 +169,7 @@ export function TaskTimeline({
         <div className="task-timeline">
           <div className="timeline-row timeline-header">
             <div className="timeline-task-label">
-              작업 · {sortLabel}
+              작업
               <div
                 className="timeline-column-resizer"
                 role="separator"
@@ -237,7 +208,7 @@ export function TaskTimeline({
                 }}
               />
             </div>
-            <div className="timeline-scale">
+            <div className={`timeline-scale${todayPosition != null ? ' has-today' : ''}`}>
               <div className="timeline-months">
                 {monthBands.map(({ value, left, width }) => (
                   <span
@@ -364,38 +335,12 @@ export function TaskTimeline({
                             ‹
                           </span>
                         )}
-                        {period.planned.width >= 4 && (
-                          <>
-                            <span
-                              className="timeline-assignees"
-                              aria-hidden="true"
-                            >
-                              {assignees.slice(0, 2).map(({ userId, name }) => (
-                                <span
-                                  key={userId}
-                                  className="timeline-assignee"
-                                  title={name}
-                                >
-                                  {name
-                                    .trim()
-                                    .split(/\s+/)
-                                    .map((part) => part[0])
-                                    .slice(0, 2)
-                                    .join('')}
-                                </span>
-                              ))}
-                              {assignees.length > 2 && (
-                                <span className="timeline-assignee-more">
-                                  +{assignees.length - 2}
-                                </span>
-                              )}
-                            </span>
-                            <span
-                              className={`timeline-bar-state schedule-task-${task.status.toLowerCase()}`}
-                              aria-hidden="true"
-                            />
-                          </>
-                        )}
+                        <span className="timeline-assignees" aria-hidden="true">
+                          {assignees.slice(0, 2).map(({ userId, name }) => (
+                            <span className="timeline-assignee" key={userId} title={name}>{name.slice(0, 1)}</span>
+                          ))}
+                          {assignees.length > 2 && <span className="timeline-assignee-more">+{assignees.length - 2}</span>}
+                        </span>
                         {period.planned.continuesAfter && (
                           <span
                             className="timeline-continuation"
@@ -419,6 +364,7 @@ export function TaskTimeline({
             );
           })}
         </div>
+        {visible.length === 0 && emptyState}
       </div>
       <TaskSchedulePreview controller={previewController} members={members} now={now} />
     </section>

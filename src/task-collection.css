@@ -16,6 +16,66 @@
 .task-collection-heading .primary-button {
   margin-left: auto;
 }
+.task-board-page[data-task-view='timeline'] .task-schedule-controls { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; grid-template-areas: 'navigation range status mine'; align-items: center; gap: 12px; }
+.task-board-page[data-task-view='timeline'] .task-month-navigation { grid-area: navigation; margin: 0; }
+.task-schedule-controls > .timeline-status-filters { grid-area: status; justify-self: end; flex-wrap: nowrap; }
+.task-board-page .timeline-mine-toggle { grid-area: mine; }
+.task-board-page .timeline-range-switch { grid-area: range; display: flex; margin: 0; padding: 3px; background: var(--surface-secondary); border-radius: var(--radius-control); }
+.task-board-page .timeline-range-switch button { min-height: 30px; padding: 4px 8px; font: inherit; font-size: var(--text-support); border: 0; border-radius: 4px; background: transparent; color: var(--text-muted); cursor: pointer; white-space: nowrap; }
+.task-board-page .timeline-range-switch button.active,
+.task-board-page .timeline-mine-toggle[aria-pressed='true'] { background: var(--brand-light); color: var(--brand-dark); }
+.timeline-status-filters { display: flex; flex-wrap: wrap; gap: 4px; }
+.task-board-page .timeline-status-filters button { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--surface-secondary); color: var(--text-muted); font: inherit; font-size: var(--text-support); cursor: pointer; white-space: nowrap; }
+.timeline-status-filters .status-dot { background: var(--schedule-color); }
+.task-board-page .timeline-status-filters button:hover { border-color: var(--brand); }
+.task-board-page .timeline-status-filters button[aria-pressed='true'] { border-color: var(--brand); background: var(--brand-light); color: var(--brand-dark); font-weight: 600; }
+.task-board-page .timeline-status-filters button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.task-board-page .timeline-period { container-type: inline-size; z-index: 3; height: 28px; top: calc(50% - 14px); }
+.task-board-page .timeline-period-content { justify-content: flex-start; }
+.task-board-page .timeline-continuation:last-child { margin-left: auto; }
+.task-board-page .timeline-assignee { width: 24px; height: 24px; flex-basis: 24px; font-size: var(--text-caption); }
+.task-board-page .timeline-assignee-more { font-size: var(--text-caption); }
+.task-board-page .timeline-assignees { display: none; }
+.task-board-page .timeline-assignee:not(:first-child),
+.task-board-page .timeline-assignee-more { display: none; }
+@container (min-width: 44px) {
+  .task-board-page .timeline-assignees { display: flex; }
+}
+@container (min-width: 76px) {
+  .task-board-page .timeline-assignee:nth-child(2) { display: inline-flex; }
+}
+@container (min-width: 100px) {
+  .task-board-page .timeline-assignee-more { display: inline; }
+}
+.task-board-page .task-schedule { --timeline-label-column: var(--timeline-label-width, 300px); --timeline-track-min: 640px; }
+.task-board-page .task-schedule[data-month-count='1'] { --timeline-track-min: 420px; }
+.task-board-page .task-timeline { min-width: calc(var(--timeline-label-column) + var(--timeline-track-min)); }
+.task-board-page .timeline-row { grid-template-columns: var(--timeline-label-column) minmax(var(--timeline-track-min), 1fr); }
+.timeline-empty { display: grid; justify-items: center; gap: 12px; padding: 24px 16px; text-align: center; }
+.timeline-empty p { margin: 0; color: var(--text-muted); font-size: var(--text-body); }
+.timeline-empty .heading-actions { justify-content: center; margin: 0; }
+.timeline-empty .heading-actions:empty { display: none; }
+@media (min-width: 721px) and (max-width: 1240px) {
+  .task-board-page[data-task-view='timeline'] .task-schedule-controls { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: 'navigation range mine' 'status status status'; }
+  .task-schedule-controls > .timeline-status-filters { justify-self: start; }
+}
+@media (max-width: 1000px) {
+  .task-board-page[data-task-view='timeline'] .task-schedule-controls { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'navigation navigation' 'range mine' 'status status'; }
+  .task-board-page .timeline-range-switch { justify-self: start; }
+}
+@media (max-width: 720px) {
+  .task-board-page[data-task-view='timeline'] .task-schedule-controls { gap: 8px; }
+  .task-board-page[data-task-view='timeline'] .task-month-navigation { width: 100%; }
+  .task-board-page[data-task-view='timeline'] .task-month-navigation > .heading-actions { flex-wrap: nowrap; }
+  .task-board-page .timeline-range-switch { justify-self: stretch; }
+  .task-board-page .timeline-mine-toggle { min-height: 44px; padding-inline: 8px; font-size: var(--text-caption); }
+  .task-board-page .timeline-range-switch button { flex: 1; min-height: 38px; padding-inline: 4px; font-size: var(--text-caption); }
+  .task-board-page .task-schedule { --timeline-label-column: 144px; }
+  .task-board-page .task-schedule[data-month-count='1'] { --timeline-track-min: 360px; }
+  .timeline-status-filters { width: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .timeline-status-filters button { justify-content: center; min-height: 44px; padding-inline: 4px; font-size: var(--text-caption); }
+  .task-board-page .timeline-status-filters button { min-height: 44px; justify-content: center; padding-inline: 4px; font-size: var(--text-caption); }
+}
 .task-collection-heading .task-view-navigation {
   margin: 0;
   padding: 3px;
@@ -24,14 +84,6 @@
   min-height: 34px;
   padding: 5px 12px;
   font-size: 13px;
-}
-.modal-fullscreen .task-board-page > .task-collection-heading {
-  display: flex;
-  padding: 0;
-  border: 0;
-}
-.modal-fullscreen .task-collection-heading > :is(h1, .primary-button) {
-  display: none;
 }
 .task-board-page .task-schedule-controls {
   justify-content: space-between;
@@ -78,19 +130,6 @@
 }
 .task-board-page .list-summary {
   min-height: 20px;
-}
-.timeline-overview {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 20px;
-  margin-bottom: 10px;
-}
-.timeline-overview .timeline-summary,
-.timeline-overview .timeline-legend {
-  padding: 0;
-  margin: 0;
 }
 .task-table {
   min-width: 900px;
@@ -139,17 +178,6 @@
   }
 }
 @media (max-width: 900px) {
-  .task-month-navigation { position: relative; }
-  .task-month-navigation .schedule-help-trigger { position: static; }
-  .task-month-navigation .schedule-help-tooltip {
-    left: 0;
-    max-width: 100%;
-    transform: translateY(-3px);
-  }
-  .task-month-navigation .schedule-help-trigger:hover .schedule-help-tooltip,
-  .task-month-navigation .schedule-help-trigger:focus .schedule-help-tooltip {
-    transform: translateY(0);
-  }
   .task-collection-heading .task-view-navigation {
     order: 1;
     width: 100%;
@@ -161,4 +189,8 @@
   .task-board-page .task-collection-heading {
     gap: 12px;
   }
+}
+
+.task-board-page[data-task-view="timeline"] > :is(.mobile-status-tabs, .task-quick-filters, .toolbar.collection-controls) {
+  display: none;
 }

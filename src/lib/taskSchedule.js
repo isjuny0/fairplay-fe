@@ -33,8 +33,8 @@ export function nearestTaskMonth(
 const dayMilliseconds = 86400000;
 const serialDate = (date) => Date.parse(`${date}T00:00:00Z`) / dayMilliseconds;
 
-export function timelineWindow(month) {
-  const months = [0, 1, 2]
+export function timelineWindow(month, monthCount = 1) {
+  const months = (monthCount === 3 ? [0, 1, 2] : [0])
     .map((offset) => moveTaskMonth(month, offset))
     .filter(Boolean);
   const first = `${months[0]}-01`;
