@@ -86,9 +86,6 @@ export default function MidFeedback({ context, onNavigate }) {
             <EmptyState>
               <h2>피드백을 준비하고 있습니다.</h2>
               <p>{resource.error.message}</p>
-              <button className="secondary-button" onClick={resource.reload}>
-                상태 다시 확인
-              </button>
             </EmptyState>
           ) : (
             <ResourceState resource={resource} label="중간 피드백">

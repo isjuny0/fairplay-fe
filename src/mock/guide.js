@@ -228,8 +228,8 @@ export function managerGuideStep(step, { member, source, reportResult, reportRev
       calloutTarget: '.report-member-evidence-heading', calloutContainer: '.report-member-evidence',
     };
     if (reportReview?.error) return { ...current, title: '작업 근거의 조회 상태를 확인하세요',
-      description: '작업 근거를 불러오지 못했습니다. 오류를 확인하고 ‘작업 근거 새로고침’을 눌러 다시 조회하세요. 정상 조회 후 다음 단계로 진행할 수 있습니다.',
-      target: '[data-guide="report-evidence-refresh"]', actionTarget: '[data-guide="report-evidence-refresh"]', calloutTarget: '.report-member-evidence', calloutContainer: '.report-member-evidence' };
+      description: '작업 근거를 불러오지 못했습니다. 오류 안내를 확인해 주세요. 정상 조회 후 다음 단계로 진행할 수 있습니다.',
+      target: '.report-member-evidence .resource-error-state', actionTarget: null, calloutTarget: '.report-member-evidence', calloutContainer: '.report-member-evidence' };
     if (step.id === 'management-report-review' && reportReviewReady) return {
       ...current, target: '.report-member-evidence .report-score-total, .report-member-evidence .report-score-components > dl',
       calloutTarget: '.report-member-evidence', calloutContainer: '.report-member-evidence',

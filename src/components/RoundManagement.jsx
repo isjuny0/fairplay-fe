@@ -81,13 +81,16 @@ export default function RoundManagement({ context, onChanged }) {
   const teamsNeedingMembers = (submissions.data?.teams || [])
     .filter((team) => Number.isInteger(team.approvedMemberCount) && team.approvedMemberCount < 2);
   const closingOnly = editing?.round?.status === 'OPEN';
+  const autoRefreshing = activeTab === 'operations' && !editing && !busy
+    && !resource.error && !submissions.error
+    && rounds.some((round) => ['DRAFT', 'OPEN'].includes(round.status));
   useEffect(() => {
-    if (activeTab !== 'operations' || editing || busy || !rounds.some((round) => ['DRAFT', 'OPEN'].includes(round.status))) return;
+    if (!autoRefreshing) return;
     const timer = setInterval(() => {
       if (!document.hidden) { resource.reload(); submissions.reload(); }
     }, 15000);
     return () => clearInterval(timer);
-  }, [activeTab, editing, busy, resource.data, resource.reload, submissions.reload]);
+  }, [autoRefreshing, resource.reload, submissions.reload]);
   const previousRoundStatuses = useRef(null);
   useEffect(() => { previousRoundStatuses.current = null; }, [context.space.id, guide?.scope]);
   useEffect(() => {
@@ -133,7 +136,7 @@ export default function RoundManagement({ context, onChanged }) {
         <div>
           <h1>동료 평가 관리</h1>
         </div>
-        {activeTab === 'operations' && <div className="heading-actions">
+        {activeTab === 'operations' && !autoRefreshing && <div className="heading-actions">
           <RefreshButton
             label="회차·제출 현황 새로고침"
             disabled={busy || resource.loading || submissions.loading}

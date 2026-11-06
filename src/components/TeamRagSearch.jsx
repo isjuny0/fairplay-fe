@@ -71,6 +71,8 @@ function TeamMaterialSearch({ context }) {
   const permissionError =
     [401, 403, 404].includes(error?.status) ||
     [401, 403, 404].includes(status.error?.status);
+  const autoRefreshingMaterials = !permissionError && (isSplitView || isMaterialsOpen)
+    && !reference && Boolean(data?.enabled && data.preparingCount > 0) && !status.error;
   useEffect(() => {
     // Match the workspace container query, including sidebar width changes.
     const observer = new ResizeObserver(([entry]) => {
@@ -91,24 +93,12 @@ function TeamMaterialSearch({ context }) {
     return () => window.removeEventListener('focus', refresh);
   }, [status.reload]);
   useEffect(() => {
-    if (
-      permissionError || !(isSplitView || isMaterialsOpen) || reference ||
-      !data?.enabled || !data.preparingCount || status.error
-    ) return;
+    if (!autoRefreshingMaterials) return;
     const timer = window.setInterval(() => {
       if (document.visibilityState === 'visible') status.reload();
     }, 5000);
     return () => window.clearInterval(timer);
-  }, [
-    permissionError,
-    isSplitView,
-    isMaterialsOpen,
-    reference,
-    data?.enabled,
-    data?.preparingCount,
-    status.error,
-    status.reload,
-  ]);
+  }, [autoRefreshingMaterials, status.reload]);
   useEffect(() => {
     conversation.current?.scrollTo({ top: 0 });
   }, [submittedQuestion]);
@@ -437,6 +427,7 @@ function TeamMaterialSearch({ context }) {
               onSelect={(item) => { setReference(item); setMaterialsOpen(true); }}
               onDismiss={closeMaterials}
               active={!reference}
+              autoRefreshing={autoRefreshingMaterials}
             />
           </div>
           {reference && !permissionError && (

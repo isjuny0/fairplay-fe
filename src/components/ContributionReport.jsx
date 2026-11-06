@@ -108,16 +108,18 @@ export function TeamReport({ context, manager = false, toolbarTarget, generation
     reportResult({ teamId: context.team.id, report: !resource.loading && !resource.error ? selected : null });
     return () => reportResult(null);
   }, [guidedManagement, reportResult, resource.loading, resource.error, selected, context.team.id]);
+  const showRefresh = !hideRefresh && (selected?.status !== 'PUBLISHED' || Boolean(resource.error));
   const refreshAction = (
     <RefreshButton
       className="report-refresh"
       label="리포트 새로고침"
+      disabled={resource.loading}
       onClick={resource.reload}
     />
   );
   return (
     <div className="stack team-report">
-      {!hideRefresh && !(manager && selected) && (
+      {showRefresh && !(manager && selected) && (
         manager && toolbarTarget
           ? createPortal(refreshAction, toolbarTarget)
           : <div className="report-status-toolbar">{refreshAction}</div>
@@ -125,7 +127,7 @@ export function TeamReport({ context, manager = false, toolbarTarget, generation
       <ResourceState resource={resource}>
         {selected ? (
           <ReportDetail key={`${selected.id}:${context.user.id}:${guide?.scope || 'free'}`} context={context} report={selected} guide={guidedReport ? guide : null}
-            managementGuide={guidedManagement && context.team.id === guide.reportManagementTeamId ? guide : null} actions={manager && !hideRefresh ? refreshAction : null} toolbarTarget={toolbarTarget} onGuideComplete={onGuideComplete} />
+            managementGuide={guidedManagement && context.team.id === guide.reportManagementTeamId ? guide : null} actions={manager && showRefresh ? refreshAction : null} toolbarTarget={toolbarTarget} onGuideComplete={onGuideComplete} />
         ) : manager ? (
           <EmptyState><h2>이 팀의 리포트가 아직 생성되지 않았습니다.</h2><p>상단에서 전체 리포트를 생성한 뒤 결과를 확인할 수 있습니다.</p></EmptyState>
         ) : (
