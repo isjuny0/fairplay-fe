@@ -116,11 +116,14 @@ test('공통 새로고침은 키보드와 비활성화를 지원하고 폼을 �
   page,
 }) => {
   await page.goto('/preview/main');
+  await expect(page.getByRole('main').getByRole('heading', { level: 1 }).first()).toBeFocused();
   await page.evaluate(async () => {
-    const { default: React } = await import('/node_modules/.vite/deps/react.js');
-    const { default: ReactDOM } = await import(
-      '/node_modules/.vite/deps/react-dom_client.js'
-    );
+    // Reuse the application's Vite module URLs so this fixture does not load a second React renderer.
+    const dependencyUrl = (name) => performance.getEntriesByType('resource')
+      .map((entry) => entry.name)
+      .find((url) => new URL(url).pathname === `/node_modules/.vite/deps/${name}.js`);
+    const { default: React } = await import(dependencyUrl('react'));
+    const { default: ReactDOM } = await import(dependencyUrl('react-dom_client'));
     const { default: RefreshButton } = await import(
       '/src/components/RefreshButton.jsx'
     );
