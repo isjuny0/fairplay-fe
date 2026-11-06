@@ -76,7 +76,8 @@ test('스페이스 선택의 옆 메뉴도 바깥 클릭으로 닫히고 데스�
   expect(iconBox.width).toBe(36);
   expect(iconBox.height).toBe(36);
   expect(Math.abs(iconBox.x + iconBox.width / 2 - glyphBox.x - glyphBox.width / 2)).toBeLessThan(1);
-  expect(labelBox.x).toBe(iconBox.x);
+  expect(labelBox.x).toBe(iconBox.x + 16);
+  await expect(page.locator('.topbar .context-dot')).toBeVisible();
   expect(labelBox.y).toBeGreaterThanOrEqual(iconBox.y + iconBox.height);
   await page.getByRole('button', { name: '스페이스 메뉴', exact: true }).click();
   await expect(page.getByRole('dialog', { name: '내 스페이스 메뉴' })).toBeVisible();

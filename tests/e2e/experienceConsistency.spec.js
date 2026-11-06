@@ -71,19 +71,17 @@ test('390px: 공지 검색 범위와 알림 읽음 처리 결과를 확인한다
   await page.setViewportSize({width:390,height:844});
   await page.goto('/preview/spaces/1/announcements');
   await page.getByRole('searchbox').focus();
-  await expect(page.getByText('검색 범위: 현재 1페이지 · 제목·작성자',{exact:true})).toBeVisible();
+  await expect(page.getByRole('searchbox')).toHaveAttribute('placeholder', '현재 페이지의 제목·작성자 검색');
   await page.goto('/preview/notifications');
   await page.getByRole('button',{name:/읽음으로 표시$/}).first().click();
   await expect(page.getByText('알림을 읽음으로 표시했습니다.',{exact:true})).toBeVisible();
 });
 
-test('모바일에서 긴 작업 표의 숨겨진 열을 안내한다',async({page})=>{
+test('모바일에서는 작업 목록 대신 타임라인을 표시한다',async({page})=>{
   await page.setViewportSize({width:320,height:844});await page.goto(`${team}/tasks?view=list`);
-  const table=page.getByRole('region',{name:'작업 표',exact:true});
-  await expect(table).toHaveAttribute('data-horizontal-overflow','true');
-  await expect(table).toHaveAttribute('data-scroll-end','false');
-  await table.evaluate(element=>{element.scrollLeft=element.scrollWidth;});
-  await expect(table).toHaveAttribute('data-scroll-end','true');
+  await expect(page).toHaveURL(/view=timeline/);
+  await expect(page.getByRole('region',{name:'작업 표',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('group',{name:'타임라인 상태 필터'})).toBeVisible();
 });
 
 test('모바일 공개 리포트는 점수와 항목별 결과를 먼저 보여주고 계산 내역을 펼친다',async({page},info)=>{
@@ -100,7 +98,8 @@ test('모바일 공개 리포트는 점수와 항목별 결과를 먼저 보여�
 test('관리자는 평가 진행 단계와 접히지 않는 리포트 비중 설정을 확인한다',async({page})=>{
   await page.addInitScript(()=>localStorage.setItem('fairplay:preview-role','manager'));
   await page.goto('/preview/spaces/1/rounds');
-  await expect(page.getByRole('list',{name:'중간 평가 진행 단계',exact:true}).locator('[aria-current="step"]')).toContainText('평가 종료');
+  await expect(page.getByRole('region',{name:'중간 평가 운영',exact:true})).toContainText('평가 종료');
+  await expect(page.getByRole('list',{name:'중간 평가 진행 단계',exact:true})).toHaveCount(0);
   await page.goto('/preview/spaces/1/reports');
   await expect(page.getByRole('list', { name: '리포트 처리 단계', exact: true })).toHaveCount(0);
   await expect(page.locator('.report-batch-generation .workflow-next-action')).toHaveCount(0);

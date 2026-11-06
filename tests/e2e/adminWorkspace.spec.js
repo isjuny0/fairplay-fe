@@ -428,7 +428,7 @@ for (const width of [1440, 390, 320]) {
       await expect(breadcrumb.getByRole('button')).toHaveText(['팀 관리', '삼위일체']);
       await expect(breadcrumb.locator('[aria-current="page"]')).toHaveText('작업');
     }
-    await page.getByRole('group', { name: '작업 보기 방식' }).getByRole('button', { name: '목록', exact: true }).click();
+    if (width > 720) await page.getByRole('group', { name: '작업 보기 방식' }).getByRole('button', { name: '목록', exact: true }).click();
     await page.getByRole('button', { name: 'AI 피드백 화면 개선', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'AI 피드백 화면 개선', exact: true })).toBeVisible();
     for (const label of ['작업 수정', '작업 삭제', '완료 처리', '수정 중으로 전환', '수행 설명 저장'])

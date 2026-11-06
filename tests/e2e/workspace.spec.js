@@ -1319,6 +1319,7 @@ test('작업의 상태·내 작업 필터는 새로고침과 상세 복귀 후 �
 }) => {
   await workspace(page);
   await page.getByRole('button', { name: '작업', exact: true }).click();
+  await page.getByRole('button', { name: '목록', exact: true }).click();
   await page.getByLabel('작업 상태', { exact: true }).selectOption('IN_PROGRESS');
   await page.getByLabel('내 담당 작업만').check();
   await page.reload();

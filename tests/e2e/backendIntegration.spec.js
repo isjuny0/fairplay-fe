@@ -1642,7 +1642,7 @@ test('팀 관리 목록은 서버의 리포트 상태와 바로가기를 표시�
   });
   await page.goto('/spaces/1/dashboard');
   const table = page.locator('.desktop-data-table').first();
-  await expect(table.getByRole('columnheader')).toHaveText(['팀', '팀 진행률', '작업 현황', '확인 사항', '자료']);
+  await expect(table.getByRole('columnheader')).toHaveText(['팀', '팀 진행률', '작업 현황', '자료']);
   await expect(page.getByRole('button', { name: '리포트 검토 화면' })).toHaveCount(0);
   await expect(table).not.toContainText('공개 완료');
 });

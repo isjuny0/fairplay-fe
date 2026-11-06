@@ -385,11 +385,11 @@ test('모바일 스페이스 메뉴는 하나의 접힌 영역에 있고 작업 
     .click();
   await expect(page.getByLabel('작업 상태', { exact: true })).toBeHidden();
   await expect(page.getByLabel('작업 정렬', { exact: true })).toBeHidden();
-  await page.getByRole('button', { name: /^필터/ }).click();
-  await expect(page.getByLabel('작업 정렬', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^필터/ })).toHaveCount(0);
   const columns = await page.locator('.task-columns').boundingBox();
   const card = await page.locator('.board-task-card').first().boundingBox();
-  expect(card.width).toBeGreaterThanOrEqual(columns.width - 2);
+  expect(card.width).toBeLessThanOrEqual(columns.width);
+  expect(card.width).toBeGreaterThan(130);
   await page.getByRole('button', { name: /스페이스 메뉴/ }).click();
   await expect(page.getByRole('navigation', {name:'팀 메뉴',exact:true})).toBeVisible();
   await page.getByRole('button', { name: '메뉴 닫기', exact: true }).click();
@@ -456,10 +456,10 @@ test('작업 기본 정보·진행·담당은 상단 카드에 묶이고 본문�
 test('작업 제목 검색·정렬은 새로고침과 상세 복귀에도 유지되고 빈 결과에서 초기화한다', async ({
   page,
 }) => {
-  await openPreview(page, '/spaces/1/teams/1/tasks');
+  await openPreview(page, '/spaces/1/teams/1/tasks?view=list');
   await page.getByLabel('작업 제목 검색').fill('팀 자료');
   await page.getByLabel('작업 정렬').selectOption('newest');
-  await expect(page.locator('.board-task-card')).toHaveCount(1);
+  await expect(page.locator('.task-table tbody tr')).toHaveCount(1);
   await page.reload();
   await expect(page.getByLabel('작업 제목 검색')).toHaveValue('팀 자료');
   await expect(page.getByLabel('작업 정렬')).toHaveValue('newest');
@@ -475,15 +475,10 @@ test('작업 제목 검색·정렬은 새로고침과 상세 복귀에도 유지
   await page
     .getByRole('button', { name: '전체 작업 보기', exact: true })
     .click();
-  await expect(page.locator('.board-task-card')).toHaveCount(6);
+  await expect(page.locator('.task-table tbody tr')).toHaveCount(6);
   await expect(page.getByLabel('작업 제목 검색')).toHaveValue('');
   await expect(page.getByLabel('작업 정렬')).toHaveValue('deadline');
-  const completedTitles = page.locator('.task-state-done .task-title-button');
-  await expect(completedTitles).toHaveText([
-    '종합 평가 리포트 연동',
-    '작업 목록 페이지 이동',
-    '스페이스·팀 권한 설계',
-  ]);
+  await expect(page.getByRole('button', { name: '목록', exact: true })).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('모바일 작업 입력은 첫 오류로 초점을 옮기고 배분을 고친 뒤 저장한다', async ({
@@ -658,7 +653,7 @@ test('팀 홈의 본인·마감 지연은 각 조건의 작업 목록으로 연�
   await addDashboardWidgets(page, ['다가오는 작업', '지금 확인할 작업']);
   await page.getByRole('button', { name: '내 작업 전체 보기', exact: true }).click();
   await expect(page.getByLabel('내 담당 작업만')).toBeChecked();
-  await expect(page.locator('.board-task-card')).toHaveCount(4);
+  await expect(page.getByRole('table', { name: '정렬된 작업 목록' }).locator('tbody tr')).toHaveCount(4);
   await page.goBack();
   await page.getByRole('button', { name: /내 마감 지연/ }).click();
   await expect(page.getByLabel('마감 지난 작업만')).toBeChecked();
@@ -698,7 +693,7 @@ test('작업 목록은 상태를 가로질러 정렬하고 상세 복귀·초기
     page.getByRole('button', { name: '목록', exact: true }),
   ).toHaveAttribute('aria-pressed', 'true');
   await page
-    .getByRole('button', { name: '검색·필터 초기화', exact: true })
+    .getByRole('button', { name: '필터 초기화', exact: true })
     .click();
   await expect(list.locator('tbody tr')).toHaveCount(6);
   await page.reload();
@@ -740,7 +735,7 @@ test('200% 확대와 모바일 목록 전환에서도 입력 단계와 주요 �
   });
   await page.setViewportSize({ width: 320, height: 500 });
   await expect(
-    page.getByRole('group', { name: '작업 상태 선택' }),
+    page.getByRole('group', { name: '타임라인 상태 필터' }),
   ).toBeVisible();
   await page
     .getByRole('button', { name: '새 작업 만들기', exact: true })
@@ -841,9 +836,8 @@ for (const width of [1440, 320]) {
     await page.setViewportSize({ width, height: 900 });
     await openPreview(page, '/spaces/1/teams/1/deliverables?taskId=101');
     const list = page.getByRole('region', { name: '팀 자료 목록', exact: true });
-    await expect(
-      list.getByRole('columnheader', { name: '등록자', exact: true }),
-    ).toBeVisible();
+    if (width > 720) await expect(list.getByRole('columnheader', { name: '등록자', exact: true })).toBeVisible();
+    else await expect(list.getByRole('columnheader', { name: '등록자', exact: true })).toHaveCount(0);
     const title = list.getByRole('button', {
       name: '스페이스·팀 권한 정리',
       exact: true,
@@ -866,6 +860,7 @@ for (const width of [1440, 320]) {
     await page.keyboard.press('Escape');
     await expect(dialog).toHaveCount(0);
     await expect(title).toBeFocused();
+    if (width <= 720) await page.getByRole('button', { name: /^필터.*펼치기$/ }).click();
     await expect(page.getByLabel('작업별 조회')).toHaveValue('101');
     expect(new URL(page.url()).searchParams.get('taskId')).toBe('101');
     expect(
@@ -916,12 +911,8 @@ test('팀 홈 수행 지연에서 완료 후 수정 중인 작업도 포함한�
   await expect(
     page.getByRole('button', { name: '팀 자료 검색 개선', exact: true }),
   ).toBeVisible();
-  await expect(
-    page.getByRole('button', {
-      name: '수행 지연: 할 일·진행 중·수정 중 해제',
-      exact: true,
-    }),
-  ).toBeVisible();
+  await expect(page.getByLabel('마감 지난 작업만')).toBeChecked();
+  await expect(page.getByRole('group', { name: '적용 중인 검색·필터' })).toHaveCount(0);
   await page.reload();
   expect(new URL(page.url()).searchParams.get('overdue')).toBe('work');
   await expect(
