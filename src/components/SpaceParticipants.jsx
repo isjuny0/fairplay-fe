@@ -9,9 +9,10 @@ import { useInteractions } from "../hooks/useInteractions.js";
 import { participantRemovalHint } from "../lib/spaceParticipants.js";
 import { formatDate } from "../lib/domain.js";
 import { ErrorNotice, ResourceState } from "./ui.jsx";
-import RefreshButton from "./RefreshButton.jsx";
 import CalendarPopover from "./CalendarPopover.jsx";
+import Icon from "./Icon.jsx";
 import "../space-participants.css";
+import "../collection-search.css";
 
 function ParticipantRemovalButton({ name, reason, disabled, deleting, onRemove }) {
   const [open, setOpen] = useState(false);
@@ -52,6 +53,7 @@ export default function SpaceParticipants({ space, user, onChanged }) {
   const [pendingId, setPendingId] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState(null);
+  const [query, setQuery] = useState("");
   const active = useRef(true);
   const inFlight = useRef(false);
   const { confirm, notify } = useInteractions();
@@ -66,6 +68,10 @@ export default function SpaceParticipants({ space, user, onChanged }) {
       ? error
       : resource.error;
   const members = Array.isArray(resource.data) ? resource.data : [];
+  const searchTerm = query.trim().toLocaleLowerCase();
+  const visibleMembers = members.filter((member) =>
+    member.name.toLocaleLowerCase().includes(searchTerm),
+  );
   const nameCounts = new Map();
   for (const member of members)
     nameCounts.set(member.name, (nameCounts.get(member.name) || 0) + 1);
@@ -127,14 +133,10 @@ export default function SpaceParticipants({ space, user, onChanged }) {
   return (
     <section className="stack space-operation-page space-participants-page" aria-label="참여자 관리">
       <div className="page-heading">
-        <h1>참여자 관리</h1>
-        <RefreshButton
-          disabled={pendingId != null || resource.loading}
-          onClick={() => {
-            setError(null);
-            resource.reload();
-          }}
-        />
+        <div className="participant-title-group">
+          <h1>참여자 관리</h1>
+          {resource.data && !accessError && <span className="participant-count">총 {members.length}명</span>}
+        </div>
       </div>
       <ErrorNotice error={accessError === error ? null : error} />
       <ResourceState
@@ -143,9 +145,16 @@ export default function SpaceParticipants({ space, user, onChanged }) {
       >
         {resource.data && (
           <>
-            <div className="participant-count">총 {members.length}명</div>
-            {members.length === 0 ? (
-              <p className="participant-empty">참여자가 없습니다.</p>
+            <label className="participant-search collection-search-input">
+              <span className="sr-only">참여자 이름 검색</span>
+              <Icon name="search" />
+              <input type="search" placeholder="참여자 이름 검색" value={query}
+                onChange={(event) => setQuery(event.target.value)} />
+            </label>
+            {visibleMembers.length === 0 ? (
+              <p className="participant-empty" role="status">
+                {members.length === 0 ? "참여자가 없습니다." : "검색 결과가 없습니다."}
+              </p>
             ) : (
               <table className="participant-table">
                 <caption className="sr-only">스페이스 참여자 목록</caption>
@@ -160,7 +169,7 @@ export default function SpaceParticipants({ space, user, onChanged }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {members.map((member) => {
+                  {visibleMembers.map((member) => {
                     const hint = participantRemovalHint(member, user.id);
                     const duplicateName = nameCounts.get(member.name) > 1;
                     return (
@@ -175,11 +184,12 @@ export default function SpaceParticipants({ space, user, onChanged }) {
                             </small>
                           )}
                         </td>
-                        <td data-label="스페이스 역할">
-                          {member.role === "MANAGER" ? "관리자" : "참여자"}
+                        <td data-label="스페이스 역할" className="participant-space-role">
+                          <span>{member.role === "MANAGER" ? "관리자" : "참여자"}</span>
                         </td>
-                        <td data-label="소속 팀">
-                          {member.team?.teamName || "미소속"}
+                        <td data-label="소속 팀" className="participant-team">
+                          <span>{member.team?.teamName || "미소속"}</span>
+                          {member.team && <span className="participant-mobile-team-role">· {member.team.role === 'LEADER' ? '리더' : '팀원'}</span>}
                         </td>
                         <td data-label="팀 역할" className="participant-advanced">
                           {member.team
@@ -200,17 +210,15 @@ export default function SpaceParticipants({ space, user, onChanged }) {
                             onRemove={() => remove(member)} />
                         </td>
                         <td className="participant-mobile-details" colSpan={3}>
-                          <details>
-                            <summary>가입 정보·관리</summary>
+                          <div className="participant-mobile-management">
                             <dl>
-                              <div><dt>팀 역할</dt><dd>{member.team ? member.team.role === 'LEADER' ? '리더' : '팀원' : '—'}</dd></div>
                               <div><dt>가입일</dt><dd><time dateTime={member.joinedAt}>{formatDate(member.joinedAt)}</time></dd></div>
                             </dl>
                             <ParticipantRemovalButton name={member.name} reason={hint}
                               disabled={pendingId != null || resource.loading || !!accessError}
                               deleting={deleting && pendingId === member.userId}
                               onRemove={() => remove(member)} />
-                          </details>
+                          </div>
                         </td>
                       </tr>
                     );

@@ -26,6 +26,7 @@ import MarkdownBody from "./MarkdownBody.jsx";
 import Icon from "./Icon.jsx";
 import { ErrorNotice, ResourceState } from "./ui.jsx";
 import "../space-announcements.css";
+import "../collection-search.css";
 
 const PAGE_SIZE = 20;
 
@@ -208,7 +209,7 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
                     navigate(`${base}${announcementQuery(page, searchInput)}`);
                   }}>
                     <label className="sr-only" htmlFor="announcement-search">현재 페이지 공지 검색</label>
-                    <div className="announcement-search-input">
+                    <div className="announcement-search-input collection-search-input">
                       <Icon name="search" />
                       <input id="announcement-search" ref={searchField} type="search" maxLength={100}
                         placeholder="현재 페이지의 제목·작성자 검색" value={searchInput}

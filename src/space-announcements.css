@@ -239,30 +239,6 @@
   max-width: 360px;
   margin: 0;
 }
-.announcement-search-input {
-  display: flex;
-  align-items: center;
-  flex: 1;
-  gap: 8px;
-  min-width: 0;
-  padding-left: 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
-  background: var(--surface);
-}
-.announcement-search-input > .ui-icon { flex: 0 0 16px; width: 16px; color: var(--text-muted); }
-.announcement-search-input:focus-within { outline: 2px solid var(--brand-light); border-color: var(--brand); }
-.announcement-search-input input {
-  width: 100%;
-  min-width: 0;
-  height: 40px;
-  min-height: 40px;
-  padding: 8px 10px 8px 0;
-  border: 0;
-  background: transparent;
-  font-size: var(--text-support);
-}
-.announcement-search-input input:focus-visible { outline: none; }
 .announcements-page {
   min-width: 0;
 }
