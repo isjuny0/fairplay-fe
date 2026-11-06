@@ -89,18 +89,17 @@ test('스페이스 선택의 옆 메뉴도 바깥 클릭으로 닫히고 데스�
   await expect(page.locator('#root')).not.toHaveAttribute('inert');
 });
 
-for (const [view, selector] of [['board', '.board-task-card .task-title-button'], ['list', '.task-table tbody tr:first-child button'], ['timeline', '.timeline-row:not(.timeline-header) .timeline-task-label']]) {
-  test(`390×844 ${view}: 첫 작업이 첫 화면에 보이고 검색과 필터를 함께 사용할 수 있다`, async ({ page }) => {
+for (const [view, selector, group] of [['board', '.board-task-card .task-title-button', '보드 상태 선택'], ['timeline', '.timeline-row:not(.timeline-header) .timeline-task-label', '타임라인 상태 필터']]) {
+  test(`390×844 ${view}: 첫 작업과 상태 선택이 첫 화면에 보이고 두 보기만 제공한다`, async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${team}/tasks?view=${view}`);
     await expect(page.locator(selector).first()).toBeInViewport();
-    const status = page.getByRole('group', { name: '작업 상태 선택' });
+    await expect(page.getByRole('group', { name: '작업 보기 방식' }).getByRole('button')).toHaveText(['보드', '타임라인']);
+    const status = page.getByRole('group', { name: group });
     const buttons = await status.getByRole('button').evaluateAll(elements => elements.map(element => element.getBoundingClientRect().top));
     expect(new Set(buttons).size).toBe(1);
-    await page.getByRole('button', { name: /^필터(?: · \d+)?$/ }).click();
-    await expect(page.getByRole('checkbox', { name: '내 담당 작업만' })).toBeVisible();
-    await page.getByRole('checkbox', { name: '내 담당 작업만' }).check();
-    await expect(page).toHaveURL(/mine=1/);
+    await status.getByRole('button', { name: /진행 중/ }).click();
+    await expect(status.getByRole('button', { name: /진행 중/ })).toHaveAttribute('aria-pressed', 'true');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
 }

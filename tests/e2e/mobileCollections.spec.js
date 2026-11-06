@@ -47,26 +47,15 @@ for (const width of [320, 477, 720]) {
     }
   });
 
-  test(`${width}px 작업 목록은 기존 표·날짜·배분과 가로 이동을 유지한다`, async ({ page }) => {
+  test(`${width}px 목록 주소에서는 표 대신 타임라인과 두 보기만 표시한다`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
-    const entry = await seed(page);
-    await page.goto(`${team}/tasks?view=list`);
-    const table = page.getByRole('table', { name: '정렬된 작업 목록' });
-    await expect(table.getByRole('columnheader')).toHaveText(['작업', '상태', '담당자·배분', '예상 작업량', '시작일', '마감일']);
-    await expect(page.locator('.mobile-task-list')).toHaveCount(0);
-    const row = table.getByRole('row').filter({ has: page.getByRole('button', { name: taskTitle, exact: true }) });
-    await expect(row.locator('.status-badge')).toHaveText('진행 중');
-    await expect(row.locator('.task-date-is-overdue')).toHaveCSS('color', 'rgb(180, 35, 50)');
-    const done = table.getByRole('row').filter({ has: page.getByRole('button', { name: entry.tasks[0].title, exact: true }) });
-    await expect(done.locator('.task-date-is-overdue')).toHaveCount(0);
-    for (const assignment of entry.tasks[1].assignees) await expect(row).toContainText(`${assignment.allocationPercent}%`);
-    const region = page.getByRole('region', { name: '작업 표', exact: true });
-    expect(await region.evaluate(el => el.scrollWidth > el.clientWidth)).toBe(true);
-    await region.evaluate(el => { el.scrollLeft = 100; });
-    expect(await region.evaluate(el => el.scrollLeft)).toBeGreaterThan(0);
+    await seed(page);
+    await page.goto(`${team}/tasks?view=list&month=2026-11`);
+    await expect(page.getByRole('group', { name: '작업 보기 방식' }).getByRole('button')).toHaveText(['보드', '타임라인']);
+    await expect(page.getByRole('region', { name: '작업 계획 타임라인' })).toBeVisible();
+    await expect(page.getByRole('table', { name: '정렬된 작업 목록' })).toHaveCount(0);
+    await expect(page).toHaveURL(/view=timeline/);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    await row.getByRole('button', { name: taskTitle, exact: true }).click();
-    await expect(page).toHaveURL(/\/tasks\/102(?:\?|$)/);
   });
 
   test(`${width}px 자료 다운로드·수정·삭제는 독립 동작하고 조회 전용 권한을 유지한다`, async ({ page }) => {
@@ -125,8 +114,8 @@ for (const width of [320, 477, 720]) {
   });
 }
 
-test('모바일 작업 목록의 20건 페이지와 상세 복귀·검색 조건을 유지한다', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+test('데스크톱 작업 목록의 20건 페이지와 상세 복귀·검색 조건을 유지한다', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
   await seed(page, state => {
     const original = state.teams[1].tasks[0];
     state.teams[1].tasks = Array.from({ length: 21 }, (_, index) => ({
