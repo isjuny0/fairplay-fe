@@ -235,7 +235,6 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
                     </div>
                     <button className="secondary-button" type="submit">검색</button>
                   </form>
-                  <span className="field-help announcement-search-scope">검색 범위: 현재 {page + 1}페이지 · 제목·작성자</span>
                 </div>
                 {visibleItems.length ? (
                   <AnnouncementList

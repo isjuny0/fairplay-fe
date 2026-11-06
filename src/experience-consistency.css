@@ -40,7 +40,6 @@
   .editor-section-links { display: flex; }
 }
 .team-join-restriction { max-width: none; grid-column: 1 / -1; }
-.announcement-search-toolbar .announcement-search-scope { flex-basis: 100%; margin: 0; }
 .report-calculation-details { min-width: 0; border-bottom: 1px solid var(--border); }
 .report-calculation-details > summary { cursor: pointer; padding: 12px 0; font-weight: 600; }
 .workflow-steps li[data-complete='true'] { color: var(--brand-dark); }

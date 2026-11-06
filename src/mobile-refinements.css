@@ -120,8 +120,6 @@
   .meeting-detail .meeting-attendees { margin-block: 0; }
   .meeting-detail .meeting-attendees .mobile-disclosure h2 { display: none; }
   .meeting-detail .meeting-content-section { padding-block: 12px; }
-  .announcement-search-toolbar .announcement-search-scope { display: none; }
-  .announcement-search-toolbar:focus-within .announcement-search-scope { display: block; }
   .main-content .announcement-metadata { padding: 12px 16px; gap: 6px; }
   .member-directory-title { flex-wrap: wrap; }
   .rag-question-footer { flex-wrap: wrap; gap: 8px; }
