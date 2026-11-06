@@ -197,9 +197,10 @@ test('로그인한 사용자는 상세 응답의 소속으로 내 팀과 다른 
   await expect(others).toContainText('파도');
   await expect(others.getByRole('heading', { name: '삼위일체', exact: true })).toHaveCount(0);
   const apply = others.getByRole('button', { name: '파도 가입 신청', exact: true });
-  await expect(apply).toBeVisible();
-  await expect(apply).toBeDisabled();
-  await expect(apply).toHaveAccessibleDescription(/이미 삼위일체 팀에 소속/);
+  await expect(apply).toHaveCount(0);
+  await expect(page.locator('.space-home-team-row-state, .space-home-team-row-action')).toHaveCount(0);
+  await expect(page.locator('.space-home-team-columns')).not.toContainText('가입 상태');
+  await expect(page.locator('#team-join-shared-restriction, .team-join-restriction')).toHaveCount(0);
   await expect(page.getByRole('button', { name: '팀 만들기', exact: true })).toHaveCount(0);
   expect(fixture.writes).toEqual([]);
   const sidebar = page.getByRole('navigation', { name: '스페이스 메뉴', exact: true });
@@ -215,7 +216,7 @@ test('로그인한 사용자는 상세 응답의 소속으로 내 팀과 다른 
   await expect(spaceHomeLink).toHaveAttribute('aria-current', 'page');
 });
 
-test('팀에 소속된 스페이스 관리자는 내 팀을 팀 홈으로 열고 다른 팀은 팀 관리에서 조회한다', async ({ page }) => {
+test('팀에 소속된 스페이스 관리자는 내 팀을 팀 홈으로 열고 다른 팀은 이름과 인원만 표시한다', async ({ page }) => {
   const { space } = await spaceHome(page);
   space.myRole = 'MANAGER';
   await page.route('**/api/teams/1/home-preferences/me', (route) =>
@@ -237,45 +238,65 @@ test('팀에 소속된 스페이스 관리자는 내 팀을 팀 홈으로 열고
   const otherTeam = otherTeams.getByRole('listitem').filter({
     has: page.getByRole('heading', { name: '파도', exact: true }),
   });
-  await otherTeam.getByRole('button', { name: '팀 상세 보기', exact: true }).click();
-  await expect(page).toHaveURL(/\/spaces\/1\/dashboard\?teamId=2$/);
+  await expect(otherTeam.getByRole('button', { name: '파도 가입 신청', exact: true })).toHaveCount(0);
+  await expect(otherTeam.locator('.space-home-team-row-state, .space-home-team-row-action')).toHaveCount(0);
+  await expect(page.locator('.space-home-team-columns')).not.toContainText('가입 상태');
+  await expect(page.locator('#team-join-shared-restriction, .team-join-restriction')).toHaveCount(0);
+  await expect(otherTeams.getByText('관리자 조회', { exact: true })).toHaveCount(0);
+  await expect(otherTeams.getByRole('button', { name: '팀 상세 보기', exact: true })).toHaveCount(0);
 });
 
-for (const rejected of [false, true]) {
-  test(`미가입 참여자는 ${rejected ? '반려 후 재신청' : '가입 신청'} 뒤 승인 대기로 표시되고 내 팀에는 포함되지 않는다`, async ({ page }) => {
-    const fixture = await spaceHome(page, { joined: false, rejected });
-    await page.goto('/spaces/1');
-    const card = page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '파도', exact: true }) });
-    await card.getByRole('button', { name: `파도 ${rejected ? '다시 신청' : '가입 신청'}`, exact: true }).click();
-    await expect(card).toContainText('가입 승인 대기');
-    await expect(card.getByRole('button', { name: /가입 신청|다시 신청/ })).toHaveCount(0);
-    await expect(card.getByRole('button', { name: '파도 신청 취소', exact: true })).toBeEnabled();
-    await expect(page.getByRole('button', { name: '삼위일체 가입 신청', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: '삼위일체 가입 신청', exact: true })).toBeDisabled();
-    const own = page.getByRole('region', { name: '내 팀', exact: true });
-    await expect(own.getByRole('button', { name: '팀 만들기', exact: true })).toHaveCount(0);
-    await expect(own.getByRole('status')).toHaveText('파도 팀의 가입 승인을 기다리고 있습니다.');
-    await own.getByRole('status').click();
-    await expect(page.getByRole('dialog')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: /^내 팀 ·/ })).toHaveCount(0);
-    expect(fixture.writes).toEqual([{ path: '/api/teams/2/applications', body: null }]);
-    await page.reload();
-    const cancel = own.getByRole('button', { name: '신청 취소', exact: true });
-    await expect(cancel).toBeEnabled();
-    await expect(own.getByRole('status')).toBeVisible();
-    await expect(page.getByRole('button', { name: '삼위일체 가입 신청', exact: true })).toBeDisabled();
-    await cancel.click();
-    await expect(page.getByRole('button', { name: '파도 가입 신청', exact: true })).toBeEnabled();
-    await expect(page.getByRole('button', { name: '삼위일체 가입 신청', exact: true })).toBeEnabled();
-    await expect(page.getByText('파도 팀 가입 신청을 취소했습니다.', { exact: true })).toBeVisible();
-    await expect(own.getByRole('status')).toHaveCount(0);
-    expect(fixture.writes).toEqual([
-      { path: '/api/teams/2/applications', body: null },
-      { path: '/api/teams/2/applications/me', body: null },
-    ]);
-    await page.getByRole('button', { name: '팀 만들기', exact: true }).click();
-    await expect(page.getByRole('dialog', { name: '팀 만들기' })).toBeVisible();
-  });
+for (const role of ['USER', 'MANAGER']) {
+  for (const rejected of [false, true]) {
+    test(`미가입 ${role === 'MANAGER' ? '관리자' : '참여자'}는 ${rejected ? '반려 후 재신청' : '가입 신청'} 뒤 승인 대기로 표시되고 내 팀에는 포함되지 않는다`, async ({ page }) => {
+      const fixture = await spaceHome(page, { joined: false, rejected });
+      fixture.space.myRole = role;
+      await page.goto('/spaces/1');
+      const card = page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '파도', exact: true }) });
+      await card.getByRole('button', { name: `파도 ${rejected ? '다시 신청' : '가입 신청'}`, exact: true }).click();
+      await expect(card).toContainText('가입 승인 대기');
+      await expect(card.getByRole('button', { name: /가입 신청|다시 신청/ })).toHaveCount(0);
+      await expect(card.getByRole('button', { name: '파도 신청 취소', exact: true })).toBeEnabled();
+      await expect(page.getByRole('button', { name: '삼위일체 가입 신청', exact: true })).toBeVisible();
+      await expect(page.getByRole('button', { name: '삼위일체 가입 신청', exact: true })).toBeDisabled();
+      const otherApply = page.getByRole('button', { name: '삼위일체 가입 신청', exact: true });
+      await expect(page.locator('#team-join-shared-restriction')).toHaveCount(0);
+      await otherApply.hover();
+      await expect(page.getByRole('tooltip')).toHaveText('파도 팀 가입 신청이 대기 중입니다. 신청을 취소하면 다른 팀에 신청할 수 있습니다.');
+      await otherApply.click({ force: true });
+      await otherApply.press('Escape');
+      await expect(page.getByRole('tooltip')).toHaveCount(0);
+      await otherApply.blur();
+      await otherApply.focus();
+      await expect(page.getByRole('tooltip')).toBeVisible();
+      await otherApply.blur();
+      await expect(page.getByRole('tooltip')).toHaveCount(0);
+      const own = page.getByRole('region', { name: '내 팀', exact: true });
+      await expect(own.getByRole('button', { name: '팀 만들기', exact: true })).toHaveCount(0);
+      await expect(own.getByRole('status')).toHaveText('파도 팀의 가입 승인을 기다리고 있습니다.');
+      await own.getByRole('status').click();
+      await expect(page.getByRole('dialog')).toHaveCount(0);
+      await expect(page.getByRole('button', { name: /^내 팀 ·/ })).toHaveCount(0);
+      expect(fixture.writes).toEqual([{ path: '/api/teams/2/applications', body: null }]);
+      await page.reload();
+      const cancel = own.getByRole('button', { name: '신청 취소', exact: true });
+      await expect(cancel).toBeEnabled();
+      await expect(own.getByRole('status')).toBeVisible();
+      await expect(page.getByRole('button', { name: '삼위일체 가입 신청', exact: true })).toBeDisabled();
+      await cancel.click();
+      await expect(page.getByRole('button', { name: '파도 가입 신청', exact: true })).toBeEnabled();
+      await expect(page.getByRole('button', { name: '삼위일체 가입 신청', exact: true })).toBeEnabled();
+      await expect(page.getByText('파도 팀 가입 신청을 취소했습니다.', { exact: true })).toBeVisible();
+      await expect(own.getByRole('status')).toHaveCount(0);
+      expect(fixture.writes).toEqual([
+        { path: '/api/teams/2/applications', body: null },
+        { path: '/api/teams/2/applications/me', body: null },
+      ]);
+      await page.getByRole('button', { name: '팀 만들기', exact: true }).click();
+      await expect(page.getByRole('dialog', { name: '팀 만들기' })).toBeVisible();
+    });
+  }
+
 }
 
 test('취소 API가 아직 없으면 성공으로 표시하거나 다른 신청 버튼을 풀지 않는다', async ({ page }) => {
@@ -315,7 +336,7 @@ for (const action of ['apply', 'cancel']) {
     const own = page.getByRole('region', { name: '내 팀', exact: true });
     await expect(own).toContainText('파도');
     await expect(page.locator('.success-toast')).toHaveText(new RegExp(message));
-    await expect(page.getByRole('button', { name: '삼위일체 가입 신청', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: '삼위일체 가입 신청', exact: true })).toHaveCount(0);
     await expect(page.getByRole('button', { name: '파도 신청 취소', exact: true })).toHaveCount(0);
     expect(attempts).toBe(1);
   });
@@ -459,30 +480,30 @@ test('팀 빌딩 D-day는 날짜 변경과 실제 마감 시각에 맞게 자동
   await expect(countdown).toHaveText('D-14');
   const status = page.locator('.space-home-period-status');
   const dot = status.locator('.space-home-building-dot');
-  await expect(status).toHaveText('신청 가능');
+  await expect(status).toHaveText('가입 가능');
   await expect(status).toHaveCSS('color', 'rgb(8, 124, 85)');
   await expect(dot).toHaveCSS('background-color', await status.evaluate((element) => getComputedStyle(element).color));
   for (const locator of [
-    page.getByRole('heading', { name: '기존 팀 가입', exact: true }),
+    page.getByRole('heading', { name: '팀 구성', exact: true }),
     page.locator('.space-home-period-status'),
     page.getByRole('term').filter({ hasText: /^프로젝트 기간$/ }),
     page.getByRole('term').filter({ hasText: /^팀 생성 기간$/ }),
   ]) await expect(locator).toHaveCSS('font-weight', '700');
   fixture.space.teamBuildingClosesAt = '2026-09-20T23:59:00';
-  await page.getByRole('button', { name: '팀 목록 새로고침', exact: true }).click();
+  await page.reload();
   await expect(countdown).toHaveText('D-19');
   await page.clock.setSystemTime(new Date('2026-09-20T23:58:58+09:00'));
   await page.clock.fastForward(1000);
   await expect(countdown).toHaveText('D-day');
   await page.clock.fastForward(1000);
   await expect(countdown).toHaveText('마감');
-  await expect(status).toHaveText('신청 가능');
+  await expect(status).toHaveText('가입 가능');
   await expect(dot).toHaveCSS('background-color', await status.evaluate((element) => getComputedStyle(element).color));
   await page.clock.fastForward(86400000);
   await expect(countdown).toHaveText('마감');
   fixture.space.teamBuildingOpensAt = null;
   fixture.space.teamBuildingClosesAt = null;
-  await page.getByRole('button', { name: '팀 목록 새로고침', exact: true }).click();
+  await page.reload();
   await expect(countdown).toHaveCount(0);
 });
 
@@ -513,7 +534,7 @@ for (const width of [320, 768, 1440]) {
     const intro = await page.locator('.space-home-intro').boundingBox();
     const periods = await page.getByRole('region', { name: '프로젝트 일정' }).boundingBox();
     const ownBox = await own.boundingBox();
-    const others = await page.getByRole('region', { name: '팀 목록 1', exact: true }).boundingBox();
+    const others = await page.getByRole('region', { name: '팀 목록 1팀', exact: true }).boundingBox();
     expect(intro.y + intro.height).toBeLessThanOrEqual(periods.y);
     expect(periods.y + periods.height).toBeLessThanOrEqual(ownBox.y);
     expect(ownBox.y + ownBox.height).toBeLessThanOrEqual(others.y);

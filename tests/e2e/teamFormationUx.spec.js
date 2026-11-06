@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-async function teamFormation(page, { period = 'OPEN', joined = true, pending = true, buildingClosesAt = '2030-01-01T00:00:00' } = {}) {
+async function teamFormation(page, { period = 'OPEN', joined = true, pending = true, buildingClosesAt = '2030-01-01T00:00:00', role = 'USER', membershipLockedAt = null } = {}) {
   const members = [
     { userId: 'leader', name: '김하늘', role: 'LEADER' },
     { userId: 'member', name: '이지원', role: 'MEMBER' },
@@ -19,7 +19,8 @@ async function teamFormation(page, { period = 'OPEN', joined = true, pending = t
   const space = {
     id: 1,
     name: '프로젝트',
-    myRole: 'USER',
+    myRole: role,
+    membershipLockedAt,
     teamBuildingStatus: period,
     startAt: '2026-01-01T00:00:00',
     endAt: '2030-12-31T00:00:00',
@@ -118,19 +119,31 @@ async function teamFormation(page, { period = 'OPEN', joined = true, pending = t
   };
 }
 
-test('팀 구성 고정 이후에도 팀 생성 기간이 끝났으면 마감 사유를 표시한다', async ({ page }) => {
-  await teamFormation(page, {
-    period: 'LOCKED',
-    joined: false,
-    pending: false,
-    buildingClosesAt: '2026-01-02T00:00:00',
-  });
-  await page.goto('/spaces/1');
-  const create = page.getByRole('button', { name: '팀 만들기', exact: true });
-  await expect(create).toBeDisabled();
-  await expect(create).toHaveAccessibleDescription('팀 생성 기간이 종료되어 팀을 만들 수 없습니다.');
-  await expect(page.getByRole('region', { name: '프로젝트 일정' })).toContainText('팀 구성 고정');
-});
+for (const role of ['USER', 'MANAGER']) {
+  for (const lockBy of ['status', 'timestamp']) {
+    test(`${role} 팀 구성 고정(${lockBy}) 후에는 팀 이름과 인원만 표시한다`, async ({ page }) => {
+      const fixture = await teamFormation(page, {
+        period: lockBy === 'status' ? 'LOCKED' : 'CLOSED',
+        membershipLockedAt: lockBy === 'timestamp' ? '2026-01-03T09:00:00' : null,
+        role,
+        joined: false,
+        pending: false,
+        buildingClosesAt: '2026-01-02T00:00:00',
+      });
+      await page.goto('/spaces/1');
+      const create = page.getByRole('button', { name: '팀 만들기', exact: true });
+      await expect(create).toBeDisabled();
+      await expect(create).toHaveAccessibleDescription('팀 생성 기간이 종료되어 팀을 만들 수 없습니다.');
+      await expect(page.locator('.space-home-period-status')).toHaveText('구성 고정');
+      const list = page.getByRole('list', { name: '팀 목록', exact: true });
+      await expect(list.getByRole('heading', { name: '삼위일체', exact: true })).toBeVisible();
+      await expect(list.getByRole('button', { name: '삼위일체 인원 3명 보기', exact: true })).toBeVisible();
+      await expect(list.locator('.space-home-team-row-state, .space-home-team-row-action, .team-join-restriction')).toHaveCount(0);
+      await expect(page.locator('.space-home-team-columns')).toHaveText('팀인원');
+      expect(fixture.mutations).toEqual([]);
+    });
+  }
+}
 
 
 

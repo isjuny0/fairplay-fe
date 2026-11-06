@@ -289,7 +289,6 @@
   margin-left: auto;
 }
 
-.report-review-page > .page-heading { border-bottom: 0; padding-bottom: 0; }
 .report-batch-generation { min-width: 0; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
 .report-batch-generation > .section-heading { margin-bottom: 16px; }
 .report-batch-generation h2 { margin: 0; font-size: var(--text-subheading); }

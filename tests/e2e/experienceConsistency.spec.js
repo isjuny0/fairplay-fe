@@ -62,8 +62,9 @@ test('390px: 삭제할 수 없는 참여자는 버튼 근처에서 이유를 확
   await row.getByText('가입 정보·관리').click();
   const details = row.locator('.participant-mobile-details');
   const button=details.getByRole('button');await expect(button).toBeDisabled();
-  await expect(details.locator('.action-reason')).toBeVisible();
-  await expect(button).toHaveAttribute('aria-describedby',/^mobile-removal-reason-/);
+  await button.focus();
+  await expect(page.getByRole('tooltip')).toContainText('스페이스 관리자와 본인은 삭제할 수 없습니다.');
+  await expect(button).toHaveAttribute('aria-describedby', /.+/);
 });
 
 test('390px: 공지 검색 범위와 알림 읽음 처리 결과를 확인한다',async({page})=>{

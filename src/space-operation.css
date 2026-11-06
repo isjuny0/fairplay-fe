@@ -20,7 +20,6 @@
   font-weight: 600;
 }
 .space-operation-tabs > button:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
-.space-settings > .page-heading { border-bottom: 0; padding-bottom: 0; }
 .space-settings .settings-tab-panel { min-width: 0; }
 .main-content .space-settings .settings-tab-panel > .settings-section {
   display: grid;
@@ -47,10 +46,11 @@
   align-content: start;
 }
 .main-content > .space-operation-page > .page-heading {
-  min-height: 40px;
+  min-height: calc(40px + var(--space-3) + 1px);
   margin: 0;
-  padding: 0;
+  padding: 0 0 var(--space-3);
   border: 0;
+  border-bottom: 1px solid var(--border);
   align-items: center;
   gap: 16px;
 }
@@ -66,8 +66,17 @@
   justify-content: flex-end;
 }
 .space-operation-page > .space-operation-tabs { margin: 0; }
+/* Page tabs provide the divider; nested result tabs do not affect the title. */
+.main-content :has(> .space-operation-tabs) > .page-heading {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.main-content > .space-operation-page:has(> .space-operation-tabs) > .page-heading {
+  min-height: 40px;
+}
 .space-operation-page > [role='tabpanel'] { min-width: 0; }
 .space-operation-page > [role='tabpanel'][hidden] { display: none; }
 @media (max-width: 720px) {
-  .main-content > .space-operation-page > .page-heading { min-height: 44px; }
+  .main-content > .space-operation-page > .page-heading { min-height: calc(44px + var(--space-3) + 1px); }
+  .main-content > .space-operation-page:has(> .space-operation-tabs) > .page-heading { min-height: 44px; }
 }

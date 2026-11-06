@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 for (const width of [1920, 1440, 1280, 900, 721, 390, 320]) {
-  test(`${width}px 팀 상세 요약은 진행률·작업·산출물을 좁은 간격으로 묶고 기존 기능을 유지한다`, async ({ page }, testInfo) => {
+  test(`${width}px 팀 상세는 진행률·작업·확인 사항을 묶고 팀원별 수치와 상세 이동을 유지한다`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.addInitScript(() => localStorage.setItem('fairplay:preview-role', 'manager'));
     const errors = [];
@@ -9,26 +9,23 @@ for (const width of [1920, 1440, 1280, 900, 721, 390, 320]) {
     await page.goto('/preview/spaces/1/dashboard?teamId=1');
     const overview = page.getByRole('region', { name: '선택한 팀 정보', exact: true });
     await expect(overview).toBeVisible();
-    await expect(overview.locator('.dashboard-work-counts dt')).toHaveText(['할 일', '진행 중', '수정 중', '완료', '자료']);
-    await expect(overview.locator('.dashboard-work-counts dd')).toHaveText(['1건', '1건', '1건', '3건', '4개']);
+    await expect(overview.locator('.dashboard-work-counts dt')).toHaveText(['할 일', '진행 중', '수정 중', '완료', '지연']);
+    await expect(overview.locator('.dashboard-work-counts dd')).toHaveText(['1건', '1건', '1건', '3건', '1건']);
     const progress = overview.getByRole('progressbar', { name: '삼위일체 팀 전체 진행률', exact: true });
     await expect(progress).toHaveAttribute('aria-valuenow', '50');
     expect((await progress.boundingBox()).width).toBe(width <= 720 ? 88 : 112);
     const box = await overview.boundingBox();
     const counts = await overview.locator('.dashboard-work-counts').boundingBox();
     const indicator = await overview.locator('.dashboard-work-progress').boundingBox();
-    expect(counts.x + counts.width).toBeLessThanOrEqual(indicator.x);
-    if (width > 1000) {
-      expect(box.height).toBeLessThanOrEqual(210);
-      expect(indicator.x - counts.x - counts.width).toBeGreaterThanOrEqual(24);
-      const metricBoxes = await overview.locator('.dashboard-work-counts > div').evaluateAll((items) => items.map((el) => { const r = el.getBoundingClientRect(); return { x: r.x, width: r.width }; }));
-      for (let index = 1; index < metricBoxes.length; index++) {
-        expect(Math.abs(metricBoxes[index].width - metricBoxes[0].width)).toBeLessThan(1);
-        expect(metricBoxes[index].x - metricBoxes[index - 1].x - metricBoxes[index - 1].width).toBeLessThanOrEqual(1);
-      }
+    if (width > 720) {
+      expect(indicator.x + indicator.width).toBeLessThanOrEqual(counts.x);
     } else {
-      expect(box.height).toBeLessThanOrEqual(230);
+      expect(indicator.y + indicator.height).toBeLessThanOrEqual(counts.y);
     }
+    const metricBoxes = await overview.locator('.dashboard-work-counts > div').evaluateAll((items) => items.map((el) => { const r = el.getBoundingClientRect(); return { y: r.y, width: r.width }; }));
+    expect(Math.max(...metricBoxes.map((r) => r.y)) - Math.min(...metricBoxes.map((r) => r.y))).toBeLessThan(1);
+    expect(box.height).toBeLessThanOrEqual(width <= 720 ? 300 : 250);
+    await expect(overview).not.toContainText('장기 정체');
     const heading = await page.locator('.dashboard-page-heading').boundingBox();
     expect(box.y - heading.y - heading.height).toBeLessThanOrEqual(16);
     if (width <= 720) {
@@ -47,20 +44,18 @@ for (const width of [1920, 1440, 1280, 900, 721, 390, 320]) {
     await refresh.click();
     await expect(progress).toHaveAttribute('aria-valuenow', '50');
     await expect(page.getByRole('heading', { name: '팀원 수행 현황', exact: true })).toBeVisible();
-    if (width > 720) {
-      const table = page.getByRole('table', { name: '삼위일체 팀원 수행 현황', exact: true });
-      const aligned = await table.locator('tbody td:nth-child(2)').evaluateAll((cells) => cells.every((cell) => {
-        const assigned = cell.querySelector('.dashboard-member-assigned').getBoundingClientRect();
-        const status = cell.querySelector('.dashboard-member-task-counts, .dashboard-member-empty').getBoundingClientRect();
-        return Math.abs(assigned.x - status.x) <= 1 && getComputedStyle(cell).textAlign === 'left';
-      }));
-      expect(aligned).toBe(true);
-    }
+    const members = width > 720
+      ? page.locator('.dashboard-members-table tbody')
+      : page.locator('.dashboard-member-overview .mobile-data-cards');
+    const countsForMember = members.locator('.dashboard-member-task-counts').first();
+    await expect(countsForMember.locator('dt')).toHaveText(['담당', '진행 중', '수정 중', '완료', '지연']);
+    await expect(countsForMember.locator('dd')).toHaveText(['4건', '1건', '1건', '2건', '1건']);
+    if (width <= 720) await expect(members.locator('.dashboard-mobile-member-share').first()).toContainText('80.00%');
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     await page.screenshot({ path: testInfo.outputPath('compact-team-summary.png'), animations: 'disabled' });
     expect(await overview.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    await expect(page.getByRole('navigation', { name: '팀 조회 바로가기' }).getByRole('button')).toHaveText(['작업 보기', '팀 자료 보기']);
+    await expect(page.getByRole('navigation', { name: '팀 조회 바로가기' }).getByRole('button')).toHaveText(['작업 보기', '팀 자료 보기4개']);
     await page.getByRole('button', { name: '← 팀 목록', exact: true }).click();
     await expect(page.getByRole('heading', { name: '팀 관리', exact: true })).toBeVisible();
     await expect(page.locator('.manager-dashboard--team')).toHaveCount(0);
@@ -91,7 +86,7 @@ for (const width of [1440, 320]) {
     const overview = page.getByRole('region', { name: '선택한 팀 정보', exact: true });
     await expect(overview.getByText('작업 없음', { exact: true })).toBeVisible();
     await expect(overview.getByRole('progressbar')).toHaveCount(0);
-    await expect(overview.locator('.dashboard-work-counts dd')).toHaveText(['0건', '0건', '0건', '0건', '0개']);
+    await expect(overview.locator('.dashboard-work-counts dd')).toHaveText(['0건', '0건', '0건', '0건', '0건']);
     await expect(page.getByRole('button', { name: '작업 보기', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: '팀 자료 보기', exact: true })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('empty-team-summary.png'), animations: 'disabled' });

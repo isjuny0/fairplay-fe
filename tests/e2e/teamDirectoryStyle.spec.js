@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 for (const width of [1440, 768, 390, 320]) {
-  test(`${width}px 팀 목록은 검색 가능한 열 형태이고 두 목록의 새로고침은 아이콘만 표시한다`, async ({
+  test(`${width}px 팀 목록은 새로고침 없이 검색 가능한 열 형태로 표시한다`, async ({
     page,
   }) => {
     await page.setViewportSize({ width, height: 1000 });
@@ -18,16 +18,16 @@ for (const width of [1440, 768, 390, 320]) {
       name: '팀 목록 새로고침',
       exact: true,
     });
-    await expect(refresh).toHaveText('');
+    await expect(refresh).toHaveCount(0);
     const search = page.getByRole('searchbox', {
       name: '팀 이름 검색',
       exact: true,
     });
     const heading = page.getByRole('heading', {
-      name: '팀 목록 1',
+      name: '팀 목록 1팀',
       exact: true,
     });
-    await expect(heading).toHaveText('팀 목록 1');
+    await expect(heading).toHaveText('팀 목록 1팀');
     await page.evaluate(() => document.fonts.ready);
     const headingBox = await heading.boundingBox(),
       searchBox = await search.boundingBox();
@@ -39,20 +39,18 @@ for (const width of [1440, 768, 390, 320]) {
       ),
     ).toBeLessThanOrEqual(1);
     expect(searchBox.x).toBeGreaterThan(headingBox.x + headingBox.width);
-    const refreshBox = await refresh.boundingBox();
-    expect(refreshBox.x - searchBox.x - searchBox.width).toBeGreaterThanOrEqual(
-      0,
-    );
-    expect(refreshBox.x - searchBox.x - searchBox.width).toBeLessThanOrEqual(
-      13,
-    );
     await search.fill('없는 팀');
     await expect(list).toContainText('검색한 팀이 없습니다.');
     await search.fill('파도');
     await expect(list.getByRole('listitem')).toHaveCount(1);
     await expect(
       list.getByRole('button', { name: '파도 가입 신청', exact: true }),
-    ).toBeDisabled();
+    ).toHaveCount(0);
+    await expect(list.locator('.space-home-team-row-state, .space-home-team-row-action')).toHaveCount(0);
+    const teamNameBox = await list.getByRole('heading', { name: '파도', exact: true }).boundingBox();
+    const memberCountBox = await list.getByRole('button', { name: '파도 인원 2명 보기', exact: true }).boundingBox();
+    expect(memberCountBox.x).toBeGreaterThan(teamNameBox.x + teamNameBox.width);
+    expect(Math.abs(memberCountBox.y + memberCountBox.height / 2 - teamNameBox.y - teamNameBox.height / 2)).toBeLessThanOrEqual(1);
     expect(
       await list.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
     ).toBe(true);

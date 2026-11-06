@@ -11,30 +11,30 @@ import { formatDate } from "../lib/domain.js";
 import { ErrorNotice, ResourceState } from "./ui.jsx";
 import RefreshButton from "./RefreshButton.jsx";
 import CalendarPopover from "./CalendarPopover.jsx";
-import { CircleHelp } from "lucide-react";
 import "../space-participants.css";
 
-function RemovalHelp({ name, reason }) {
+function ParticipantRemovalButton({ name, reason, disabled, deleting, onRemove }) {
   const [open, setOpen] = useState(false);
   const trigger = useRef(null);
   const id = useId();
   return (
-    <span className="participant-removal-help"
-      onMouseEnter={() => setOpen(true)}
+    <span className="participant-removal-actions"
+      onMouseEnter={() => { if (reason) setOpen(true); }}
       onMouseLeave={(event) => {
         if (!event.currentTarget.contains(document.activeElement)) setOpen(false);
       }}
       onKeyDown={(event) => {
         if (event.key === "Escape") setOpen(false);
       }}>
-      <button ref={trigger} type="button" className="participant-removal-help-trigger"
-        aria-label={`${name} 삭제 제한 사유`} aria-expanded={open}
-        aria-describedby={open ? id : undefined}
-        onFocus={() => setOpen(true)} onBlur={() => setOpen(false)}
-        onClick={() => setOpen(true)}>
-        <CircleHelp size={16} aria-hidden="true" />
+      <button ref={trigger} type="button" className="secondary-button danger participant-removal-button"
+        aria-label={`${name} 참여자 삭제`} aria-disabled={reason ? true : undefined}
+        disabled={!reason && disabled}
+        aria-describedby={open && reason ? id : undefined}
+        onFocus={() => { if (reason) setOpen(true); }} onBlur={() => setOpen(false)}
+        onClick={() => { if (reason) setOpen(true); else if (!disabled) onRemove(); }}>
+        {deleting ? "삭제 중…" : "삭제"}
       </button>
-      {open && (
+      {open && reason && (
         <CalendarPopover id={id} role="tooltip" anchorRef={trigger} width={280} fitContent
           onClose={() => setOpen(false)} className="participant-removal-tooltip">
           {reason}
@@ -194,25 +194,10 @@ export default function SpaceParticipants({ space, user, onChanged }) {
                           </time>
                         </td>
                         <td data-label="관리" className="participant-advanced">
-                          <div className="participant-removal-actions">
-                            <button
-                              className="secondary-button danger"
-                              aria-label={`${member.name} 참여자 삭제`}
-                              title={hint || `${member.name} 참여자 삭제`}
-                              disabled={
-                                !!hint ||
-                                pendingId != null ||
-                                resource.loading ||
-                                !!accessError
-                              }
-                              onClick={() => remove(member)}
-                            >
-                              {deleting && pendingId === member.userId
-                                ? "삭제 중…"
-                                : "삭제"}
-                            </button>
-                            {hint && <RemovalHelp name={member.name} reason={hint} />}
-                          </div>
+                          <ParticipantRemovalButton name={member.name} reason={hint}
+                            disabled={pendingId != null || resource.loading || !!accessError}
+                            deleting={deleting && pendingId === member.userId}
+                            onRemove={() => remove(member)} />
                         </td>
                         <td className="participant-mobile-details" colSpan={3}>
                           <details>
@@ -221,15 +206,10 @@ export default function SpaceParticipants({ space, user, onChanged }) {
                               <div><dt>팀 역할</dt><dd>{member.team ? member.team.role === 'LEADER' ? '리더' : '팀원' : '—'}</dd></div>
                               <div><dt>가입일</dt><dd><time dateTime={member.joinedAt}>{formatDate(member.joinedAt)}</time></dd></div>
                             </dl>
-                            <div className="participant-removal-actions">
-                              <button type="button" className="secondary-button danger"
-                                aria-label={`${member.name} 참여자 삭제`}
-                                disabled={!!hint || pendingId != null || resource.loading || !!accessError}
-                                onClick={() => remove(member)}>
-                                {deleting && pendingId === member.userId ? '삭제 중…' : '삭제'}
-                              </button>
-                              {hint && <RemovalHelp name={member.name} reason={hint} />}
-                            </div>
+                            <ParticipantRemovalButton name={member.name} reason={hint}
+                              disabled={pendingId != null || resource.loading || !!accessError}
+                              deleting={deleting && pendingId === member.userId}
+                              onRemove={() => remove(member)} />
                           </details>
                         </td>
                       </tr>

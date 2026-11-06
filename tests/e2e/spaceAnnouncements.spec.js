@@ -164,6 +164,8 @@ test("현재 페이지 검색은 제목·작성자를 찾고 상세 복귀·새�
   await page.goto(listPath);
   await expect(page.locator('.announcement-row')).toHaveCount(20);
   const search = page.getByRole('searchbox', { name: '현재 페이지 공지 검색', exact: true });
+  await expect(page.locator('.announcement-total-count')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '검색', exact: true })).toHaveCount(0);
   await search.fill('프로젝트 공지 21');
   await expect(page.locator('.announcement-row')).toHaveCount(20);
   await search.press('Enter');
@@ -176,7 +178,7 @@ test("현재 페이지 검색은 제목·작성자를 찾고 상세 복귀·새�
   await page.reload();
   await expect(page.locator('.announcement-row')).toHaveCount(1);
   await search.fill('운영 관리자');
-  await page.getByRole('button', { name: '검색', exact: true }).click();
+  await search.press('Enter');
   await expect(page.locator('.announcement-row')).toHaveCount(20);
   await search.fill('없는 공지');
   await search.press('Enter');
@@ -238,11 +240,9 @@ for (const width of [1440, 320]) {
       await expect(page.locator('.announcement-metadata')).toContainText('작성자');
       await expect(page.locator('.announcement-pin')).toHaveText('중요');
       const actions = page.locator('.announcements-page > .page-heading > .heading-actions');
-      await expect(actions.getByRole('button')).toHaveCount(2);
-      const backBox = await actions.getByRole('button', { name: '← 목록으로', exact: true }).boundingBox();
-      const refreshBox = await actions.getByRole('button', { name: '새로고침', exact: true }).boundingBox();
-      expect(backBox.x + backBox.width).toBeLessThanOrEqual(refreshBox.x);
-      expect(Math.abs(backBox.y + backBox.height / 2 - refreshBox.y - refreshBox.height / 2)).toBeLessThan(1);
+      await expect(actions.getByRole('button')).toHaveCount(1);
+      await expect(actions.getByRole('button', { name: '← 목록으로', exact: true })).toBeVisible();
+      await expect(actions.getByRole('button', { name: '새로고침', exact: true })).toHaveCount(0);
       await expect(page.getByRole('button', { name: '공지 수정', exact: true })).toHaveCount(role === 'manager' ? 1 : 0);
       await expect(page.getByRole('button', { name: '공지 삭제', exact: true })).toHaveCount(role === 'manager' ? 1 : 0);
       await page.screenshot({ path: testInfo.outputPath('announcement-detail.png'), animations: 'disabled' });
@@ -254,7 +254,7 @@ for (const width of [1440, 320]) {
   }
 }
 
-test("관리자는 홈 요약에서 공지를 작성하고 마크다운으로 조회·수정·삭제한다", async ({
+test("관리자는 홈 요약 제목으로 목록을 열고 공지를 작성·조회·수정·삭제한다", async ({
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -263,19 +263,18 @@ test("관리자는 홈 요약에서 공지를 작성하고 마크다운으로 �
   const summary = page.getByRole("region", { name: "공지사항", exact: true });
   await expect(summary.locator(".announcement-row")).toHaveCount(3);
   await expect(summary.locator(".heading-actions > button")).toHaveText([
-    "공지 작성",
     "전체 보기",
   ]);
+  await expect(summary.getByRole("button", { name: "공지 작성", exact: true })).toHaveCount(0);
   for (const width of [1440, 320]) {
     await page.setViewportSize({ width, height: 1000 });
-    const createBox = await summary
-      .getByRole("button", { name: "공지 작성", exact: true })
+    const titleBox = await summary
+      .getByRole("button", { name: "공지사항", exact: true })
       .boundingBox();
     const allBox = await summary
       .getByRole("button", { name: "전체 보기", exact: true })
       .boundingBox();
-    expect(createBox.x + createBox.width).toBeLessThanOrEqual(allBox.x);
-    expect(createBox.height).toBeLessThanOrEqual(32);
+    expect(titleBox.x + titleBox.width).toBeLessThanOrEqual(allBox.x);
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
   await expect(summary.locator(".announcement-title").first()).toHaveText(
@@ -284,7 +283,9 @@ test("관리자는 홈 요약에서 공지를 작성하고 마크다운으로 �
   await summary.screenshot({
     path: testInfo.outputPath("space-announcement-summary.png"),
   });
-  await summary.getByRole("button", { name: "공지 작성", exact: true }).click();
+  await summary.getByRole("button", { name: "공지사항", exact: true }).click();
+  await expect(page).toHaveURL(/\/spaces\/1\/announcements$/);
+  await page.getByRole("button", { name: "공지 작성", exact: true }).click();
   let editor = await fillEditor(
     page,
     "  새 운영 공지  ",
@@ -323,16 +324,7 @@ test("관리자는 홈 요약에서 공지를 작성하고 마크다운으로 �
   await expect(deleteButton).toHaveClass("secondary-button danger");
   for (const width of [1440, 320]) {
     await page.setViewportSize({ width, height: 1000 });
-    const backBox = await page
-      .getByRole("button", { name: "← 목록으로", exact: true })
-      .boundingBox();
-    const refreshBox = await page
-      .getByRole("button", { name: "새로고침", exact: true })
-      .boundingBox();
-    expect(backBox.x + backBox.width).toBeLessThanOrEqual(refreshBox.x);
-    expect(
-      Math.abs(backBox.y + backBox.height / 2 - refreshBox.y - refreshBox.height / 2),
-    ).toBeLessThan(1);
+    await expect(page.getByRole("button", { name: "새로고침", exact: true })).toHaveCount(0);
     await expect(page.locator(".page-heading > .heading-actions .announcement-back-button")).toBeVisible();
     const toolbarBox = await page.locator(".announcement-detail-toolbar").boundingBox();
     const headingBox = await page
@@ -393,7 +385,7 @@ test("관리자는 홈 요약에서 공지를 작성하고 마크다운으로 �
 });
 
 for (const width of [1440, 320]) {
-  test(`공지 요약 하단 여백과 목록 제목·새로고침 정렬을 ${width}px에서 유지한다`, async ({
+  test(`공지 요약 하단 여백과 새로고침 없는 목록 제목을 ${width}px에서 유지한다`, async ({
     page,
   }, testInfo) => {
     await page.setViewportSize({ width, height: 900 });
@@ -424,18 +416,8 @@ for (const width of [1440, 320]) {
       .getByRole("button", { name: "전체 보기", exact: true })
       .click();
     const heading = page.locator(".announcements-page > .page-heading");
-    const titleBox = await heading
-      .getByRole("heading", { name: "공지사항", exact: true })
-      .boundingBox();
-    const refreshBox = await heading
-      .getByRole("button", { name: "새로고침", exact: true })
-      .boundingBox();
-    expect(Math.abs(titleBox.y + titleBox.height / 2 - refreshBox.y - refreshBox.height / 2)).toBeLessThan(1);
-    expect(refreshBox.width).toBe(width <= 720 ? 44 : 40);
-    expect(refreshBox.height).toBe(width <= 720 ? 44 : 40);
-    await expect(
-      heading.getByRole("button", { name: "새로고침", exact: true }),
-    ).toHaveText("");
+    await expect(heading.getByRole("heading", { name: "공지사항", exact: true })).toBeVisible();
+    await expect(heading.getByRole("button", { name: "새로고침", exact: true })).toHaveCount(0);
     await heading.screenshot({
       path: testInfo.outputPath("aligned-heading.png"),
     });
@@ -769,7 +751,7 @@ test("권한 변경과 다음 페이지 조회 실패를 기존 데이터와 구
     page.getByRole("button", { name: "다음", exact: true }),
   ).toBeDisabled();
   control.denied = true;
-  await page.getByRole("button", { name: "새로고침", exact: true }).click();
+  await page.reload();
   await expect(page.getByRole("alert")).toContainText("접근 권한");
   await expect(page.locator(".announcement-row")).toHaveCount(0);
   await expect(

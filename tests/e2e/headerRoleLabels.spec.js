@@ -26,6 +26,13 @@ for (const width of [1440, 1024, 768, 390, 320]) {
     await expect(role).toHaveText('리더');
     await expect(page.locator('.breadcrumb-role')).toHaveCount(0);
     await expect(page.locator('.mobile-workspace-context')).toHaveCount(0);
+    const dot = page.locator('.topbar .context-dot');
+    await expect(dot).toBeVisible();
+    await expect(dot).toHaveCSS('background-color', 'rgb(8, 124, 85)');
+    const dotBox = await dot.boundingBox();
+    const titleBox = await page.locator('.header-context-copy strong').boundingBox();
+    expect(titleBox.x - dotBox.x - dotBox.width).toBe(10);
+    expect(Math.abs(dotBox.y + dotBox.height / 2 - titleBox.y - titleBox.height / 2)).toBeLessThan(1);
     await page.evaluate(() => document.fonts.ready);
       const roleBox = await role.boundingBox();
       const spaceName = await page.locator('.header-context-copy strong').boundingBox();
@@ -58,8 +65,7 @@ for (const width of [1440, 1024, 768, 390, 320]) {
       ),
     ).toBe(true);
     const exit = page.getByRole('button', { name: '미리보기 종료', exact: true });
-    if (width <= 720) await expect(exit).toBeHidden();
-    else await expect(exit).toBeEnabled();
+    await expect(exit).toBeHidden();
     await page
       .getByRole('button', { name: '미리보기 설정', exact: true })
       .click();
@@ -69,7 +75,7 @@ for (const width of [1440, 1024, 768, 390, 320]) {
     });
     await expect(popover).toBeVisible();
     await expect(exit).toBeEnabled();
-    if (width <= 720) await expect(popover.getByRole('button', { name: '미리보기 종료', exact: true })).toBeVisible();
+    await expect(popover.getByRole('button', { name: '미리보기 종료', exact: true })).toBeVisible();
     const popoverBox = await popover.boundingBox();
     const headerBox = await page.locator('.topbar').boundingBox();
     expect(popoverBox.x).toBeGreaterThanOrEqual(0);
@@ -214,19 +220,20 @@ test('리포트·관리자 원문 제목 위 문구를 제거하고 상태 표�
   await expect(page.locator('.manager-peer-heading .eyebrow')).toHaveCount(0);
 });
 
-for (const width of [320, 390, 720]) {
+for (const width of [320, 390, 720, 953, 1440]) {
   test(`${width}px 미리보기 메뉴에서 설정·종료를 사용하고 닫은 뒤 초점이 돌아온다`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
     await openPreview(page, '/spaces/1/teams/1');
+    const toggle = page.getByRole('button', { name: '미리보기 설정', exact: true });
+    await expect(toggle).toBeVisible();
     await expect(page.getByRole('button', { name: '사용자 가이드', exact: true })).toBeHidden();
-    expect((await page.locator('.topbar').boundingBox()).height).toBe(100);
+    if (width <= 720) expect((await page.locator('.topbar').boundingBox()).height).toBe(100);
     const controls = await page.locator('.preview-guide-entry, .preview-toolbar > .preview-toggle, .profile-account-group').evaluateAll(elements => elements.map(element => {
       const { left, right } = element.getBoundingClientRect();
       return { left, right };
     }));
     for (let index = 1; index < controls.length; index++) expect(controls[index].left).toBeGreaterThanOrEqual(controls[index - 1].right);
     expect(controls.at(-1).right).toBeLessThanOrEqual(width);
-    const toggle = page.getByRole('button', { name: '미리보기 설정', exact: true });
     const popover = page.getByRole('region', { name: '미리보기 설정', exact: true });
     await toggle.click();
     await expect(page.getByLabel('미리보기 역할', { exact: true })).toBeFocused();

@@ -59,7 +59,7 @@ for (const width of [1440, 390, 320]) {
     await page.screenshot({ path: testInfo.outputPath('closed-round-actions.png'), animations: 'disabled' });
   });
 
-  test(`${width}px 다수 팀은 요약·검색·필터·정렬·페이지로 관리하고 조건을 복원한다`, async ({ page }, testInfo) => {
+  test(`${width}px 다수 팀은 요약·검색·페이지로 관리하고 검색어를 복원한다`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 1000 });
     const state = await manyTeams(page);
     await page.clock.install();
@@ -68,7 +68,8 @@ for (const width of [1440, 390, 320]) {
     const final = page.getByRole('region', { name: '최종 평가 팀별 제출 현황', exact: true });
     await expect(mid.locator('.round-team-submissions > li')).toHaveCount(37);
     await expect(final).toHaveCount(0);
-    await mid.getByRole('button', { name: '페이지 보기', exact: true }).click();
+    await expect(mid.getByRole('group', { name: '팀 목록 보기 방식', exact: true })).toHaveCount(0);
+    await page.goto('/spaces/1/rounds?submissionMIDView=page');
     await expect(mid.locator('.round-team-submissions > li')).toHaveCount(10);
     const summary = mid.getByRole('definition');
     await expect(summary).toHaveText(['37팀', '7팀', '29팀', '74명']);
@@ -81,16 +82,16 @@ for (const width of [1440, 390, 320]) {
     await expect(page).toHaveURL(/submissionMIDPage=2/);
     await page.reload();
     await expect(pagination).toContainText('2 / 4페이지');
-    await mid.getByLabel('제출 상태', { exact: true }).selectOption('submitted');
-    await expect(mid.locator('.round-team-submissions > li')).toHaveCount(7);
-    await expect(mid.locator('.round-team-submissions')).not.toContainText('평가 대상 없음');
+    await expect(mid.getByLabel('제출 상태', { exact: true })).toHaveCount(0);
+    await expect(mid.getByLabel('팀 정렬', { exact: true })).toHaveCount(0);
+    await mid.getByLabel('팀 이름 검색', { exact: true }).fill('디자인 10팀');
+    await expect(mid.locator('.round-team-submissions > li')).toHaveCount(1);
     await expect(summary).toHaveText(['37팀', '7팀', '29팀', '74명']);
     await page.getByRole('tab', { name: '최종 평가', exact: true }).click();
     await expect(final.locator('.round-team-submissions > li')).toHaveCount(37);
     await expect(final.getByRole('button', { name: /결과 보기/ })).toHaveCount(0);
     await page.getByRole('tab', { name: '중간 평가', exact: true }).click();
-    await expect(mid.getByLabel('제출 상태', { exact: true })).toHaveValue('submitted');
-    await mid.getByLabel('팀 이름 검색', { exact: true }).fill('디자인 10팀');
+    await expect(mid.getByLabel('팀 이름 검색', { exact: true })).toHaveValue('디자인 10팀');
     await expect(mid.locator('.round-team-submissions > li')).toHaveCount(1);
     await expect(mid).toContainText('디자인 10팀');
     await expect(page.getByRole('button', { name: '회차·제출 현황 새로고침', exact: true })).toHaveCount(0);
@@ -101,10 +102,9 @@ for (const width of [1440, 390, 320]) {
     await expect(mid.locator('.round-team-submissions > li')).toHaveCount(1);
     await mid.getByLabel('팀 이름 검색', { exact: true }).fill('없는 팀');
     await expect(mid.getByText('조건에 맞는 팀이 없습니다.', { exact: true })).toBeVisible();
-    await mid.getByRole('button', { name: '검색·필터 초기화', exact: true }).click();
+    await mid.getByRole('button', { name: '검색 초기화', exact: true }).click();
     await expect(mid.locator('.round-team-submissions > li')).toHaveCount(10);
-    await mid.getByLabel('팀 정렬', { exact: true }).selectOption('name');
-    await expect(mid.locator('.round-team-submissions > li > strong')).toHaveText(Array.from({ length: 10 }, (_, i) => `디자인 ${i + 1}팀`));
+    await expect(mid.locator('.round-team-submissions > li > strong').first()).toHaveText('디자인 1팀');
     await expect(mid.getByRole('button', { name: '디자인 1팀 중간 평가 결과 보기', exact: true })).toBeVisible();
     await expect(final.getByRole('button', { name: /결과 보기/ })).toHaveCount(0);
     if (width > 720) {
@@ -157,10 +157,10 @@ for (const width of [1440, 390, 320]) {
   });
 }
 
-test('현황 권한 오류 후 이전 목록을 숨기고 재조회 시 필터를 복원한다', async ({ page }) => {
+test('현황 권한 오류 후 이전 목록을 숨기고 재조회 시 검색어를 복원한다', async ({ page }) => {
   const state = await manyTeams(page);
   await page.clock.install();
-  await page.goto('/spaces/1/rounds?submissionMIDStatus=missing');
+  await page.goto('/spaces/1/rounds?submissionMIDSearch=디자인+6팀&submissionMIDStatus=submitted&submissionMIDSort=name');
   await expect(page.locator('.round-team-submissions')).toHaveCount(1);
   state.failDashboard = true;
   await expect(page.getByRole('button', { name: '회차·제출 현황 새로고침', exact: true })).toHaveCount(0);
@@ -171,7 +171,12 @@ test('현황 권한 오류 후 이전 목록을 숨기고 재조회 시 필터�
   await page.getByRole('button', { name: '회차·제출 현황 새로고침', exact: true }).click();
   await expect(page.locator('.round-team-submissions')).toHaveCount(1);
   await expect(page.getByRole('button', { name: '회차·제출 현황 새로고침', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('region', { name: '중간 평가 팀별 제출 현황', exact: true }).getByLabel('제출 상태', { exact: true })).toHaveValue('missing');
+  const mid = page.getByRole('region', { name: '중간 평가 팀별 제출 현황', exact: true });
+  await expect(mid.getByLabel('팀 이름 검색', { exact: true })).toHaveValue('디자인 6팀');
+  await expect(mid.locator('.round-team-submissions')).toContainText('디자인 6팀');
+  await mid.getByRole('button', { name: '검색 초기화', exact: true }).click();
+  await expect(mid.locator('.round-team-submissions > li')).toHaveCount(37);
+  await expect(page).not.toHaveURL(/submissionMID(?:Status|Sort)=/);
 });
 
 test('참여 팀이 없으면 현황과 결과에 빈 상태를 표시한다', async ({ page }) => {
@@ -249,7 +254,7 @@ for (const width of [1440, 390, 320]) {
     await expect(page.getByRole('region', { name: '최종 평가 운영', exact: true })).toHaveCount(0);
     const mid = page.getByRole('region', { name: '중간 평가 팀별 제출 현황', exact: true });
     const list = mid.getByRole('region', { name: '중간 평가 팀 목록', exact: true });
-    await expect(mid.getByRole('button', { name: '스크롤 보기', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(mid.getByRole('group', { name: '팀 목록 보기 방식', exact: true })).toHaveCount(0);
     await expect(list.locator('li')).toHaveCount(50);
     expect(await list.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
     await list.scrollIntoViewIfNeeded();
@@ -277,16 +282,16 @@ for (const width of [1440, 390, 320]) {
     await expect(page.getByRole('region', { name: '중간 평가 운영', exact: true })).toHaveCount(0);
     const final = page.getByRole('region', { name: '최종 평가 팀별 제출 현황', exact: true });
     await expect(final.getByLabel('팀 이름 검색', { exact: true })).toHaveValue('');
-    await final.getByLabel('제출 상태', { exact: true }).selectOption('submitted');
+    await final.getByLabel('팀 이름 검색', { exact: true }).fill('디자인 136팀');
     await page.reload();
     await expect(finalTab).toHaveAttribute('aria-selected', 'true');
-    await expect(final.getByLabel('제출 상태', { exact: true })).toHaveValue('submitted');
+    await expect(final.getByLabel('팀 이름 검색', { exact: true })).toHaveValue('디자인 136팀');
     await finalTab.focus();
     await finalTab.press('ArrowLeft');
     await expect(midTab).toBeFocused();
     await expect(midTab).toHaveAttribute('aria-selected', 'true');
     await expect(mid.getByLabel('팀 이름 검색', { exact: true })).toHaveValue('디자인 137팀');
-    await mid.getByRole('button', { name: '검색·필터 초기화', exact: true }).click();
+    await mid.getByRole('button', { name: '검색 초기화', exact: true }).click();
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     await page.screenshot({ path: testInfo.outputPath('round-tabs-scroll.png'), animations: 'disabled' });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -304,11 +309,11 @@ test('자동 불러오기를 지원하지 않아도 더 보기 버튼으로 팀�
   await expect(final.locator('li')).toHaveCount(100);
   await final.getByRole('button', { name: '37팀 더 보기', exact: true }).click();
   await expect(final.locator('li')).toHaveCount(137);
-  await final.getByRole('button', { name: '페이지 보기', exact: true }).click();
+  await page.goto('/spaces/1/rounds?operationRound=FINAL&submissionFINALView=page');
   await expect(final.locator('li')).toHaveCount(10);
   await page.reload();
-  await expect(final.getByRole('button', { name: '페이지 보기', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await final.getByRole('button', { name: '스크롤 보기', exact: true }).click();
+  await expect(final.getByRole('button', { name: '페이지 보기', exact: true })).toHaveCount(0);
+  await page.goto('/spaces/1/rounds?operationRound=FINAL');
   await expect(final.locator('li')).toHaveCount(50);
   await expect(final.getByRole('navigation', { name: '최종 평가 팀 목록 페이지' })).toHaveCount(0);
 });

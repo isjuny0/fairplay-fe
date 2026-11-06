@@ -131,9 +131,13 @@ for (const width of [1440, 1280, 390]) {
     await expect(page.getByRole('heading', { name: '먼저 확인할 팀', exact: true })).toHaveCount(0);
     await expect(page.getByRole('heading', { name: '전체 팀 현황', exact: true })).toHaveCount(0);
     await expect(page.getByLabel('조회할 팀')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '현황 새로고침', exact: true })).toHaveCount(0);
+    await expect(page.locator('.dashboard-page-heading')).toHaveCSS('border-bottom-width', '1px');
+    await expect(page.locator('.dashboard-page-heading')).toHaveCSS('padding-bottom', '12px');
     await expect(page.getByRole('navigation', { name: '평가 운영 화면' })).toHaveCount(0);
     await expect(page.getByText('현황 읽는 법', { exact: true })).toHaveCount(0);
-    const helpItems = width > 720 ? [['팀 진행률', '예상 작업량'], ['확인 사항', '48시간']] : [['팀 진행률', '예상 작업량'], ['마감 지연', '마감 시각'], ['장기 정체', '48시간']];
+    await expect(page.getByRole('button', { name: '확인 사항 집계 기준', exact: true })).toHaveCount(0);
+    const helpItems = width > 720 ? [['팀 진행률', '예상 작업량']] : [['팀 진행률', '예상 작업량'], ['마감 지연', '마감 시각']];
     for (const [label, expected] of helpItems) {
       const metricHelp = page.getByRole('button', { name: `${label} 집계 기준`, exact: true }).first();
       await metricHelp.focus();
@@ -142,20 +146,26 @@ for (const width of [1440, 1280, 390]) {
       await expect(page.getByRole('tooltip')).toHaveCount(0);
     }
     const filters = page.getByRole('group', { name: '팀 빠른 필터', exact: true });
-    if (width <= 720) await page.getByLabel('팀 상태', { exact: true }).selectOption('overdue');
-    else await filters.getByRole('button', { name: '마감 지연', exact: true }).click();
-    await expect(page.getByLabel('팀 상태', { exact: true })).toHaveValue('overdue');
+    await expect(filters.getByRole('button')).toHaveText(['전체 팀', '마감 지연']);
+    await expect(page.locator('.dashboard-list-toolbar .field-label')).toHaveCount(0);
+    const searchBox = await page.getByRole('searchbox', { name: '팀·리더 검색', exact: true }).boundingBox();
+    const filterBox = await filters.boundingBox();
+    expect(Math.abs(searchBox.y + searchBox.height / 2 - filterBox.y - filterBox.height / 2)).toBeLessThanOrEqual(1);
+    expect(filterBox.x).toBeGreaterThan(searchBox.x + searchBox.width);
+    await expect(page.getByText('장기 정체', { exact: true })).toHaveCount(0);
+    await expect(page.getByLabel('팀 상태', { exact: true })).toHaveCount(0);
+    await filters.getByRole('button', { name: '마감 지연', exact: true }).click();
+    await expect(page.getByRole('group', { name: '팀 빠른 필터', exact: true }).getByRole('button', { name: '마감 지연', exact: true })).toHaveAttribute('aria-pressed', 'true');
     await page.getByLabel('팀·리더 검색', { exact: true }).fill('삼위일체');
-    await page.getByLabel('팀 정렬', { exact: true }).selectOption('progress');
     if (width > 720) {
       const table = page.getByRole('table', { name: '팀 관리', exact: true });
-      await expect(table.getByRole('columnheader')).toHaveText(['팀', '팀 진행률', '작업 현황', '확인 사항', '자료']);
+      await expect(table.getByRole('columnheader')).toHaveText(['팀', '팀 진행률', '작업 현황', '자료']);
       expect(await table.locator('tbody > tr').first().evaluate((element) => element.getBoundingClientRect().bottom <= innerHeight)).toBe(true);
       expect(await table.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
       await expect(table.locator('tbody').getByRole('button', { name: /집계 기준/ })).toHaveCount(0);
       const taskCounts = table.locator('tbody tr').first().locator('.dashboard-team-work-counts');
-      await expect(taskCounts.locator('dt')).toHaveText(['할 일', '진행 중', '수정 중', '완료']);
-      await expect(taskCounts.locator('dd')).toHaveText(['1건', '1건', '1건', '3건']);
+      await expect(taskCounts.locator('dt')).toHaveText(['할 일', '진행 중', '수정 중', '완료', '지연']);
+      await expect(taskCounts.locator('dd')).toHaveText(['1건', '1건', '1건', '3건', '1건']);
     }
     if (width > 720) {
       const row = page.getByRole('table', { name: '팀 관리', exact: true }).locator('tbody tr').first();
@@ -177,7 +187,7 @@ for (const width of [1440, 1280, 390]) {
       await expect(teamBreadcrumb.locator('[aria-current="page"]')).toHaveText('삼위일체');
       await teamBreadcrumb.getByRole('button', { name: '팀 관리', exact: true }).click();
       await expect(page.getByLabel('팀·리더 검색', { exact: true })).toHaveValue('삼위일체');
-      await expect(page.getByLabel('팀 상태', { exact: true })).toHaveValue('overdue');
+      await expect(page.getByRole('group', { name: '팀 빠른 필터', exact: true }).getByRole('button', { name: '마감 지연', exact: true })).toHaveAttribute('aria-pressed', 'true');
       await page.getByRole('button', { name: '삼위일체 현황 보기', exact: true }).click();
     }
     await expect(page.getByRole('heading', { name: '삼위일체', exact: true })).toBeVisible();
@@ -201,11 +211,8 @@ for (const width of [1440, 1280, 390]) {
     expect(summaryLayout.titleAboveRing).toBe(true);
     expect(summaryLayout.borderTop).toBe('1px');
     expect(summaryLayout.borderBottom).toBe('1px');
-    const help = page.getByRole('button', { name: '장기 정체 집계 기준', exact: true });
-    await help.focus();
-    await expect(page.getByRole('tooltip')).toContainText('48시간');
-    await help.press('Escape');
-    await expect(page.getByRole('tooltip')).toHaveCount(0);
+    await expect(teamSummary).not.toContainText('장기 정체');
+    await expect(teamSummary.locator('.dashboard-work-counts dt')).toHaveText(['할 일', '진행 중', '수정 중', '완료', '지연']);
     await page.reload();
     await expect(page.getByRole('heading', { name: '팀원 수행 현황', exact: true })).toBeVisible();
     await page.getByRole('button', { name: '김준영 수행 상세', exact: true }).click();
@@ -225,8 +232,8 @@ for (const width of [1440, 1280, 390]) {
     await page.getByRole('button', { name: '← 팀 목록', exact: true }).click();
     await expect(page.getByLabel('조회할 팀')).toHaveCount(0);
     await expect(page.getByLabel('팀·리더 검색', { exact: true })).toHaveValue('삼위일체');
-    await expect(page.getByLabel('팀 상태', { exact: true })).toHaveValue('overdue');
-    await expect(page.getByLabel('팀 정렬', { exact: true })).toHaveValue('progress');
+    await expect(page.getByRole('group', { name: '팀 빠른 필터', exact: true }).getByRole('button', { name: '마감 지연', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByLabel('팀 정렬', { exact: true })).toHaveCount(0);
     if (width > 720) await expect(filters.getByRole('button', { name: '마감 지연', exact: true })).toHaveAttribute('aria-pressed', 'true');
     expect(new URL(page.url()).searchParams.has('teamId')).toBe(false);
     expect(new URL(page.url()).searchParams.has('tab')).toBe(false);
@@ -326,22 +333,16 @@ for (const width of [1440, 390]) {
       ).toHaveCount(0);
     }
     await expect(summary).toHaveCount(0);
-    await page.getByLabel('팀 상태', { exact: true }).selectOption('overdue');
-    await page.getByLabel('팀 정렬', { exact: true }).selectOption('progress');
+    await page.getByRole('group', { name: '팀 빠른 필터', exact: true }).getByRole('button', { name: '마감 지연', exact: true }).click();
     await page.reload();
     await expect(page.getByLabel('팀·리더 검색', { exact: true })).toHaveValue(
       '최유진',
     );
-    await expect(page.getByLabel('팀 상태', { exact: true })).toHaveValue(
-      'overdue',
-    );
-    await expect(page.getByLabel('팀 정렬', { exact: true })).toHaveValue(
-      'progress',
-    );
+    await expect(page.getByRole('group', { name: '팀 빠른 필터', exact: true }).getByRole('button', { name: '마감 지연', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByLabel('팀 정렬', { exact: true })).toHaveCount(0);
     await expect(page.getByText('먼저 확인할 팀', { exact: true })).toHaveCount(0);
     await expect(page.getByRole('group', { name: '확인이 필요한 팀 빠른 조회' })).toHaveCount(0);
-    await page.getByLabel('팀 상태', { exact: true }).selectOption('applications');
-    await expect(page.getByLabel('팀 상태', { exact: true })).toHaveValue('applications');
+    await page.getByLabel('팀·리더 검색', { exact: true }).fill('일치하는 팀 없음');
     await expect(
       page.getByText('조건에 맞는 팀이 없습니다.', { exact: true }),
     ).toBeVisible();
@@ -352,12 +353,8 @@ for (const width of [1440, 390]) {
     await expect(page.getByLabel('팀·리더 검색', { exact: true })).toHaveValue(
       '',
     );
-    await expect(page.getByLabel('팀 상태', { exact: true })).toHaveValue(
-      'all',
-    );
-    await expect(page.getByLabel('팀 정렬', { exact: true })).toHaveValue(
-      'name',
-    );
+    await expect(page.getByRole('group', { name: '팀 빠른 필터', exact: true }).getByRole('button', { name: '전체 팀', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByLabel('팀 정렬', { exact: true })).toHaveCount(0);
     await expect(
       page.getByRole('status').filter({ hasText: '목록 2 / 2팀' }),
     ).toBeVisible();
@@ -412,7 +409,7 @@ for (const width of [1440, 390, 320]) {
     await page.setViewportSize({ width, height: 1000 });
     const requests = [];
     page.on('request', (request) => { if (new URL(request.url()).pathname.startsWith('/api/')) requests.push(request); });
-    await openManagerPreview(page, '/spaces/1/dashboard?teamQuery=삼위일체&teamFilter=overdue&teamSort=progress');
+    await openManagerPreview(page, '/spaces/1/dashboard?teamQuery=삼위일체&teamFilter=overdue');
     await page.getByRole('button', { name: '삼위일체 현황 보기', exact: true }).click();
     const links = page.getByRole('navigation', { name: '팀 조회 바로가기', exact: true });
     await links.getByRole('button', { name: '작업 보기', exact: true }).click();
@@ -451,8 +448,8 @@ for (const width of [1440, 390, 320]) {
     await expect(page.getByLabel('조회할 팀')).toHaveCount(0);
     await page.getByRole('button', { name: '← 팀 목록', exact: true }).click();
     await expect(page.getByLabel('팀·리더 검색', { exact: true })).toHaveValue('삼위일체');
-    await expect(page.getByLabel('팀 상태', { exact: true })).toHaveValue('overdue');
-    await expect(page.getByLabel('팀 정렬', { exact: true })).toHaveValue('progress');
+    await expect(page.getByRole('group', { name: '팀 빠른 필터', exact: true }).getByRole('button', { name: '마감 지연', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByLabel('팀 정렬', { exact: true })).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     expect(requests).toHaveLength(0);
   });
@@ -472,12 +469,20 @@ for (const width of [1440, 1280, 390]) {
           const rect = node.getBoundingClientRect();
           return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
         };
-        const tablist = element.querySelector('[role="tablist"]');
-        return { canvas: bounds(element), heading: bounds(element.querySelector(':scope > .page-heading')), title: bounds(element.querySelector('h1')), tabs: tablist ? bounds(tablist) : null };
+        const tablist = element.querySelector(':scope > .space-operation-tabs');
+        const heading = element.querySelector(':scope > .page-heading');
+        const headingStyle = getComputedStyle(heading);
+        const headingContentHeight = heading.getBoundingClientRect().height - parseFloat(headingStyle.paddingBottom) - parseFloat(headingStyle.borderBottomWidth);
+        return { canvas: bounds(element), heading: bounds(heading), headingContentHeight,
+          divider: headingStyle.borderBottomWidth, titlePadding: headingStyle.paddingBottom,
+          title: bounds(element.querySelector('h1')), tabs: tablist ? bounds(tablist) : null };
       });
+      expect(layout.divider).toBe(layout.tabs ? '0px' : '1px');
+      expect(layout.titlePadding).toBe(layout.tabs ? '0px' : '12px');
       baseline ||= layout;
       for (const key of ['x', 'width']) expect(Math.abs(layout.canvas[key] - baseline.canvas[key])).toBeLessThan(1);
-      for (const key of ['x', 'y', 'height']) expect(Math.abs(layout.heading[key] - baseline.heading[key])).toBeLessThan(1);
+      for (const key of ['x', 'y']) expect(Math.abs(layout.heading[key] - baseline.heading[key])).toBeLessThan(1);
+      expect(Math.abs(layout.headingContentHeight - baseline.headingContentHeight)).toBeLessThan(1);
       for (const key of ['x', 'y', 'height']) expect(Math.abs(layout.title[key] - baseline.title[key])).toBeLessThan(1);
       if (layout.tabs) {
         tabBaseline ||= layout.tabs;

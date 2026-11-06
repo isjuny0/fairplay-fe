@@ -127,13 +127,13 @@ test('공간·팀 선택의 좌우 여백을 유지하고 뒤로가기는 접기
   }
 });
 
-test('관리자는 본문 팀 카드에서 키보드로 팀 상세에 진입한다', async ({ page }) => {
+test('관리자는 팀 관리에서 키보드로 팀 상세에 진입한다', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('fairplay:preview-role', 'manager'));
   await page.goto('/preview/spaces/1');
   const sidebar = page.getByRole('navigation', { name: '스페이스 메뉴', exact: true });
   await expect(sidebar.getByRole('combobox', { name: '팀 선택', exact: true })).toHaveCount(0);
-  const team = page.getByRole('list', { name: '팀 목록', exact: true }).getByRole('listitem').filter({ hasText: '삼위일체' });
-  await team.getByRole('button', { name: '팀 상세 보기', exact: true }).focus();
+  await sidebar.getByRole('button', { name: '팀 관리', exact: true }).click();
+  await page.getByRole('button', { name: '삼위일체 현황 보기', exact: true }).focus();
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/dashboard\?teamId=1$/);
   await expect(page.getByRole('heading', { name: '삼위일체', exact: true })).toBeVisible();
@@ -179,7 +179,7 @@ test('선택 메뉴와 상태 배지는 연한 배경·진한 글씨로 구분�
     );
 });
 
-test('팀 홈의 마감 지연은 건수에 강조색을 적용한다', async ({
+test('팀 홈의 마감 지연이 있으면 아이콘과 건수에 강조색을 적용한다', async ({
   page,
 }) => {
   await page.goto('/preview/spaces/1/teams/1');
@@ -188,7 +188,7 @@ test('팀 홈의 마감 지연은 건수에 강조색을 적용한다', async ({
   const icon = overdue.locator('.dashboard-icon');
   await expect(icon).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await expect(icon.locator('svg')).toBeVisible();
-  await expect(icon).toHaveCSS('color', 'rgb(85, 97, 112)');
+  await expect(icon).toHaveCSS('color', 'rgb(220, 38, 38)');
   await expect(overdue.locator('strong')).toHaveCSS('color', 'rgb(220, 38, 38)');
 });
 

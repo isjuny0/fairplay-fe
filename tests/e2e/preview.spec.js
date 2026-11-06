@@ -414,8 +414,8 @@ test('팀 빌딩 상황에서는 가입 승인 및 미가입 참여자의 팀 �
 test('팀 생성 마감 후 기존 팀에 신청하고 리더 승인으로 팀 홈에 진입한다', async ({ page }) => {
   const calls = await preview(page, { role: 'participant', scenario: 'recruiting', path: '/spaces/1' });
   const schedule = page.getByRole('region', { name: '프로젝트 일정' });
-  await expect(schedule).toContainText('기존 팀 가입');
-  await expect(schedule).toContainText('신청 가능');
+  await expect(schedule).toContainText('팀 구성');
+  await expect(schedule).toContainText('가입 가능');
   await expect(schedule).toContainText('마감');
   await expect(page.getByRole('button', { name: '팀 만들기', exact: true })).toBeDisabled();
   await page.getByRole('button', { name: '삼위일체 가입 신청', exact: true }).click();

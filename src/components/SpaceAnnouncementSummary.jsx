@@ -3,10 +3,8 @@ import { listSpaceAnnouncements } from "../api/spaceAnnouncements.js";
 import { downloadAnnouncementAttachments } from '../lib/announcementDownloads.js';
 import useResource from "../hooks/useResource.js";
 import useAppNavigate from "../hooks/useAppNavigate.js";
-import { useInteractions } from "../hooks/useInteractions.js";
 import { announcementPath, announcementsPath } from "../lib/routes.js";
 import AnnouncementList from "./AnnouncementList.jsx";
-import AnnouncementEditor from "./AnnouncementEditor.jsx";
 import { ErrorNotice } from "./ui.jsx";
 import "../space-announcements.css";
 
@@ -15,11 +13,9 @@ export default function SpaceAnnouncementSummary({ space }) {
     () => listSpaceAnnouncements(space.id, 0, 3),
     [space.id],
   );
-  const [creating, setCreating] = useState(false);
   const [error, setError] = useState(null);
   const [downloadingId, setDownloadingId] = useState(null);
   const navigate = useAppNavigate();
-  const { notify } = useInteractions();
   const downloadAttachment = async (item, attachments) => {
     const key = String(item.id);
     setDownloadingId(key);
@@ -38,16 +34,13 @@ export default function SpaceAnnouncementSummary({ space }) {
       aria-labelledby="space-announcement-heading"
     >
       <div className="announcement-section-heading">
-        <h2 id="space-announcement-heading">공지사항</h2>
+        <h2 id="space-announcement-heading">
+          <button type="button" className="announcement-heading-link"
+            onClick={() => navigate(announcementsPath(space.id))}>
+            공지사항
+          </button>
+        </h2>
         <div className="heading-actions">
-          {space.myRole === "MANAGER" && (
-            <button
-              className="secondary-button"
-              onClick={() => setCreating(true)}
-            >
-              공지 작성
-            </button>
-          )}
           <button
             className="text-button"
             onClick={() => navigate(announcementsPath(space.id))}
@@ -78,17 +71,6 @@ export default function SpaceAnnouncementSummary({ space }) {
             공지사항을 불러오는 중…
           </p>
         ))}
-      {creating && (
-        <AnnouncementEditor
-          spaceId={space.id}
-          onClose={() => setCreating(false)}
-          onSaved={(saved) => {
-            setCreating(false);
-            notify("공지사항을 등록했습니다.");
-            navigate(announcementPath(space.id, saved.id));
-          }}
-        />
-      )}
     </section>
   );
 }

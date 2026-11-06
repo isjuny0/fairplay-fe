@@ -38,6 +38,10 @@
 .participant-table th:last-child {
   width: 112px;
 }
+.participant-table thead th:nth-child(6),
+.participant-table tbody td:nth-child(6) {
+  text-align: center;
+}
 .participant-table .secondary-button {
   min-height: 32px;
   padding: 4px 10px;
@@ -108,27 +112,13 @@
 .participant-removal-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
 }
-.participant-removal-help {
-  display: inline-flex;
-}
-.participant-removal-help-trigger {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  min-height: 32px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-control);
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-.participant-removal-help-trigger:hover,
-.participant-removal-help-trigger:focus-visible {
-  background: var(--surface-secondary);
-  color: var(--brand);
+.space-participants-page .participant-removal-button[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: help;
+  background: var(--surface);
+  border-color: var(--border);
 }
 .participant-removal-tooltip {
   position: fixed;
@@ -142,10 +132,4 @@
   box-shadow: 0 4px 16px #193d2814;
   font-size: var(--text-caption);
   line-height: 1.6;
-}
-@media (max-width: 900px) {
-  .participant-removal-help-trigger {
-    width: 44px;
-    min-height: 44px;
-  }
 }

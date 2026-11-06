@@ -3,7 +3,7 @@ import useAppNavigate from '../hooks/useAppNavigate.js';
 import { spacePath, teamMenuPath } from '../lib/routes.js';
 import '../manager-team-links.css';
 
-export default function ManagerTeamLinks({ spaceId, teamId, activeMenu, dashboardSearch, dashboardListScrollY }) {
+export default function ManagerTeamLinks({ spaceId, teamId, activeMenu, dashboardSearch, dashboardListScrollY, materialCount }) {
   const location = useLocation();
   const navigate = useAppNavigate();
   const dashboardState = {
@@ -17,9 +17,10 @@ export default function ManagerTeamLinks({ spaceId, teamId, activeMenu, dashboar
       { state: { dashboardListScrollY: dashboardState.dashboardListScrollY, restoreScrollY: dashboardState.dashboardScrollY } },
     )}>← 팀 현황</button>}
     {[[ '작업', '작업 보기' ], [ '팀 자료', '팀 자료 보기' ]].map(([menu, label]) => <button
-      type="button" key={menu} className="secondary-button" aria-current={activeMenu === menu ? 'page' : undefined}
+      type="button" key={menu} className="secondary-button" aria-label={label} aria-current={activeMenu === menu ? 'page' : undefined}
       onClick={() => { if (activeMenu !== menu) navigate(teamMenuPath(spaceId, teamId, menu), { state: dashboardState }); }}>
       {label}
+      {menu === '팀 자료' && materialCount != null && <span className="manager-team-material-count">{materialCount}개</span>}
     </button>)}
   </nav>;
 }

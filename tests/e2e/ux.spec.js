@@ -330,11 +330,12 @@ test('내 스페이스에서 공간을 전환하고 뒤로가기로 목록과 �
   ).toHaveCount(0);
 });
 
-test('관리자는 다른 팀 목록으로 자료 조회에 진입하고 팀 작업 메뉴는 제공하지 않는다', async ({
+test('관리자는 팀 관리에서 자료 조회에 진입하고 팀 작업 메뉴는 제공하지 않는다', async ({
   page,
 }) => {
   await openPreview(page, '/spaces/1', 'manager');
-  await page.getByRole('listitem').filter({ hasText: '파도' }).getByRole('button', { name: '팀 상세 보기', exact: true }).click();
+  await page.getByRole('navigation', { name: '스페이스 메뉴', exact: true }).getByRole('button', { name: '팀 관리', exact: true }).click();
+  await page.getByRole('button', { name: '파도 현황 보기', exact: true }).click();
   await expect(page).toHaveURL(/dashboard\?teamId=2$/);
   await expect(
     page.getByRole('heading', { name: '파도', exact: true }),
@@ -575,7 +576,7 @@ test('스페이스 종료 시각 오류를 수정한 뒤 스페이스 관리에�
   ).toBeVisible();
 });
 
-test('가입 대기 참여자는 내 팀 없이 승인 대기 상태와 새로고침을 제공한다', async ({ page }) => {
+test('가입 대기 참여자는 내 팀 없이 승인 대기 상태를 다시 방문해도 유지한다', async ({ page }) => {
   await openPreview(page, '/spaces/1', 'participant', 'building');
   const teams = page.getByRole('list', { name: '팀 목록', exact: true });
   const pending = teams.getByRole('listitem').filter({ has: page.getByRole('heading', { name: '삼위일체', exact: true }) });
@@ -584,7 +585,7 @@ test('가입 대기 참여자는 내 팀 없이 승인 대기 상태와 새로�
   const own = page.getByRole('region', { name: '내 팀', exact: true });
   await expect(own.getByRole('button', { name: '팀 만들기', exact: true })).toHaveCount(0);
   await expect(own.getByRole('status')).toContainText('팀의 가입 승인을 기다리고 있습니다.');
-  await page.getByRole('button', { name: '팀 목록 새로고침', exact: true }).click();
+  await page.reload();
   await expect(pending).toContainText('가입 승인 대기');
 });
 

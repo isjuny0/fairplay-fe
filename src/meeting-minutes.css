@@ -3,7 +3,6 @@
   gap: 16px;
 }
 .main-content .meeting-minutes-page.is-list { gap: var(--space-3); }
-.main-content .meeting-minutes-page.is-list > .page-heading { padding-bottom: var(--space-3); border-bottom: 0; }
 .meeting-minutes-page h1 {
   overflow-wrap: anywhere;
   margin: 0;

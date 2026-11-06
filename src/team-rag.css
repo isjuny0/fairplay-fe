@@ -821,9 +821,6 @@
   .rag-page-heading p {
     display: none;
   }
-  .rag-page-heading {
-    padding-bottom: 8px;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .rag-loading-dot {

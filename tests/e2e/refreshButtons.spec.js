@@ -2,8 +2,6 @@ import { test, expect } from '@playwright/test';
 
 const screens = [
   ['/main', '내 스페이스', '새로고침'],
-  ['/spaces/1', '2026 캡스톤디자인', '팀 목록 새로고침'],
-  ['/spaces/1/announcements', '공지사항', '새로고침'],
   ['/spaces/1/teams/1', '삼위일체', '현황 새로고침'],
   ['/spaces/1/teams/1/tasks/103', 'AI 피드백 화면 개선', '새로고침'],
   ['/spaces/1/teams/1/deliverables', '팀 자료', '새로고침'],
@@ -12,7 +10,6 @@ const screens = [
   ['/spaces/1/teams/1/peer-evaluations', '동료 평가', '평가 상태 새로고침'],
   ['/spaces/1/teams/1/mid-feedback', '중간 피드백', '피드백 새로고침'],
   ['/spaces/1/teams/1/reports', '기여도 리포트', '리포트 새로고침'],
-  ['/spaces/1/dashboard', '팀 관리', '현황 새로고침', 'manager'],
   [
     '/spaces/1/reports',
     '리포트 관리',

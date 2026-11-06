@@ -280,8 +280,7 @@
   font-size: 12px;
   line-height: 1.6;
 }
-.space-home-section-heading,
-.space-home-actions {
+.space-home-section-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -307,6 +306,26 @@
   min-height: 40px;
   flex-shrink: 0;
   padding: 8px 12px;
+}
+.team-join-button-wrapper {
+  display: inline-flex;
+}
+.space-home .space-home-team-button[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: help;
+}
+.team-join-tooltip {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  color: var(--text-primary);
+  box-shadow: 0 4px 16px #193d2814;
+  font-size: var(--text-caption);
+  line-height: 1.6;
 }
 .space-home-team-list {
   display: grid;
@@ -339,11 +358,23 @@
   flex-shrink: 0;
   white-space: nowrap;
 }
-.space-home-team-toolbar .space-home-actions {
-  margin-left: 0;
-}
 .space-home-team-toolbar .directory-search {
+  position: relative;
+  display: block;
   margin-left: auto;
+}
+.space-home-team-toolbar .directory-search > .ui-icon {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.space-home-team-toolbar .directory-search > input {
+  padding-left: 36px;
 }
 .space-home-team-columns {
   display: grid;
@@ -396,7 +427,21 @@
     gap: 16px;
   }
 }
+.space-home-other-teams.is-read-only .space-home-team-row,
+.space-home-other-teams.is-read-only .space-home-team-columns {
+  grid-template-columns: minmax(0, 1fr) 130px;
+}
 @media (max-width: 720px) {
+  .space-home-other-teams.is-read-only .space-home-team-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .space-home-other-teams.is-read-only .space-home-team-row > .space-home-members {
+    grid-column: 2;
+    grid-row: 1;
+    margin-left: 0;
+    justify-self: center;
+    text-align: center;
+  }
   .space-home-team-columns {
     display: none;
   }
@@ -435,9 +480,6 @@
     flex: 1;
     min-width: 120px;
     width: auto;
-  }
-  .space-home-team-toolbar.space-home-section-heading .space-home-actions {
-    margin-left: 0;
   }
 }
 .space-home-team-row-info {
@@ -599,10 +641,6 @@
   .space-home-own-team > h2,
   .space-home-section-heading h2 {
     font-size: 16px;
-  }
-  .space-home-section-heading .space-home-actions {
-    margin-left: auto;
-    gap: 8px;
   }
 }
 @media (max-width: 480px) {

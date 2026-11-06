@@ -357,12 +357,12 @@ async function workspace(
   await page.goto('/main');
   await page.getByRole('region', { name: '스페이스 목록', exact: true })
     .getByRole('button', { name: /프로젝트 스페이스/ }).click();
-  await page
-    .getByRole('button', {
-      name: manager ? '팀 상세 보기' : '삼위일체 팀 팀 홈으로 이동',
-      exact: true,
-    })
-    .click();
+  if (manager) {
+    await page.getByRole('navigation', { name: '스페이스 메뉴', exact: true }).getByRole('button', { name: '팀 관리', exact: true }).click();
+    await page.getByRole('button', { name: '삼위일체 팀 현황 보기', exact: true }).click();
+  } else {
+    await page.getByRole('button', { name: '삼위일체 팀 팀 홈으로 이동', exact: true }).click();
+  }
   return {
     requests,
     addLinkedDeliverable: () => { deliverables.push({ id: 31, teamId: 1, taskId: task.id, title: '수행 결과', type: 'TEXT', text: '연결된 결과물입니다.', version: 0 }); },
@@ -1000,6 +1000,10 @@ test('리더 탈퇴는 현재 팀원 중 후임을 반드시 선택한다', asyn
 
 test('탈퇴 화면에서 미완료 작업을 확인하고 인계 대상을 선택한다', async ({ page }) => {
   const { requests } = await workspace(page, { leaveWithHandoff: true });
+  await page.route('**/api/teams/1/tasks', (route) => route.fulfill({ json: [
+    { id: 10, version: 0, assignees: [{ userId: 'member', allocationPercent: 100 }] },
+    { id: 11, version: 2, assignees: [{ userId: 'member', allocationPercent: 50 }, { userId: 'colleague', allocationPercent: 50 }] },
+  ] }));
   await page.route('**/api/teams/1/members/me/leave-preview', (route) =>
     route.fulfill({ status: 503, json: { code: 'UNAVAILABLE', message: '탈퇴 영향을 확인할 수 없습니다.' } }),
     { times: 1 });
@@ -1018,14 +1022,23 @@ test('탈퇴 화면에서 미완료 작업을 확인하고 인계 대상을 선�
   await expect(dialog.getByRole('button', { name: '탈퇴 확정' })).toBeDisabled();
   await dialog.getByLabel('회원 탈퇴 구현 인계 대상').selectOption('leader');
   await expect(dialog.getByRole('button', { name: '탈퇴 확정' })).toBeDisabled();
+  await dialog.getByLabel('자료 정리 인계 대상').selectOption('leader');
+  await expect(dialog.getByLabel('회원 탈퇴 구현 인계 대상').locator('option:checked')).toContainText('선택 시 2건 (+2)');
   await dialog.getByLabel('자료 정리 인계 대상').selectOption('colleague');
+  await expect(dialog.getByLabel('회원 탈퇴 구현 인계 대상').locator('option:checked')).toContainText('선택 시 1건 (+1)');
+  await expect(dialog.getByLabel('자료 정리 인계 대상').locator('option:checked')).toContainText('선택 시 2건 (+0)');
   await dialog.getByRole('button', { name: '탈퇴 확정' }).click();
   await expect(dialog.getByRole('alert')).toContainText('인계 정보를 다시 확인해 주세요.');
+  await page.route('**/api/teams/1/members/me/leave-preview', (route) =>
+    route.fulfill({ status: 503, json: { code: 'UNAVAILABLE', message: '일시적으로 조회할 수 없습니다.' } }),
+    { times: 1 });
   await dialog.getByRole('button', { name: '탈퇴 영향 다시 확인', exact: true }).click();
-  await expect(dialog.getByLabel('회원 탈퇴 구현 인계 대상')).toHaveValue('');
+  await expect(dialog.getByRole('alert')).toContainText('일시적으로 조회할 수 없습니다.');
   await expect(dialog.getByRole('button', { name: '탈퇴 확정' })).toBeDisabled();
-  await dialog.getByLabel('회원 탈퇴 구현 인계 대상').selectOption('leader');
-  await dialog.getByLabel('자료 정리 인계 대상').selectOption('colleague');
+  await dialog.getByRole('button', { name: '탈퇴 영향 다시 확인', exact: true }).click();
+  await expect(dialog.getByLabel('회원 탈퇴 구현 인계 대상')).toHaveValue('leader');
+  await expect(dialog.getByLabel('자료 정리 인계 대상')).toHaveValue('colleague');
+  await expect(dialog.getByRole('button', { name: '탈퇴 확정' })).toBeEnabled();
   await dialog.getByRole('button', { name: '탈퇴 확정' }).click();
   await expect(page).toHaveURL(/\/spaces\/1$/);
   expect(JSON.parse(requests.find(({ path }) => path === '/api/teams/1/members/me/leave').body)).toEqual({ handoffs: [
@@ -1033,6 +1046,77 @@ test('탈퇴 화면에서 미완료 작업을 확인하고 인계 대상을 선�
     { taskId: 11, recipientId: 'colleague', expectedVersion: 2 },
   ] });
 });
+
+for (const change of ['작업 변경', '인계 자격 변경', '탈퇴 제한']) {
+  test(`리더 탈퇴 실패 후 ${change} 시 유효한 선택만 복원한다`, async ({ page }) => {
+    await workspace(page, { userId: 'leader', leaveWithHandoff: true });
+    const tasks = [10, 11, 12].map((id, index) => ({
+      id, title: `인계 작업 ${id}`, version: index * 2, status: 'IN_PROGRESS',
+      dueAt: '2030-12-01T18:00:00', allocationPercent: 50,
+    }));
+    let preview = {
+      blockReason: null, requiresNextLeader: true, completedTaskCount: 1,
+      eligibleMembers: [
+        { userId: 'member', name: '담당자', role: 'MEMBER', openTaskCount: 1 },
+        { userId: 'colleague', name: '다른 팀원', role: 'MEMBER', openTaskCount: 2 },
+      ],
+      handoffTasks: tasks,
+    };
+    await page.route('**/api/teams/1/members/me/leave-preview', (route) => route.fulfill({ json: preview }));
+    const submissions = [];
+    await page.route('**/api/teams/1/members/me/leave', (route) => {
+      submissions.push(route.request().postDataJSON());
+      if (submissions.length > 1) return route.fulfill({ status: 204 });
+      if (change === '작업 변경') preview = { ...preview, handoffTasks: [
+        { ...tasks[0], version: 1, dueAt: '2030-12-02T18:00:00' }, tasks[1],
+        { ...tasks[2], id: 13, title: '새 인계 작업', version: 0 },
+      ] };
+      else if (change === '인계 자격 변경') preview = { ...preview, eligibleMembers: preview.eligibleMembers.slice(1) };
+      else preview = { ...preview, blockReason: 'MEMBERSHIP_LOCKED' };
+      return route.fulfill({ status: 409, json: { code: 'TEAM_LEAVE_HANDOFF_CHANGED', message: '탈퇴 영향을 다시 확인해 주세요.' } });
+    });
+    await openTeamSettings(page);
+    await page.getByRole('button', { name: '팀 탈퇴하기', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('다음 리더', { exact: true }).selectOption('member');
+    await dialog.getByLabel('인계 작업 10 인계 대상').selectOption('member');
+    await dialog.getByLabel('인계 작업 11 인계 대상').selectOption('colleague');
+    await dialog.getByLabel('인계 작업 12 인계 대상').selectOption('colleague');
+    await dialog.getByRole('button', { name: '탈퇴 확정', exact: true }).click();
+    await dialog.getByRole('button', { name: '탈퇴 영향 다시 확인', exact: true }).click();
+    await expect(dialog.getByRole('button', { name: '탈퇴 확정', exact: true })).toBeDisabled();
+    if (change === '탈퇴 제한') {
+      await expect(dialog).toContainText('중간 평가 대상이 확정되어 탈퇴할 수 없습니다.');
+      await expect(dialog.getByRole('combobox')).toHaveCount(0);
+      return;
+    }
+    await expect(dialog.getByRole('status')).toContainText('유효한 선택은 복원');
+    await expect(dialog.getByLabel('인계 작업 10 인계 대상')).toHaveValue('');
+    await expect(dialog.getByLabel('인계 작업 11 인계 대상')).toHaveValue('colleague');
+    if (change === '작업 변경') {
+      await expect(dialog.getByLabel('다음 리더', { exact: true })).toHaveValue('member');
+      await expect(dialog.getByLabel('인계 작업 12 인계 대상')).toHaveCount(0);
+      await expect(dialog.getByLabel('새 인계 작업 인계 대상')).toHaveValue('');
+      await dialog.getByLabel('인계 작업 10 인계 대상').selectOption('member');
+      await dialog.getByLabel('새 인계 작업 인계 대상').selectOption('colleague');
+    } else {
+      await expect(dialog.getByLabel('다음 리더', { exact: true })).toHaveValue('');
+      await expect(dialog.getByLabel('인계 작업 12 인계 대상')).toHaveValue('colleague');
+      await expect(dialog.getByLabel('인계 작업 10 인계 대상').locator('option[value="member"]')).toHaveCount(0);
+      await dialog.getByLabel('다음 리더', { exact: true }).selectOption('colleague');
+      await dialog.getByLabel('인계 작업 10 인계 대상').selectOption('colleague');
+    }
+    await dialog.getByRole('button', { name: '탈퇴 확정', exact: true }).click();
+    await expect(page).toHaveURL(/\/spaces\/1$/);
+    expect(submissions[1]).toEqual({
+      nextLeaderId: change === '작업 변경' ? 'member' : 'colleague',
+      handoffs: preview.handoffTasks.map((task) => ({
+        taskId: task.id, expectedVersion: task.version,
+        recipientId: change === '작업 변경' && task.id === 10 ? 'member' : 'colleague',
+      })),
+    });
+  });
+}
 
 test('마지막 팀원은 탈퇴 대신 삭제 요청과 본인 동의로 팀을 삭제한다', async ({
   page,

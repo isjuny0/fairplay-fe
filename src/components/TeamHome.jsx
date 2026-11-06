@@ -300,11 +300,13 @@ function TeamDashboard({
                 onNavigate('작업', { mine: '1', overdue: 'work', view: 'list' })
               }
             >
-              <span className="dashboard-icon is-red">
+              <span
+                className={`dashboard-icon${overdueCount > 0 ? ' is-red' : ''}`}
+              >
                 <Icon name="clock" />
               </span>
               <span>내 마감 지연</span>
-              <strong className="is-red">
+              <strong className={overdueCount > 0 ? 'is-red' : undefined}>
                 {overdueCount}
                 <small>건</small>
               </strong>
