@@ -153,3 +153,14 @@ test('기본 1개월 범위는 월말과 윤년을 처리하고 3개월로 전�
   assert.equal(timelineWindow('2026-11', 3).dayCount, 92);
   assert.equal(timelineWindow('9999-12', 3).last, '9999-12-31');
 });
+
+
+test('날짜 눈금은 월말에 남은 날이 적어도 마지막 주를 생략하지 않는다', () => {
+  for (const [month, lastTick] of [['2026-11', '2026-11-29'], ['2028-02', '2028-02-29'], ['2026-10', '2026-10-29']]) {
+    const window = timelineWindow(month);
+    assert.equal(window.weeks.at(-1).date, lastTick);
+    for (let index = 1; index < window.weeks.length; index++) {
+      assert.ok(Math.abs(window.weeks[index].left - window.weeks[index - 1].left - 700 / window.dayCount) < 0.0001);
+    }
+  }
+});

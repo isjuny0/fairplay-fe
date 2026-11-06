@@ -138,7 +138,8 @@ export function TaskTimeline({
     };
   }, []);
   const window = timelineWindow(month, monthCount);
-  const tickStep = monthCount === 3 ? (trackWidth < 400 ? 4 : trackWidth < 700 ? 2 : 1) : 1;
+  const weekWidth = trackWidth * 7 / window.dayCount;
+  const tickStep = Math.max(1, Math.ceil(56 / Math.max(1, weekWidth)));
   const ticks = window.weeks.filter((_, index) => index % tickStep === 0);
   const visible = tasks
     .map((task) => ({ task, period: timelineTaskPeriod(task, window, now) }))
@@ -182,7 +183,7 @@ export function TaskTimeline({
               </div>
               <div className="timeline-weeks">
                 {ticks.map(({ date, left }) => (
-                  <span key={date} style={{ left: `${left}%` }}>
+                  <span key={date} style={{ left: `clamp(20px, ${left}%, calc(100% - 20px))` }}>
                     {shortDate(date)}
                   </span>
                 ))}
