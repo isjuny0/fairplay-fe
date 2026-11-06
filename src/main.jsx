@@ -39,6 +39,7 @@ import './workflow-navigation.css';
 import './workflow-work.css';
 import './workflow-evaluation.css';
 import './mobile-refinements.css';
+import './mobile-collections.css';
 
 const router = createBrowserRouter([
   {
