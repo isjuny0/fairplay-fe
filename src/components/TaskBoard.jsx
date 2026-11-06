@@ -3,7 +3,6 @@ import { screenLoaders } from '../lib/routeScreens.js';
 import { deferScreen } from './DeferredScreen.jsx';
 import Icon from './Icon.jsx';
 import { ChevronDown } from 'lucide-react';
-import RefreshButton from './RefreshButton.jsx';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router';
 import { createTask, listTasks } from '../api/tasks.js';
@@ -62,18 +61,20 @@ export default function TaskBoard({
   const [searchParams, setSearchParams] = useSearchParams();
   const filterControls = useRef({});
   const filterToggle = useRef(null);
-  const filter = Object.hasOwn(statusLabels, searchParams.get('status'))
-    ? searchParams.get('status')
-    : 'ALL';
-  const onlyMine = !readOnly && searchParams.get('mine') === '1';
-  const onlyExecutionOverdue = searchParams.get('overdue') === 'work';
-  const onlyOverdue = onlyExecutionOverdue || searchParams.get('overdue') === '1';
-  const onlyDueWithinWeek = !onlyOverdue && searchParams.get('due') === 'week';
   const [preferences, setPreferences] = useState(readTaskViewPreferences);
   const [expandedBoardTaskIds, setExpandedBoardTaskIds] = useState(() => new Set());
   const urlView = searchParams.get('view');
   const view = urlView !== null ? normalizeTaskView(urlView) : preferences.view;
   const timelineMonths = searchParams.get('months') === '3' ? 3 : 1;
+  const isBoard = view === 'board';
+  const statusKey = isBoard ? 'boardStatus' : 'status';
+  const filter = Object.hasOwn(statusLabels, searchParams.get(statusKey))
+    ? searchParams.get(statusKey)
+    : 'ALL';
+  const onlyMine = !isBoard && !readOnly && searchParams.get('mine') === '1';
+  const onlyExecutionOverdue = !isBoard && searchParams.get('overdue') === 'work';
+  const onlyOverdue = !isBoard && (onlyExecutionOverdue || searchParams.get('overdue') === '1');
+  const onlyDueWithinWeek = !isBoard && !onlyOverdue && searchParams.get('due') === 'week';
   useEffect(() => {
     if (urlView === view || taskId != null) return;
     setSearchParams((current) => {
@@ -93,14 +94,14 @@ export default function TaskBoard({
   const month = isTaskMonth(searchParams.get('month'))
     ? searchParams.get('month')
     : currentTaskMonth();
-  const query = searchParams.get('q') || '';
+  const query = isBoard ? '' : searchParams.get('q') || '';
   const defaultSort = view === 'timeline' ? 'start' : 'deadline';
   const sortLabels = {
     deadline: '마감 빠른 순',
     newest: '최근 생성 순',
     start: '시작일 순',
   };
-  const sort = ['deadline', 'newest', 'start'].includes(
+  const sort = !isBoard && ['deadline', 'newest', 'start'].includes(
     searchParams.get('sort'),
   )
     ? (view === 'timeline' ? defaultSort : searchParams.get('sort'))
@@ -122,14 +123,15 @@ export default function TaskBoard({
     filterControls.current.q?.focus();
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
-      for (const key of ['status', 'mine', 'q', 'overdue', 'due', 'sort', 'page'])
+      for (const key of isBoard ? ['boardStatus'] : ['status', 'mine', 'q', 'overdue', 'due', 'sort', 'page'])
         next.delete(key);
       return next;
     }, { state: location.state });
   };
-  const setFilter = (status) => setListOption('status', status === 'ALL' ? '' : status);
+  const setFilter = (status) => setListOption(statusKey, status === 'ALL' ? '' : status);
   const setOnlyMine = (checked) => setListOption('mine', checked ? '1' : '');
   const [filtersOpen, setFiltersOpen] = useState(false);
+  useEffect(() => setFiltersOpen(false), [view]);
   const filterPanelId = useId();
   const appliedFilterCount = [
     filter !== 'ALL',
@@ -173,11 +175,9 @@ export default function TaskBoard({
     if (onlyExecutionOverdue) return isTaskExecutionOverdue(task, now);
     return !onlyOverdue || (task.status !== 'DONE' && apiTimeToEpoch(task.dueAt) < now);
   };
-  const tasks = (taskId == null ? resource.data ?? [] : [])
+  const scopedTasks = (taskId == null ? resource.data ?? [] : [])
     .filter(
       (task) =>
-        (filter === 'ALL' || task.status === filter) &&
-        matchesDeadline(task) &&
         (!onlyMine ||
           task.assignees.some((assignment) => assignment.userId === user.id)) &&
         task.title
@@ -195,6 +195,8 @@ export default function TaskBoard({
           : (apiTimeToEpoch(left.dueAt) || Infinity) -
               (apiTimeToEpoch(right.dueAt) || Infinity) || right.id - left.id,
     );
+  const matchingTasks = scopedTasks.filter(matchesDeadline);
+  const tasks = matchingTasks.filter((task) => filter === 'ALL' || task.status === filter);
   const requestedPage = searchParams.get('page');
   const requestedPageIndex = /^\d+$/.test(requestedPage ?? '') ? Number(requestedPage) : 0;
   const lastPage = Math.max(0, Math.ceil(tasks.length / PAGE_SIZE) - 1);
@@ -230,7 +232,7 @@ export default function TaskBoard({
   const nearestMonth = nearestTaskMonth(tasks, `${month}-01`);
   const hasSearchFilters = filter !== 'ALL' || onlyMine || onlyOverdue || onlyDueWithinWeek || Boolean(query.trim());
   const activeFilters = [
-    ...(filter !== 'ALL' ? [{ key: 'status', label: `상태: ${statusLabels[filter]}` }] : []),
+    ...(view !== 'board' && filter !== 'ALL' ? [{ key: 'status', label: `상태: ${statusLabels[filter]}` }] : []),
     ...(onlyMine ? [{ key: 'mine', label: '내 담당' }] : []),
     ...(onlyOverdue ? [{ key: 'overdue', label: onlyExecutionOverdue ? '수행 지연: 할 일·진행 중·수정 중' : '마감 지남' }] : []),
     ...(onlyDueWithinWeek ? [{ key: 'due', label: '7일 내 마감' }] : []),
@@ -238,8 +240,8 @@ export default function TaskBoard({
     ...(sort !== defaultSort ? [{ key: 'sort', label: `정렬: ${sortLabel}` }] : []),
   ].filter((item) => view !== 'timeline' || !['mine', 'status', 'sort'].includes(item.key));
   const resetFiltersButton = (
-    <button className="text-button collection-reset-button" title="검색·상태·담당·마감·정렬 조건을 초기화하고 보기와 조회 기간은 유지합니다." onClick={clearFilters}>
-      검색·필터 초기화
+    <button type="button" className="text-button collection-reset-button task-filter-reset" disabled={!hasFilters} onClick={clearFilters}>
+      {isSchedule ? '검색·필터 초기화' : '필터 초기화'}
     </button>
   );
   const timelineStatusFilters = (
@@ -270,7 +272,7 @@ export default function TaskBoard({
     </div>
   );
   return (
-    <section className="stack task-board-page" data-task-view={view}>
+    <section className="stack task-board-page" data-task-view={view} data-board-status={view === 'board' ? filter : undefined}>
       <div className="page-heading task-collection-heading">
         <h1>작업</h1>
         <div
@@ -306,7 +308,7 @@ export default function TaskBoard({
           <Icon name="plus" />새 작업 만들기
         </button>}
       </div>
-      <div
+      {!isBoard && <div
         className={`mobile-status-tabs ${view === 'list' ? 'list-status-tabs' : ''}`}
         role="group"
         aria-label="작업 상태 선택"
@@ -339,12 +341,13 @@ export default function TaskBoard({
             </button>
           ),
         )}
-      </div>
+      </div>}
       {!readOnly && members.length < 2 && (
         <p className="notice">
           승인된 팀원이 2명 이상이어야 작업을 생성할 수 있습니다.
         </p>
       )}
+      {!isBoard && <>
       <div className="task-quick-filters" role="group" aria-label="빠른 작업 필터">
         {!readOnly && <button type="button" className="secondary-button" aria-pressed={onlyMine} onClick={() => setOnlyMine(!onlyMine)}>내 담당</button>}
         <button type="button" className="secondary-button" aria-pressed={onlyOverdue} onClick={() => setListOption('overdue', onlyOverdue ? '' : '1')}>마감 지남</button>
@@ -430,8 +433,10 @@ export default function TaskBoard({
             마감 지난 작업만
           </label>
         </div>
-        <RefreshButton onClick={resource.reload} />
+        {view === 'list' && resetFiltersButton}
+
       </div>
+      </>}
       {isSchedule && (
         <div className="task-schedule-controls">
           <TimelineNavigation
@@ -449,7 +454,7 @@ export default function TaskBoard({
             onClick={() => setOnlyMine(!onlyMine)}>내 담당</button>}
         </div>
       )}
-      {!!activeFilters.length && (
+      {isSchedule && !!activeFilters.length && (
         <div className="task-active-filters collection-applied-filters" role="group" aria-label="적용 중인 검색·필터">
           <span className="collection-filter-caption">적용 중</span>
           {activeFilters.map(({ key, label }) => (
@@ -468,10 +473,25 @@ export default function TaskBoard({
               <Icon name="close" />
             </button>
           ))}
-          {!isSchedule && resetFiltersButton}
         </div>
       )}
       <ResourceState resource={resource} label="작업 목록">
+        {view === 'board' && <div className="task-board-status-navigation">
+          <div className="task-board-status-buttons" role="group" aria-label="보드 상태 선택">
+            {Object.entries(statusLabels).map(([status, label]) => (
+              <button
+                key={status}
+                type="button"
+                className={`task-board-status-button task-state-${status.toLowerCase()}`}
+                aria-pressed={filter === status}
+                onClick={() => setFilter(filter === status ? 'ALL' : status)}
+              >
+                <span className="task-board-status-title"><span className="status-dot" />{label}</span>
+                <span className="task-board-status-count">{matchingTasks.filter((task) => task.status === status).length}</span>
+              </button>
+            ))}
+          </div>
+        </div>}
         {view === 'timeline' ? (
           <TaskTimeline
             now={now}
@@ -513,23 +533,16 @@ export default function TaskBoard({
             </nav>
           </>
         ) : tasks.length ? (
-          <div className="task-columns">
+          <div className={`task-columns${filter !== 'ALL' ? ' is-focused' : ''}`}>
             {Object.entries(statusLabels).map(
               ([status, label]) =>
                 (filter === 'ALL' || filter === status) && (
                   <section
                     className={`task-column task-state-${status.toLowerCase()}`}
                     key={status}
+                    aria-label={`${label} 작업`}
+                    style={filter === 'ALL' ? undefined : { '--board-column': Object.keys(statusLabels).indexOf(status) + 1 }}
                   >
-                    <div className="task-column-heading">
-                      <h2>
-                        <span className="status-dot" />
-                        {label}
-                      </h2>
-                      <span>
-                        {tasks.filter((task) => task.status === status).length}
-                      </span>
-                    </div>
                     <div className="task-column-list">
                       {!tasks.some((task) => task.status === status) && (
                         <p className="column-empty">
