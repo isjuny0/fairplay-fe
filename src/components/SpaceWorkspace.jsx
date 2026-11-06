@@ -393,7 +393,7 @@ export default function SpaceWorkspace({
                   ))}
                 </nav>
               )}
-              {view !== 'teams' && !(view === 'team' && teamMenu === '팀 홈') && !(view === 'announcements' && announcementId != null) && <nav className="workspace-breadcrumb" aria-label="현재 위치">
+              {((view === 'team' && teamMenu !== '팀 홈') || view === 'contributions' || Boolean(dashboardTeamId)) && <nav className="workspace-breadcrumb" aria-label="현재 위치">
                 {(view === 'contributions' || dashboardTeamId || managerTeamReadOnly) && <>
                   <button onClick={() => {
                     const query = new URLSearchParams(view === 'dashboard' ? location.search : location.state?.dashboardSearch);

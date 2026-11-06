@@ -393,14 +393,8 @@ export default function Application({ previewRuntime, onPreviewExit }) {
             )}
             <div className="profile-account-group">
               <HeaderActivityActions />
-              {preview ? <>
-                <span className="profile-avatar" aria-hidden="true">
-                  {user.name?.slice(0, 1)}
-                </span>
-                <span className="profile-identity">
-                  <span className="profile-name">{user.name}</span>
-                </span>
-              </> : <ProfileMenu key={location.pathname} user={user} busy={busy} onSignOut={signOut} />}
+              <ProfileMenu key={location.pathname} user={user} busy={busy} onSignOut={signOut}
+                signOutLabel={preview ? '미리보기 종료' : '로그아웃'} />
             </div>
           </div>
         </header>
