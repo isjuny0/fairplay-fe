@@ -676,9 +676,6 @@
 .report-review-page > .page-heading > div {
   min-width: 0;
 }
-.member-contributions-page > .back-button {
-  justify-self: start;
-}
 .member-work-summary {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 220px;

@@ -1,8 +1,8 @@
+import DetailBackButton from './DetailBackButton.jsx';
 import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { useEffect, useId, useState } from 'react';
 import SectionTabs from './SectionTabs.jsx';
 import '../member-contributions.css';
-import RefreshButton from './RefreshButton.jsx';
 import { useLocation, useSearchParams } from 'react-router';
 import { ErrorNotice } from './ui.jsx';
 import { getMemberContributions } from '../api/dashboard.js';
@@ -30,7 +30,6 @@ export default function MemberContributions({ context, targetUserId, onBack, mem
   const statusFilter = Object.hasOwn(statusLabels, params.get('status')) ? params.get('status') : 'ALL';
   const member = members.data?.find((entry) => entry.userId === targetUserId);
   const resource = useResource(() => getMemberContributions(context.team.id, targetUserId), [context.team.id, targetUserId, guide?.scope]);
-  const [evaluationRevision, setEvaluationRevision] = useState(0);
   const tasks = resource.data || [];
   const filteredTasks = tasks.filter((task) => statusFilter === 'ALL' || task.status === statusFilter);
   const selectedTask = filteredTasks.find((task) => String(task.taskId) === params.get('taskId')) || filteredTasks[0];
@@ -48,11 +47,9 @@ export default function MemberContributions({ context, targetUserId, onBack, mem
   };
   return (
     <section className="stack member-contributions-page">
-      <button className="ghost-button back-button" onClick={onBack}>← 팀 관리</button>
+      <DetailBackButton onClick={onBack}>팀 관리</DetailBackButton>
       <div className="page-heading">
         <div><h1>{member?.name || '팀원'}님의 수행 상세</h1></div>
-        <RefreshButton label="수행 상세 새로고침" disabled={resource.loading}
-          onClick={() => { resource.reload(); members.reload(); setEvaluationRevision((revision) => revision + 1); }} />
       </div>
       <ResourceState resource={members} label="팀원 정보" />
       <SectionTabs id={tabsId} label="수행 상세 보기" tabs={detailTabs} activeTab={activeTab}
@@ -88,7 +85,7 @@ export default function MemberContributions({ context, targetUserId, onBack, mem
         </>}
       </div>
       <div role="tabpanel" id={`${tabsId}-evaluations-panel`} aria-labelledby={`${tabsId}-evaluations-tab`} hidden={activeTab !== 'evaluations'}>
-        {activeTab === 'evaluations' && <MemberEvaluationResults spaceId={context.space.id} teamId={context.team.id} targetUserId={targetUserId} revision={evaluationRevision} />}
+        {activeTab === 'evaluations' && <MemberEvaluationResults spaceId={context.space.id} teamId={context.team.id} targetUserId={targetUserId} />}
       </div>
     </section>
   );

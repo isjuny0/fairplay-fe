@@ -1,3 +1,4 @@
+import DetailBackButton from './DetailBackButton.jsx';
 import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -354,11 +355,7 @@ export default function TaskDetail({
 
   return (
     <section className="stack task-detail-page">
-      <div className="task-detail-back">
-        <button className="secondary-button back-button" onClick={onBack}>
-          ← 목록으로
-        </button>
-      </div>
+      <DetailBackButton onClick={onBack}>목록으로</DetailBackButton>
       <ErrorNotice error={error} onRetry={reload} />
       <ResourceState resource={resource} label="작업 상세">
         {task && (

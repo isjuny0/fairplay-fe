@@ -1,16 +1,44 @@
 import { apiTimeToEpoch } from '../lib/koreanTime.js';
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import {
   teamBuildingCountdown,
   formatDate,
 } from '../lib/domain.js';
 import Icon from './Icon.jsx';
-import RefreshButton from './RefreshButton.jsx';
 import TeamMemberCount from './TeamMemberCount.jsx';
 import SpaceAnnouncementSummary from './SpaceAnnouncementSummary.jsx';
-import MobileDisclosure from './MobileDisclosure.jsx';
+import CalendarPopover from './CalendarPopover.jsx';
 import { ErrorNotice } from './ui.jsx';
 import '../space-home.css';
+
+function TeamJoinButton({ tooltipReason, disabled, onClick, ...props }) {
+  const [open, setOpen] = useState(false);
+  const trigger = useRef(null);
+  const tooltipId = useId();
+  return (
+    <span className="team-join-button-wrapper"
+      onMouseEnter={() => { if (tooltipReason) setOpen(true); }}
+      onMouseLeave={() => setOpen(false)}>
+      <button {...props} ref={trigger} type="button"
+        disabled={tooltipReason ? false : disabled}
+        aria-disabled={tooltipReason ? true : undefined}
+        aria-describedby={tooltipReason ? (open ? tooltipId : undefined) : props['aria-describedby']}
+        onFocus={() => { if (tooltipReason) setOpen(true); }}
+        onBlur={() => setOpen(false)}
+        onKeyDown={(event) => { if (event.key === 'Escape') setOpen(false); }}
+        onClick={() => {
+          if (tooltipReason) setOpen(true);
+          else if (!disabled) onClick();
+        }} />
+      {open && tooltipReason && (
+        <CalendarPopover id={tooltipId} role="tooltip" anchorRef={trigger} width={280} fitContent
+          onClose={() => setOpen(false)} className="team-join-tooltip">
+          {tooltipReason}
+        </CalendarPopover>
+      )}
+    </span>
+  );
+}
 
 function Period({ label, start, end, countdown }) {
   return (
@@ -47,13 +75,11 @@ function SpaceSchedule({ space }) {
   const joinLocked = Boolean(space.membershipLockedAt) || space.teamBuildingStatus === 'LOCKED';
   return (
     <section className="space-home-periods" aria-label="프로젝트 일정">
-      <MobileDisclosure className="space-schedule-disclosure" summary={`프로젝트 일정 · 기존 팀 가입 ${joinLocked ? '구성 고정' : '신청 가능'}${closed ? ' · 팀 생성 마감' : ''}`}>
-      <div className="space-schedule-content">
       <div className="space-home-period-summary">
-        <h2>기존 팀 가입</h2>
+        <h2>팀 구성</h2>
         <p className={`space-home-period-status ${joinLocked ? '' : 'is-open'}`}>
           <span className="space-home-building-dot" aria-hidden="true" />
-          {joinLocked ? '팀 구성 고정' : '신청 가능'}
+          {joinLocked ? '구성 고정' : '가입 가능'}
         </p>
       </div>
       <dl className="space-home-period-details">
@@ -65,8 +91,6 @@ function SpaceSchedule({ space }) {
           countdown={teamBuildingCountdown(space.teamBuildingClosesAt, now)}
         />
       </dl>
-      </div>
-      </MobileDisclosure>
     </section>
   );
 }
@@ -88,7 +112,7 @@ export default function SpaceHome({
   onApply,
   onCancelApplication,
 }) {
-  const isManager = space.myRole === 'MANAGER';
+  const showJoinActions = !joinedTeam && !space.membershipLockedAt && space.teamBuildingStatus !== 'LOCKED';
   const otherTeams = teams.filter((team) => team.id !== joinedTeam?.id);
   const [teamSearch, setTeamSearch] = useState('');
   const visibleTeams = otherTeams.filter((team) =>
@@ -99,9 +123,6 @@ export default function SpaceHome({
   const pendingTeam = teams.find(
     (team) => team.myMembershipStatus === 'PENDING',
   );
-  const sharedRestriction = !isManager && directoryReady && (joinedTeam
-    ? `이미 ${joinedTeam.name} 팀에 소속되어 있습니다. 스페이스에서는 한 팀에만 소속될 수 있습니다.`
-    : pendingTeam ? `${pendingTeam.name} 팀 가입 신청이 대기 중입니다. 신청을 취소하면 다른 팀에 신청할 수 있습니다.` : '');
   return (
     <section className="space-home" aria-label="스페이스 홈">
       <header className="space-home-intro space-page-header">
@@ -211,15 +232,16 @@ export default function SpaceHome({
       </section>
 
       <section
-        className="space-home-other-teams"
+        className={`space-home-other-teams${showJoinActions ? '' : ' is-read-only'}`}
         aria-labelledby="space-other-teams-heading"
       >
         <div className="directory-toolbar space-home-team-toolbar space-home-section-heading">
           <h2 id="space-other-teams-heading">
-            팀 목록 <span>{otherTeams.length}</span>
+            팀 목록 <span>{otherTeams.length}팀</span>
           </h2>
           <label className="directory-search">
             <span className="sr-only">팀 이름 검색</span>
+            <Icon name="search" />
             <input
               type="search"
               placeholder="팀 이름 검색"
@@ -227,24 +249,16 @@ export default function SpaceHome({
               onChange={(event) => setTeamSearch(event.target.value)}
             />
           </label>
-          <div className="space-home-actions">
-            <RefreshButton
-              className="space-home-refresh"
-              label="팀 목록 새로고침"
-              disabled={loading || busy}
-              onClick={onReload}
-            />
-          </div>
         </div>
         <div className="space-home-team-columns" aria-hidden="true">
           <span>팀</span>
           <span>인원</span>
-          <span>가입 상태</span>
-          <span />
+          {showJoinActions && <>
+            <span>가입 상태</span>
+            <span />
+          </>}
         </div>
         {otherTeams.length ? (
-          <>
-          {sharedRestriction && <p className="field-help team-join-shared-restriction" id="team-join-shared-restriction">{sharedRestriction}</p>}
           <ul className="space-home-team-list" aria-label="팀 목록">
             {visibleTeams.map((team) => {
               const pending = team.myMembershipStatus === 'PENDING';
@@ -258,6 +272,7 @@ export default function SpaceHome({
                     : !team.canApply
                       ? '현재 팀 가입 신청을 할 수 없습니다.'
                       : '';
+              const tooltipReason = directoryReady && !joinedTeam && pendingTeam && !pending ? restriction : '';
               return (
                 <li className="space-home-team-row" key={team.id}>
                   <div className="space-home-team-row-info space-home-team-name-cell">
@@ -267,67 +282,62 @@ export default function SpaceHome({
                     <h3>{team.name}</h3>
                   </div>
                   <TeamMemberCount team={team} />
-                  <div className="space-home-team-row-state">
-                    {(isManager || pending || rejected || !directoryReady) && (
-                      <span
-                        className={`space-home-membership${!isManager && pending ? ' is-pending' : !isManager && rejected ? ' is-rejected' : ''}`}
-                      >
-                        {isManager
-                          ? '관리자 조회'
-                          : pending
-                            ? '가입 승인 대기'
+                  {showJoinActions && (
+                    <>
+                      <div className="space-home-team-row-state">
+                        {(pending || rejected || !directoryReady) && (
+                          <span
+                            className={`space-home-membership${pending ? ' is-pending' : rejected ? ' is-rejected' : ''}`}
+                          >
+                            {pending
+                              ? '가입 승인 대기'
+                              : rejected
+                                ? '가입 신청 반려'
+                                : '확인 중'}
+                          </span>
+                        )}
+                        {!pending && !rejected && directoryReady && (
+                          <span className="space-home-membership">—</span>
+                        )}
+                      </div>
+                      <div className="space-home-team-row-action">
+                        <TeamJoinButton
+                          className="primary-button space-home-team-button"
+                          tooltipReason={tooltipReason}
+                          disabled={
+                            busy ||
+                            loading ||
+                            !directoryReady ||
+                            (!pending && Boolean(restriction))
+                          }
+                          title={(!tooltipReason && !pending && restriction) || undefined}
+                          aria-description={!pending && joinedTeam ? restriction : undefined}
+                          aria-describedby={
+                            !pending && restriction && !joinedTeam && !tooltipReason
+                              ? `team-join-restriction-${team.id}`
+                              : undefined
+                          }
+                          aria-label={`${team.name} ${pending ? '신청 취소' : rejected ? '다시 신청' : '가입 신청'}`}
+                          onClick={() =>
+                            pending ? onCancelApplication(team) : onApply(team)
+                          }
+                        >
+                          {pending
+                            ? '신청 취소'
                             : rejected
-                              ? '가입 신청 반려'
-                              : '확인 중'}
-                      </span>
-                    )}
-                    {!isManager && !pending && !rejected && directoryReady && (
-                      <span className="space-home-membership">—</span>
-                    )}
-                  </div>
-                  <div className="space-home-team-row-action">
-                    {isManager ? (
-                      <button
-                        className="secondary-button"
-                        onClick={() => onOpenTeam(team)}
-                      >
-                        팀 상세 보기
-                      </button>
-                    ) : (
-                      <button
-                        className="primary-button space-home-team-button"
-                        disabled={
-                          busy ||
-                          loading ||
-                          !directoryReady ||
-                          (!pending && Boolean(restriction))
-                        }
-                        title={(!pending && restriction) || undefined}
-                        aria-describedby={
-                          !pending && restriction
-                            ? sharedRestriction ? 'team-join-shared-restriction' : `team-join-restriction-${team.id}`
-                            : undefined
-                        }
-                        aria-label={`${team.name} ${pending ? '신청 취소' : rejected ? '다시 신청' : '가입 신청'}`}
-                        onClick={() =>
-                          pending ? onCancelApplication(team) : onApply(team)
-                        }
-                      >
-                        {pending
-                          ? '신청 취소'
-                          : rejected
-                            ? '다시 신청'
-                            : '가입 신청'}
-                      </button>
-                    )}
-                  </div>
-                  {!isManager && !pending && restriction && !sharedRestriction && (
-                    <span
-                      className="action-reason team-join-restriction"
-                      id={`team-join-restriction-${team.id}`}
-                    >
-                      {restriction}
-                    </span>
+                              ? '다시 신청'
+                              : '가입 신청'}
+                        </TeamJoinButton>
+                      </div>
+                      {!pending && restriction && !joinedTeam && !tooltipReason && (
+                        <span
+                          className="action-reason team-join-restriction"
+                          id={`team-join-restriction-${team.id}`}
+                        >
+                          {restriction}
+                        </span>
+                      )}
+                    </>
                   )}
                 </li>
               );
@@ -338,7 +348,6 @@ export default function SpaceHome({
               </li>
             )}
           </ul>
-          </>
         ) : (
           directoryReady && (
             <div className="space-home-empty">

@@ -728,10 +728,9 @@ test('관리자 팀 목록은 팀 수행 현황과 팀원 기록을 거쳐도 �
   await page.route('**/api/spaces/1/manager-dashboard*', (route) => route.fulfill({
     json: { ...initial, totalTeamCount: teams.length, teams: new URL(route.request().url()).searchParams.has('teamId') ? [selectedTeam] : teams },
   }));
-  await page.getByRole('button', { name: '현황 새로고침', exact: true }).click();
+  await page.reload();
   const table = page.getByRole('table', { name: '팀 관리', exact: true });
   await expect(table.locator('tbody > tr')).toHaveCount(26);
-  await page.getByLabel('팀 정렬', { exact: true }).selectOption('progress');
   const teamLink = table.getByRole('button', { name: '힣 팀 현황 보기', exact: true });
   await teamLink.scrollIntoViewIfNeeded();
   const listScrollY = await page.evaluate(() => window.scrollY);
@@ -742,7 +741,7 @@ test('관리자 팀 목록은 팀 수행 현황과 팀원 기록을 거쳐도 �
   await page.getByRole('button', { name: '← 팀 관리', exact: true }).click();
   await page.getByRole('button', { name: '← 팀 목록', exact: true }).click();
   await expect(table.locator('tbody > tr')).toHaveCount(26);
-  await expect(page.getByLabel('팀 정렬', { exact: true })).toHaveValue('progress');
+  await expect(page.getByLabel('팀 정렬', { exact: true })).toHaveCount(0);
   await expect.poll(async () => Math.abs(await page.evaluate(() => window.scrollY) - listScrollY)).toBeLessThan(3);
 });
 
@@ -1643,7 +1642,7 @@ test('팀 관리 목록은 서버의 리포트 상태와 바로가기를 표시�
   });
   await page.goto('/spaces/1/dashboard');
   const table = page.locator('.desktop-data-table').first();
-  await expect(table.getByRole('columnheader')).toHaveText(['팀', '팀 진행률', '작업 현황', '확인 사항', '자료']);
+  await expect(table.getByRole('columnheader')).toHaveText(['팀', '팀 진행률', '작업 현황', '자료']);
   await expect(page.getByRole('button', { name: '리포트 검토 화면' })).toHaveCount(0);
   await expect(table).not.toContainText('공개 완료');
 });
@@ -1805,7 +1804,7 @@ test('관리자 원문 회차 새로고침으로 마감된 회차를 조회한�
   ).toBe(true);
 });
 
-test('관리자 목록 정렬은 지연 건수와 실제 진행률을 사용하며 작업 없는 팀을 0%로 취급하지 않는다', async ({
+test('관리자 목록은 팀 이름순으로 표시하며 작업 없는 팀을 0%로 취급하지 않는다', async ({
   page,
 }) => {
   const { requests } = await backend(page, { manager: true });
@@ -1894,9 +1893,7 @@ test('관리자 목록 정렬은 지연 건수와 실제 진행률을 사용하�
     exact: true,
   });
   const names = table.getByRole('rowheader');
-  await page.getByLabel('팀 정렬', { exact: true }).selectOption('overdue');
-  await expect(names).toHaveText([/나 팀/, /가 팀/, /다 팀/]);
-  await page.getByLabel('팀 정렬', { exact: true }).selectOption('progress');
+  await expect(page.getByRole('combobox', { name: '팀 정렬', exact: true })).toHaveCount(0);
   await expect(names).toHaveText([/가 팀/, /나 팀/, /다 팀/]);
   const emptyTeam = table.getByRole('row').filter({ hasText: '다 팀' });
   await expect(emptyTeam.getByText('작업 없음', { exact: true })).toBeVisible();
@@ -1994,7 +1991,7 @@ test('수행 상세는 대상 팀원의 중간·최종 수신 평균을 구분�
     '4.00 / 5',
     '5.00 / 5',
   ]);
-  await expect(mid).toContainText('수신 평가 2건');
+  await expect(mid.locator('.member-evaluation-counts')).toHaveText('평가 2건');
   await expect(mid).toContainText('팀 전체 미제출 1명');
   await expect(
     page.getByText('상세에 노출하지 않을 평가 사유', { exact: true }),

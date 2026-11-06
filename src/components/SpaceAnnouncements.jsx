@@ -1,3 +1,4 @@
+import DetailBackButton from './DetailBackButton.jsx';
 import { useEffect, useRef, useState } from "react";
 import { downloadAnnouncementAttachments } from '../lib/announcementDownloads.js';
 import { useLocation } from "react-router";
@@ -22,10 +23,10 @@ import { formatDate } from "../lib/domain.js";
 import AnnouncementList from "./AnnouncementList.jsx";
 import AnnouncementEditor from "./AnnouncementEditor.jsx";
 import MarkdownBody from "./MarkdownBody.jsx";
-import RefreshButton from "./RefreshButton.jsx";
 import Icon from "./Icon.jsx";
 import { ErrorNotice, ResourceState } from "./ui.jsx";
 import "../space-announcements.css";
+import "../collection-search.css";
 
 const PAGE_SIZE = 20;
 
@@ -162,6 +163,9 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
       <section
         className={`stack announcements-page${announcementId == null ? " is-list" : ""}`}
       >
+        {announcementId != null && (
+          <DetailBackButton onClick={() => navigate(`${base}${query}`)}>목록으로</DetailBackButton>
+        )}
         <div className="page-heading">
           <div className="announcement-title-group">
             <h1>
@@ -179,23 +183,8 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
                 <span className="announcement-pin">중요</span>
               )}
           </div>
-          <div className="heading-actions">
-            {announcementId != null && (
-              <button
-                className="secondary-button announcement-back-button"
-                onClick={() => navigate(`${base}${query}`)}
-              >
-                ← 목록으로
-              </button>
-            )}
-            <RefreshButton
-              disabled={resource.loading || busy}
-              onClick={() => {
-                setError(null);
-                resource.reload();
-              }}
-            />
-            {canManage && announcementId == null && (
+          {canManage && announcementId == null && (
+            <div className="heading-actions">
               <button
                 className="primary-button"
                 disabled={resource.loading && !resource.data}
@@ -203,8 +192,8 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
               >
                 공지 작성
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
         <ErrorNotice error={error} />
         <ResourceState
@@ -215,26 +204,24 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
             (announcementId == null ? (
               <>
                 <div className="announcement-search-toolbar">
-                  <div className="announcement-search-status">
-                    {resource.data && <span className="announcement-total-count" role="status">공지 {resource.data.totalCount.toLocaleString()}건</span>}
-                    {search && <button className="text-button" onClick={() => {
-                      navigate(`${base}${announcementQuery(page)}`);
-                      searchField.current?.focus();
-                    }}>검색 초기화 <Icon name="close" /></button>}
-                  </div>
                   <form role="search" aria-label="공지 검색" onSubmit={(event) => {
                     event.preventDefault();
                     navigate(`${base}${announcementQuery(page, searchInput)}`);
                   }}>
                     <label className="sr-only" htmlFor="announcement-search">현재 페이지 공지 검색</label>
-                    <div className="announcement-search-input">
+                    <div className="announcement-search-input collection-search-input">
                       <Icon name="search" />
                       <input id="announcement-search" ref={searchField} type="search" maxLength={100}
                         placeholder="현재 페이지의 제목·작성자 검색" value={searchInput}
                         onChange={(event) => setSearchInput(event.target.value)} />
                     </div>
-                    <button className="secondary-button" type="submit">검색</button>
                   </form>
+                  {search && <div className="announcement-search-status">
+                    <button className="text-button" onClick={() => {
+                      navigate(`${base}${announcementQuery(page)}`);
+                      searchField.current?.focus();
+                    }}>검색 초기화 <Icon name="close" /></button>
+                  </div>}
                 </div>
                 {visibleItems.length ? (
                   <AnnouncementList

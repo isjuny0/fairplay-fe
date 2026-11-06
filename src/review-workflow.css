@@ -174,9 +174,6 @@ html:has(.review-action-dock) {
 }
 
 /* A generated result should fit before routine readiness information. */
-.report-review-page > .page-heading {
-  padding-bottom: 16px;
-}
 .report-review-page .report-team-toolbar {
   padding-block: 8px;
 }

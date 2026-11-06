@@ -1,0 +1,17 @@
+.main-content .detail-back-button {
+  align-self: start;
+  justify-self: start;
+  justify-content: flex-start;
+  gap: 4px;
+  flex: 0 0 auto;
+  min-height: 24px;
+  margin: 0;
+  padding: 4px 0;
+  color: var(--text-muted);
+  font-size: var(--text-support);
+  font-weight: 400;
+}
+.main-content .detail-back-button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}

@@ -421,15 +421,12 @@
 }
 .page-heading {
   align-items: flex-end;
-  padding-bottom: 20px;
+  padding-bottom: var(--space-3);
   margin-bottom: 0;
   border-bottom: 1px solid var(--border);
 }
 .page-heading .eyebrow {
   margin-bottom: 12px;
-}
-.page-heading.page-heading--compact {
-  padding-bottom: 12px;
 }
 .page-heading--compact .eyebrow {
   margin-bottom: 8px;
@@ -707,7 +704,6 @@
   }
   .page-heading {
     align-items: stretch;
-    padding-bottom: 16px;
   }
   .space-list {
     grid-template-columns: minmax(0, 1fr);

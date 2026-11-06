@@ -378,7 +378,9 @@ export default function TeamHomeCalendar({ team, today }) {
                                 title={slot.event.title}
                                 className={`team-calendar-label event-${slot.event.kind} ${slot.range ? 'is-range' : ''} ${slot.startsHere ? 'is-range-start' : ''} ${slot.endsHere ? 'is-range-end' : ''}`}
                               >
-                                {slot.showTitle ? slot.event.title : '\u00a0'}
+                                <span className="team-calendar-label-title">
+                                  {slot.showTitle ? slot.event.title : '\u00a0'}
+                                </span>
                               </span>
                             ) : (
                               <span

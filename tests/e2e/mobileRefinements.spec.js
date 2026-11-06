@@ -76,7 +76,8 @@ test('스페이스 선택의 옆 메뉴도 바깥 클릭으로 닫히고 데스�
   expect(iconBox.width).toBe(36);
   expect(iconBox.height).toBe(36);
   expect(Math.abs(iconBox.x + iconBox.width / 2 - glyphBox.x - glyphBox.width / 2)).toBeLessThan(1);
-  expect(labelBox.x).toBe(iconBox.x);
+  expect(labelBox.x).toBe(iconBox.x + 16);
+  await expect(page.locator('.topbar .context-dot')).toBeVisible();
   expect(labelBox.y).toBeGreaterThanOrEqual(iconBox.y + iconBox.height);
   await page.getByRole('button', { name: '스페이스 메뉴', exact: true }).click();
   await expect(page.getByRole('dialog', { name: '내 스페이스 메뉴' })).toBeVisible();
@@ -135,15 +136,14 @@ test('모바일 참여자는 필수 정보만 먼저 보이며 관리 제한은 
   await expect(first.locator('.participant-mobile-details')).not.toBeVisible();
 });
 
-test('회의록의 참석자와 스페이스 일정은 펼쳐 확인하고 데스크톱에서는 바로 읽는다', async ({ page }) => {
+test('회의록 참석자는 펼쳐 확인하고 스페이스 일정은 모바일에서도 바로 읽는다', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`${team}/meeting-minutes/1`);
   await expect(page.locator('.meeting-attendee-chips')).not.toBeVisible();
   await page.locator('.meeting-attendees summary').click();
   await expect(page.locator('.meeting-attendee-chips')).toBeVisible();
   await page.goto('/preview/spaces/1');
-  await expect(page.locator('.space-home-period-details')).not.toBeVisible();
-  await page.locator('.space-schedule-disclosure summary').click();
+  await expect(page.locator('.space-home-period-summary')).toBeVisible();
   await expect(page.locator('.space-home-period-details')).toBeVisible();
   await page.setViewportSize({ width: 1440, height: 900 });
   await expect(page.locator('.space-home-period-details')).toBeVisible();

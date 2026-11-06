@@ -4,7 +4,6 @@ import {
   ArrowUp,
   ArrowUpRight,
   FileSearch,
-  FileText,
   PanelRightOpen,
 } from 'lucide-react';
 import { askTeamMaterials, getRagIndexStatus } from '../api/rag.js';
@@ -186,10 +185,6 @@ function TeamMaterialSearch({ context }) {
           >
             <PanelRightOpen size={16} />
             팀 자료
-          </button>
-          <button className="secondary-button" aria-label="팀 자료 보기" title="팀 자료 보기" onClick={() => openMaterials()}>
-            <FileText size={16} />
-            팀 자료 보기
           </button>
         </div>
       </header>

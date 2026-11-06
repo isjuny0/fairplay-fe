@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import RefreshButton from './RefreshButton.jsx';
 import {
   createTeamDeletionRequest,
@@ -7,6 +7,7 @@ import {
   getTeamLeavePreview,
   updateTeamDeletionConsent,
 } from '../api/teams.js';
+import { listTasks } from '../api/tasks.js';
 import { formatDate, memberName, memberRole } from '../lib/domain.js';
 import { ErrorNotice, Field, Modal, ResourceState } from './ui.jsx';
 
@@ -36,6 +37,9 @@ export default function TeamSettings({
   const [nextLeaderId, setNextLeaderId] = useState('');
   const [handoffRecipients, setHandoffRecipients] = useState({});
   const [leavePreview, setLeavePreview] = useState(null);
+  const leaveDraft = useRef(null);
+  const [handoffTaskDetails, setHandoffTaskDetails] = useState([]);
+  const [leaveReviewRequired, setLeaveReviewRequired] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -57,22 +61,58 @@ export default function TeamSettings({
     LAST_MEMBER_MUST_DELETE_TEAM: '마지막 팀원은 팀 삭제 절차를 이용해 주세요.',
   }[leavePreview?.blockReason];
   const handoffTasks = leavePreview?.handoffTasks ?? [];
+  const eligibleIds = new Set(leavePreview?.eligibleMembers.map((member) => member.userId));
   const canSubmitLeave = leavePreview && !leavePreview.blockReason &&
-    (!leavePreview.requiresNextLeader || nextLeaderId) &&
-    handoffTasks.every((task) => handoffRecipients[task.id] && task.version != null);
-  const handoffOptions = leavePreview?.eligibleMembers.map((member) => (
-    <option key={member.userId} value={member.userId}>
-      {member.name} · 현재 미완료 {member.openTaskCount}건
-    </option>
-  ));
+    (!leavePreview.requiresNextLeader || eligibleIds.has(nextLeaderId)) &&
+    handoffTasks.every((task) => eligibleIds.has(handoffRecipients[task.id]) && task.version != null);
+  const handoffOptions = (currentTask) => leavePreview.eligibleMembers.map((member) => {
+    const assigned = handoffTasks.filter((task) =>
+      (task.id === currentTask.id ? member.userId : handoffRecipients[task.id]) === member.userId);
+    const details = assigned.map((task) => handoffTaskDetails.find((entry) => entry.id === task.id && entry.version === task.version));
+    const additional = details.every((task) => Array.isArray(task?.assignees))
+      ? details.filter((task) => !task.assignees.some((assignment) => assignment.userId === member.userId)).length
+      : null;
+    return <option key={member.userId} value={member.userId}>
+      {member.name} · 현재 미완료 {member.openTaskCount}건 · {additional == null
+        ? `이번 인계 ${assigned.length}건`
+        : `선택 시 ${member.openTaskCount + additional}건 (+${additional})`}
+    </option>;
+  });
   const loadLeavePreview = async () => {
     setError(null);
     setLeavePreview(null);
     setNextLeaderId('');
     setHandoffRecipients({});
+    setHandoffTaskDetails([]);
+    setLeaveReviewRequired(false);
     setBusy(true);
     try {
-      setLeavePreview(await getTeamLeavePreview(team.id));
+      const [preview, tasks] = await Promise.all([
+        getTeamLeavePreview(team.id),
+        listTasks(team.id).catch(() => []),
+      ]);
+      const draft = leaveDraft.current;
+      if (draft && !preview.blockReason) {
+        const eligible = new Set(preview.eligibleMembers.map((member) => member.userId));
+        const previousTasks = new Map(draft.preview.handoffTasks.map((task) => [task.id, task]));
+        const recipients = {};
+        let needsReview = preview.handoffTasks.length !== previousTasks.size;
+        for (const task of preview.handoffTasks) {
+          const previous = previousTasks.get(task.id);
+          const unchanged = previous && task.version != null &&
+            ['version', 'title', 'status', 'dueAt', 'allocationPercent'].every((key) => task[key] === previous[key]);
+          if (unchanged && eligible.has(draft.handoffRecipients[task.id]))
+            recipients[task.id] = draft.handoffRecipients[task.id];
+          else needsReview = true;
+        }
+        const leader = preview.requiresNextLeader && eligible.has(draft.nextLeaderId) ? draft.nextLeaderId : '';
+        if (preview.requiresNextLeader && !leader) needsReview = true;
+        setNextLeaderId(leader);
+        setHandoffRecipients(recipients);
+        setLeaveReviewRequired(needsReview);
+      }
+      setHandoffTaskDetails(Array.isArray(tasks) ? tasks : []);
+      setLeavePreview(preview);
     } catch (requestError) {
       setError(requestError);
     } finally {
@@ -84,16 +124,21 @@ export default function TeamSettings({
     setAcknowledged(false);
     // 최종 삭제는 사용자가 확인한 요청의 버전으로만 전송한다.
     setConfirmation({ type, request });
-    if (type === 'leave') loadLeavePreview();
+    if (type === 'leave') {
+      leaveDraft.current = null;
+      loadLeavePreview();
+    }
   };
   const closeConfirmation = () => {
     setConfirmation(null);
     setError(null);
+    leaveDraft.current = null;
   };
   const submit = async (event) => {
     event.preventDefault();
     if (busy || (confirmation.type === 'leave' && !canSubmitLeave)) return;
     const type = confirmation.type;
+    if (type === 'leave') leaveDraft.current = { preview: leavePreview, nextLeaderId, handoffRecipients };
     setBusy(true);
     setError(null);
     try {
@@ -415,6 +460,9 @@ export default function TeamSettings({
                 </div>
                 {busy && !leavePreview && <p role="status">탈퇴 영향을 확인하고 있습니다.</p>}
                 {leaveBlockMessage && <p className="notice">{leaveBlockMessage}</p>}
+                {leaveReviewRequired && <p className="notice" role="status">
+                  작업 또는 인계 대상이 변경되었습니다. 유효한 선택은 복원했으며, 변경된 항목은 다시 확인해 주세요.
+                </p>}
                 {leavePreview?.requiresNextLeader && !leavePreview.blockReason && (
                   <Field label="다음 리더">
                     <select
@@ -463,7 +511,7 @@ export default function TeamSettings({
                               }}
                             >
                               <option value="">인계할 팀원을 선택하세요</option>
-                              {handoffOptions}
+                              {handoffOptions(task)}
                             </select>
                           </li>
                         );

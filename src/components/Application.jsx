@@ -379,7 +379,7 @@ export default function Application({ previewRuntime, onPreviewExit }) {
                       예시 초기화
                     </button>
                   </div>
-                  <div className="preview-mobile-footer">
+                  <div className="preview-popover-footer">
                     <button
                       className="secondary-button"
                       disabled={busy}
@@ -393,18 +393,9 @@ export default function Application({ previewRuntime, onPreviewExit }) {
             )}
             <div className="profile-account-group">
               <HeaderActivityActions />
-              {preview ? <>
-                <span className="profile-avatar" aria-hidden="true">
-                  {user.name?.slice(0, 1)}
-                </span>
-                <span className="profile-identity">
-                  <span className="profile-name">{user.name}</span>
-                </span>
-              </> : <ProfileMenu key={location.pathname} user={user} busy={busy} onSignOut={signOut} />}
+              <ProfileMenu key={location.pathname} user={user} busy={busy} onSignOut={signOut}
+                signOutLabel={preview ? '미리보기 종료' : '로그아웃'} />
             </div>
-            {preview && <button className="logout-button preview-desktop-exit" disabled={busy} onClick={signOut}>
-              미리보기 종료
-            </button>}
           </div>
         </header>
         {error && <ErrorNotice error={error} />}

@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { LogOut, UserRound } from 'lucide-react';
 
-export default function ProfileMenu({ user, busy, onSignOut }) {
+export default function ProfileMenu({ user, busy, onSignOut, signOutLabel = '로그아웃' }) {
   const [open, setOpen] = useState(false);
   const id = useId();
   const root = useRef(null);
@@ -49,7 +49,7 @@ export default function ProfileMenu({ user, busy, onSignOut }) {
           <p className="profile-menu-name" role="presentation">{user.name}</p>
           <button ref={logout} type="button" role="menuitem" disabled={busy}
             onClick={() => { setOpen(false); onSignOut(); }}>
-            <LogOut size={16} aria-hidden="true" /> 로그아웃
+            <LogOut size={16} aria-hidden="true" /> {signOutLabel}
           </button>
         </div>
       )}

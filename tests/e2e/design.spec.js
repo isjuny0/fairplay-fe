@@ -56,7 +56,7 @@ for (const width of [3840, 1920, 1440, 1100, 1024, 1006, 901, 768, 721]) {
       return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
     }));
     for (let index = 1; index < visibleControls.length; index++) expect(visibleControls[index].left).toBeGreaterThanOrEqual(visibleControls[index - 1].right);
-    await expect(page.getByRole('button', { name: '미리보기 종료', exact: true })).toHaveCSS('white-space', 'nowrap');
+    await expect(page.locator('.profile-area > .logout-button')).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   });
 }

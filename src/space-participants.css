@@ -8,8 +8,22 @@
 .space-participants-page h1 {
   margin: 0;
 }
+.participant-title-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
 .participant-count {
-  font-size: var(--text-support);
+  color: var(--text-muted);
+  font-size: var(--text-body);
+  font-weight: 400;
+  white-space: nowrap;
+}
+.participant-search {
+  width: 100%;
+  max-width: 360px;
+  box-sizing: border-box;
 }
 .participant-table {
   width: 100%;
@@ -38,6 +52,10 @@
 .participant-table th:last-child {
   width: 112px;
 }
+.participant-table thead th:nth-child(6),
+.participant-table tbody td:nth-child(6) {
+  text-align: center;
+}
 .participant-table .secondary-button {
   min-height: 32px;
   padding: 4px 10px;
@@ -51,6 +69,10 @@
 }
 .participant-empty {
   color: var(--text-muted);
+}
+.participant-table td.participant-mobile-details,
+.participant-mobile-team-role {
+  display: none;
 }
 @media (max-width: 900px) {
   .participant-table thead {
@@ -67,8 +89,9 @@
   }
   .participant-table tr {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px 16px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px 12px;
     padding: 16px 0;
     border-bottom: 1px solid var(--border);
   }
@@ -89,46 +112,87 @@
     font-size: var(--text-caption);
     color: var(--text-muted);
   }
-  .participant-table .participant-name {
-    grid-column: 1 / -1;
+  .participant-table td.participant-name {
+    grid-column: 1;
+    grid-row: 1;
+    font-size: var(--text-body);
   }
-  .participant-table .participant-name::before {
+  .participant-table .participant-name::before,
+  .participant-table .participant-space-role::before,
+  .participant-table .participant-mobile-details::before {
     display: none;
   }
-  .participant-table td:last-child {
+  .participant-table td.participant-space-role {
     grid-column: 2;
-    grid-row: 3;
-    align-self: center;
+    grid-row: 1;
+    justify-self: end;
   }
-  .participant-table td:nth-child(5) {
+  .participant-space-role > span {
+    padding: 3px 8px;
+    border-radius: var(--radius-control);
+    background: var(--surface-secondary);
+    color: var(--text-muted);
+    font-size: var(--text-caption);
+    line-height: 1.5;
+  }
+  .participant-table td.participant-team {
     grid-column: 1 / -1;
+    grid-row: 2;
+    flex-direction: row;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+  }
+  .participant-team .participant-mobile-team-role {
+    display: inline;
+    color: var(--text-muted);
+    font-size: var(--text-caption);
+  }
+  .participant-table td.participant-advanced {
+    display: none;
+  }
+  .participant-table td.participant-mobile-details {
+    display: block;
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+  .participant-mobile-management {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+  .participant-mobile-details dl {
+    margin: 0;
+    font-size: var(--text-caption);
+  }
+  .participant-mobile-details dl > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+  }
+  .participant-mobile-details dt {
+    color: var(--text-muted);
+  }
+  .participant-mobile-details dd {
+    margin: 0;
+  }
+  .participant-mobile-details .participant-removal-actions {
+    justify-content: flex-start;
   }
 }
 
 .participant-removal-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
 }
-.participant-removal-help {
-  display: inline-flex;
-}
-.participant-removal-help-trigger {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  min-height: 32px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-control);
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-.participant-removal-help-trigger:hover,
-.participant-removal-help-trigger:focus-visible {
-  background: var(--surface-secondary);
-  color: var(--brand);
+.space-participants-page .participant-removal-button[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: help;
+  background: var(--surface);
+  border-color: var(--border);
 }
 .participant-removal-tooltip {
   position: fixed;
@@ -142,10 +206,4 @@
   box-shadow: 0 4px 16px #193d2814;
   font-size: var(--text-caption);
   line-height: 1.6;
-}
-@media (max-width: 900px) {
-  .participant-removal-help-trigger {
-    width: 44px;
-    min-height: 44px;
-  }
 }

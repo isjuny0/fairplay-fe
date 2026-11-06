@@ -35,8 +35,7 @@ function MemberRoundScores({ round, teamId, targetUserId, revision }) {
       {result && (
         <>
           <p className="member-evaluation-counts">
-            팀 제출 {result.submittedCount}/{result.requiredCount}명 · 수신 평가{' '}
-            {receivedResponses.length}건
+            평가 {receivedResponses.length}건
           </p>
           {result.missingCount > 0 && (
             <p className="notice">

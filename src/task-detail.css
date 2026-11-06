@@ -427,14 +427,6 @@
   border-radius: 10px;
   background: var(--surface);
 }
-.task-detail-back {
-  display: flex;
-  align-items: center;
-}
-.task-detail-back .back-button {
-  flex: 0 0 auto;
-  margin: 0;
-}
 .task-section-navigation {
   display: flex;
   align-items: center;
@@ -511,10 +503,6 @@
   .task-detail-navigation {
     gap: 8px;
     padding: 6px;
-  }
-  .task-detail-back .back-button {
-    padding-inline: 8px;
-    font-size: var(--text-support);
   }
   .task-section-navigation .text-button {
     padding-inline: 8px;
