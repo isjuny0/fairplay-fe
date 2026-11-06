@@ -251,8 +251,8 @@
   border-right: 0;
   box-shadow: none;
 }
-.task-board-page .timeline-scale { margin-inline: 12px; }
-.task-board-page .timeline-track { height: 44px; margin: 0 12px 12px; border-radius: 4px; }
+.task-board-page .timeline-scale { margin-inline: 0; }
+.task-board-page .timeline-track { height: 44px; margin: 0 0 12px; }
 .task-board-page .timeline-task-name { flex-wrap: nowrap; align-items: flex-start; gap: 6px; }
 .task-board-page .timeline-task-state { margin-top: 7px; }
 .task-board-page .timeline-task-label .task-title-button {
