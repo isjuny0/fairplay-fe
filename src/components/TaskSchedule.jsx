@@ -116,7 +116,7 @@ export function TaskTimeline({
       const topbarBottom = Math.max(0, document.querySelector('.topbar')?.getBoundingClientRect().bottom || 0);
       const bounds = region.getBoundingClientRect();
       // The clipped track needs an explicit sticky offset while the page scrolls.
-      setTrackWidth(Math.max(0, region.clientWidth - 24));
+      setTrackWidth(region.clientWidth);
       const offset = Math.max(0,
         Math.min(topbarBottom - bounds.top - region.clientTop, region.clientHeight - header.offsetHeight));
       region.style.setProperty('--timeline-header-offset', `${offset}px`);
