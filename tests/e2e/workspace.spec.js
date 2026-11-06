@@ -1379,7 +1379,9 @@ test('로그아웃 후 브라우저 뒤로가기로 보호된 화면이 복원�
 }) => {
   await workspace(page);
   await page.getByRole('button', { name: '팀 설정', exact: true }).click();
-  await page.getByRole('button', { name: '로그아웃', exact: true }).click();
+  await expect(page.getByRole('main').getByRole('heading', { level: 1 }).first()).toBeFocused();
+  await page.getByRole('button', { name: '프로필 메뉴', exact: true }).click();
+  await page.getByRole('menuitem', { name: '로그아웃', exact: true }).click();
   await expect(
     page.getByRole('link', { name: 'Fairplay 시작하기', exact: true }),
   ).toBeVisible();
