@@ -44,10 +44,7 @@
   .notification-popover-heading { flex-wrap: wrap; gap: 8px; }
   .notification-popover-heading button { min-height: 44px; }
 
-  /* Leave part of the date track visible beside the sticky task column. */
-  .task-timeline { min-width: 784px; }
-  .timeline-row { grid-template-columns: 144px minmax(640px, 1fr); }
-  .task-timeline-scroll { scroll-padding-left: 144px; }
+  /* Keep timeline titles readable without a column resize handle on phones. */
   .timeline-column-resizer { display: none; }
   .timeline-task-label { padding: 8px; }
   .timeline-task-name { flex-wrap: wrap; gap: 4px; }

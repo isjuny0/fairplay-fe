@@ -1,5 +1,5 @@
 import { koreanDateTime } from '../lib/koreanTime.js';
-import { useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDate, memberName, statusLabels } from '../lib/domain.js';
 import {
@@ -10,7 +10,8 @@ import {
   timelineTaskPeriod,
   timelineWindow,
 } from '../lib/taskSchedule.js';
-import TaskSchedulePreview, { useTaskSchedulePreview } from './TaskSchedulePreview.jsx';
+import TaskSchedulePreview, { TaskScheduleTouchPreview, useTaskSchedulePreview } from './TaskSchedulePreview.jsx';
+import useMobileLayout from '../hooks/useMobileLayout.js';
 
 const monthLabel = (month) =>
   `${Number(month.slice(0, 4))}년 ${Number(month.slice(5))}월`;
@@ -72,18 +73,7 @@ export function TimelineNavigation({
         </button>
         <button
           className="secondary-button"
-          onClick={event => {
-            const root = event.currentTarget.closest('.task-board-page');
-            onMonthChange(currentTaskMonth());
-            requestAnimationFrame(() => {
-              const region = root?.querySelector('.task-timeline-scroll');
-              const today = region?.querySelector('.timeline-today-line');
-              if (!today) return;
-              const labelWidth = region.querySelector('.timeline-task-label')?.getBoundingClientRect().width || 0;
-              const left = today.getBoundingClientRect().left - region.getBoundingClientRect().left + region.scrollLeft;
-              region.scrollTo({left: Math.max(0, left - labelWidth - (region.clientWidth - labelWidth) / 2)});
-            });
-          }}
+          onClick={() => onMonthChange(currentTaskMonth())}
         >
           오늘
         </button>
@@ -101,12 +91,19 @@ export function TaskTimeline({
   onOpenTask,
   members,
   emptyState,
-  labelWidth,
-  onLabelWidthChange,
 }) {
   const previewController = useTaskSchedulePreview(tasks, `${month}:${monthCount}`);
   const { previewEvents } = previewController;
-  const resizeStart = useRef(null);
+  const mobile = useMobileLayout('(max-width: 720px)');
+  const [touchTaskId, setTouchTaskId] = useState(null);
+  useEffect(() => setTouchTaskId(null), [mobile, month, monthCount]);
+  const openTask = (event, taskId) => {
+    if (mobile) {
+      event.currentTarget.focus({ preventScroll: true });
+      setTouchTaskId(taskId);
+    } else onOpenTask(taskId);
+  };
+  const [trackWidth, setTrackWidth] = useState(0);
   const scrollRegion = useRef(null);
   useLayoutEffect(() => {
     const region = scrollRegion.current;
@@ -118,7 +115,8 @@ export function TaskTimeline({
       frame = null;
       const topbarBottom = Math.max(0, document.querySelector('.topbar')?.getBoundingClientRect().bottom || 0);
       const bounds = region.getBoundingClientRect();
-      // Horizontal overflow makes native sticky follow this region instead of the page.
+      // The clipped track needs an explicit sticky offset while the page scrolls.
+      setTrackWidth(Math.max(0, region.clientWidth - 24));
       const offset = Math.max(0,
         Math.min(topbarBottom - bounds.top - region.clientTop, region.clientHeight - header.offsetHeight));
       region.style.setProperty('--timeline-header-offset', `${offset}px`);
@@ -140,9 +138,12 @@ export function TaskTimeline({
     };
   }, []);
   const window = timelineWindow(month, monthCount);
+  const tickStep = monthCount === 3 ? (trackWidth < 400 ? 4 : trackWidth < 700 ? 2 : 1) : 1;
+  const ticks = window.weeks.filter((_, index) => index % tickStep === 0);
   const visible = tasks
     .map((task) => ({ task, period: timelineTaskPeriod(task, window, now) }))
     .filter(({ period }) => period);
+  const touchTask = mobile && visible.find(({ task }) => task.id === touchTaskId)?.task;
   const today = taskDate(koreanDateTime(now));
   const todayPosition =
     today >= window.first && today <= window.last
@@ -158,7 +159,7 @@ export function TaskTimeline({
     };
   });
   return (
-    <section className="task-schedule" data-month-count={monthCount} aria-label="작업 타임라인" style={{ '--timeline-label-width': `${labelWidth}px` }}>
+    <section className="task-schedule" data-month-count={monthCount} aria-label="작업 타임라인">
       <div
         ref={scrollRegion}
         className="task-timeline-scroll"
@@ -168,46 +169,6 @@ export function TaskTimeline({
       >
         <div className="task-timeline">
           <div className="timeline-row timeline-header">
-            <div className="timeline-task-label">
-              작업
-              <div
-                className="timeline-column-resizer"
-                role="separator"
-                aria-label="작업명 영역 너비"
-                aria-orientation="vertical"
-                aria-valuemin={220}
-                aria-valuemax={520}
-                aria-valuenow={labelWidth}
-                aria-valuetext={`${labelWidth}픽셀`}
-                tabIndex={0}
-                title="드래그 또는 방향키로 너비 조절 · 두 번 클릭해 초기화"
-                onDoubleClick={() => onLabelWidthChange(300)}
-                onPointerDown={(event) => {
-                  if (event.button !== 0) return;
-                  event.preventDefault();
-                  event.currentTarget.focus();
-                  event.currentTarget.setPointerCapture(event.pointerId);
-                  resizeStart.current = { x: event.clientX, width: labelWidth };
-                }}
-                onPointerMove={(event) => {
-                  if (!resizeStart.current) return;
-                  const width = resizeStart.current.width + event.clientX - resizeStart.current.x;
-                  onLabelWidthChange(Math.round(Math.max(220, Math.min(520, width))));
-                }}
-                onPointerUp={(event) => {
-                  resizeStart.current = null;
-                  if (event.currentTarget.hasPointerCapture(event.pointerId))
-                    event.currentTarget.releasePointerCapture(event.pointerId);
-                }}
-                onLostPointerCapture={() => { resizeStart.current = null; }}
-                onKeyDown={(event) => {
-                  const values = { ArrowLeft: labelWidth - 16, ArrowRight: labelWidth + 16, Home: 220, End: 520 };
-                  if (!Object.hasOwn(values, event.key)) return;
-                  event.preventDefault();
-                  onLabelWidthChange(Math.max(220, Math.min(520, values[event.key])));
-                }}
-              />
-            </div>
             <div className={`timeline-scale${todayPosition != null ? ' has-today' : ''}`}>
               <div className="timeline-months">
                 {monthBands.map(({ value, left, width }) => (
@@ -220,7 +181,7 @@ export function TaskTimeline({
                 ))}
               </div>
               <div className="timeline-weeks">
-                {window.weeks.map(({ date, left }) => (
+                {ticks.map(({ date, left }) => (
                   <span key={date} style={{ left: `${left}%` }}>
                     {shortDate(date)}
                   </span>
@@ -257,8 +218,10 @@ export function TaskTimeline({
                     />
                     <button
                       className="task-title-button" data-guide-task-id={task.id}
-                      {...previewEvents(task)}
-                      onClick={() => onOpenTask(task.id)}
+                      aria-haspopup={mobile ? 'dialog' : undefined}
+                      aria-expanded={mobile ? touchTaskId === task.id : undefined}
+                      {...(!mobile ? previewEvents(task) : {})}
+                      onClick={(event) => openTask(event, task.id)}
                     >
                       {task.title}
                     </button>
@@ -295,7 +258,7 @@ export function TaskTimeline({
                       aria-hidden="true"
                     />
                   ))}
-                  {window.weeks.map(({ date, left }) => (
+                  {ticks.map(({ date, left }) => (
                     <span
                       key={date}
                       className="timeline-week-line"
@@ -322,9 +285,11 @@ export function TaskTimeline({
                         width: `${period.planned.width}%`,
                       }}
                       aria-label={description}
-                      tabIndex={-1}
-                      {...previewEvents(task)}
-                      onClick={() => onOpenTask(task.id)}
+                      tabIndex={mobile ? 0 : -1}
+                      aria-haspopup={mobile ? 'dialog' : undefined}
+                      aria-expanded={mobile ? touchTaskId === task.id : undefined}
+                      {...(!mobile ? previewEvents(task) : {})}
+                      onClick={(event) => openTask(event, task.id)}
                     >
                       <span className="timeline-period-content">
                         {period.planned.continuesBefore && (
@@ -366,7 +331,9 @@ export function TaskTimeline({
         </div>
         {visible.length === 0 && emptyState}
       </div>
-      <TaskSchedulePreview controller={previewController} members={members} now={now} />
+      {!mobile && <TaskSchedulePreview controller={previewController} members={members} now={now} />}
+      {touchTask && <TaskScheduleTouchPreview task={touchTask} members={members} now={now}
+        onClose={() => setTouchTaskId(null)} onOpenTask={onOpenTask} />}
     </section>
   );
 }
