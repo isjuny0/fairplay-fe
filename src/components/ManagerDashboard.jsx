@@ -5,11 +5,11 @@ import { createPortal } from 'react-dom';
 import { ChevronRight, CircleHelp } from 'lucide-react';
 import { useLocation, useSearchParams } from 'react-router';
 import '../manager-dashboard.css';
-import RefreshButton from './RefreshButton.jsx';
 import Icon from './Icon.jsx';
 import TeamProgressRing from './TeamProgressRing.jsx';
 import ManagerTeamLinks from './ManagerTeamLinks.jsx';
 import { getManagerDashboard } from '../api/dashboard.js';
+import { listSpaceParticipants } from '../api/spaceParticipants.js';
 import useResource from '../hooks/useResource.js';
 import useAppNavigate from '../hooks/useAppNavigate.js';
 import { spacePath } from '../lib/routes.js';
@@ -85,8 +85,23 @@ export default function ManagerDashboard({ context }) {
   const location = useLocation();
   const teamId = params.get('teamId') || '';
   const navigate = useAppNavigate();
-  const resource = useResource(() => getManagerDashboard(context.space.id, teamId), [context.space.id, teamId, guide?.scope]);
-  const dashboard = resource.data;
+  const resource = useResource(async () => {
+    const [dashboard, participants] = await Promise.all([
+      getManagerDashboard(context.space.id, teamId),
+      teamId ? Promise.resolve([]) : listSpaceParticipants(context.space.id),
+    ]);
+    return { dashboard, participants };
+  }, [context.space.id, teamId, guide?.scope]);
+  const dashboard = resource.data?.dashboard;
+  const memberNamesByTeam = new Map();
+  for (const participant of resource.data?.participants || []) {
+    if (participant.team?.teamId == null) continue;
+    const id = String(participant.team.teamId);
+    const names = memberNamesByTeam.get(id) || [];
+    names.push(participant.name);
+    memberNamesByTeam.set(id, names);
+  }
+  const totalMemberCount = dashboard?.teams.reduce((total, team) => total + (team.approvedMemberCount ?? 0), 0);
   const selectedTeam = dashboard?.teams.find((team) => String(team.teamId) === teamId);
   const reportManagerState = guide?.setManagerState;
   useEffect(() => {
@@ -98,7 +113,8 @@ export default function ManagerDashboard({ context }) {
   const teamQuery = params.get('teamQuery') || '';
   const teamFilter = Object.hasOwn(quickFilterLabels, params.get('teamFilter')) ? params.get('teamFilter') : 'all';
   const visibleTeams = (dashboard?.teams || []).filter((team) => {
-    const matchesQuery = `${team.teamName} ${team.leaderName}`.toLocaleLowerCase('ko').includes(teamQuery.trim().toLocaleLowerCase('ko'));
+    const names = [team.teamName, team.leaderName, ...(memberNamesByTeam.get(String(team.teamId)) || [])];
+    const matchesQuery = names.some((name) => (name || '').toLocaleLowerCase('ko').includes(teamQuery.trim().toLocaleLowerCase('ko')));
     const matchesFilter = teamFilter === 'all' || (teamFilter === 'overdue' && team.overdueTaskCount > 0);
     return matchesQuery && matchesFilter;
   }).sort((first, second) => first.teamName.localeCompare(second.teamName, 'ko'));
@@ -136,11 +152,13 @@ export default function ManagerDashboard({ context }) {
   return <section className={`stack space-operation-page manager-dashboard${teamId ? ' manager-dashboard--team' : ''}`}>
     {teamId && <DetailBackButton onClick={() => selectTeam('')}>팀 목록</DetailBackButton>}
     <div className="page-heading page-heading--compact dashboard-page-heading">
-      <div><h1>{teamId ? selectedTeamName : '팀 관리'}</h1></div>
+      <div className="dashboard-title-group">
+        <h1>{teamId ? selectedTeamName : '팀 관리'}</h1>
+        {!teamId && dashboard && <span className="dashboard-total-count">전체 {dashboard.teams.length}팀 · 총 {totalMemberCount}명</span>}
+      </div>
       {teamId && <div className="dashboard-heading-actions">
         {selectedTeam && <ManagerTeamLinks spaceId={context.space.id} teamId={selectedTeam.teamId}
           materialCount={selectedTeam.deliverableCount} dashboardSearch={params.toString()} dashboardListScrollY={location.state?.dashboardListScrollY || 0} />}
-        <RefreshButton label="현황 새로고침" disabled={resource.loading} onClick={resource.reload} />
       </div>}
     </div>
     <ResourceState resource={resource} label="팀 현황">
@@ -234,13 +252,13 @@ export default function ManagerDashboard({ context }) {
                       aria-label="팀 목록 조건"
                     >
                       <label className="form-field">
-                        <span className="sr-only">팀·리더 검색</span>
+                        <span className="sr-only">팀·팀원 검색</span>
                         <span className="dashboard-team-search">
                           <Icon name="search" />
                           <input
                             type="search"
                             value={teamQuery}
-                            placeholder="팀 이름 또는 리더 이름"
+                            placeholder="팀 이름 또는 팀원 이름"
                             onChange={(event) =>
                               changeListCondition('teamQuery', event.target.value)
                             }
@@ -259,14 +277,6 @@ export default function ManagerDashboard({ context }) {
                 )}
                 </div>
 
-                {dashboard.teams.length > 0 && (
-                    <div className="dashboard-list-context">
-                      <span role="status">
-                        목록 {visibleTeams.length} / {dashboard.teams.length}팀
-                      </span>
-
-                    </div>
-                )}
                 {visibleTeams.length ? (
                   <div className="table-scroll desktop-data-table">
                     <table className="data-table dashboard-teams-table">
@@ -325,37 +335,30 @@ export default function ManagerDashboard({ context }) {
                 <div className="mobile-data-cards">
                   {visibleTeams.map((team) => (
                     <article key={team.teamId} className="dashboard-team-card" data-guide-manager-team-row={team.teamId} onClick={(event) => openTeamFromRow(event, team.teamId)}>
-                      <h3>
-                        <button
-                          className="table-name-button"
-                          data-guide-manager-team={team.teamId}
-                          aria-label={`${team.teamName} 현황 보기`}
-                          onClick={() => selectTeam(team.teamId)}
-                        >
-                          {team.teamName}
-                        </button>
-                      </h3>
-                      <TeamIdentityMeta team={team} />
-                      <dl className="card-facts">
-                        <div>
-                          <dt>팀 진행률 <DashboardHelp label="팀 진행률" description={metricDescriptions.progress} /></dt>
-                          <dd>
-                            <TeamProgress team={team} />
-                          </dd>
+                      <div className="dashboard-team-card-heading">
+                        <div className="dashboard-team-card-identity">
+                          <h3>
+                            <button
+                              className="table-name-button"
+                              data-guide-manager-team={team.teamId}
+                              aria-label={`${team.teamName} 현황 보기`}
+                              onClick={() => selectTeam(team.teamId)}
+                            >
+                              {team.teamName}
+                            </button>
+                          </h3>
+                          <TeamIdentityMeta team={team} />
                         </div>
-                        <div>
-                          <dt>마감 지연 <DashboardHelp label="마감 지연" description={metricDescriptions.overdue} /></dt>
-                          <dd>{team.overdueTaskCount}건</dd>
+                        <div className="dashboard-team-card-progress">
+                          <span>팀 진행률 <DashboardHelp label="팀 진행률" description={metricDescriptions.progress} /></span>
+                          <TeamProgress team={team} />
                         </div>
-                      </dl>
-                      <TeamTaskCounts team={team} compact />
-                      <details>
-                        <summary>자료·팀 참여 상태</summary>
-                        <p>
-                          자료 {team.deliverableCount}개 · 가입 대기{' '}
-                          {team.pendingApplications}명
-                        </p>
-                      </details>
+                      </div>
+                      <TeamTaskCounts team={team} compact includeOverdue />
+                      <div className="dashboard-team-card-footer">
+                        <span>자료 <strong>{team.deliverableCount}개</strong></span>
+                        {team.pendingApplications > 0 && <span>가입 대기 <strong>{team.pendingApplications}명</strong></span>}
+                      </div>
                     </article>
                   ))}
                 </div>
