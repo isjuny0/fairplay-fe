@@ -1,5 +1,71 @@
 .task-board-page {
   gap: 12px;
+  --board-focus: 5fr;
+  --board-tracks: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+.task-board-page[data-board-status='TODO'] { --board-tracks: minmax(0, var(--board-focus)) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); }
+.task-board-page[data-board-status='IN_PROGRESS'] { --board-tracks: minmax(0, 1fr) minmax(0, var(--board-focus)) minmax(0, 1fr) minmax(0, 1fr); }
+.task-board-page[data-board-status='REVISING'] { --board-tracks: minmax(0, 1fr) minmax(0, 1fr) minmax(0, var(--board-focus)) minmax(0, 1fr); }
+.task-board-page[data-board-status='DONE'] { --board-tracks: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, var(--board-focus)); }
+.task-board-status-navigation { display: grid; gap: 8px; }
+.task-board-status-buttons { display: grid; grid-template-columns: var(--board-tracks); gap: 12px; transition: grid-template-columns 360ms cubic-bezier(.22, 1, .36, 1); }
+.task-board-status-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 180ms ease, border-color 180ms ease;
+}
+.task-board-status-title { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.task-board-status-count { min-width: 24px; padding: 2px 4px; border-radius: 4px; background: var(--border-light, #efefed); text-align: center; font-size: var(--text-support); font-weight: 500; }
+.task-board-status-button:hover { border-color: var(--border); }
+.task-board-status-button[aria-pressed='true'] { border-color: var(--brand); background: var(--brand-light); color: var(--brand-dark); }
+.task-board-status-button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.task-board-page .task-columns.is-focused { grid-template-columns: var(--board-tracks); transition: grid-template-columns 360ms cubic-bezier(.22, 1, .36, 1); }
+.task-columns.is-focused .task-column { container-type: inline-size; grid-column: var(--board-column); }
+.task-board-page .task-columns.is-focused .task-column-list { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; animation: board-focus-cards 240ms ease-out both; }
+.task-board-page:not([data-board-status='ALL']) .task-board-status-button[aria-pressed='false'] { padding-inline: 8px; gap: 6px; font-size: var(--text-caption); }
+.task-board-page:not([data-board-status='ALL']) .task-board-status-button[aria-pressed='false'] .task-board-status-title { gap: 6px; }
+.task-board-page:not([data-board-status='ALL']) .task-board-status-button[aria-pressed='false'] .task-board-status-count { min-width: 20px; padding-inline: 2px; }
+.task-columns.is-focused .column-empty { grid-column: 1 / -1; }
+@container (min-width: 780px) {
+  .task-board-page .task-columns.is-focused .task-column-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@container (max-width: 499px) {
+  .task-board-page .task-columns.is-focused .task-column-list { grid-template-columns: minmax(0, 1fr); }
+}
+@keyframes board-focus-cards {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 1100px) {
+  .task-board-status-button { flex-direction: column; justify-content: center; gap: 4px; }
+  .task-board-page .task-columns.is-focused { grid-template-columns: minmax(0, 1fr); }
+  .task-columns.is-focused > .task-column { grid-column: 1 / -1; }
+}
+@media (max-width: 720px) {
+  .task-board-page { --board-focus: 2fr; }
+  .task-board-page:not([data-board-status='ALL']) .task-board-status-button[aria-pressed='false'] { padding-inline: 4px; }
+  .task-board-page:not([data-board-status='ALL']) .task-board-status-button[aria-pressed='false'] .task-board-status-title { gap: 2px; }
+  .task-board-status-buttons { gap: 6px; }
+  .task-board-status-button { flex-direction: column; justify-content: center; gap: 4px; padding: 8px 4px; font-size: var(--text-caption); }
+  .task-board-status-title { gap: 4px; }
+  .task-board-status-count { padding: 0; background: transparent; }
+  .task-board-page .task-columns.is-focused .task-column-list { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .task-board-status-buttons, .task-board-status-button, .task-board-page .task-columns.is-focused { transition: none; }
+  .task-board-page .task-columns.is-focused .task-column-list { animation: none; }
 }
 .task-board-page .task-collection-heading {
   display: flex;

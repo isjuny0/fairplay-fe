@@ -362,7 +362,7 @@ function TeamDashboard({
           )}
           <button
             className="dashboard-text-button dashboard-widget-link"
-            onClick={() => onNavigate('작업', { mine: '1' })}
+            onClick={() => onNavigate('작업', { mine: '1', view: 'list' })}
           >
             내 작업 전체 보기 <ArrowUpRight size={15} />
           </button>
