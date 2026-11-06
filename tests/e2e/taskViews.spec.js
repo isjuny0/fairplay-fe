@@ -187,6 +187,15 @@ for (const width of [1440, 320])
           () => document.documentElement.scrollWidth <= innerWidth,
         ),
       ).toBe(true);
+      if (view === 'board') {
+        const states = page.getByRole('group', { name: '보드 상태 선택' });
+        await states.getByRole('button', { name: /할 일/ }).click();
+        await expect(page.locator('.task-column')).toHaveCount(1);
+        await expect(page.getByRole('region', { name: '할 일 작업' })).toBeVisible();
+        await states.getByRole('button', { name: /할 일/ }).click();
+        await expect(page.locator('.task-column')).toHaveCount(4);
+        await expect(page.getByLabel('작업 제목 검색')).toHaveCount(0);
+      }
       if (view === 'list')
         await expect(
           page.getByRole('table', { name: '정렬된 작업 목록' }),
@@ -518,12 +527,12 @@ test('검색으로 빈 일정은 필터만 초기화하고 등록된 작업이 �
   await expect(page.getByLabel('작업 제목 검색')).toHaveValue('');
   await expect(page.getByLabel('조회 시작 월')).toHaveValue('2032-01');
   await expect(page.getByRole('button', { name: '작업 있는 기간으로 이동', exact: true })).toBeVisible();
-  await page.evaluate(() => {
+  await page.addInitScript(() => {
     const state = JSON.parse(localStorage.getItem('fairplay:mock:v11:preview:1'));
     state.teams[1].tasks = [];
     localStorage.setItem('fairplay:mock:v11:preview:1', JSON.stringify(state));
   });
-  await page.getByRole('button', { name: '새로고침', exact: true }).click();
+  await page.reload();
   await expect(page.getByText('아직 등록된 작업이 없습니다. 새 작업을 만들어 시작하세요.', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '작업 있는 기간으로 이동', exact: true })).toHaveCount(0);
 });
@@ -639,26 +648,27 @@ test('작업 표는 날짜와 시간을 생략 없이 한 줄로 표시하고 �
 });
 
 
-test('접힌 모바일 필터의 조건을 해제하면 필터 버튼으로 복귀하고 초기화는 보기·월을 보존한다', async ({ page }) => {
+test('모바일 목록은 적용 조건 표시줄 없이 필터를 초기화하고 보기·월을 보존한다', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await seed(page, 'list', '&mine=1&sort=newest&q=팀+자료&keep=1');
+  await seed(page, 'list', '&mine=1&sort=newest&q=AI+피드백&status=REVISING&overdue=1&keep=1');
   await expect(page.getByLabel('작업 정렬')).toBeHidden();
   const filters = page.getByRole('group', { name: '적용 중인 검색·필터' });
-  await filters.getByRole('button', { name: '정렬: 최근 생성 순 해제', exact: true }).focus();
-  await page.keyboard.press('Enter');
-  await expect(page.getByRole('button', { name: '필터 · 2', exact: true })).toBeFocused();
-  expect(new URL(page.url()).searchParams.get('sort')).toBeNull();
-  expect(new URL(page.url()).searchParams.get('mine')).toBe('1');
-  await filters.getByRole('button', { name: '검색: 팀 자료 해제', exact: true }).click();
-  await expect(page.getByLabel('작업 제목 검색')).toBeFocused();
-  await page.getByRole('button', { name: '검색·필터 초기화', exact: true }).click();
+  await expect(filters).toHaveCount(0);
+  await page.getByRole('button', { name: '필터 · 5', exact: true }).click();
+  await expect(page.getByLabel('작업 정렬')).toHaveValue('newest');
+  await expect(page.getByLabel('내 담당 작업만')).toBeChecked();
+  await expect(page.getByLabel('마감 지난 작업만')).toBeChecked();
+  await page.getByRole('button', { name: '필터 · 5', exact: true }).click();
+  await page.getByRole('button', { name: '필터 초기화', exact: true }).click();
   await expect(page.getByLabel('작업 제목 검색')).toBeFocused();
   await expect(filters).toHaveCount(0);
   const params = new URL(page.url()).searchParams;
   expect(params.get('view')).toBe('list');
   expect(params.get('month')).toBe('2026-11');
   expect(params.get('keep')).toBe('1');
-  expect(params.has('mine')).toBe(false);
+  for (const key of ['status', 'mine', 'q', 'overdue', 'due', 'sort', 'page'])
+    expect(params.has(key)).toBe(false);
+  await expect(page.getByRole('button', { name: '필터 초기화', exact: true })).toBeDisabled();
 });
 
 
