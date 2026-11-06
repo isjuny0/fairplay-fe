@@ -1,3 +1,4 @@
+import DetailBackButton from './DetailBackButton.jsx';
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router";
 import {
@@ -131,14 +132,7 @@ export default function MeetingMinutes({
   return (
     <section className={`stack meeting-minutes-page${meetingMinuteId == null ? ' is-list' : ''}`}>
       {meetingMinuteId != null && (
-        <div className="meeting-detail-toolbar">
-          <button
-            className="secondary-button"
-            onClick={() => navigate(`${base}${query}`)}
-          >
-            ← 목록으로
-          </button>
-        </div>
+        <DetailBackButton onClick={() => navigate(`${base}${query}`)}>목록으로</DetailBackButton>
       )}
       <div className="page-heading">
         <div>

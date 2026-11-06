@@ -1,3 +1,4 @@
+import DetailBackButton from './DetailBackButton.jsx';
 import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { useEffect, useId, useState } from 'react';
 import SectionTabs from './SectionTabs.jsx';
@@ -48,7 +49,7 @@ export default function MemberContributions({ context, targetUserId, onBack, mem
   };
   return (
     <section className="stack member-contributions-page">
-      <button className="ghost-button back-button" onClick={onBack}>← 팀 관리</button>
+      <DetailBackButton onClick={onBack}>팀 관리</DetailBackButton>
       <div className="page-heading">
         <div><h1>{member?.name || '팀원'}님의 수행 상세</h1></div>
         <RefreshButton label="수행 상세 새로고침" disabled={resource.loading}

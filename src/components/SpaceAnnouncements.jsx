@@ -1,3 +1,4 @@
+import DetailBackButton from './DetailBackButton.jsx';
 import { useEffect, useRef, useState } from "react";
 import { downloadAnnouncementAttachments } from '../lib/announcementDownloads.js';
 import { useLocation } from "react-router";
@@ -161,6 +162,9 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
       <section
         className={`stack announcements-page${announcementId == null ? " is-list" : ""}`}
       >
+        {announcementId != null && (
+          <DetailBackButton onClick={() => navigate(`${base}${query}`)}>목록으로</DetailBackButton>
+        )}
         <div className="page-heading">
           <div className="announcement-title-group">
             <h1>
@@ -178,16 +182,8 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
                 <span className="announcement-pin">중요</span>
               )}
           </div>
-          <div className="heading-actions">
-            {announcementId != null && (
-              <button
-                className="secondary-button announcement-back-button"
-                onClick={() => navigate(`${base}${query}`)}
-              >
-                ← 목록으로
-              </button>
-            )}
-            {canManage && announcementId == null && (
+          {canManage && announcementId == null && (
+            <div className="heading-actions">
               <button
                 className="primary-button"
                 disabled={resource.loading && !resource.data}
@@ -195,8 +191,8 @@ export default function SpaceAnnouncements({ space, announcementId = null }) {
               >
                 공지 작성
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
         <ErrorNotice error={error} />
         <ResourceState

@@ -1,3 +1,4 @@
+import DetailBackButton from './DetailBackButton.jsx';
 import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { useEffect, useId, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -133,7 +134,7 @@ export default function ManagerDashboard({ context }) {
     openMember(id, userId);
   };
   return <section className={`stack space-operation-page manager-dashboard${teamId ? ' manager-dashboard--team' : ''}`}>
-    {teamId && <button type="button" className="ghost-button dashboard-back" onClick={() => selectTeam('')}>← 팀 목록</button>}
+    {teamId && <DetailBackButton onClick={() => selectTeam('')}>팀 목록</DetailBackButton>}
     <div className="page-heading page-heading--compact dashboard-page-heading">
       <div><h1>{teamId ? selectedTeamName : '팀 관리'}</h1></div>
       {teamId && <div className="dashboard-heading-actions">

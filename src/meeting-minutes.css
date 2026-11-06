@@ -7,7 +7,6 @@
   overflow-wrap: anywhere;
   margin: 0;
 }
-.meeting-detail-toolbar,
 .meeting-detail-actions {
   display: flex;
   align-items: center;

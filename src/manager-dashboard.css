@@ -1,12 +1,10 @@
 .main-content > .manager-dashboard:not(.manager-dashboard--team) { gap: var(--space-3); }
-.manager-dashboard .dashboard-back { align-self: flex-start; justify-self: start; min-height: 32px; padding: 4px 0; color: var(--text-muted); }
 .manager-dashboard .dashboard-page-heading { align-items: center; gap: 16px; }
 .dashboard-page-heading h1 { overflow-wrap: anywhere; }
 .dashboard-heading-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
 .dashboard-detail-panel { display: grid; gap: 24px; min-width: 0; }
 .dashboard-detail-panel > section { min-width: 0; }
 .main-content > .manager-dashboard.manager-dashboard--team { gap: 16px; }
-.manager-dashboard--team .dashboard-back { min-height: 24px; }
 .manager-dashboard--team .dashboard-detail-panel { gap: 16px; }
 .main-content .manager-dashboard .panel.dashboard-team-overview { padding: 0; border: 0; }
 .dashboard-team-list-header { display: grid; gap: 14px; }
