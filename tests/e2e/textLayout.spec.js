@@ -119,8 +119,8 @@ for (const width of widths) {
         expect(toggle.width).toBe(36);
         expect(toggle.height).toBe(36);
         expect(toggle.x).toBe(width <= 360 ? 12 : 16);
-        expect(context.x).toBeGreaterThanOrEqual(toggle.x + toggle.width + 10);
-        expect(Math.abs(toggle.y + toggle.height / 2 - context.y - context.height / 2)).toBeLessThan(1);
+        expect(context.x).toBe(toggle.x);
+        expect(context.y).toBeGreaterThanOrEqual(toggle.y + toggle.height);
       }
     }
     await page.screenshot({ path: info.outputPath('readable-team-controls.png'), animations: 'disabled' });
