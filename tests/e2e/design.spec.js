@@ -22,6 +22,7 @@ for (const width of [1440, 390]) {
     await expect(breadcrumb).not.toContainText('2026 캡스톤디자인');
     await page.getByRole('button', { name: 'Fairplay', exact: true }).click();
     await expect(header.locator('strong')).toHaveText('내 스페이스');
+    await expect(page.getByRole('heading', { name: '내 스페이스', exact: true })).toBeFocused();
     await page.locator('.preview-toolbar').waitFor({ state: 'visible' });
     if (!await page.getByLabel('미리보기 역할').isVisible())
       await page.getByRole('button', { name: '미리보기 설정', exact: true }).click();

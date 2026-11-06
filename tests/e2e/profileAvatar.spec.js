@@ -29,6 +29,10 @@ for (const width of [1440, 320]) {
     await expect(profile).toHaveCSS('width', '32px');
     await expect(profile).toHaveCSS('height', '32px');
     await expect(page.locator('.profile-name')).toHaveText('김준영');
+    if (width <= 720) {
+      await expect(page.getByRole('main').getByRole('heading', { level: 1 })).toBeFocused();
+      await page.getByRole('button', { name: '미리보기 설정', exact: true }).click();
+    }
     await expect(
       page.getByRole('button', { name: '미리보기 종료', exact: true }),
     ).toBeEnabled();

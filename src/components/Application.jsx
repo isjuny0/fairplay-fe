@@ -13,6 +13,7 @@ import googleLogo from '../assets/google-g.svg';
 import BrandLogo from './BrandLogo.jsx';
 import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import HeaderActivityActions from './HeaderActivityActions.jsx';
+import ProfileMenu from './ProfileMenu.jsx';
 import ScrollAffordances from './ScrollAffordances.jsx';
 import '../preview-controls.css';
 import '../header-profile.css';
@@ -223,6 +224,7 @@ export default function Application({ previewRuntime, onPreviewExit }) {
       <div className="app-shell">
         <header className="topbar">
           <div className="topbar-brand">
+            <span className="mobile-header-navigation-slot" ref={setMobileNavigationTarget} />
             <button
               className="brand-button"
               aria-label="Fairplay"
@@ -232,7 +234,6 @@ export default function Application({ previewRuntime, onPreviewExit }) {
             </button>
           </div>
           <div className="context-info" aria-label="현재 화면 정보">
-            <span className="mobile-header-navigation-slot" ref={setMobileNavigationTarget} />
             <span className="context-dot" aria-hidden="true" />
             <div className="header-context-copy">
               <strong title={currentHeader.spaceName || currentHeader.title}>{currentHeader.spaceName || currentHeader.title}</strong>
@@ -247,7 +248,7 @@ export default function Application({ previewRuntime, onPreviewExit }) {
             {guide && <button className="preview-toggle preview-guide-entry" aria-label="사용자 가이드" title="사용자 가이드" onClick={guide.open}>
               <BookOpen size={15} aria-hidden="true" /><span>사용자 가이드</span>
             </button>}
-            {preview && (
+            {preview && !guide && (
               <div
                 className="preview-toolbar"
                 ref={previewControls}
@@ -378,21 +379,32 @@ export default function Application({ previewRuntime, onPreviewExit }) {
                       예시 초기화
                     </button>
                   </div>
+                  <div className="preview-mobile-footer">
+                    <button
+                      className="secondary-button"
+                      disabled={busy}
+                      onClick={signOut}
+                    >
+                      미리보기 종료
+                    </button>
+                  </div>
                 </section>
               </div>
             )}
             <div className="profile-account-group">
               <HeaderActivityActions />
-              <span className="profile-avatar" aria-hidden="true">
-                {user.name?.slice(0, 1)}
-              </span>
-              <span className="profile-identity">
-                <span className="profile-name">{user.name}</span>
-              </span>
+              {preview ? <>
+                <span className="profile-avatar" aria-hidden="true">
+                  {user.name?.slice(0, 1)}
+                </span>
+                <span className="profile-identity">
+                  <span className="profile-name">{user.name}</span>
+                </span>
+              </> : <ProfileMenu key={location.pathname} user={user} busy={busy} onSignOut={signOut} />}
             </div>
-            <button className="logout-button" disabled={busy} onClick={signOut}>
-              {preview ? '미리보기 종료' : '로그아웃'}
-            </button>
+            {preview && <button className="logout-button preview-desktop-exit" disabled={busy} onClick={signOut}>
+              미리보기 종료
+            </button>}
           </div>
         </header>
         {error && <ErrorNotice error={error} />}

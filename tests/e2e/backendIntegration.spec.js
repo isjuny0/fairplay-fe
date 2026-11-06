@@ -2425,3 +2425,51 @@ test('평가 비중 예시는 96점에서 변경 비중에 따라 갱신되며 �
   await expect(generate).toBeEnabled();
   await expect(example).toContainText('94.0 / 100점');
 });
+
+for (const width of [320, 390, 1440]) {
+  test(`${width}px 로그인 사용자는 프로필 메뉴에서만 로그아웃한다`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    const { requests } = await backend(page);
+    let logoutCalls = 0;
+    await page.route('**/api/auth/logout', route => { logoutCalls++; return route.fulfill({ status: 204 }); });
+    await page.goto('/main');
+    await expect(page.getByRole('heading', { name: '내 스페이스', exact: true })).toBeFocused();
+    const trigger = page.getByRole('button', { name: '프로필 메뉴', exact: true });
+    const menu = page.getByRole('menu', { name: '계정 메뉴', exact: true });
+    await expect(trigger).toBeVisible();
+    await expect(page.getByRole('button', { name: '로그아웃', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('menuitem', { name: '로그아웃', exact: true })).toHaveCount(0);
+    await trigger.focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(menu.getByRole('menuitem', { name: '로그아웃', exact: true })).toBeFocused();
+    await expect(menu).toContainText('담당자');
+    const bounds = await menu.boundingBox();
+    expect(bounds.x).toBeGreaterThanOrEqual(0);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+    await expect(trigger).toBeFocused();
+    await trigger.click();
+    await page.mouse.click(4, 500);
+    await expect(menu).toBeHidden();
+    expect(logoutCalls).toBe(0);
+    await trigger.click();
+    await menu.getByRole('menuitem', { name: '로그아웃', exact: true }).click();
+    await expect(page).toHaveURL('/');
+    expect(logoutCalls).toBe(1);
+    expect(requests.some(item => item.path === '/api/auth/csrf')).toBe(true);
+  });
+}
+
+test('프로필 메뉴 로그아웃 실패 시 로그인 화면을 유지하고 오류를 표시한다', async ({ page }) => {
+  await backend(page);
+  await page.route('**/api/auth/logout', route => route.fulfill({ status: 503, json: { message: '잠시 후 다시 시도해 주세요.' } }));
+  await page.goto('/main');
+  await expect(page.getByRole('heading', { name: '내 스페이스', exact: true })).toBeFocused();
+  await page.getByRole('button', { name: '프로필 메뉴', exact: true }).click();
+  await page.getByRole('menuitem', { name: '로그아웃', exact: true }).click();
+  await expect(page).toHaveURL(/\/main$/);
+  await expect(page.getByRole('alert').filter({ hasText: '잠시 후 다시 시도해 주세요.' })).toBeVisible();
+  await page.getByRole('button', { name: '프로필 메뉴', exact: true }).click();
+  await expect(page.getByRole('menuitem', { name: '로그아웃', exact: true })).toBeEnabled();
+});

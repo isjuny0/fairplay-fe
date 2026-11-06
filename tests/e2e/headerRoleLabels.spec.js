@@ -38,9 +38,9 @@ for (const width of [1440, 1024, 768, 390, 320]) {
       expect(roleBox.x + roleBox.width).toBeLessThanOrEqual(width);
     if (width <= 720) {
       await expect(role).toBeVisible();
-      await expect(page.getByLabel('현재 화면 정보').getByRole('button')).toBeVisible();
+      await expect(page.locator('.mobile-header-navigation-slot').getByRole('button')).toBeVisible();
       await expect(page.locator('.workspace > aside')).toBeHidden();
-      expect(await page.locator('.topbar').evaluate(element => element.getBoundingClientRect().height)).toBe(148);
+      expect(await page.locator('.topbar').evaluate(element => element.getBoundingClientRect().height)).toBe(100);
     }
     const logoBox = await page
       .locator('.topbar-brand .brand-logo')
@@ -57,9 +57,9 @@ for (const width of [1440, 1024, 768, 390, 320]) {
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
-    await expect(
-      page.getByRole('button', { name: '미리보기 종료', exact: true }),
-    ).toBeEnabled();
+    const exit = page.getByRole('button', { name: '미리보기 종료', exact: true });
+    if (width <= 720) await expect(exit).toBeHidden();
+    else await expect(exit).toBeEnabled();
     await page
       .getByRole('button', { name: '미리보기 설정', exact: true })
       .click();
@@ -68,6 +68,8 @@ for (const width of [1440, 1024, 768, 390, 320]) {
       exact: true,
     });
     await expect(popover).toBeVisible();
+    await expect(exit).toBeEnabled();
+    if (width <= 720) await expect(popover.getByRole('button', { name: '미리보기 종료', exact: true })).toBeVisible();
     const popoverBox = await popover.boundingBox();
     const headerBox = await page.locator('.topbar').boundingBox();
     expect(popoverBox.x).toBeGreaterThanOrEqual(0);
@@ -211,3 +213,35 @@ test('리포트·관리자 원문 제목 위 문구를 제거하고 상태 표�
   await expect(page.getByRole('region', { name: '관리자 동료 평가 상세', exact: true })).toBeVisible();
   await expect(page.locator('.manager-peer-heading .eyebrow')).toHaveCount(0);
 });
+
+for (const width of [320, 390, 720]) {
+  test(`${width}px 미리보기 메뉴에서 설정·종료를 사용하고 닫은 뒤 초점이 돌아온다`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await openPreview(page, '/spaces/1/teams/1');
+    await expect(page.getByRole('button', { name: '사용자 가이드', exact: true })).toBeHidden();
+    expect((await page.locator('.topbar').boundingBox()).height).toBe(100);
+    const controls = await page.locator('.preview-guide-entry, .preview-toolbar > .preview-toggle, .profile-account-group').evaluateAll(elements => elements.map(element => {
+      const { left, right } = element.getBoundingClientRect();
+      return { left, right };
+    }));
+    for (let index = 1; index < controls.length; index++) expect(controls[index].left).toBeGreaterThanOrEqual(controls[index - 1].right);
+    expect(controls.at(-1).right).toBeLessThanOrEqual(width);
+    const toggle = page.getByRole('button', { name: '미리보기 설정', exact: true });
+    const popover = page.getByRole('region', { name: '미리보기 설정', exact: true });
+    await toggle.click();
+    await expect(page.getByLabel('미리보기 역할', { exact: true })).toBeFocused();
+    await expect(popover.getByRole('button', { name: '사용자 가이드', exact: true })).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await expect(popover).toBeHidden();
+    await expect(toggle).toBeFocused();
+    await toggle.click();
+    await page.mouse.click(4, 500);
+    await expect(popover).toBeHidden();
+    await toggle.click();
+    await page.getByLabel('미리보기 상황', { exact: true }).selectOption('published');
+    await expect(page.getByLabel('미리보기 상황', { exact: true })).toHaveValue('published');
+    await popover.getByRole('button', { name: '미리보기 종료', exact: true }).click();
+    await expect(page).toHaveURL('/');
+    await expect(page.locator('.preview-toolbar')).toHaveCount(0);
+  });
+}

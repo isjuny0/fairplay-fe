@@ -292,9 +292,9 @@ test('로그인 미리보기에는 공개 가이드 진입 버튼이 없다', as
   expect(calls).toEqual([]);
 });
 
-test('공개 화면에는 가이드를 표시하지 않고 전시 링크로만 체험할 수 있다', async ({
-  page,
-}) => {
+for (const width of [320, 390, 1440]) {
+test(`${width}px 공개 화면에는 가이드를 표시하지 않고 전시 링크로만 체험할 수 있다`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 900 });
   const apiCalls = [];
   await page.route('**/api/me', (route) =>
     route.fulfill({
@@ -328,20 +328,21 @@ test('공개 화면에는 가이드를 표시하지 않고 전시 링크로만 �
 
   await page.goto('/preview/exhibition');
   await expect(guideDialog).toBeVisible();
+  await expect(page.getByRole('button', { name: '미리보기 설정', exact: true })).toHaveCount(0);
   await expect(page).toHaveURL(/\/preview\/main$/);
   await guideDialog.press('Escape');
   await page.reload();
   await expect(guideButton).toBeVisible();
   await guideButton.click();
   await expect(guideDialog).toBeVisible();
-  await guideDialog.press('Escape');
-  await page.getByRole('button', { name: '미리보기 종료', exact: true }).click();
+  await guideDialog.getByRole('button', { name: '미리보기 종료', exact: true }).click();
   await expect(page).toHaveURL(/\/$/);
   await page.goto('/preview/main');
   await expect(page.getByRole('heading', { name: '내 스페이스', exact: true })).toBeVisible();
   await expect(guideButton).toHaveCount(0);
   expect(apiCalls.length).toBe(initialCalls);
 });
+}
 
 test('캡스톤디자인 미리보기는 팀 자료 검색에서 예시 답변과 연결 원문을 제공한다', async ({ page }) => {
   const calls = await preview(page, { path: '/spaces/1/teams/1/materials-search' });
@@ -517,4 +518,29 @@ test('평가 완료 상황에서 관리자가 전체 리포트를 생성하고 �
   await expect(generate).toBeEnabled();
   await expect(page.getByRole('region', { name: '팀별 리포트 결과', exact: true })).toHaveCount(0);
   expect(calls).toEqual([]);
+});
+
+for (const width of [320, 390, 1440]) {
+  test(`${width}px 일반 미리보기 진입은 이전 전시 모드를 해제하고 설정 버튼만 표시한다`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto('/preview/exhibition');
+    await expect(page.getByRole('dialog', { name: '사용자 가이드', exact: true })).toBeVisible();
+    await page.goto('/preview');
+    await expect(page).toHaveURL(/\/preview\/main$/);
+    await expect(page.getByRole('button', { name: '미리보기 설정', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: '사용자 가이드', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: '사용자 가이드', exact: true })).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByRole('button', { name: '사용자 가이드', exact: true })).toHaveCount(0);
+  });
+}
+
+test('전시 가이드의 자유 탐색은 설정할 수 있는 일반 미리보기로 전환한다', async ({ page }) => {
+  await page.goto('/preview/exhibition');
+  const guide = page.getByRole('dialog', { name: '사용자 가이드', exact: true });
+  await expect(guide).toBeVisible();
+  await guide.getByRole('button', { name: '자유 탐색 시작', exact: true }).click();
+  await expect(page).toHaveURL(/\/preview\/main$/);
+  await expect(page.getByRole('button', { name: '미리보기 설정', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '사용자 가이드', exact: true })).toHaveCount(0);
 });

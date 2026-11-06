@@ -292,8 +292,8 @@ test('상태 필터 없이 전체 팀을 표시하고 공개 후 목록 갱신�
 for (const width of [1079, 390]) {
   test(`리포트 관리자 가이드 ${width}px: 점수와 실제 원문을 검토하고 전체 공개한다`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
-    await enterExhibition(page);
     await preview(page, '/spaces/1/reports', 'manager', 'evaluated');
+    await enterExhibition(page);
     await page.getByRole('button', { name: '사용자 가이드', exact: true }).click();
     await page.getByRole('tab', { name: '관리자 가이드', exact: true }).click();
     await page.getByRole('button', { name: '리포트 생성·공개하기 시작', exact: true }).click();
@@ -391,8 +391,8 @@ for (const reducedMotion of ['no-preference', 'reduce']) {
 for (const width of [1079, 390]) {
   test(`기여도 리포트 가이드 ${width}px: 평가 전환과 연결 문서 조회를 직접 완료한다`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
-    await enterExhibition(page);
     await preview(page, '/spaces/1/teams/1/reports', 'leader', 'published');
+    await enterExhibition(page);
     await page.getByRole('button', { name: '사용자 가이드', exact: true }).click();
     await page.getByRole('button', { name: '내 기여도 확인하기 시작', exact: true }).click();
     const callout = page.locator('[data-preview-guide-callout]');
