@@ -4,7 +4,6 @@ import { ArrowUpRight } from 'lucide-react';
 import { getReportEvidence } from '../api/reportEvidence.js';
 import { ResourceState } from './ui.jsx';
 import useResource from '../hooks/useResource.js';
-import RefreshButton from './RefreshButton.jsx';
 import { ResultSummary } from './ReportScore.jsx';
 import ContributionEvidenceList from './ContributionEvidenceList.jsx';
 import '../contribution-evidence.css';
@@ -37,7 +36,6 @@ export default function ContributionEvidence({ id, context, report, member, memb
     </div>}
     <div className="evidence-section-heading"><h3>반영된 완료 작업</h3>
       {snapshot && <span>{snapshot.tasks.length}건</span>}
-      <RefreshButton data-guide="report-evidence-refresh" label="작업 근거 새로고침" disabled={evidence.loading} onClick={evidence.reload} />
     </div>
     <ResourceState resource={evidence} label="기여 근거">
       {snapshot && <>

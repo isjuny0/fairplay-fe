@@ -5,17 +5,14 @@ const screens = [
   ['/spaces/1', '2026 캡스톤디자인', '팀 목록 새로고침'],
   ['/spaces/1/announcements', '공지사항', '새로고침'],
   ['/spaces/1/teams/1', '삼위일체', '현황 새로고침'],
-  ['/spaces/1/teams/1/tasks', '작업', '새로고침'],
   ['/spaces/1/teams/1/tasks/103', 'AI 피드백 화면 개선', '새로고침'],
   ['/spaces/1/teams/1/deliverables', '팀 자료', '새로고침'],
-  ['/spaces/1/teams/1/materials-search', '팀 자료 검색', '팀 자료 새로고침'],
   ['/spaces/1/teams/1/members', '팀원 관리', '새로고침'],
   ['/spaces/1/teams/1/settings', '팀 설정', '현황 새로고침'],
   ['/spaces/1/teams/1/peer-evaluations', '동료 평가', '평가 상태 새로고침'],
   ['/spaces/1/teams/1/mid-feedback', '중간 피드백', '피드백 새로고침'],
   ['/spaces/1/teams/1/reports', '기여도 리포트', '리포트 새로고침'],
   ['/spaces/1/dashboard', '팀 관리', '현황 새로고침', 'manager'],
-  ['/spaces/1/rounds', '동료 평가 관리', '회차·제출 현황 새로고침', 'manager'],
   [
     '/spaces/1/reports',
     '리포트 관리',
@@ -119,11 +116,14 @@ test('공통 새로고침은 키보드와 비활성화를 지원하고 폼을 �
   page,
 }) => {
   await page.goto('/preview/main');
+  await expect(page.getByRole('main').getByRole('heading', { level: 1 }).first()).toBeFocused();
   await page.evaluate(async () => {
-    const { default: React } = await import('/node_modules/.vite/deps/react.js');
-    const { default: ReactDOM } = await import(
-      '/node_modules/.vite/deps/react-dom_client.js'
-    );
+    // Reuse the application's Vite module URLs so this fixture does not load a second React renderer.
+    const dependencyUrl = (name) => performance.getEntriesByType('resource')
+      .map((entry) => entry.name)
+      .find((url) => new URL(url).pathname === `/node_modules/.vite/deps/${name}.js`);
+    const { default: React } = await import(dependencyUrl('react'));
+    const { default: ReactDOM } = await import(dependencyUrl('react-dom_client'));
     const { default: RefreshButton } = await import(
       '/src/components/RefreshButton.jsx'
     );

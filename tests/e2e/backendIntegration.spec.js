@@ -616,6 +616,67 @@ test('2인 팀 중간 피드백에서 내 완료 작업량 비율과 현재 작�
   await expect(page.getByRole('button', { name: '내 진행 작업', exact: true })).toBeVisible();
 });
 
+test('중간 피드백 대기는 상단 새로고침 하나로 결과와 현재 작업을 함께 다시 조회한다', async ({ page }) => {
+  const { requests } = await backend(page);
+  let pending = true;
+  await page.route('**/api/teams/1/mid-feedback', (route) => pending
+    ? route.fulfill({ status: 409, json: { code: 'MID_FEEDBACK_NOT_READY', message: '평가 제출을 기다리고 있습니다.' } })
+    : route.fallback());
+  await page.goto('/spaces/1/teams/1/mid-feedback');
+  await expect(page.getByRole('heading', { name: '피드백을 준비하고 있습니다.' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '상태 다시 확인', exact: true })).toHaveCount(0);
+  const taskReads = requests.filter((request) => request.path === '/api/teams/1/tasks').length;
+  pending = false;
+  await page.getByRole('button', { name: '피드백 새로고침', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '중간 동료 평가 결과', exact: true })).toBeVisible();
+  await expect.poll(() => requests.filter((request) => request.path === '/api/teams/1/tasks').length).toBeGreaterThan(taskReads);
+});
+
+for (const width of [1440, 390]) {
+  test(`${width}px 자료 준비 중에는 자동 갱신하고 오류와 준비 완료 후에는 수동 조회를 제공한다`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.clock.install();
+    await backend(page);
+    let preparing = true, failed = false, reads = 0;
+    await page.route('**/api/teams/1/rag/index-status?*', (route) => {
+      reads += 1;
+      return route.fulfill(failed
+        ? { status: 503, json: { code: 'UPSTREAM_UNAVAILABLE', message: '자료 상태를 조회할 수 없습니다.' } }
+        : { json: { teamId: 1, enabled: true, readyCount: preparing ? 0 : 1, preparingCount: preparing ? 1 : 0,
+          failedCount: 0, unsupportedCount: 0, totalElements: 1, page: 0, size: 20,
+          items: [{ deliverableId: 1, deliverableVersion: 1, title: '검토 자료', status: preparing ? 'PREPARING' : 'READY' }] } });
+    });
+    await page.goto('/spaces/1/teams/1/materials-search');
+    if (width < 900) await page.locator('.rag-page').getByRole('button', { name: '팀 자료', exact: true }).click();
+    const panel = page.getByRole('region', { name: '팀 자료', exact: true });
+    const refresh = panel.getByRole('button', { name: '팀 자료 새로고침', exact: true });
+    await expect(panel).toContainText('준비 중 1개');
+    await expect(refresh).toHaveCount(0);
+    const initialReads = reads;
+    failed = true;
+    await page.clock.fastForward(5000);
+    await expect(panel.getByRole('alert')).toContainText('자료 상태를 조회할 수 없습니다.');
+    expect(reads).toBeGreaterThan(initialReads);
+    await expect(refresh).toBeVisible();
+    const failedReads = reads;
+    await page.clock.fastForward(10000);
+    expect(reads).toBe(failedReads);
+    failed = false;
+    await refresh.click();
+    await expect(panel).toContainText('준비 중 1개');
+    await expect(refresh).toHaveCount(0);
+    preparing = false;
+    await page.clock.fastForward(5000);
+    await expect(panel).toContainText('검색 가능 1개');
+    await expect(refresh).toBeVisible();
+    const completedReads = reads;
+    await page.clock.fastForward(10000);
+    expect(reads).toBe(completedReads);
+    await refresh.click();
+    await expect.poll(() => reads).toBeGreaterThan(completedReads);
+  });
+}
+
 test('팀 관리는 현재 DTO의 가중 진행률과 선택 팀 구성원을 표시한다', async ({
   page,
 }) => {
@@ -1382,10 +1443,8 @@ test('팀원은 공개 결과와 본인 근거만 보고 관리 API를 호출하
   expect(reads.length).toBeGreaterThan(0);
   expect(reads.every((request) => new URLSearchParams(request.query).get('userId') === members[0].userId)).toBe(true);
   expect(fixture.requests.some((request) => request.path.endsWith('/manager-dashboard') || /teams\/1\/responses$/.test(request.path))).toBe(false);
-  await expect(evidence.getByRole('button', { name: '작업 근거 새로고침', exact: true })).toHaveCount(1);
-  const evidenceReads = reads.length;
-  await page.getByRole('button', { name: '리포트 새로고침', exact: true }).click();
-  await expect.poll(() => fixture.requests.filter((request) => request.path.endsWith('/report/evidence')).length).toBeGreaterThan(evidenceReads);
+  await expect(evidence.getByRole('button', { name: '작업 근거 새로고침', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '리포트 새로고침', exact: true })).toHaveCount(0);
 });
 
 test('리포트의 작업 반영분 0을 누락 값으로 취급하거나 다른 수치로 대체하지 않는다', async ({ page }) => {

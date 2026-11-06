@@ -62,6 +62,7 @@ for (const width of [1440, 390, 320]) {
   test(`${width}px 다수 팀은 요약·검색·필터·정렬·페이지로 관리하고 조건을 복원한다`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 1000 });
     const state = await manyTeams(page);
+    await page.clock.install();
     await page.goto('/spaces/1/rounds');
     const mid = page.getByRole('region', { name: '중간 평가 팀별 제출 현황', exact: true });
     const final = page.getByRole('region', { name: '최종 평가 팀별 제출 현황', exact: true });
@@ -92,7 +93,10 @@ for (const width of [1440, 390, 320]) {
     await mid.getByLabel('팀 이름 검색', { exact: true }).fill('디자인 10팀');
     await expect(mid.locator('.round-team-submissions > li')).toHaveCount(1);
     await expect(mid).toContainText('디자인 10팀');
-    await page.getByRole('button', { name: '회차·제출 현황 새로고침', exact: true }).click();
+    await expect(page.getByRole('button', { name: '회차·제출 현황 새로고침', exact: true })).toHaveCount(0);
+    const reads = state.requests.filter((request) => request.path.endsWith('/manager-dashboard')).length;
+    await page.clock.fastForward(15000);
+    await expect.poll(() => state.requests.filter((request) => request.path.endsWith('/manager-dashboard')).length).toBeGreaterThan(reads);
     await expect(mid.getByLabel('팀 이름 검색', { exact: true })).toHaveValue('디자인 10팀');
     await expect(mid.locator('.round-team-submissions > li')).toHaveCount(1);
     await mid.getByLabel('팀 이름 검색', { exact: true }).fill('없는 팀');
@@ -155,15 +159,18 @@ for (const width of [1440, 390, 320]) {
 
 test('현황 권한 오류 후 이전 목록을 숨기고 재조회 시 필터를 복원한다', async ({ page }) => {
   const state = await manyTeams(page);
+  await page.clock.install();
   await page.goto('/spaces/1/rounds?submissionMIDStatus=missing');
   await expect(page.locator('.round-team-submissions')).toHaveCount(1);
   state.failDashboard = true;
-  await page.getByRole('button', { name: '회차·제출 현황 새로고침', exact: true }).click();
+  await expect(page.getByRole('button', { name: '회차·제출 현황 새로고침', exact: true })).toHaveCount(0);
+  await page.clock.fastForward(15000);
   await expect(page.getByRole('alert')).toContainText('현황 조회 권한이 없습니다.');
   await expect(page.locator('.round-team-submissions')).toHaveCount(0);
   state.failDashboard = false;
   await page.getByRole('button', { name: '회차·제출 현황 새로고침', exact: true }).click();
   await expect(page.locator('.round-team-submissions')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: '회차·제출 현황 새로고침', exact: true })).toHaveCount(0);
   await expect(page.getByRole('region', { name: '중간 평가 팀별 제출 현황', exact: true }).getByLabel('제출 상태', { exact: true })).toHaveValue('missing');
 });
 
@@ -180,12 +187,13 @@ test('참여 팀이 없으면 현황과 결과에 빈 상태를 표시한다', a
 
 test('초과 페이지는 마지막으로 보정하고 새로고침으로 팀 수가 줄어도 빈 페이지에 머물지 않는다', async ({ page }) => {
   const state = await manyTeams(page);
+  await page.clock.install();
   await page.goto('/spaces/1/rounds?submissionMIDPage=999&submissionMIDSort=name');
   const mid = page.getByRole('region', { name: '중간 평가 팀별 제출 현황', exact: true });
   await expect(mid.locator('.round-team-submissions > li')).toHaveCount(7);
   await expect(mid.getByRole('navigation')).toContainText('4 / 4페이지');
   state.rows.splice(3);
-  await page.getByRole('button', { name: '회차·제출 현황 새로고침', exact: true }).click();
+  await page.clock.fastForward(15000);
   await expect(mid.locator('.round-team-submissions > li')).toHaveCount(3);
   await expect(mid.getByRole('navigation')).toHaveCount(0);
 });

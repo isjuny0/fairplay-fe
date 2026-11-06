@@ -6,7 +6,7 @@ import { ragStatusLabels, ragFailureLabels } from '../lib/rag.js';
 import { ResourceState } from './ui.jsx';
 
 export default function RagMaterialList({
-  resource, page, setPage, onSelect, onDismiss, active,
+  resource, page, setPage, onSelect, onDismiss, active, autoRefreshing = false,
 }) {
   const data = resource.data;
   const guide = usePreviewGuide();
@@ -42,11 +42,11 @@ export default function RagMaterialList({
       <header className="rag-panel-heading">
         <h2>팀 자료 {data && <span>{data.totalElements.toLocaleString()}개</span>}</h2>
         <div className="rag-panel-actions">
-          <RefreshButton
+          {!autoRefreshing && <RefreshButton
             label="팀 자료 새로고침"
             disabled={resource.loading}
             onClick={resource.reload}
-          />
+          />}
           <button
             type="button"
             className="icon-button rag-mobile-panel-close"
