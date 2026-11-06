@@ -34,9 +34,9 @@
 .task-board-page .task-columns.is-focused { grid-template-columns: var(--board-tracks); transition: grid-template-columns 360ms cubic-bezier(.22, 1, .36, 1); }
 .task-columns.is-focused .task-column { container-type: inline-size; grid-column: var(--board-column); }
 .task-board-page .task-columns.is-focused .task-column-list { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; animation: board-focus-cards 240ms ease-out both; }
-.task-board-page:not([data-board-status='ALL']) .task-board-status-button[aria-pressed='false'] { padding-inline: 8px; gap: 6px; font-size: var(--text-caption); }
-.task-board-page:not([data-board-status='ALL']) .task-board-status-button[aria-pressed='false'] .task-board-status-title { gap: 6px; }
-.task-board-page:not([data-board-status='ALL']) .task-board-status-button[aria-pressed='false'] .task-board-status-count { min-width: 20px; padding-inline: 2px; }
+.task-board-page[data-task-view='board']:not([data-board-status='ALL']) .task-board-status-button[aria-pressed='false'] { padding-inline: 8px; gap: 6px; font-size: var(--text-caption); }
+.task-board-page[data-task-view='board']:not([data-board-status='ALL']) .task-board-status-button[aria-pressed='false'] .task-board-status-title { gap: 6px; }
+.task-board-page[data-task-view='board']:not([data-board-status='ALL']) .task-board-status-button[aria-pressed='false'] .task-board-status-count { min-width: 20px; padding-inline: 2px; }
 .task-columns.is-focused .column-empty { grid-column: 1 / -1; }
 @container (min-width: 780px) {
   .task-board-page .task-columns.is-focused .task-column-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -55,8 +55,8 @@
 }
 @media (max-width: 720px) {
   .task-board-page { --board-focus: 2fr; }
-  .task-board-page:not([data-board-status='ALL']) .task-board-status-button[aria-pressed='false'] { padding-inline: 4px; }
-  .task-board-page:not([data-board-status='ALL']) .task-board-status-button[aria-pressed='false'] .task-board-status-title { gap: 2px; }
+  .task-board-page[data-task-view='board']:not([data-board-status='ALL']) .task-board-status-button[aria-pressed='false'] { padding-inline: 4px; }
+  .task-board-page[data-task-view='board']:not([data-board-status='ALL']) .task-board-status-button[aria-pressed='false'] .task-board-status-title { gap: 2px; }
   .task-board-status-buttons { gap: 6px; }
   .task-board-status-button { flex-direction: column; justify-content: center; gap: 4px; padding: 8px 4px; font-size: var(--text-caption); }
   .task-board-status-title { gap: 4px; }
@@ -272,21 +272,12 @@
 .task-board-page .timeline-assignees { display: none; }
 .task-board-page .timeline-period::before { width: max(100%, 44px); height: 44px; }
 .task-board-page .timeline-months > span { text-align: left; padding-left: 8px; }
-.task-board-page .task-schedule[data-month-count='3'] .timeline-weeks > span:last-child { transform: translateX(-100%); }
-.task-board-page .timeline-status-counts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.task-board-page .timeline-status-counts .task-board-status-button {
-  flex-direction: column;
-  justify-content: center;
-  min-height: 80px;
-  padding: 10px 8px;
-  gap: 8px;
-  font-size: var(--text-body);
-}
-.task-board-page .timeline-status-counts .task-board-status-title { gap: 6px; }
-.task-board-page .timeline-status-counts .task-board-status-count { padding: 0; background: transparent; font-size: var(--text-body); }
-@media (max-width: 720px) {
-  .task-board-page .timeline-status-counts .task-board-status-button { min-height: 64px; padding: 8px 4px; gap: 4px; font-size: var(--text-caption); }
-  .task-board-page .timeline-status-counts .task-board-status-title { gap: 4px; }
+.task-board-page .timeline-weeks > span {
+  width: 40px;
+  padding: 2px 0;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  transform: translateX(-50%);
 }
 .timeline-touch-preview-content { overflow-wrap: anywhere; word-break: keep-all; line-height: 1.6; }
 .timeline-touch-preview-content > strong { display: block; margin: 12px 0; font-size: 18px; }

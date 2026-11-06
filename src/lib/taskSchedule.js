@@ -46,7 +46,6 @@ export function timelineWindow(month, monthCount = 1) {
   const weeks = [];
   let date = first;
   while (serialDate(date) <= serialDate(last)) {
-    if (weeks.length && serialDate(last) - serialDate(date) < 3) break;
     weeks.push({ date, left: position(date) });
     date = shiftDate(date, 7);
   }

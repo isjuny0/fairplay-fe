@@ -184,7 +184,7 @@ for (const width of [1440, 320])
       ['board', '보드'],
       ['list', '목록'],
       ['timeline', '타임라인'],
-    ]) {
+    ].filter(([view]) => width > 720 || view !== 'list')) {
       await page.getByRole('button', { name: label, exact: true }).click();
       await expect(
         page.getByRole('button', { name: label, exact: true }),
@@ -276,7 +276,8 @@ test('3개월 타임라인은 시작일 순서·오늘·지연 구간을 표시�
     '2026년 12월',
     '2027년 1월',
   ]);
-  await expect(timeline.locator('.timeline-weeks > span')).toHaveCount(13);
+  await expect(timeline.locator('.timeline-weeks > span')).toHaveCount(14);
+  await expect(timeline.locator('.timeline-weeks > span').last()).toHaveText('1/31');
   await expect(
     timeline.locator('.timeline-task-label .task-title-button'),
   ).toHaveText([
@@ -615,27 +616,24 @@ test('작업 표는 날짜와 시간을 생략 없이 한 줄로 표시하고 �
 });
 
 
-test('모바일 목록은 적용 조건 표시줄 없이 필터를 초기화하고 보기·월을 보존한다', async ({ page }) => {
+test('모바일 목록 주소는 타임라인으로 전환하며 조건·월을 보존하고 목록 페이지를 제거한다', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await seed(page, 'list', '&mine=1&sort=newest&q=AI+피드백&status=REVISING&overdue=1&keep=1');
-  await expect(page.getByLabel('작업 정렬')).toBeHidden();
-  const filters = page.getByRole('group', { name: '적용 중인 검색·필터' });
-  await expect(filters).toHaveCount(0);
-  await page.getByRole('button', { name: '필터 · 5', exact: true }).click();
-  await expect(page.getByLabel('작업 정렬')).toHaveValue('newest');
-  await expect(page.getByLabel('내 담당 작업만')).toBeChecked();
-  await expect(page.getByLabel('마감 지난 작업만')).toBeChecked();
-  await page.getByRole('button', { name: '필터 · 5', exact: true }).click();
-  await page.getByRole('button', { name: '필터 초기화', exact: true }).click();
-  await expect(page.getByLabel('작업 제목 검색')).toBeFocused();
-  await expect(filters).toHaveCount(0);
+  await seed(page, 'list', '&mine=1&q=AI+피드백&status=REVISING&overdue=1&keep=1&page=2');
+  const views = page.getByRole('group', { name: '작업 보기 방식' });
+  await expect(views.getByRole('button')).toHaveText(['보드', '타임라인']);
+  await expect(views.getByRole('button', { name: '타임라인', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page).toHaveURL(/view=timeline/);
   const params = new URL(page.url()).searchParams;
-  expect(params.get('view')).toBe('list');
   expect(params.get('month')).toBe('2026-11');
+  expect(params.get('q')).toBe('AI 피드백');
+  expect(params.get('mine')).toBe('1');
+  expect(params.get('status')).toBe('REVISING');
+  expect(params.get('overdue')).toBe('1');
   expect(params.get('keep')).toBe('1');
-  for (const key of ['status', 'mine', 'q', 'overdue', 'due', 'sort', 'page'])
-    expect(params.has(key)).toBe(false);
-  await expect(page.getByRole('button', { name: '필터 초기화', exact: true })).toBeDisabled();
+  expect(params.has('page')).toBe(false);
+  await expect(page.getByRole('table', { name: '정렬된 작업 목록' })).toHaveCount(0);
+  await expect(page.getByRole('group', { name: '타임라인 상태 필터' }).getByRole('button', { name: '수정 중', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: '내 담당', exact: true })).toHaveAttribute('aria-pressed', 'true');
 });
 
 
