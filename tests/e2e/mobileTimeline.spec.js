@@ -33,6 +33,9 @@ for (const width of [320, 390, 510, 720, 1024, 1440]) {
       await region.evaluate(el => { el.scrollLeft = 200; });
       expect(await region.evaluate(el => el.scrollLeft)).toBe(0);
       const axis = await region.locator('.timeline-scale').boundingBox();
+      const bounds = await region.boundingBox();
+      expect(Math.abs(axis.x - bounds.x - 1)).toBeLessThan(1);
+      expect(Math.abs(axis.width - bounds.width + 2)).toBeLessThan(1);
       for (const row of await region.locator('.timeline-row:not(.timeline-header)').all()) {
         const title = await row.locator('.timeline-task-label').boundingBox();
         const track = await row.locator('.timeline-track').boundingBox();
@@ -194,6 +197,8 @@ test('터치 장치에서 막대를 탭해 상세로 이동하며 데스크톱 �
   await expect(page.getByRole('group', { name: '타임라인 상태 필터' })).toBeVisible();
   await expect(page.getByRole('separator', { name: '작업명 영역 너비' })).toHaveCount(0);
   await expect(bar.locator('.timeline-assignees')).toBeHidden();
+  // Touch leaves the emulated pointer inside the resized bar; test a fresh mouse entry.
+  await page.mouse.move(0, 0);
   await bar.hover();
   await expect(page.getByRole('tooltip').and(page.locator('.timeline-preview'))).toContainText(longTitle);
   await page.keyboard.press('Escape');
