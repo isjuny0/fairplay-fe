@@ -69,6 +69,8 @@
 }
 
 .modal.preview-guide-launcher { width: min(800px, 100%); }
+.preview-guide-exit { display: flex; justify-content: flex-end; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.preview-guide-exit > button { min-height: 44px; }
 .preview-guide-launcher-intro { margin: 0 0 20px; color: var(--text-muted); font-size: 13px; line-height: 1.6; }
 .preview-guide-audience-tabs { display: flex; gap: 24px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
 .preview-guide-audience-tabs > button { position: relative; border: 0; border-radius: 0; background: transparent; padding: 12px 0; color: var(--text-muted); font-size: 14px; }

@@ -51,6 +51,9 @@
 .preview-toolbar .preview-popover[hidden] {
   display: none;
 }
+.preview-mobile-footer {
+  display: none;
+}
 .preview-popover-heading {
   display: flex;
   align-items: center;
@@ -106,6 +109,21 @@
 .preview-toolbar select:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
+}
+@media (max-width: 720px) {
+  .preview-mobile-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 16px;
+    margin-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .preview-mobile-footer > button {
+    width: 100%;
+    min-height: 44px;
+    white-space: nowrap;
+  }
 }
 @media (max-width: 600px) {
   .topbar:has(.preview-toolbar) .profile-avatar {

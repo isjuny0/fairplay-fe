@@ -16,6 +16,13 @@
 .profile-account-group { display: inline-flex; align-items: center; gap: 10px; min-width: 0; }
 .profile-identity .profile-name { display: block; max-width: 120px; }
 .mobile-header-navigation-slot { display: none; }
+.profile-menu { position: relative; }
+.profile-menu .profile-menu-trigger { width: 40px; height: 40px; min-width: 40px; min-height: 40px; border: 1px solid var(--border); border-radius: 50%; background: #f6f8f7; }
+.profile-menu-popover { position: absolute; top: calc(100% + 8px); right: 0; z-index: 80; width: 208px; max-width: calc(100vw - 24px); padding: 8px; border: 1px solid var(--border); border-radius: var(--radius-control); background: #fff; box-shadow: 0 8px 24px #20312a1f; }
+.profile-menu-name { margin: 0 0 4px; padding: 8px; color: var(--text-muted); font-size: 13px; overflow-wrap: anywhere; }
+.profile-menu-popover > button { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 10px 8px; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--text-primary); text-align: left; font: inherit; cursor: pointer; }
+.profile-menu-popover > button:hover, .profile-menu-popover > button:focus-visible { background: var(--brand-light); }
+.profile-menu button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
 @media (min-width: 721px) and (max-width: 1100px) {
   .app-shell > .topbar { column-gap: 16px; }
@@ -30,29 +37,34 @@
   .topbar .profile-identity { display: none; }
 }
 @media (max-width: 720px) {
-  .app-shell { --header-height: 108px; }
-  .app-shell > .topbar { grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 38px 36px; gap: 10px 8px; }
-  .app-shell > .topbar .context-info { display: flex; grid-column: 1 / -1; grid-row: 2; justify-self: start; width: 100%; padding: 0; gap: 12px; }
+  .profile-menu .profile-menu-trigger { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
+  .app-shell { --header-height: 100px; }
+  .app-shell > .topbar { grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 40px 44px; gap: 0 8px; padding-block: 8px 7px; }
+  .topbar .topbar-brand { gap: 8px; }
+  .topbar-brand .brand-button { min-width: 0; }
+  .topbar-brand .brand-logo { width: 112px; }
+  .app-shell > .topbar .context-info { display: flex; grid-column: 1 / -1; grid-row: 2; justify-self: start; width: 100%; height: 44px; padding: 0; border: 0; border-radius: 0; background: #fff; box-shadow: none; }
   .app-shell > .topbar .context-dot { display: none; }
   .app-shell > .topbar .header-context-copy { flex: 1; min-width: 0; }
+  .app-shell > .topbar .header-context-copy strong { flex: 1; font-size: 13px; }
+  .app-shell > .topbar .header-context-copy .header-context-role { margin-left: auto; padding: 3px 7px; border: 0; border-radius: var(--radius-control); background: var(--surface-muted, #f6f8f7); }
   .mobile-header-navigation-slot { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 36px; width: 36px; height: 36px; }
+  .topbar .mobile-header-navigation-slot .sidebar-toggle-glyph { position: relative; width: 18px; height: 2px; border: 0; border-radius: 1px; background: currentColor; }
+  .topbar .mobile-header-navigation-slot .sidebar-toggle-glyph::before,
+  .topbar .mobile-header-navigation-slot .sidebar-toggle-glyph::after { content: ''; position: absolute; left: 0; width: 18px; height: 2px; border: 0; border-radius: 1px; background: currentColor; }
+  .topbar .mobile-header-navigation-slot .sidebar-toggle-glyph::before { top: -6px; }
+  .topbar .mobile-header-navigation-slot .sidebar-toggle-glyph::after { top: 6px; }
+  .topbar .mobile-header-navigation-slot .sidebar-toggle-glyph.is-expanded::after { left: 0; }
   .topbar .profile-area, .profile-account-group { gap: 4px; }
   .topbar .profile-avatar, .profile-identity .profile-name { display: none; }
   .topbar .profile-identity { display: none; }
-  .app-shell:has(.preview-toolbar) { --header-height: 148px; }
-  .topbar:has(.preview-toolbar) { grid-template-rows: 38px 36px 36px; }
-  .app-shell > .topbar:has(.preview-toolbar) .context-info { grid-row: 3; }
-  .topbar .profile-area:has(.preview-toolbar) { display: contents; }
-  .topbar:has(.preview-toolbar) .topbar-brand { grid-column: 1; grid-row: 1; }
-  .profile-area:has(.preview-toolbar) .profile-account-group { grid-column: 2; grid-row: 1; justify-self: end; }
-  .topbar .preview-guide-entry { grid-column: 1; grid-row: 2; justify-self: start; width: 34px; height: 34px; min-height: 34px; padding: 8px; }
-  .preview-guide-entry > span { display: none; }
-  .topbar .profile-area:has(.preview-toolbar) .preview-toolbar { grid-column: 1; grid-row: 2; justify-self: start; position: static; }
-  .topbar .profile-area:has(.preview-guide-entry) .preview-toolbar { margin-left: 42px; }
-  .profile-area:has(.preview-toolbar) .logout-button { grid-column: 2; grid-row: 2; justify-self: end; }
-  .topbar:has(.preview-toolbar) .preview-popover { position: absolute; top: calc(100% + 8px); left: 12px; right: 12px; max-height: 60dvh; }
+  .topbar .preview-guide-entry,
+  .topbar .preview-toolbar > .preview-toggle { width: 34px; height: 34px; min-height: 34px; padding: 8px; justify-content: center; }
+  .topbar .preview-guide-entry > span,
+  .topbar .preview-toolbar > .preview-toggle > span { display: none; }
+  .topbar .preview-desktop-exit { display: none; }
 }
 @media (max-width: 360px) {
   .app-shell > .topbar { padding-inline: 12px; }
-  .topbar-brand .brand-logo { width: 100px; }
+  .topbar-brand .brand-logo { width: 92px; }
 }
