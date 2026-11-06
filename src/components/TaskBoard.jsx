@@ -8,6 +8,7 @@ import { useLocation, useSearchParams } from 'react-router';
 import { createTask, listTasks } from '../api/tasks.js';
 import useResource from '../hooks/useResource.js';
 import useCurrentTime from '../hooks/useCurrentTime.js';
+import useMobileLayout from '../hooks/useMobileLayout.js';
 import { useInteractions } from '../hooks/useInteractions.js';
 import {
   canModifyTeamWork,
@@ -66,7 +67,9 @@ export default function TaskBoard({
   const [preferences, setPreferences] = useState(readTaskViewPreferences);
   const [expandedBoardTaskIds, setExpandedBoardTaskIds] = useState(() => new Set());
   const urlView = searchParams.get('view');
-  const view = urlView !== null ? normalizeTaskView(urlView) : preferences.view;
+  const mobile = useMobileLayout('(max-width: 720px)');
+  const requestedView = urlView !== null ? normalizeTaskView(urlView) : preferences.view;
+  const view = mobile && requestedView === 'list' ? 'timeline' : requestedView;
   const timelineMonths = searchParams.get('months') === '3' ? 3 : 1;
   const isBoard = view === 'board';
   const statusKey = isBoard ? 'boardStatus' : 'status';
@@ -82,9 +85,10 @@ export default function TaskBoard({
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
       next.set('view', view);
+      if (mobile && requestedView === 'list') next.delete('page');
       return next;
     }, { replace: true, state: location.state });
-  }, [view, urlView, taskId, setSearchParams]);
+  }, [view, urlView, taskId, setSearchParams, mobile, requestedView]);
   const timelineLabelWidth = preferences.labelWidth;
   useEffect(() => {
     saveTaskViewPreferences({ view, labelWidth: timelineLabelWidth });
@@ -278,7 +282,7 @@ export default function TaskBoard({
             ['board', '보드'],
             ['list', '목록'],
             ['timeline', '타임라인'],
-          ].map(([mode, label]) => (
+          ].filter(([mode]) => !mobile || mode !== 'list').map(([mode, label]) => (
             <button
               key={mode}
               aria-pressed={view === mode}
