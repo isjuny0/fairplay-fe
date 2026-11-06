@@ -183,12 +183,26 @@ async function editor(page) {
 }
 
 for (const width of [320, 1440]) {
-  test(`${width}px 회의록 목록을 산출물처럼 표로 표시한다`, async ({
+  test(`${width}px 회의록은 모바일 목록 또는 데스크톱 표로 표시한다`, async ({
     page,
   }) => {
-    await backend(page);
+    const api = await backend(page);
+    if (width <= 720) {
+      api.items[0].title = '긴회의제목'.repeat(20);
+      api.items[0].authorName = '긴작성자이름'.repeat(8);
+    }
     await page.setViewportSize({ width, height: 900 });
     await page.goto(path);
+    if (width <= 720) {
+      const region = page.getByRole('region', { name: '회의록 목록', exact: true });
+      await expect(region.locator('.mobile-meeting-list > li')).toHaveCount(2);
+      const record = region.locator('.mobile-meeting-list > li').filter({ has: page.getByRole('button', { name: api.items[0].title, exact: true }) });
+      await expect(record.locator('time')).toBeVisible();
+      await expect(record.locator('.mobile-record-inline-meta')).toContainText(api.items[0].authorName);
+      await expect(record.locator('.mobile-record-inline-meta')).toContainText('참석 2명');
+      expect(await region.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+      return;
+    }
     const table = page.getByRole("table", {
       name: /회의록 목록: 제목, 회의일시/,
     });

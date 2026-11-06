@@ -8,6 +8,7 @@ import {
 } from "../api/meetingMinutes.js";
 import useAppNavigate from "../hooks/useAppNavigate.js";
 import useResource from "../hooks/useResource.js";
+import useMobileLayout from '../hooks/useMobileLayout.js';
 import { useInteractions } from "../hooks/useInteractions.js";
 import { formatDate } from "../lib/domain.js";
 import { isMeetingConflict, meetingSections } from "../lib/meetingMinutes.js";
@@ -27,6 +28,7 @@ export default function MeetingMinutes({
 }) {
   const navigate = useAppNavigate(),
     location = useLocation();
+  const mobile = useMobileLayout('(max-width: 720px)');
   const value = new URLSearchParams(location.search).get("page") || "0";
   const page =
     /^\d+$/.test(value) && Number(value) <= 2147483647 ? Number(value) : 0;
@@ -176,11 +178,23 @@ export default function MeetingMinutes({
             <>
               {resource.data.items.length ? (
                 <div
-                  className="table-scroll collection-table-scroll meeting-list-scroll"
+                  className={mobile ? 'mobile-list-region' : 'table-scroll collection-table-scroll meeting-list-scroll'}
                   role="region"
                   aria-label="회의록 목록"
-                  tabIndex={0}
+                  tabIndex={mobile ? undefined : 0}
                 >
+                  {mobile ? <ul className="mobile-record-list mobile-meeting-list">
+                    {resource.data.items.map(item => <li key={item.id} className="mobile-record meeting-open-row" onClick={event => {
+                      if (!event.target.closest('button, a')) navigate(`${base}/${item.id}${query}`);
+                    }}>
+                      <button type="button" className="collection-title-button" onClick={() => navigate(`${base}/${item.id}${query}`)}>{item.title}</button>
+                      <div className="mobile-record-inline-meta">
+                        <time dateTime={item.meetingAt} aria-label={`회의일시 ${formatDate(item.meetingAt)}`}>{formatDate(item.meetingAt)}</time>
+                        <span aria-label={`최초 작성자 ${item.authorName}`}>{item.authorName}</span>
+                        <span>참석 {item.attendeeCount}명</span>
+                      </div>
+                    </li>)}
+                  </ul> :
                   <table className="data-table collection-table meeting-table">
                     <caption className="sr-only">
                       회의록 목록: 제목, 회의일시, 최초 작성자, 참석자
@@ -220,7 +234,7 @@ export default function MeetingMinutes({
                         </tr>
                       ))}
                     </tbody>
-                  </table>
+                  </table>}
                 </div>
               ) : (
                 <EmptyState>등록된 팀 회의록이 없습니다.</EmptyState>

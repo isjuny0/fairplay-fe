@@ -184,7 +184,7 @@ for (const width of [1440, 320])
       ['board', '보드'],
       ['list', '목록'],
       ['timeline', '타임라인'],
-    ]) {
+    ].filter(([view]) => width > 720 || view !== 'list')) {
       await page.getByRole('button', { name: label, exact: true }).click();
       await expect(
         page.getByRole('button', { name: label, exact: true }),
@@ -276,7 +276,8 @@ test('3개월 타임라인은 시작일 순서·오늘·지연 구간을 표시�
     '2026년 12월',
     '2027년 1월',
   ]);
-  await expect(timeline.locator('.timeline-weeks > span')).toHaveCount(13);
+  await expect(timeline.locator('.timeline-weeks > span')).toHaveCount(14);
+  await expect(timeline.locator('.timeline-weeks > span').last()).toHaveText('1/31');
   await expect(
     timeline.locator('.timeline-task-label .task-title-button'),
   ).toHaveText([
@@ -341,7 +342,7 @@ test('타임라인 미리보기는 마우스·키보드로 확인하고 짧은 �
   await expect(page.getByRole('heading', { name: '전시 가이드 동선 점검', exact: true })).toBeVisible();
 });
 
-test('타임라인은 페이지에서 세로 이동하고 날짜와 작업명을 고정한다', async ({ page }, testInfo) => {
+test('타임라인은 가로 이동 없이 페이지에서 세로 이동하고 날짜 축을 고정한다', async ({ page }, testInfo) => {
   await page.clock.install({ time: new Date('2026-11-15T09:00:00Z') });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await seed(page, 'timeline', '', (state) => {
@@ -362,9 +363,12 @@ test('타임라인은 페이지에서 세로 이동하고 날짜와 작업명을
   }).toBeLessThan(2);
   await timeline.evaluate((element) => { element.scrollLeft = 120; element.scrollTop = 400; });
   expect(await timeline.evaluate((element) => element.scrollTop)).toBe(0);
-  const horizontalBounds = await timeline.boundingBox();
-  const labelBounds = await timeline.locator('.timeline-header .timeline-task-label').boundingBox();
-  expect(Math.abs(labelBounds.x - horizontalBounds.x - 1)).toBeLessThan(2);
+  expect(await timeline.evaluate(element => element.scrollLeft)).toBe(0);
+  expect(await timeline.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+  const row = timeline.locator('.timeline-row:not(.timeline-header)').nth(5);
+  const labelBounds = await row.locator('.timeline-task-label').boundingBox();
+  const trackBounds = await row.locator('.timeline-track').boundingBox();
+  expect(trackBounds.y).toBeGreaterThanOrEqual(labelBounds.y + labelBounds.height);
   await page.screenshot({ path: testInfo.outputPath('task-timeline-scroll.png') });
   await expect(page.getByLabel('조회 기간 작업 현황')).toHaveCount(0);
   await expect(timeline.locator('.timeline-row:not(.timeline-header)')).toHaveCount(30);
@@ -396,38 +400,27 @@ test('타임라인 상태 버튼은 재선택으로 해제하고 빈 결과에�
   await expect(page.locator('.timeline-task-label .task-title-button')).toHaveCount(6);
 });
 
-test('작업명 너비를 조절하고 미리보기를 닫아도 조회 조건과 너비를 유지한다', async ({ page }, testInfo) => {
+test('전체 너비 타임라인에서 미리보기를 닫아도 조회 조건과 날짜 축을 유지한다', async ({ page }, testInfo) => {
+  await page.addInitScript(() => localStorage.setItem('fairplay:task-view-preferences', JSON.stringify({ view: 'timeline', labelWidth: 520 })));
   await page.setViewportSize({ width: 1440, height: 1000 });
   await seed(page, 'timeline');
   await searchTasks(page, 'AI 피드백');
   const timeline = page.getByRole('region', { name: '작업 계획 타임라인' });
-  const resizer = page.getByRole('separator', { name: '작업명 영역 너비' });
-  await resizer.focus();
-  await page.keyboard.press('ArrowRight');
-  await expect(resizer).toHaveAttribute('aria-valuenow', '316');
-  const handle = await resizer.boundingBox();
-  await page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(handle.x + handle.width / 2 + 100, handle.y + handle.height / 2);
-  await page.mouse.up();
-  await expect(resizer).toHaveAttribute('aria-valuenow', '416');
+  await expect(page.getByRole('separator', { name: '작업명 영역 너비' })).toHaveCount(0);
   await expect(page.locator('.list-summary')).toHaveCount(0);
   await expect(page.locator('.timeline-task-label .task-title-button')).toHaveCount(1);
-  await page.screenshot({ path: testInfo.outputPath('task-timeline-resized.png') });
+  const track = timeline.locator('.timeline-track');
+  const before = await track.boundingBox();
+  expect(before.width).toBeGreaterThan((await timeline.boundingBox()).width * 0.9);
   const task = page.getByRole('button', { name: 'AI 피드백 화면 개선', exact: true });
   await task.focus();
   await expect(timelinePreview(page)).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(timelinePreview(page)).toHaveCount(0);
   expect(new URL(page.url()).searchParams.get('q')).toBe('AI 피드백');
-  await expect(resizer).toHaveAttribute('aria-valuenow', '416');
-  await resizer.focus();
-  await page.keyboard.press('Home');
-  await expect(resizer).toHaveAttribute('aria-valuenow', '220');
-  await page.keyboard.press('End');
-  await expect(resizer).toHaveAttribute('aria-valuenow', '520');
-  await resizer.dblclick();
-  await expect(resizer).toHaveAttribute('aria-valuenow', '300');
+  const after = await track.boundingBox();
+  expect(after).toEqual(before);
+  await page.screenshot({ path: testInfo.outputPath('task-timeline-full-width.png') });
 });
 
 test('마우스로 잠깐 지나친 작업은 미리보기를 열지 않고 키보드 초점은 즉시 표시한다', async ({ page }) => {
@@ -519,18 +512,14 @@ test('검색으로 빈 일정은 필터만 초기화하고 등록된 작업이 �
   await expect(page.getByRole('button', { name: /\d{4}년 \d{1,2}월 보기/ })).toHaveCount(0);
 });
 
-test('마지막 보기·너비는 재방문에 복원하고 주소의 보기·필터·월은 우선 적용한다', async ({ page }) => {
+test('마지막 보기는 재방문에 복원하고 주소의 보기·필터·월은 우선 적용한다', async ({ page }) => {
   await seed(page, 'timeline');
-  const resizer = page.getByRole('separator', { name: '작업명 영역 너비' });
-  await resizer.focus();
-  await page.keyboard.press('ArrowRight');
-  await expect(resizer).toHaveAttribute('aria-valuenow', '316');
   await page.reload();
-  await expect(resizer).toHaveAttribute('aria-valuenow', '316');
+  await expect(page.getByRole('region', { name: '작업 계획 타임라인' })).toBeVisible();
   await page.getByRole('button', { name: '팀 홈', exact: true }).click();
   await page.getByRole('button', { name: '작업', exact: true }).click();
   await expect(page.getByRole('button', { name: '타임라인', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await expect(resizer).toHaveAttribute('aria-valuenow', '316');
+  await expect(page.getByRole('region', { name: '작업 계획 타임라인' })).toBeVisible();
   await page.goto('/preview/spaces/1/teams/1/tasks?view=list&month=2026-11&q=AI+피드백&status=REVISING');
   await expect(page.getByRole('button', { name: '목록', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(page).toHaveURL(/month=2026-11/);
@@ -557,10 +546,11 @@ test('손상되거나 범위가 잘못된 보기 설정은 기본값으로 복�
   await expect(page.getByRole('button', { name: '보드', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.evaluate(() => localStorage.setItem('fairplay:task-view-preferences', JSON.stringify({ view: 'unknown', labelWidth: 9999 })));
   await page.goto('/preview/spaces/1/teams/1/tasks?view=timeline&month=2026-11');
-  await expect(page.getByRole('separator', { name: '작업명 영역 너비' })).toHaveAttribute('aria-valuenow', '300');
+  await expect(page.getByRole('region', { name: '작업 계획 타임라인' })).toBeVisible();
+  expect(await page.locator('.task-timeline-scroll').evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
 });
 
-test('브라우저 설정 저장이 차단되어도 작업 조회·보기 전환·너비 조절이 가능하다', async ({ page }) => {
+test('브라우저 설정 저장이 차단되어도 작업 조회와 보기 전환이 가능하다', async ({ page }) => {
   await page.addInitScript(() => {
     const read = Storage.prototype.getItem;
     const write = Storage.prototype.setItem;
@@ -574,10 +564,7 @@ test('브라우저 설정 저장이 차단되어도 작업 조회·보기 전환
     };
   });
   await seed(page, 'timeline');
-  const resizer = page.getByRole('separator', { name: '작업명 영역 너비' });
-  await resizer.focus();
-  await page.keyboard.press('ArrowRight');
-  await expect(resizer).toHaveAttribute('aria-valuenow', '316');
+  await expect(page.getByRole('region', { name: '작업 계획 타임라인' })).toBeVisible();
   await page.getByRole('button', { name: '목록', exact: true }).click();
   await expect(page.getByRole('table', { name: '정렬된 작업 목록' })).toBeVisible();
 });
@@ -629,27 +616,24 @@ test('작업 표는 날짜와 시간을 생략 없이 한 줄로 표시하고 �
 });
 
 
-test('모바일 목록은 적용 조건 표시줄 없이 필터를 초기화하고 보기·월을 보존한다', async ({ page }) => {
+test('모바일 목록 주소는 타임라인으로 전환하며 조건·월을 보존하고 목록 페이지를 제거한다', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await seed(page, 'list', '&mine=1&sort=newest&q=AI+피드백&status=REVISING&overdue=1&keep=1');
-  await expect(page.getByLabel('작업 정렬')).toBeHidden();
-  const filters = page.getByRole('group', { name: '적용 중인 검색·필터' });
-  await expect(filters).toHaveCount(0);
-  await page.getByRole('button', { name: '필터 · 5', exact: true }).click();
-  await expect(page.getByLabel('작업 정렬')).toHaveValue('newest');
-  await expect(page.getByLabel('내 담당 작업만')).toBeChecked();
-  await expect(page.getByLabel('마감 지난 작업만')).toBeChecked();
-  await page.getByRole('button', { name: '필터 · 5', exact: true }).click();
-  await page.getByRole('button', { name: '필터 초기화', exact: true }).click();
-  await expect(page.getByLabel('작업 제목 검색')).toBeFocused();
-  await expect(filters).toHaveCount(0);
+  await seed(page, 'list', '&mine=1&q=AI+피드백&status=REVISING&overdue=1&keep=1&page=2');
+  const views = page.getByRole('group', { name: '작업 보기 방식' });
+  await expect(views.getByRole('button')).toHaveText(['보드', '타임라인']);
+  await expect(views.getByRole('button', { name: '타임라인', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page).toHaveURL(/view=timeline/);
   const params = new URL(page.url()).searchParams;
-  expect(params.get('view')).toBe('list');
   expect(params.get('month')).toBe('2026-11');
+  expect(params.get('q')).toBe('AI 피드백');
+  expect(params.get('mine')).toBe('1');
+  expect(params.get('status')).toBe('REVISING');
+  expect(params.get('overdue')).toBe('1');
   expect(params.get('keep')).toBe('1');
-  for (const key of ['status', 'mine', 'q', 'overdue', 'due', 'sort', 'page'])
-    expect(params.has(key)).toBe(false);
-  await expect(page.getByRole('button', { name: '필터 초기화', exact: true })).toBeDisabled();
+  expect(params.has('page')).toBe(false);
+  await expect(page.getByRole('table', { name: '정렬된 작업 목록' })).toHaveCount(0);
+  await expect(page.getByRole('group', { name: '타임라인 상태 필터' }).getByRole('button', { name: '수정 중', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: '내 담당', exact: true })).toHaveAttribute('aria-pressed', 'true');
 });
 
 
@@ -673,5 +657,6 @@ test('이전 캘린더 주소와 저장된 보기는 목록으로 전환하고 �
   await expect(views.getByRole('button', { name: '목록', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(page).toHaveURL(/view=list/);
   await views.getByRole('button', { name: '타임라인', exact: true }).click();
-  await expect(page.getByRole('separator', { name: '작업명 영역 너비' })).toHaveAttribute('aria-valuenow', '316');
+  await expect(page.getByRole('separator', { name: '작업명 영역 너비' })).toHaveCount(0);
+  expect(await page.locator('.task-timeline-scroll').evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
 });

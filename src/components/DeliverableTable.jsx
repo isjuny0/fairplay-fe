@@ -1,4 +1,5 @@
 import Icon from "./Icon.jsx";
+import useMobileLayout from '../hooks/useMobileLayout.js';
 import {
   deliverablePermissions,
   formatDate,
@@ -17,6 +18,8 @@ export default function DeliverableTable({
   onEdit,
   onRemove,
 }) {
+  const mobile = useMobileLayout('(max-width: 720px)');
+  if (mobile) return <MobileDeliverableList {...{ deliverables, taskMap, team, user, members, busy, onOpen, onDownload, onEdit, onRemove }} />;
   return (
     <div
       className="table-scroll collection-table-scroll deliverable-table-scroll"
@@ -148,4 +151,38 @@ export default function DeliverableTable({
       </table>
     </div>
   );
+}
+
+function MobileDeliverableList({ deliverables, taskMap, team, user, members, busy, onOpen, onDownload, onEdit, onRemove }) {
+  return <div className="mobile-list-region" role="region" aria-label="팀 자료 목록">
+    <ul className="mobile-record-list mobile-material-list">
+      {deliverables.map(deliverable => {
+        const permissions = deliverablePermissions(deliverable, taskMap.get(deliverable.taskId), team, user.id);
+        const canManage = permissions.metadata || permissions.remove;
+        return <li key={deliverable.id} className="mobile-record">
+          <div className="mobile-record-heading">
+            <button type="button" className="collection-title-button" onClick={() => onOpen(deliverable.id)}>{deliverable.title}</button>
+            <span className="mobile-record-type">{deliverable.type === 'FILE' ? '파일' : '문서'}</span>
+            {deliverable.type === 'FILE' && <button type="button" className="ghost-button mobile-record-download" aria-label={`${deliverable.title} 파일 다운로드`} title="파일 다운로드" disabled={busy} onClick={() => onDownload(deliverable)}><Icon name="download" /></button>}
+          </div>
+          <dl className="mobile-record-meta">
+            <div><dt>등록자</dt><dd>{memberName(members, deliverable.authorId)}</dd></div>
+            <div><dt>수정일</dt><dd><time dateTime={deliverable.updatedAt}>{formatDate(deliverable.updatedAt)}</time></dd></div>
+          </dl>
+          {!canManage && deliverable.type !== 'FILE' && <span className="field-help">조회만 가능</span>}
+          <details className="mobile-record-details">
+            <summary aria-label={`${deliverable.title} 자료 정보${canManage ? '·관리' : ''}`}>자료 정보{canManage ? '·관리' : ''}</summary>
+            <dl className="mobile-record-pairs">
+              <div><dt>연결 작업</dt><dd>{deliverable.taskId == null ? '팀 공용' : taskMap.get(deliverable.taskId)?.title || '작업 정보 확인 불가'}</dd></div>
+              {deliverable.file && <div><dt>파일명</dt><dd>{deliverable.file.originalFilename}</dd></div>}
+            </dl>
+            {canManage && <div className="mobile-record-actions">
+              {permissions.metadata && <button type="button" className="secondary-button" disabled={busy} onClick={() => onEdit(deliverable)}>수정</button>}
+              {permissions.remove && <button type="button" className="secondary-button danger" disabled={busy} onClick={() => onRemove(deliverable)}>삭제</button>}
+            </div>}
+          </details>
+        </li>;
+      })}
+    </ul>
+  </div>;
 }

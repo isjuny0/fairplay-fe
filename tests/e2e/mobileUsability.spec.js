@@ -48,19 +48,19 @@ for (const viewport of [{width:320,height:740}, {width:390,height:844}, {width:6
   });
 }
 
-test('320px: 타임라인 날짜 막대가 고정 작업명 옆에서 보이고 가로로 이동할 수 있다', async ({page}) => {
+test('320px: 타임라인 작업명 아래의 날짜 막대를 가로 이동 없이 읽는다', async ({page}) => {
   await page.setViewportSize({width:320,height:740});
   await page.goto(`${team}/tasks`);
   await page.getByRole('button',{name:'타임라인',exact:true}).click();
   const region = page.getByRole('region',{name:'작업 계획 타임라인'});
-  const width = await region.evaluate(element => {
-    const label = element.querySelector('.timeline-task-label').getBoundingClientRect();
-    return {viewport:element.clientWidth,label:label.width,content:element.scrollWidth};
-  });
-  expect(width.viewport - width.label).toBeGreaterThan(100);
-  expect(width.content).toBeGreaterThan(width.viewport);
+  const row = region.locator('.timeline-row:not(.timeline-header)').first();
+  const title = await row.locator('.timeline-task-label').boundingBox();
+  const track = await row.locator('.timeline-track').boundingBox();
+  expect(track.y).toBeGreaterThanOrEqual(title.y + title.height);
+  expect(track.width).toBeGreaterThan(250);
+  expect(await region.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
   await region.evaluate(element => {element.scrollLeft = 200;});
-  expect(await region.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
+  expect(await region.evaluate(element => element.scrollLeft)).toBe(0);
 });
 
 test('390px: 알림함에서 모바일 메뉴를 펼치면 이전 팀 메뉴로 돌아갈 수 있다', async ({page}) => {

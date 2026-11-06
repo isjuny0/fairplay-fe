@@ -164,6 +164,7 @@ export function Modal({
   className = '',
   dirty = false,
   closeLabel = '닫기',
+  restoreFocusWithoutScroll = false,
 }) {
   const dialog = useRef(null);
   const titleId = useId();
@@ -231,7 +232,7 @@ export function Modal({
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = originalOverflow;
-      previousFocus?.focus();
+      previousFocus?.focus({ preventScroll: restoreFocusWithoutScroll });
     };
   }, []);
   return (
