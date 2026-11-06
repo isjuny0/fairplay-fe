@@ -97,7 +97,7 @@ for (const [view, selector] of [['board', '.board-task-card .task-title-button']
     const status = page.getByRole('group', { name: '작업 상태 선택' });
     const buttons = await status.getByRole('button').evaluateAll(elements => elements.map(element => element.getBoundingClientRect().top));
     expect(new Set(buttons).size).toBe(1);
-    await page.getByRole('button', { name: /^필터/ }).click();
+    await page.getByRole('button', { name: /^필터(?: · \d+)?$/ }).click();
     await expect(page.getByRole('checkbox', { name: '내 담당 작업만' })).toBeVisible();
     await page.getByRole('checkbox', { name: '내 담당 작업만' }).check();
     await expect(page).toHaveURL(/mine=1/);
@@ -108,9 +108,9 @@ for (const [view, selector] of [['board', '.board-task-card .task-title-button']
 test('390×844: 첫 자료와 첫 관리자 팀이 보이고 보조 동작을 사용할 수 있다', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`${team}/deliverables`);
-  await expect(page.locator('.deliverable-table tbody tr').first()).toBeInViewport();
+  await expect(page.locator('.mobile-material-list > li').first()).toBeInViewport();
   const sort = await page.getByRole('combobox', { name: '자료 정렬' }).boundingBox();
-  const filter = await page.getByRole('button', { name: /^필터/ }).boundingBox();
+  const filter = await page.locator('.deliverable-filter-toggle').boundingBox();
   expect(Math.abs(sort.y - filter.y)).toBeLessThan(8);
   await page.getByRole('button', { name: '자료에 질문하기', exact: true }).click();
   await expect(page).toHaveURL(/materials-search/);
