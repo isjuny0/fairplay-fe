@@ -11,10 +11,10 @@ for (const width of [320, 510, 720]) {
       await expect(page.locator('main h1').first()).toBeVisible();
       const aside = page.locator('.space-directory-layout > aside, .workspace > aside');
       const header = page.getByLabel('현재 화면 정보');
-      const button = header.getByRole('button');
+      const button = page.locator('.mobile-header-navigation-slot').getByRole('button');
       await expect(header.locator('strong')).toHaveText(route === '/preview/main' ? '내 스페이스' : '2026 캡스톤디자인');
       await expect(aside).toBeHidden();
-      expect((await page.locator('.topbar').boundingBox()).height).toBe(148);
+      expect((await page.locator('.topbar').boundingBox()).height).toBe(100);
       const box = await button.boundingBox();
       expect(box.x).toBe(width <= 360 ? 12 : 16);
       expect(box.width).toBe(36);
@@ -22,7 +22,7 @@ for (const width of [320, 510, 720]) {
       await button.click();
       await expect(page.getByRole('dialog')).toBeVisible();
       expect((await page.getByRole('dialog').boundingBox()).height).toBeGreaterThan(400);
-      expect((await page.locator('.topbar').boundingBox()).height).toBe(148);
+      expect((await page.locator('.topbar').boundingBox()).height).toBe(100);
       await page.keyboard.press('Escape');
     }
   });
@@ -76,8 +76,8 @@ test('스페이스 선택의 옆 메뉴도 바깥 클릭으로 닫히고 데스�
   expect(iconBox.width).toBe(36);
   expect(iconBox.height).toBe(36);
   expect(Math.abs(iconBox.x + iconBox.width / 2 - glyphBox.x - glyphBox.width / 2)).toBeLessThan(1);
-  expect(labelBox.x).toBeGreaterThanOrEqual(iconBox.x + iconBox.width + 10);
-  expect(Math.abs(iconBox.y + iconBox.height / 2 - labelBox.y - labelBox.height / 2)).toBeLessThan(1);
+  expect(labelBox.x).toBe(iconBox.x);
+  expect(labelBox.y).toBeGreaterThanOrEqual(iconBox.y + iconBox.height);
   await page.getByRole('button', { name: '스페이스 메뉴', exact: true }).click();
   await expect(page.getByRole('dialog', { name: '내 스페이스 메뉴' })).toBeVisible();
   await page.locator('.mobile-drawer-backdrop').click({ position: { x: 380, y: 400 } });

@@ -15,7 +15,7 @@ import PreviewGuideCompletion from './PreviewGuideCompletion.jsx';
 import { managerGuideStep } from '../mock/guide.js';
 import '../preview-guide.css';
 
-export default function PreviewGuideProvider({ children }) {
+export default function PreviewGuideProvider({ children, onExit }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { confirm, confirmDiscard, notify } = useInteractions();
@@ -271,7 +271,7 @@ export default function PreviewGuideProvider({ children }) {
       setGuide(null);
       setLauncher(false);
       window.dispatchEvent(new Event('fairplay:preview-updated'));
-      navigate('/preview/main');
+      navigate('/preview');
     } catch { setError('자유 탐색으로 이동하지 못했습니다. 다시 시도해 주세요.'); }
     finally { switchingGuide.current = false; setTransitioning(false); }
   };
@@ -387,6 +387,13 @@ export default function PreviewGuideProvider({ children }) {
     {launcher && <Modal title="사용자 가이드" className="preview-guide-launcher" onClose={() => { setLauncher(false); toggle.current?.focus(); }}>
       <PreviewGuideLauncher onStart={start} onFreeExplore={freeExplore} initialAudience={launcherAudience} busy={transitioning} />
       {error && <p role="alert">{error}</p>}
+      {onExit && <div className="preview-guide-exit">
+        <button className="text-button" type="button" onClick={async () => {
+          if (!(await confirmDiscard())) return;
+          onExit();
+          navigate('/', { replace: true });
+        }}>미리보기 종료</button>
+      </div>}
     </Modal>}
 
   </PreviewGuideContext.Provider>;
