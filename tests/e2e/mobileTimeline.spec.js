@@ -90,7 +90,7 @@ for (const width of [320, 390, 720]) {
     const titleBox = await title.boundingBox();
     expect(titleBox.height).toBeLessThanOrEqual(parseFloat(await title.evaluate(el => getComputedStyle(el).lineHeight)) * 2 + 1);
     expect(titleBox.y + titleBox.height).toBeLessThan(844);
-    await expect(page.locator('.timeline-assignees').first()).toBeHidden();
+    await expect(page.locator('.timeline-period').first().locator('.timeline-assignee').first()).toBeVisible();
     const selected = filters.getByRole('button', { name: '진행 중', exact: true });
     await selected.click();
     await expect(selected).toHaveAttribute('aria-pressed', 'true');
@@ -196,7 +196,7 @@ test('터치 장치에서 막대를 탭해 상세로 이동하며 데스크톱 �
   await expect(page.locator('body')).not.toHaveCSS('overflow', 'hidden');
   await expect(page.getByRole('group', { name: '타임라인 상태 필터' })).toBeVisible();
   await expect(page.getByRole('separator', { name: '작업명 영역 너비' })).toHaveCount(0);
-  await expect(bar.locator('.timeline-assignees')).toBeHidden();
+  await expect(bar.locator('.timeline-assignee').first()).toBeVisible();
   // Touch leaves the emulated pointer inside the resized bar; test a fresh mouse entry.
   await page.mouse.move(0, 0);
   await bar.hover();
