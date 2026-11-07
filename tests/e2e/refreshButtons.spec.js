@@ -7,8 +7,6 @@ const screens = [
   ['/spaces/1/teams/1/deliverables', '팀 자료', '새로고침'],
   ['/spaces/1/teams/1/members', '팀원 관리', '새로고침'],
   ['/spaces/1/teams/1/settings', '팀 설정', '현황 새로고침'],
-  ['/spaces/1/teams/1/peer-evaluations', '동료 평가', '평가 상태 새로고침'],
-  ['/spaces/1/teams/1/mid-feedback', '중간 피드백', '피드백 새로고침'],
   ['/spaces/1/teams/1/reports', '기여도 리포트', '리포트 새로고침'],
   [
     '/spaces/1/reports',

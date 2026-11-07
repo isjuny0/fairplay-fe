@@ -182,15 +182,13 @@ for (const width of [1440, 1280, 390]) {
     await expect(
       page.getByLabel('김영진 작업 수행 4점', { exact: true }),
     ).toBeChecked();
-    await expect(
-      page.getByRole('region', { name: '평가 최종 제출', exact: true }).getByRole('button', { name: '최종 제출', exact: true }),
-    ).toBeDisabled();
+    await expect(dock.getByRole('button', { name: '최종 제출', exact: true })).toHaveCount(0);
     await save.click();
     await expect(dock).toContainText('임시 저장됨 · 최종 제출 전입니다.');
     await expect(page.locator('.evaluation-progress')).toContainText('1 / 2명 저장');
-    await expect(
-      page.getByRole('region', { name: '평가 최종 제출', exact: true }).getByRole('button', { name: '최종 제출', exact: true }),
-    ).toBeDisabled();
+    const next = dock.getByRole('button', { name: '다음 미작성 팀원 · 박선우', exact: true });
+    await expect(next).toHaveClass('primary-button');
+    await expect(dock.getByRole('button', { name: '최종 제출', exact: true })).toHaveCount(0);
     expect(await withinViewport(save)).toBe(true);
     expect(
       await page.evaluate(

@@ -1,6 +1,5 @@
 import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { apiTimeToEpoch } from '../lib/koreanTime.js';
-import RefreshButton from './RefreshButton.jsx';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   useInteractions,
@@ -282,19 +281,21 @@ function RoundResponses({ context, round, onSubmitted }) {
   const followingTargets = [...targets.slice(currentIndex + 1), ...targets.slice(0, currentIndex)];
   const nextUnwritten = followingTargets.find(({ targetId }) =>
     !responses.some((response) => response.targetId === targetId));
-  const nextTarget = nextUnwritten ?? followingTargets[0];
+  const nextTarget = nextUnwritten ?? followingTargets.find(
+    ({ targetId }) => formStates[targetId]?.changed,
+  );
   const nextTargetLabel = nextUnwritten ? '다음 미작성 팀원' : '다음 팀원';
   useEffect(() => {
     if (activeTargetId)
       document.getElementById(`peer-target-heading-${round.id}`)?.focus();
   }, [activeTargetId, round.id]);
   const updateGuidePeer = guide?.setPeerGuideState;
-  const savedGuideResponse = Boolean(currentResponse && !currentState?.changed && !resource.loading && !saving);
+  const currentSaved = Boolean(currentResponse && !currentState?.changed && !resource.loading && !saving);
   useEffect(() => {
     if (!guidedPeer || !updateGuidePeer) return;
-    updateGuidePeer({ name: currentTarget?.name, saved: savedGuideResponse });
+    updateGuidePeer({ name: currentTarget?.name, saved: currentSaved });
     return () => updateGuidePeer(null);
-  }, [guidedPeer, updateGuidePeer, currentTarget?.name, savedGuideResponse]);
+  }, [guidedPeer, updateGuidePeer, currentTarget?.name, currentSaved]);
   const readyToSubmit =
     !locked &&
     targets.length > 0 &&
@@ -417,7 +418,6 @@ function RoundResponses({ context, round, onSubmitted }) {
                 onClick={() => guide.confirmPeerStep('peer-result')}>제출 결과 확인 완료</button>
             </div>}
             {!locked && currentTarget && (
-              <>
               <div
                 className="review-action-dock peer-evaluation-actions"
                 role="region"
@@ -432,9 +432,11 @@ function RoundResponses({ context, round, onSubmitted }) {
                         ? '현재 평가 저장 중'
                         : currentState?.changed
                           ? '변경 내용을 저장해 주세요.'
-                          : currentResponse
-                            ? '임시 저장됨 · 최종 제출 전입니다.'
-                            : '점수를 선택하고 대상별로 저장하세요.'}
+                          : readyToSubmit
+                            ? '모든 평가를 저장했습니다.'
+                            : currentResponse
+                              ? '임시 저장됨 · 최종 제출 전입니다.'
+                              : '점수를 선택하고 대상별로 저장하세요.'}
                     </span>
                   </div>
                   <div className="review-action-buttons">
@@ -449,47 +451,32 @@ function RoundResponses({ context, round, onSubmitted }) {
                         ? '저장 중…'
                         : `${currentTarget.name} 평가 저장`}
                     </button>
-                    {targets.length > 1 && (
+                    {nextTarget && (
                       <button
                         type="button"
-                        className="ghost-button"
-                        disabled={busy || saving}
+                        className={currentSaved ? 'primary-button' : 'ghost-button'}
+                        disabled={busy || saving || resource.loading}
                         onClick={() => setActiveTargetId(nextTarget.targetId)}
-                        data-guide={currentResponse && !currentState?.changed ? 'next-peer-target' : undefined}
+                        data-guide={currentSaved ? 'next-peer-target' : undefined}
                         aria-label={`${nextTargetLabel} · ${nextTarget.name}`}
                       >
                         {nextTargetLabel} →
                       </button>
                     )}
+                    {readyToSubmit && (
+                      <button
+                        type="button"
+                        className="primary-button"
+                        disabled={busy}
+                        data-guide="submit-peer-evaluation"
+                        onClick={() => setConfirming(true)}
+                      >
+                        최종 제출
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
-                <section
-                  className="peer-submit-bar"
-                  aria-label="평가 최종 제출"
-                >
-                  <div>
-                    <strong>전체 평가 제출</strong>
-                    <p>
-                      {hasChanges
-                        ? '미저장 변경 사항을 먼저 저장해 주세요.'
-                        : saving || resource.loading
-                          ? '저장 상태를 확인하고 있습니다.'
-                          : readyToSubmit
-                            ? '모든 평가를 저장했습니다. 최종 제출해 주세요.'
-                            : '모든 대상의 평가를 저장하면 제출할 수 있습니다.'}
-                    </p>
-                  </div>
-                  <button
-                    className="primary-button"
-                    disabled={!readyToSubmit || busy}
-                    data-guide="submit-peer-evaluation"
-                    onClick={() => setConfirming(true)}
-                  >
-                    최종 제출
-                  </button>
-                </section>
-              </>
             )}
           </>
         )}
@@ -567,11 +554,6 @@ function PeerEvaluationScreen({ context }) {
         <div>
           <h1>동료 평가</h1>
         </div>
-        <RefreshButton
-          label="평가 상태 새로고침"
-          disabled={resource.loading}
-          onClick={resource.reload}
-        />
       </div>
       <ResourceState resource={resource}>
         {rounds.length ? (

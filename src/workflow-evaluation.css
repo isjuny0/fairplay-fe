@@ -12,6 +12,4 @@
 .peer-evaluation-actions .review-action-context strong { font-size: 12px; }
 .peer-evaluation-page:has(.peer-evaluation-actions) { padding-bottom: calc(90px + env(safe-area-inset-bottom)); }
 html:has(.peer-evaluation-actions) { scroll-padding-bottom: 100px; }
-.peer-evaluation-page .peer-submit-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin: 0; }
-.peer-submit-bar p { margin: 4px 0; font-size: 12px; }
 }

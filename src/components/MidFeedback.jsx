@@ -5,7 +5,6 @@ import { workSummary } from '../lib/evaluation.js';
 import TeamProgressRing from './TeamProgressRing.jsx';
 import { getMidFeedback } from '../api/evaluations.js';
 import useResource from '../hooks/useResource.js';
-import RefreshButton from './RefreshButton.jsx';
 import { FeedbackHelp, FeedbackSummary } from './PlanningUi.jsx';
 import { EmptyState, ResourceState } from './ui.jsx';
 
@@ -70,14 +69,7 @@ export default function MidFeedback({ context, onNavigate }) {
   return (
     <section className="stack mid-feedback-page">
       <div className="page-heading page-heading--compact">
-        <div>
-          <h1>중간 피드백</h1>
-        </div>
-        <RefreshButton
-          label="피드백 새로고침"
-          disabled={resource.loading || tasks.loading}
-          onClick={() => { resource.reload(); tasks.reload(); }}
-        />
+        <h1>중간 피드백</h1>
       </div>
       <div className="mid-feedback-columns">
         <div className="mid-feedback-card mid-feedback-evaluation">
@@ -94,7 +86,6 @@ export default function MidFeedback({ context, onNavigate }) {
               ) : (
                 <EmptyState>
                   <h2>확인할 수 있는 내 피드백이 없습니다.</h2>
-                  <p>평가 정보를 새로고침해 다시 확인해 주세요.</p>
                 </EmptyState>
               )}
             </ResourceState>

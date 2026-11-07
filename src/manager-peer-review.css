@@ -300,4 +300,47 @@
   .peer-original-detail .manager-peer-table .manager-peer-score-row > * { padding: 0; }
   .peer-original-detail .manager-peer-table .manager-peer-reason-row td { padding-inline: 0; }
   .manager-peer-results--compact .manager-peer-submission-summary { gap: 8px 16px; }
+  .peer-original-detail-heading { align-items: flex-start; gap: 6px; margin-bottom: 12px; }
+  .peer-original-detail-heading > span { flex-basis: 100%; }
+  .peer-original-detail .manager-peer-table { display: grid; gap: 12px; }
+  .peer-original-detail .manager-peer-table tbody {
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    background: var(--surface);
+  }
+  .peer-original-detail .manager-peer-table .manager-peer-score-row {
+    gap: 10px 16px;
+    padding: 0;
+  }
+  .app-shell .peer-original-detail .manager-peer-score-row > th {
+    grid-row: 1;
+    font-size: var(--text-body);
+  }
+  .app-shell .peer-original-detail .manager-peer-score-row > td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    text-align: left;
+  }
+  .peer-original-detail .manager-peer-score-row td::before { margin: 0; }
+  .peer-original-detail .manager-peer-score-row > td > span { white-space: nowrap; }
+  .app-shell .peer-original-detail .manager-peer-score-row > .manager-peer-submitted-at {
+    grid-row: 2;
+    justify-content: flex-start;
+    margin-top: -6px;
+    padding-bottom: 2px;
+    font-size: var(--text-caption);
+  }
+  .peer-original-detail .manager-peer-submitted-at::before { content: none; }
+  .peer-original-detail .manager-peer-table .manager-peer-reason-row td {
+    margin-top: 12px;
+    padding: 12px 0 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 0;
+    text-align: left;
+  }
+  .peer-original-detail .manager-peer-reason-row p { margin-top: 4px; font-size: var(--text-body); line-height: 1.7; }
 }

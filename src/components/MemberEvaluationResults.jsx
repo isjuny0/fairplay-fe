@@ -34,9 +34,6 @@ function MemberRoundScores({ round, teamId, targetUserId, revision }) {
     <ResourceState resource={resource}>
       {result && (
         <>
-          <p className="member-evaluation-counts">
-            평가 {receivedResponses.length}건
-          </p>
           {result.missingCount > 0 && (
             <p className="notice">
               팀 전체 미제출 {result.missingCount}명 · 현재 최종 제출된 평가만
@@ -45,20 +42,21 @@ function MemberRoundScores({ round, teamId, targetUserId, revision }) {
           )}
           {receivedResponses.length ? (
             <dl className="member-evaluation-scores">
-              {Object.entries(peerCriteria).map(([criterion, label]) => (
-                <div key={criterion}>
-                  <dt>{label}</dt>
-                  <dd>
-                    {(
-                      receivedResponses.reduce(
-                        (sum, response) => sum + response.scores[criterion],
-                        0,
-                      ) / receivedResponses.length
-                    ).toFixed(2)}{' '}
-                    <span>/ 5</span>
-                  </dd>
-                </div>
-              ))}
+              {Object.entries(peerCriteria).map(([criterion, label]) => {
+                const average = receivedResponses.reduce(
+                  (sum, response) => sum + response.scores[criterion],
+                  0,
+                ) / receivedResponses.length;
+                return (
+                  <div key={criterion}>
+                    <dt>{label}</dt>
+                    <dd className={average < 3 ? 'is-low-score' : undefined}>
+                      {average.toFixed(2)}{' '}
+                      <span>/ 5</span>
+                    </dd>
+                  </div>
+                );
+              })}
             </dl>
           ) : (
             <p className="field-help">

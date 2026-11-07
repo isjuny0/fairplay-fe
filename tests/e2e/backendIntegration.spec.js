@@ -604,11 +604,10 @@ test('2인 팀 중간 피드백에서 내 완료 작업량 비율과 현재 작�
   await page.keyboard.press('Escape');
 
   tasks = [otherDone, active];
-  const refresh = page.getByRole('button', { name: '피드백 새로고침', exact: true });
-  await refresh.click();
+  await page.reload();
   await expect(share).toHaveText('0%');
   tasks = [active];
-  await refresh.click();
+  await page.reload();
   await expect(work.getByText('아직 완료된 작업이 없어요.')).toBeVisible();
   await expect(share).toHaveCount(0);
   await work.getByRole('button', { name: '내 작업 보기', exact: true }).click();
@@ -616,7 +615,7 @@ test('2인 팀 중간 피드백에서 내 완료 작업량 비율과 현재 작�
   await expect(page.getByRole('button', { name: '내 진행 작업', exact: true })).toBeVisible();
 });
 
-test('중간 피드백 대기는 상단 새로고침 하나로 결과와 현재 작업을 함께 다시 조회한다', async ({ page }) => {
+test('중간 피드백은 화면을 다시 열면 평가 결과와 현재 작업을 조회한다', async ({ page }) => {
   const { requests } = await backend(page);
   let pending = true;
   await page.route('**/api/teams/1/mid-feedback', (route) => pending
@@ -624,10 +623,10 @@ test('중간 피드백 대기는 상단 새로고침 하나로 결과와 현재 
     : route.fallback());
   await page.goto('/spaces/1/teams/1/mid-feedback');
   await expect(page.getByRole('heading', { name: '피드백을 준비하고 있습니다.' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '상태 다시 확인', exact: true })).toHaveCount(0);
+  await expect(page.locator('.mid-feedback-page > .page-heading').getByRole('button')).toHaveCount(0);
   const taskReads = requests.filter((request) => request.path === '/api/teams/1/tasks').length;
   pending = false;
-  await page.getByRole('button', { name: '피드백 새로고침', exact: true }).click();
+  await page.reload();
   await expect(page.getByRole('heading', { name: '중간 동료 평가 결과', exact: true })).toBeVisible();
   await expect.poll(() => requests.filter((request) => request.path === '/api/teams/1/tasks').length).toBeGreaterThan(taskReads);
 });
@@ -1991,7 +1990,8 @@ test('수행 상세는 대상 팀원의 중간·최종 수신 평균을 구분�
     '4.00 / 5',
     '5.00 / 5',
   ]);
-  await expect(mid.locator('.member-evaluation-counts')).toHaveText('평가 2건');
+  await expect(mid.locator('.member-evaluation-counts')).toHaveCount(0);
+  await expect(final.locator('.member-evaluation-scores dd.is-low-score')).toHaveText('2.00 / 5');
   await expect(mid).toContainText('팀 전체 미제출 1명');
   await expect(
     page.getByText('상세에 노출하지 않을 평가 사유', { exact: true }),
@@ -2090,9 +2090,7 @@ test('수행 상세는 수신 평가 없음·마감 정리 대기·권한 오류
     '4.00 / 5',
   ]);
   responseState = 'forbidden';
-  await page
-    .getByRole('button', { name: '수행 상세 새로고침', exact: true })
-    .click();
+  await page.reload();
   await expect(mid.getByRole('alert')).toContainText(
     '스페이스 관리자 권한이 없습니다.',
   );

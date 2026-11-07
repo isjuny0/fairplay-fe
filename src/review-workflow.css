@@ -57,25 +57,6 @@ html:has(.review-action-dock) {
   gap: 16px;
   min-width: 0;
 }
-.peer-evaluation-page .peer-evaluation-actions .peer-submit-bar {
-  display: flex;
-  flex: 0 1 360px;
-  min-width: 260px;
-  max-width: none;
-  margin: 0;
-  padding: 0 0 0 20px;
-  border: 0;
-  border-left: 1px solid var(--border);
-  border-radius: 0;
-  background: transparent;
-}
-.peer-evaluation-actions .peer-submit-bar strong {
-  font-size: var(--text-support);
-}
-.peer-evaluation-actions .peer-submit-bar p {
-  font-size: var(--text-caption);
-  line-height: 1.5;
-}
 .peer-score-grid {
   display: grid;
   gap: 8px 24px;
@@ -127,24 +108,6 @@ html:has(.review-action-dock) {
 }
 .report-review-page .report-team-result .section-heading p {
   margin-bottom: 0;
-}
-@media (max-width: 1100px) {
-  .peer-evaluation-actions {
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-  .peer-current-action {
-    flex-basis: 100%;
-  }
-  .peer-evaluation-page .peer-evaluation-actions .peer-submit-bar {
-    flex-basis: 100%;
-    padding: 10px 0 0;
-    border-left: 0;
-    border-top: 1px solid var(--border);
-  }
-  .peer-evaluation-page:has(.peer-evaluation-actions) {
-    padding-bottom: 220px;
-  }
 }
 @media (max-width: 720px) {
   .review-action-dock {

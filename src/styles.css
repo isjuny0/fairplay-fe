@@ -2232,20 +2232,6 @@ details > summary {
   font-size: var(--text-caption);
   color: #747e87;
 }
-.peer-submit-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  padding: 20px 24px;
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-}
-.peer-submit-bar p {
-  margin: 4px 0 0;
-  font-size: var(--text-support);
-}
 .peer-target {
   min-width: 0;
 }
@@ -2608,14 +2594,6 @@ details > summary {
   .peer-target-picker button.active {
     background: var(--brand-light);
     border-color: var(--brand);
-  }
-  .peer-submit-bar {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 16px;
-  }
-  .peer-submit-bar .primary-button {
-    width: 100%;
   }
   .score-options {
     justify-content: space-between;

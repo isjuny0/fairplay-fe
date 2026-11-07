@@ -834,11 +834,6 @@
 .member-evaluation-round .section-heading .field-help {
   margin: 0;
 }
-.member-evaluation-counts {
-  font-size: var(--text-support);
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
 .member-evaluation-scores {
   margin: 16px 0 0;
 }
@@ -856,6 +851,9 @@
 .member-evaluation-scores dd {
   font-weight: 500;
   font-variant-numeric: tabular-nums;
+}
+.member-evaluation-scores dd.is-low-score {
+  color: var(--notice-coral-text);
 }
 .member-evaluation-scores dd span {
   color: var(--text-muted);
