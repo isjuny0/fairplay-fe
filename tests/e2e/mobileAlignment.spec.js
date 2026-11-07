@@ -46,13 +46,13 @@ for (const width of [320, 390, 469, 600, 720]) {
   });
 
   if (width <= 600) {
-    test(`${width}px: 스페이스 선택 카드의 역할과 상태는 이름 아래에 정렬된다`, async ({ page }) => {
+    test(`${width}px: 스페이스 선택 카드의 역할과 관리자 이름은 스페이스 이름 아래에 정렬된다`, async ({ page }) => {
       await page.setViewportSize({ width, height: 1000 });
       await page.goto('/preview/main');
       const item = page.locator('.space-directory .space-list button').first();
       await expect(item).toBeVisible();
       const title = await item.locator('.directory-space-name').boundingBox();
-      for (const selector of ['.role-badge', '.building-status']) {
+      for (const selector of ['.role-badge', '.directory-space-manager']) {
         const box = await item.locator(selector).boundingBox();
         expect(Math.abs(box.x - title.x)).toBeLessThan(1);
         expect(box.y).toBeGreaterThanOrEqual(title.y + title.height);
