@@ -68,6 +68,8 @@ for (const width of [1440, 390, 320]) {
     expect(await status.evaluate(el => el.matches(':open'))).toBe(false);
     await expect(status).toBeFocused();
     await page.reload();
+    const expandFilters = page.getByRole('button', { name: /^필터.*펼치기$/ });
+    if (await expandFilters.isVisible()) await expandFilters.click();
     await expect(status).toHaveValue('FILE');
 
     await page.goto('/preview/main');
