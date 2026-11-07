@@ -200,7 +200,7 @@ test('작업 100건과 긴 파일명 20건은 웹 화면에서 바깥 가로 넘
     await page
       .getByRole('button', { name: deliverablePage(0)[0].title, exact: true })
       .click();
-    const dialog = page.getByRole('dialog', { name: '팀 자료 상세' });
+    const dialog = page.getByRole('dialog', { name: deliverablePage(0)[0].title, exact: true });
     await expect(dialog).toContainText(
       deliverablePage(0)[0].file.originalFilename,
     );

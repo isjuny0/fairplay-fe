@@ -365,23 +365,6 @@
   background: #fff2f2;
   color: #83242c;
 }
-.deliverable-detail {
-  gap: var(--space-6);
-}
-.deliverable-detail h3 {
-  margin: 8px 0 0;
-  font-size: var(--text-section);
-  overflow-wrap: anywhere;
-}
-.deliverable-detail h4 {
-  margin: 0 0 8px;
-  font-size: var(--text-body);
-}
-.deliverable-detail .preserve-lines {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  color: var(--text-primary);
-}
 .deliverable-facts {
   display: grid;
   gap: var(--space-3);

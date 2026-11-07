@@ -27,7 +27,7 @@ test('등록·수정·검색과 상세에서는 분류를 표시하지 않는다
   await dialog.getByLabel('제목', { exact: true }).fill('Fairplay 프로젝트 소개 수정');
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
   await page.getByRole('button', { name: 'Fairplay 프로젝트 소개 수정', exact: true }).click();
-  dialog = page.getByRole('dialog', { name: '팀 자료 상세', exact: true });
+  dialog = page.getByRole('dialog', { name: 'Fairplay 프로젝트 소개 수정', exact: true });
   await expect(dialog.locator('.deliverable-kind')).toHaveText('문서');
 });
 
@@ -123,7 +123,7 @@ test('공용 자료의 비작성 리더는 제목만 수정하고 본문을 유�
   await page
     .getByRole('button', { name: 'Fairplay 프로젝트 소개 정리', exact: true })
     .click();
-  await expect(page.getByRole('dialog', { name: '팀 자료 상세' })).toContainText(
+  await expect(page.getByRole('dialog', { name: 'Fairplay 프로젝트 소개 정리' })).toContainText(
     '목표: 팀 프로젝트의 역할과 수행 과정을 기록하고 기여도를 근거와 함께 확인합니다.',
   );
 });

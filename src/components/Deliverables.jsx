@@ -990,28 +990,20 @@ export default function Deliverables({
       </div>
       {selectedDeliverable && (
         <Modal
-          title={`${resourceName} 상세`}
+          title={selectedDeliverable.title}
           onClose={() => setSelectedDeliverableId(null)}
-          wide
+          className="deliverable-detail-modal"
+          restoreFocusWithoutScroll
+          wide={selectedDeliverable.type === "TEXT"}
         >
-          <div className="stack deliverable-detail">
-            <DeliverableContent
-              deliverable={selectedDeliverable}
-              task={taskMap.get(selectedDeliverable.taskId)}
-              members={members}
-              onDownload={download}
-            />
-            <ErrorNotice error={error} />
-            <div className="modal-actions">
-              <button
-                className="secondary-button close-action-button"
-                onClick={() => setSelectedDeliverableId(null)}
-                aria-label="산출물 상세 닫기"
-              >
-                닫기
-              </button>
-            </div>
-          </div>
+          <ErrorNotice error={error} />
+          <DeliverableContent
+            detail
+            deliverable={selectedDeliverable}
+            task={taskMap.get(selectedDeliverable.taskId)}
+            members={members}
+            onDownload={download}
+          />
         </Modal>
       )}
       {editing !== undefined && (

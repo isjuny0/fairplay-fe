@@ -248,13 +248,13 @@ test('긴 팀 자료 상세는 다운로드·닫기와 목록 초점 복귀를 �
     exact: true,
   });
   await title.click();
-  const dialog = page.getByRole('dialog', { name: '팀 자료 상세', exact: true });
+  const dialog = page.getByRole('dialog', { name: '팀 권한 점검표 파일', exact: true });
   const download = dialog.getByRole('button', {
     name: '파일 다운로드',
     exact: true,
   });
   await expect(download).toBeInViewport();
-  await dialog.locator('.deliverable-content-footer').scrollIntoViewIfNeeded();
+  await dialog.locator('.modal-body').evaluate((body) => { body.scrollTop = body.scrollHeight; });
   await expect(download).toBeInViewport();
   const downloaded = page.waitForEvent('download');
   await download.click();
