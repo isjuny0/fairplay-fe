@@ -129,7 +129,7 @@ export default function RagMaterialList({
           disabled={resource.loading || Boolean(resource.error) || !data?.enabled || !data.readyCount}
           onClick={() => guide.confirmMaterialsStep('materials-overview')}>자료 확인 완료</button>
       </div>}
-      <p className="rag-material-support">작성 문서·UTF-8 TXT·MD·텍스트가 있는 PDF를 검색합니다.</p>
+      <p className="rag-material-support">작성 문서, UTF-8 TXT·MD, 텍스트가 있는 PDF, Word(.docx)를 검색합니다.</p>
     </section>
   );
 }

@@ -204,7 +204,7 @@ function TeamMaterialSearch({ context }) {
         <p className="notice" role="status">
           {data.preparingCount
             ? '자료를 검색할 수 있도록 준비하고 있습니다. 준비가 완료되면 질문할 수 있습니다.'
-            : '검색 가능한 자료가 없습니다. 문서를 작성하거나 UTF-8 TXT·MD 또는 텍스트가 있는 PDF를 등록해 주세요.'}
+            : '검색 가능한 자료가 없습니다. 문서를 작성하거나 UTF-8 TXT·MD, 텍스트가 있는 PDF, Word(.docx)를 등록해 주세요.'}
           <button className="rag-inline-link" onClick={showMaterials}>
             팀 자료 확인
           </button>
