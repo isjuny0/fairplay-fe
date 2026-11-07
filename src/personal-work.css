@@ -42,7 +42,6 @@
 .notification-preview-title, .notification-preview-message { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .notification-preview-message, .notification-preview time { color: var(--text-muted); font-size: var(--text-support); }
 .notification-popover-state { margin: 14px 4px; color: var(--text-muted); font-size: var(--text-support); }
-.notification-popover-all { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 8px; padding: 9px; border: 0; border-radius: 8px; background: #f5f7f8; color: var(--brand-dark); }
 .personal-work-page { max-width: 1440px; overflow-x: clip; contain: layout; }
 .personal-work-page .page-heading { align-items: center; }
 .personal-work-page .page-heading > div { display: flex; align-items: center; }
