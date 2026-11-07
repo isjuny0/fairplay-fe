@@ -32,6 +32,8 @@
 .space-settings .settings-tab-panel .settings-section-content { max-width: none; }
 .space-settings .settings-tab-panel .settings-section-content > :is(form, dl) { max-width: 760px; }
 .space-settings .settings-tab-panel .settings-section-heading > p { max-width: 80ch; }
+.space-settings .settings-code-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.space-settings .settings-code-heading h2 { margin: 0; }
 @media (max-width: 720px) {
   .main-content .space-settings .settings-tab-panel > .settings-section { grid-template-columns: minmax(0, 1fr); gap: 16px; }
   .space-settings .settings-tab-panel .settings-section-heading > p { max-width: none; }

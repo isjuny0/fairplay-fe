@@ -136,7 +136,6 @@ export default function SpaceSettings({ space, onChanged }) {
         <section className="panel settings-section">
           <div className="settings-section-heading">
             <h2>팀 생성 기간</h2>
-            <details className="compact-help"><summary>기간 적용 규칙</summary><p>새 팀은 설정한 기간에 만들 수 있습니다. 기존 팀 가입 신청과 승인은 팀 구성이 고정될 때까지 가능합니다.</p></details>
           </div>
           <div className="settings-section-content">
             {space.teamBuildingOpensAt && space.teamBuildingClosesAt ? (
@@ -207,21 +206,18 @@ export default function SpaceSettings({ space, onChanged }) {
       <div className="settings-tab-panel" role="tabpanel" id={`${tabsId}-join-code-panel`} aria-labelledby={`${tabsId}-join-code-tab`} hidden={activeTab !== 'join-code'}>
         <section className="panel settings-section">
           <div className="settings-section-heading">
-            <h2>참여 코드</h2>
-            <p>
-              스페이스에 참여할 사람에게 코드를 전달하세요. 스페이스 참여 후 팀 목록에서 가입을 신청할 수 있습니다.
-            </p>
-            <p>코드 철회는 이미 참여한 사용자의 소속을 제거하지 않습니다.</p>
-          </div>
-          <div className="settings-section-content">
-            <div className="section-heading">
-              <h3>현재 참여 코드</h3>
+            <div className="settings-code-heading">
+              <h2>참여 코드</h2>
               <RefreshButton
                 label="코드 새로고침"
                 disabled={busy || codes.loading}
                 onClick={codes.reload}
               />
             </div>
+            <p>스페이스에 참여할 사람에게 코드를 전달하세요.</p>
+          </div>
+          <div className="settings-section-content">
+            <h3>현재 참여 코드</h3>
             <ResourceState resource={codes}>
               {codes.data ? (
                 <div className="join-code-content">
