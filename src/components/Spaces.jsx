@@ -264,7 +264,6 @@ export default function Spaces({ onSelect, onDirectoryContext, user }) {
                 <div className="space-directory-columns" aria-hidden="true">
                   <span>스페이스</span>
                   <span>내 역할</span>
-                  <span>관리자</span>
                   <span />
                 </div>
                 {visibleSpaces.length ? (
@@ -280,10 +279,6 @@ export default function Spaces({ onSelect, onDirectoryContext, user }) {
                             </small>
                           </span>
                           <SpaceRoleBadge space={space} user={user} />
-                          <span className="directory-space-manager">
-                            <span className="directory-space-manager-label">관리자 </span>
-                            {space.managerName || '—'}
-                          </span>
                           <Icon name="arrow" />
                         </button>
                       </li>
