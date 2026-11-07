@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 const sidebarSpaces = [
-  { id: 1, name: '서비스 디자인', myRole: 'USER', teamBuildingStatus: 'OPEN' },
+  { id: 1, name: '서비스 디자인', myRole: 'USER', managerName: '김준영', teamBuildingStatus: 'OPEN' },
   {
     id: 2,
     name: '캡스톤디자인',
@@ -40,6 +40,8 @@ test('목록 새로고침은 재사용 기간 안에도 최신 스페이스를 �
   await directory(page, { spaces });
   const list = page.getByRole('region', { name: '스페이스 목록', exact: true });
   await expect(list.getByRole('listitem')).toHaveCount(2);
+  await expect(list.locator('.directory-space-manager').first()).toHaveText('관리자 김준영');
+  await expect(list.getByText('팀 빌딩', { exact: true })).toHaveCount(0);
   spaces.push({
     id: 3,
     name: '새로 참여한 프로젝트',

@@ -250,7 +250,9 @@ async function executePreviewRequest(
   if (parts[1] === 'spaces') {
     if (parts.length === 2 && method === 'GET')
       return [
-        ...(!isRemovedSpaceParticipant(context, state) ? [context.space] : []),
+        ...(!isRemovedSpaceParticipant(context, state)
+          ? [{ ...context.space, managerName: previewUsers.manager.name }]
+          : []),
         ...(state.extraSpace ? [state.extraSpace] : []),
       ].map((space) => ({
         ...space,
@@ -261,6 +263,7 @@ async function executePreviewRequest(
         ...body,
         id: 3,
         myRole: 'MANAGER',
+        managerName: context.user.name,
         teamBuildingStatus: 'NOT_CONFIGURED',
         version: 0,
       };

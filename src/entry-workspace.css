@@ -508,10 +508,23 @@
   justify-self: center;
   text-align: center;
 }
-.space-directory .space-list .building-status,
+.space-directory .space-list .directory-space-manager,
 .space-directory .space-list button > .ui-icon {
   justify-self: center;
   text-align: center;
+}
+.directory-space-manager {
+  overflow-wrap: anywhere;
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+}
+.directory-space-manager-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 .space-directory .space-list .ui-icon {
   color: var(--text-muted);
@@ -708,11 +721,18 @@
   .directory-space-name {
     grid-column: 1 / -1;
   }
-  .space-directory .space-list .building-status {
+  .space-directory .space-list .directory-space-manager {
     grid-column: 1;
     grid-row: 3;
   }
-  .space-directory .space-list :is(.role-badge, .building-status) {
+  .directory-space-manager-label {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+  .space-directory .space-list :is(.role-badge, .directory-space-manager) {
     justify-self: start;
     text-align: left;
   }
