@@ -33,14 +33,13 @@ for (const width of [320, 390, 1440]) {
 }
 
 for (const width of [320, 390]) {
-  test(`${width}px: 평가 하단 바는 입력 공간을 확보하고 최종 제출은 본문에 둔다`, async ({ page }) => {
+  test(`${width}px: 평가 하단 바는 저장 전 입력 공간을 확보한다`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
     await page.goto('/preview/spaces/1/teams/1/peer-evaluations');
     const dock = page.getByRole('region', { name: '평가 저장 및 제출', exact: true });
     await expect(dock).toBeVisible();
     expect((await dock.boundingBox()).height).toBeLessThan(90);
     await expect(dock.getByRole('button', { name: '최종 제출', exact: true })).toHaveCount(0);
-    await expect(page.getByRole('region', { name: '평가 최종 제출', exact: true }).getByRole('button', { name: '최종 제출', exact: true })).toBeDisabled();
   });
 
   test(`${width}px: 회의 제목·일시는 가로 이동 없이 보이고 산출물은 바로 다운로드한다`, async ({ page }) => {

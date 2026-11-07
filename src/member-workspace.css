@@ -370,16 +370,6 @@
 .peer-response-layout .peer-card > .secondary-button {
   margin-top: 12px;
 }
-.peer-evaluation-page .peer-submit-bar {
-  position: static;
-  max-width: 1040px;
-  padding: 20px 0;
-  margin-top: 8px;
-  border: 0;
-  border-top: 1px solid var(--border);
-  border-radius: 0;
-  background: var(--surface);
-}
 .peer-evaluation-page .round-tabs {
   gap: 8px;
 }
@@ -507,9 +497,6 @@
   .evaluation-schedule-date time { flex-direction: column; gap: 2px; }
   .evaluation-schedule-date strong { font-size: 13px; }
   .evaluation-schedule-arrow { margin-top: 0; }
-  .peer-evaluation-page .peer-submit-bar {
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
-  }
   .team-report > .report-refresh {
     justify-self: start;
   }

@@ -120,7 +120,7 @@ for (const width of [1440, 390, 320]) {
     expect(state.requests.every((request) => request.method === 'GET')).toBe(true);
   });
 
-  test(`${width}px 팀 결과 바로가기와 팀 검색은 선택·회차·뒤로가기를 유지한다`, async ({ page }, testInfo) => {
+  test(`${width}px 팀 결과 바로가기와 팀 선택은 회차·뒤로가기를 유지한다`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 1000 });
     const state = await manyTeams(page);
     await page.goto('/spaces/1/rounds?submissionMIDSearch=디자인+6팀');
@@ -134,18 +134,13 @@ for (const width of [1440, 390, 320]) {
     await expect(page.getByRole('region', { name: '중간 평가 팀별 제출 현황', exact: true }).getByLabel('팀 이름 검색', { exact: true })).toHaveValue('디자인 6팀');
     await page.getByRole('button', { name: '디자인 6팀 중간 평가 결과 보기', exact: true }).click();
     await expect(panel.getByRole('heading', { name: '팀원 6님이 받은 평가', exact: true })).toBeVisible();
-    await panel.getByLabel('결과 조회 팀 검색', { exact: true }).fill('디자인 27팀');
-    await expect(panel.getByLabel('평가 결과 대상 팀', { exact: true }).getByRole('option')).toHaveText(['디자인 6팀', '디자인 27팀']);
+    await expect(panel.getByLabel('결과 조회 팀 검색', { exact: true })).toHaveCount(0);
     await panel.getByLabel('평가 결과 대상 팀', { exact: true }).selectOption('27');
     await expect(panel.getByRole('heading', { name: '팀원 27님이 받은 평가', exact: true })).toBeVisible();
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     await page.screenshot({ path: testInfo.outputPath('admin-peer-results.png'), animations: 'disabled' });
-    await panel.getByLabel('결과 조회 팀 검색', { exact: true }).fill('없는 팀');
-    await expect(panel.getByRole('status')).toContainText('검색 결과 0팀');
-    await expect(panel.getByRole('heading', { name: '팀원 27님이 받은 평가', exact: true })).toBeVisible();
     await page.reload();
     await expect(panel.getByLabel('평가 결과 대상 팀', { exact: true })).toHaveValue('27');
-    await expect(panel.getByLabel('결과 조회 팀 검색', { exact: true })).toHaveValue('없는 팀');
     await panel.getByLabel('결과 조회 회차', { exact: true }).selectOption('12');
     await expect(panel).toContainText('회차 마감 후 최종 제출된 평가를 조회할 수 있습니다.');
     expect(state.requests.some((request) => request.path === '/api/evaluation-rounds/12/teams/27/responses')).toBe(false);

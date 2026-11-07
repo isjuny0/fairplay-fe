@@ -120,13 +120,22 @@
 .round-start-block strong { font-weight: 500; }
 .round-start-block ul { margin: 4px 0 0; padding-left: 18px; color: var(--text-muted); }
 
-.round-management-page .manager-peer-scope.has-team-search { display: grid; grid-template-columns: minmax(140px, 1fr) minmax(140px, 1fr) minmax(140px, 1fr) 40px; align-items: end; gap: 12px; }
-.round-management-page .manager-peer-scope.has-team-search .form-field { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
-.round-management-page .manager-peer-scope.has-team-search :is(input, select) { width: 100%; min-width: 0; }
-@media (max-width: 900px) {
-  .round-management-page .manager-peer-scope.has-team-search { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 40px; }
-  .round-management-page .manager-peer-scope.has-team-search .form-field:first-child { grid-column: 1 / -1; }
+/* Keep the remaining team and round selectors aligned after removing team search. */
+.round-management-page .peer-response-content--compact .manager-peer-scope {
+  display: grid;
+  grid-template-columns: minmax(0, 240px) minmax(0, 240px) 42px;
+  align-items: end;
+  justify-content: start;
+  gap: 12px;
 }
+.round-management-page .peer-response-content--compact .manager-peer-scope .form-field {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+.round-management-page .peer-response-content--compact .manager-peer-scope select { width: 100%; min-width: 0; }
 @media (max-width: 720px) {
-  .round-management-page .manager-peer-scope.has-team-search { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px; }
+  .round-management-page .peer-response-content--compact .manager-peer-scope {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px;
+  }
 }

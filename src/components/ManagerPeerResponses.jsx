@@ -118,10 +118,6 @@ function PeerResponseContent({ context, teamId, compact = false }) {
   const selectedTeamId = requestedTeamId
     ? context.teams.find((team) => String(team.id) === String(requestedTeamId))?.id
     : context.teams[0]?.id;
-  const teamSearch = params.get('peerTeamSearch') || '';
-  const searchQuery = teamSearch.normalize('NFKC').trim().toLocaleLowerCase();
-  const matchingTeams = context.teams.filter((team) => team.name.normalize('NFKC').toLocaleLowerCase().includes(searchQuery));
-  const selectedOutsideSearch = selectedTeamId != null && !matchingTeams.some((team) => String(team.id) === String(selectedTeamId));
   const selectedRound =
     rounds.data?.find(
       (round) => String(round.id) === params.get('peerRoundId'),
@@ -131,7 +127,8 @@ function PeerResponseContent({ context, teamId, compact = false }) {
   const select = (name, value) => {
     const next = new URLSearchParams(params);
     if (value) next.set(name, value); else next.delete(name);
-    setParams(next, { replace: name === 'peerTeamSearch' });
+    next.delete('peerTeamSearch');
+    setParams(next);
   };
   const selectedTeamName = context.teams.find(
     (team) => String(team.id) === String(selectedTeamId),
@@ -154,10 +151,7 @@ function PeerResponseContent({ context, teamId, compact = false }) {
       </div>}
       {compact && <h2 className="sr-only">동료 평가 결과</h2>}
       <ResourceState resource={rounds} label="평가 회차">
-        <div className={`manager-peer-scope${!teamId && compact ? ' has-team-search' : ''}`} aria-label="결과 조회 범위">
-          {!teamId && compact && <Field label="결과 조회 팀 검색">
-            <input type="search" placeholder="팀 이름으로 검색" value={teamSearch} onChange={(event) => select('peerTeamSearch', event.target.value)} />
-          </Field>}
+        <div className="manager-peer-scope" aria-label="결과 조회 범위">
           {!teamId ? (
             <Field label="평가 결과 대상 팀">
               <select
@@ -165,8 +159,7 @@ function PeerResponseContent({ context, teamId, compact = false }) {
                 onChange={(event) => select('peerTeamId', event.target.value)}
               >
                 {!selectedTeamId && <option value="" disabled>팀을 선택해 주세요</option>}
-                {compact && selectedOutsideSearch && selectedTeamId && <optgroup label="현재 선택한 팀"><option value={selectedTeamId}>{selectedTeamName}</option></optgroup>}
-                {(compact ? matchingTeams : context.teams).map((team) => (
+                {context.teams.map((team) => (
                   <option key={team.id} value={team.id}>
                     {team.name}
                   </option>
@@ -195,7 +188,6 @@ function PeerResponseContent({ context, teamId, compact = false }) {
           )}
           {compact && <RefreshButton label="평가 결과 새로고침" disabled={rounds.loading} onClick={() => { rounds.reload(); setRefreshVersion((version) => version + 1); }} />}
         </div>
-        {!teamId && compact && teamSearch && <p className="round-table-note" role="status">검색 결과 {matchingTeams.length}팀{matchingTeams.length === 0 ? ` · 일치하는 팀이 없습니다.${selectedTeamId ? ' 현재 선택한 팀의 결과를 유지합니다.' : ''}` : ''}</p>}
         {selectedRound && selectedTeamId ? (
           <>
             {selectedRound.status === 'CLOSED' ? (
