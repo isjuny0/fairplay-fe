@@ -193,7 +193,7 @@ test('관리자가 리포트를 공개하면 팀원은 본인 완료 작업과 �
   await expect(evidence).toContainText('현재 연결 자료');
   await expect(evidence.locator('.evidence-time-note')).toHaveCount(0);
   await expect(evidence).toContainText('현재 연결된 자료가 없습니다.');
-  await evidence.getByRole('link', { name: '현재 내 완료 작업 목록' }).click();
+  await evidence.getByRole('link', { name: '완료 작업 목록' }).click();
   await expect(page).toHaveURL(/\/preview\/spaces\/1\/teams\/1\/tasks\?view=list&status=DONE&mine=1$/);
   await expect(page.getByRole('heading', { name: '작업', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '종합 평가 리포트 연동', exact: true })).toBeVisible();

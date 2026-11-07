@@ -1,11 +1,11 @@
-import { useEffect, useId, useState } from 'react';
-import { ChevronDown, CircleHelp, Download, FileText } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ChevronDown, Download, FileText } from 'lucide-react';
 import { ApiError } from '../api/client.js';
 import { downloadDeliverable, listDeliverables } from '../api/deliverables.js';
 import useResource from '../hooks/useResource.js';
 import { ErrorNotice, ResourceState } from './ui.jsx';
 import MarkdownBody from './MarkdownBody.jsx';
-import { formatDate, formatExpectedWorkload } from '../lib/domain.js';
+import { formatDate } from '../lib/domain.js';
 import { formatReportNumber } from './ReportScore.jsx';
 
 const formatWorkUnits = (value) => value == null ? '—' : Number(value).toLocaleString('ko-KR', { maximumFractionDigits: 2 });
@@ -38,9 +38,6 @@ export default function ContributionEvidenceList({ evidence, showCalculation = t
         <ChevronDown size={16} aria-hidden="true" />
       </button>
       {taskId === task.taskId && <div className="evidence-task-body" data-guide-report-task-body={task.taskId} id={`report-${evidence.reportId}-evidence-${task.taskId}`}>
-        <div className="evidence-task-summary">
-          <span>작업량 · {formatExpectedWorkload(task.weightAtCutoff)} <TaskAllocationHelp task={task} /></span>
-          <span>완료 {formatDate(task.completedAt)}</span></div>
         {task.current.availability === 'MISSING' ? <p className="notice">현재 작업을 조회할 수 없습니다. 리포트에 저장된 완료일·작업량·담당 비율은 유지됩니다.</p>
           : <CurrentEvidence key={`${task.taskId}:${task.current.version}`} task={task} evidence={evidence} guide={guide} />}
       </div>}
@@ -54,30 +51,11 @@ export default function ContributionEvidenceList({ evidence, showCalculation = t
   </div>;
 }
 
-function TaskAllocationHelp({ task }) {
-  const tooltipId = useId();
-  const [open, setOpen] = useState(false);
-  return <span className="report-component-help evidence-allocation-help"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={(event) => { if (!event.currentTarget.contains(document.activeElement)) setOpen(false); }}
-      onKeyDown={(event) => { if (event.key === 'Escape') setOpen(false); }}>
-      <button type="button" aria-label="담당 비율의 기여도 반영 방식" aria-describedby={open ? tooltipId : undefined}
-        onFocus={() => setOpen(true)} onBlur={() => setOpen(false)} onClick={() => setOpen(true)}>
-        <CircleHelp size={15} aria-hidden="true" />
-      </button>
-      {open && <span className="report-component-tooltip" id={tooltipId} role="tooltip">
-        작업 규모에 부여한 점수에 리포트 집계 당시의 담당 비율을 곱합니다.
-        <span>{formatWorkUnits(task.weightAtCutoff)}점 × {task.allocationAtCutoff}% = {formatWorkUnits(task.assignedUnits)}점 반영</span>
-        <span>이 값은 완료 작업량을 집계하는 단위입니다. 종합점수에 더해지는 점수나 실제 소요 시간을 의미하지 않습니다.</span>
-      </span>}
-    </span>;
-}
-
 function CurrentEvidence({ task, evidence, guide }) {
   const [materialId, setMaterialId] = useState(null);
   const material = task.current.materials.find((item) => item.id === materialId);
   return <>
-    <div className="evidence-current-label">현재 작업 정보 <span>수정 {formatDate(task.current.updatedAt)}</span></div>
+    <div className="evidence-current-label">현재 작업 정보</div>
     <section className="evidence-contribution"><h4>본인 수행 설명</h4>
       <p className="preserve-lines">{task.current.contributionDescription || '현재 조회할 수 있는 수행 설명이 없습니다.'}</p></section>
     <section className="evidence-materials"><div className="section-heading"><h4>현재 연결 자료</h4><span>{task.current.materials.length}개</span></div>

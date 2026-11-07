@@ -1,5 +1,7 @@
 .report-score-summary.composite-summary { grid-template-columns: 200px minmax(0, 1fr); align-items: start; gap: 24px 32px; padding-block: 24px; border-top: 0; }
 .report-score-summary.composite-summary .report-score-total { width: auto; min-height: 0; align-items: flex-start; justify-content: flex-start; padding: 16px 0; text-align: left; }
+.report-member-evidence--personal .report-score-summary.composite-summary { padding-top: 12px; }
+.report-member-evidence--personal .report-score-summary.composite-summary .report-score-total { padding-top: 0; }
 .report-score-summary.composite-summary .report-score-total h2 { font-size: 14px; font-weight: 500; margin-bottom: 18px; }
 .report-score-summary.composite-summary .report-score-total > strong { font-size: 48px; letter-spacing: -1.5px; }
 .report-score-summary.composite-summary .report-score-total > strong > span { display: block; margin: 8px 0 0; font-size: 14px; color: var(--text-muted); letter-spacing: 0; }

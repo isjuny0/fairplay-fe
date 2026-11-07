@@ -40,7 +40,7 @@ export default function ContributionEvidence({ id, context, report, member, memb
     <ResourceState resource={evidence} label="기여 근거">
       {snapshot && <>
         <ContributionEvidenceList key={`${snapshot.reportId}:${snapshot.userId}`} evidence={snapshot} showCalculation={false} compact guide={guide || managementGuide} />
-        {currentTasksHref && <Link className="report-current-tasks-link" to={currentTasksHref}>현재 내 완료 작업 목록<ArrowUpRight size={14} aria-hidden="true" /></Link>}
+        {currentTasksHref && <Link className="report-current-tasks-link" to={currentTasksHref}>완료 작업 목록<ArrowUpRight size={14} aria-hidden="true" /></Link>}
         {managementGuide?.stepId === 'management-report-evidence' && <div className="heading-actions preview-guide-inline-action">
           <button className="secondary-button" data-guide="confirm-management-report-evidence" disabled={!managementGuide.reportManagementReady}
             onClick={() => { if (managementGuide.confirmReportManagementStep('management-report-evidence')) onReviewConfirmed?.(); }}>작업 근거 검토 완료</button>

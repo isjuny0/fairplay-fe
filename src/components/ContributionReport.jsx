@@ -77,7 +77,7 @@ function ReportDetail({ context, report, actions, toolbarTarget, guide, manageme
           </table>
         </div>
       </section>}
-      <div ref={evidenceAnchor} className="report-evidence-anchor" />
+      {context.manager && <div ref={evidenceAnchor} className="report-evidence-anchor" />}
       {selectedMember && <ContributionEvidence id={memberEvidenceId}
         members={reviewableMembers} onMemberChange={switchDetailMember}
         context={context} report={report} member={selectedMember} guide={guide} currentTasksHref={!context.manager ? completedTasksHref : undefined}

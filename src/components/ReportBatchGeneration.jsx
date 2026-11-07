@@ -96,14 +96,14 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
     midPercent: '중간 평가에서 받은 네 항목의 절대 평가 평균을 반영합니다.',
     finalPercent: '최종 평가에서 받은 네 항목의 절대 평가 평균을 반영합니다.',
   };
-  const weightSettings = lockedWeights ? <section className="report-confirmed-weights" aria-label="확정된 평가 비중">
+  const weightSettings = lockedWeights ? <section className="report-confirmed-weights report-applied-weights" aria-label="확정된 평가 비중">
     <h3>적용된 평가 비중</h3>
     <dl>{reportWeightFields.map(({ key, label }) => <div key={key}><dt>{label}</dt><dd>{lockedWeights[key]}%</dd></div>)}</dl>
   </section> : (
     <fieldset className="report-weight-settings" disabled={busy || resource.loading}>
       <legend>평가 비중 설정</legend>
       <div className="report-weight-fields">
-        {reportWeightFields.map(({ key, label }) => <Field key={key} label={`${label} 평가 비중`} help={weightDescriptions[key]}>
+        {reportWeightFields.map(({ key, label }) => <Field key={key} label={label} help={weightDescriptions[key]}>
           <div className="report-weight-input">
             <input aria-label={`${label} 평가 비중`} type="number" min="0" max="100" step="1" required value={weights[key] ?? ''}
               aria-describedby="report-weight-guidance" aria-invalid={!weightsValid || undefined}
