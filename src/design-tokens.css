@@ -39,6 +39,8 @@
   --radius-summary-card: 14px;
   --radius-control: 6px;
   --control-height: 36px;
+  --collection-search-height: 42px;
+  --collection-search-gap: var(--space-3);
   --header-height: 56px;
   --sidebar-toggle-offset: 23px;
   --page-width: 1480px;

@@ -247,11 +247,6 @@ export default function TaskBoard({
     ...(query.trim() ? [{ key: 'q', label: `검색: ${query.trim()}` }] : []),
     ...(sort !== defaultSort ? [{ key: 'sort', label: `정렬: ${sortLabel}` }] : []),
   ].filter((item) => view !== 'timeline' || !['mine', 'status', 'sort'].includes(item.key));
-  const resetFiltersButton = (
-    <button type="button" className="text-button collection-reset-button task-filter-reset" disabled={!hasFilters} onClick={clearFilters}>
-      {isSchedule ? '검색·필터 초기화' : '필터 초기화'}
-    </button>
-  );
   const timelineEmpty = (
     <div className="timeline-empty" role="status">
       <p>{!resource.data?.length
@@ -367,8 +362,9 @@ export default function TaskBoard({
             ))}
           </select>
         </label>
-        <label className="task-search-filter">
+        <label className="task-search-filter collection-search-input">
           <span className="sr-only">제목 검색</span>
+          <Icon name="search" />
           <input
             type="search"
             ref={(node) => { filterControls.current.q = node; }}
@@ -419,19 +415,30 @@ export default function TaskBoard({
             />{' '}
             내 담당 작업만
           </label>}
-          <label>
-            <input
-              type="checkbox"
-              ref={(node) => { filterControls.current.overdue = node; }}
-              checked={onlyOverdue}
-              onChange={(event) =>
-                setListOption('overdue', event.target.checked ? '1' : '')
-              }
-            />{' '}
-            마감 지난 작업만
-          </label>
+          <div className="task-overdue-filter">
+            <label>
+              <input
+                type="checkbox"
+                ref={(node) => { filterControls.current.overdue = node; }}
+                checked={onlyOverdue}
+                onChange={(event) =>
+                  setListOption('overdue', event.target.checked ? '1' : '')
+                }
+              />{' '}
+              마감 지난 작업만
+            </label>
+            {view === 'list' && (
+              <button
+                type="button"
+                className="text-button collection-reset-button task-filter-reset"
+                disabled={!hasFilters}
+                onClick={clearFilters}
+              >
+                필터 초기화
+              </button>
+            )}
+          </div>
         </div>
-        {view === 'list' && resetFiltersButton}
 
       </div>
       </>}

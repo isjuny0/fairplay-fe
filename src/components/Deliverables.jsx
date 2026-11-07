@@ -1,7 +1,6 @@
 import { usePreviewGuide } from "../lib/previewGuideContext.js";
 import useAppNavigate from "../hooks/useAppNavigate.js";
 import Icon from "./Icon.jsx";
-import RefreshButton from "./RefreshButton.jsx";
 import DeliverableTable from "./DeliverableTable.jsx";
 import DeliverableContent from "./DeliverableContent.jsx";
 import MarkdownEditor from "./MarkdownEditor.jsx";
@@ -616,7 +615,9 @@ export default function Deliverables({
         <div className="heading-actions">
           {isCollection && isApprovedMember(team) && (
             <button
-              className="secondary-button materials-question-action materials-question-action-desktop"
+              className="secondary-button materials-question-action"
+              title="자료에 질문하기"
+              aria-label="자료에 질문하기"
               onClick={() =>
                 navigateToMaterials(
                   teamMenuPath(team.spaceId, team.id, "팀 자료 검색"),
@@ -624,13 +625,9 @@ export default function Deliverables({
               }
             >
               <Icon name="search" />
-              자료에 질문하기
+              <span>자료에 질문하기</span>
             </button>
           )}
-          <RefreshButton
-            disabled={resource.loading}
-            onClick={resource.reload}
-          />
           {canCreate && (
             <button
               className="primary-button"
@@ -648,21 +645,71 @@ export default function Deliverables({
           className="deliverable-collection-controls collection-controls"
           ref={searchToolbar}
         >
-          <div className="deliverable-search-toolbar">
-            <button
-              ref={filterToggle}
-              type="button"
-              className="secondary-button deliverable-filter-toggle"
-              aria-expanded={filtersOpen}
-              aria-controls={filterId}
-              onClick={() => setFiltersOpen((value) => !value)}
+          <div className="deliverable-search-primary">
+            <form
+              role="search"
+              className="deliverable-query-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                setSearchOption("q", queryInput.trim());
+              }}
             >
-              필터{" "}
-              {appliedFilters.filter(
-                (filter) => !["q", "sort"].includes(filter.key),
-              ).length || ""}{" "}
-              {filtersOpen ? "접기" : "펼치기"}
-            </button>
+              <label className="sr-only" htmlFor="deliverable-search">
+                자료 검색
+              </label>
+              <div className="deliverable-query-input collection-search-input">
+                <Icon name="search" />
+                <input
+                  id="deliverable-search"
+                  type="search"
+                  enterKeyHint="search"
+                  placeholder="제목 또는 파일명 검색"
+                  maxLength={100}
+                  value={queryInput}
+                  onChange={(event) => setQueryInput(event.target.value)}
+                />
+              </div>
+            </form>
+            <div className="deliverable-search-options">
+              <label className="deliverable-sort-field">
+                <span>정렬</span>
+                <select
+                  aria-label="자료 정렬"
+                  value={sort}
+                  onChange={(event) =>
+                    setSearchOption("sort", event.target.value)
+                  }
+                >
+                  <option value="">최근 등록 순</option>
+                  <option value="UPDATED_DESC">최근 수정 순</option>
+                  <option value="TITLE_ASC">이름 순</option>
+                </select>
+              </label>
+              <button
+                ref={filterToggle}
+                type="button"
+                className="secondary-button deliverable-filter-toggle"
+                aria-expanded={filtersOpen}
+                aria-controls={filterId}
+                onClick={() => setFiltersOpen((value) => !value)}
+              >
+                필터{" "}
+                {appliedFilters.filter(
+                  (filter) => !["q", "sort"].includes(filter.key),
+                ).length || ""}{" "}
+                {filtersOpen ? "접기" : "펼치기"}
+              </button>
+              <button
+                type="button"
+                className="text-button collection-reset-button"
+                disabled={!hasSearch}
+                onClick={clearSearch}
+              >
+                필터 초기화
+              </button>
+            </div>
+          </div>
+          <div className="deliverable-search-toolbar">
             <div
               id={filterId}
               className={`deliverable-filter-row${filtersOpen ? " is-expanded" : ""}`}
@@ -779,68 +826,6 @@ export default function Deliverables({
                 ))}
               </div>
             )}
-          </div>
-          <div className="deliverable-search-scope">
-            <div>
-              <h2>자료 목록</h2>
-              {!resource.loading && !resource.error && (
-                <span role="status">
-                  현재 페이지 {resource.data?.length || 0}건
-                </span>
-              )}
-              {hasSearch && (
-                <button
-                  className="text-button collection-reset-button"
-                  title="검색·유형·등록자·작업 범위·정렬을 초기화하고 첫 페이지로 이동합니다."
-                  onClick={clearSearch}
-                >
-                  조회 조건 초기화
-                </button>
-              )}
-            </div>
-            <div className="deliverable-search-primary">
-              <label className="deliverable-sort-field">
-                <span>정렬</span>
-                <select
-                  aria-label="자료 정렬"
-                  value={sort}
-                  onChange={(event) =>
-                    setSearchOption("sort", event.target.value)
-                  }
-                >
-                  <option value="">최근 등록 순</option>
-                  <option value="UPDATED_DESC">최근 수정 순</option>
-                  <option value="TITLE_ASC">이름 순</option>
-                </select>
-              </label>
-              <form
-                role="search"
-                className="deliverable-query-form"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  setSearchOption("q", queryInput.trim());
-                }}
-              >
-                <label className="sr-only" htmlFor="deliverable-search">
-                  자료 검색
-                </label>
-                <div className="deliverable-query-input">
-                  <Icon name="search" />
-                  <input
-                    id="deliverable-search"
-                    type="search"
-                    placeholder="제목 또는 파일명 검색"
-                    maxLength={100}
-                    value={queryInput}
-                    onChange={(event) => setQueryInput(event.target.value)}
-                  />
-                  <button className="secondary-button" type="submit">
-                    검색
-                  </button>
-                </div>
-              </form>
-              {isApprovedMember(team) && <button type="button" className="text-button materials-question-action materials-question-action-mobile" aria-label="자료에 질문하기" onClick={() => navigateToMaterials(teamMenuPath(team.spaceId, team.id, '팀 자료 검색'))}><Icon name="search" />질문하기</button>}
-            </div>
           </div>
         </div>
       )}

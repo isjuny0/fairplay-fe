@@ -29,14 +29,15 @@ for(const width of [320,390,1440]) {
     await page.goto(`${team}/deliverables`);
     const type=page.getByLabel('자료 유형',{exact:true});
     const toggle=page.getByRole('button',{name:/^필터.*펼치기$/});
-    if(width<721) {await expect(type).toBeHidden();await toggle.click();}
+    await expect(type).toBeHidden();
+    await toggle.click();
     await type.selectOption('FILE');
     await expect(page).toHaveURL(/type=FILE/);
-    if(width<721) await page.getByRole('button',{name:/^필터.*접기$/}).click();
+    await page.getByRole('button',{name:/^필터.*접기$/}).click();
     const chip=page.getByRole('button',{name:'유형: 파일 조건 해제',exact:true});
     await expect(chip).toBeVisible();await chip.click();
     await expect(page).not.toHaveURL(/type=FILE/);
-    if(width<721) await expect(toggle).toBeFocused();
+    await expect(toggle).toBeFocused();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.screenshot({path:info.outputPath('deliverable-filters.png'),animations:'disabled'});
   });

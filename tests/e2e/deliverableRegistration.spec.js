@@ -13,10 +13,7 @@ async function openRegistration(
     await page.getByRole('tab', { name: '결과물', exact: true }).click();
     const heading = page.locator('.linked-deliverables-heading');
     await expect(heading).not.toContainText('현재 페이지');
-    const refresh = await heading.getByRole('button', { name: '새로고침', exact: true }).boundingBox();
-    const register = await heading.getByRole('button', { name: registerLabel, exact: true }).boundingBox();
-    expect(Math.abs(refresh.y - register.y)).toBeLessThanOrEqual(1);
-    expect(refresh.x + refresh.width).toBeLessThanOrEqual(register.x);
+    await expect(heading.getByRole('button', { name: '새로고침', exact: true })).toHaveCount(0);
   }
   await page.getByRole('button', { name: registerLabel, exact: true }).click();
   const dialog = page.getByRole('dialog', { name: /^(팀 자료 등록|결과물 추가|문서 작성|파일 업로드)$/, exact: true });

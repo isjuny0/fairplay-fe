@@ -1345,6 +1345,7 @@ test('산출물 작업 범위·페이지는 주소에서 복원된다', async ({
   await page.reload();
   await expect(page.getByLabel('작업별 조회')).toHaveValue('10');
   await expect(page.getByText('3 페이지', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: /^필터.*펼치기$/ }).click();
   await page.getByLabel('작업별 조회').selectOption('ALL');
   await expect(page.getByText('1 페이지', { exact: true })).toBeVisible();
   expect(new URL(page.url()).search).toBe('');

@@ -253,7 +253,7 @@ export default function ManagerDashboard({ context }) {
                     >
                       <label className="form-field">
                         <span className="sr-only">팀·팀원 검색</span>
-                        <span className="dashboard-team-search">
+                        <span className="dashboard-team-search collection-search-input">
                           <Icon name="search" />
                           <input
                             type="search"

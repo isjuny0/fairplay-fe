@@ -9,14 +9,12 @@
 .main-content > .manager-dashboard.manager-dashboard--team { gap: 16px; }
 .manager-dashboard--team .dashboard-detail-panel { gap: 16px; }
 .main-content .manager-dashboard .panel.dashboard-team-overview { padding: 0; border: 0; }
-.dashboard-team-list-header { display: grid; gap: 14px; margin-bottom: var(--space-4); }
+.dashboard-team-list-header { display: grid; gap: var(--collection-search-gap); margin-bottom: var(--collection-search-gap); }
 .dashboard-team-list-header .section-heading { margin: 0; }
 .manager-dashboard .dashboard-team-list-header .dashboard-list-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; width: 100%; }
 .manager-dashboard .dashboard-team-list-header .dashboard-list-toolbar .form-field { margin: 0; flex: 1 1 240px; max-width: 380px; min-width: 0; }
 .manager-dashboard .dashboard-list-toolbar input { min-height: 38px; font-size: 13px; }
-.dashboard-team-search { position: relative; display: block; width: 100%; min-width: 0; }
-.dashboard-team-search > .ui-icon { position: absolute; top: 50%; left: 12px; width: 16px; height: 16px; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
-.manager-dashboard .dashboard-team-search > input { padding-left: 36px; }
+.dashboard-team-search { width: 100%; }
 .dashboard-quick-filters { display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; }
 .dashboard-quick-filters > button { min-height: 32px; padding: 5px 12px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--text-muted); font-size: 13px; }
 .dashboard-quick-filters > button:hover { background: var(--surface-secondary); color: var(--text-primary); }

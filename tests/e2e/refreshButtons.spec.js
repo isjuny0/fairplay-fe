@@ -4,7 +4,6 @@ const screens = [
   ['/main', '내 스페이스', '새로고침'],
   ['/spaces/1/teams/1', '삼위일체', '현황 새로고침'],
   ['/spaces/1/teams/1/tasks/103', 'AI 피드백 화면 개선', '새로고침'],
-  ['/spaces/1/teams/1/deliverables', '팀 자료', '새로고침'],
   ['/spaces/1/teams/1/members', '팀원 관리', '새로고침'],
   ['/spaces/1/teams/1/settings', '팀 설정', '현황 새로고침'],
   ['/spaces/1/teams/1/reports', '기여도 리포트', '리포트 새로고침'],
@@ -15,12 +14,6 @@ const screens = [
     'manager',
   ],
   ['/spaces/1/settings#join-code', '스페이스 관리', '코드 새로고침', 'manager'],
-  [
-    '/spaces/1/manager/teams/1/members/00000000-0000-4000-8000-000000000001',
-    '김준영님의 수행 상세',
-    '수행 상세 새로고침',
-    'manager',
-  ],
 ];
 
 async function assertIconButton(button, size) {
@@ -82,14 +75,16 @@ for (const width of [1440, 390]) {
   }
 }
 
-test('작업 상세의 결과물과 댓글 새로고침은 모두 아이콘만 표시한다', async ({
+test('작업 상세는 결과물 새로고침을 숨기고 댓글 새로고침을 표시한다', async ({
   page,
 }) => {
   await page.goto('/preview/spaces/1/teams/1/tasks/103');
   await page.getByRole('tab', { name: '결과물', exact: true }).click();
-  const buttons = page.getByRole('button', { name: '새로고침', exact: true });
-  await expect(buttons).toHaveCount(2);
-  await assertIconButton(page.locator('#task-deliverables-section').getByRole('button', { name: '새로고침', exact: true }), 36);
+  const deliverables = page.locator('#task-deliverables-section');
+  await expect(deliverables.getByRole('heading', { name: '연결된 결과물' })).toBeVisible();
+  await expect(deliverables.getByRole('button', { name: '새로고침', exact: true })).toHaveCount(0);
+
+  await page.getByRole('tab', { name: '작업 내용', exact: true }).click();
   await assertIconButton(page.locator('#task-comments-section').getByRole('button', { name: '새로고침', exact: true }));
 });
 

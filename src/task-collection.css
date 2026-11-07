@@ -172,6 +172,14 @@
   padding: 5px 9px;
   font-size: 13px;
 }
+.task-overdue-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.task-overdue-filter .task-filter-reset {
+  white-space: nowrap;
+}
 .task-board-page .list-summary {
   min-height: 20px;
 }
