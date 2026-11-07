@@ -25,6 +25,15 @@ async function backend(
     reportReady = false,
     reportId = null,
     reportStatus = null,
+    midFeedback = {
+      workSnapshotAt: '2026-10-14T18:00:00',
+      workSummary: {
+        completedTaskCount: 1,
+        inProgressTaskCount: 1,
+        overdueTaskCount: 1,
+        completedWorkSharePercent: 25,
+      },
+    },
   } = {},
 ) {
   const requests = [];
@@ -231,11 +240,13 @@ async function backend(
         roundId: 11,
         teamId: 1,
         asOf: '2026-10-14T19:00:00',
+        workSnapshotAt: midFeedback.workSnapshotAt,
         members: [
           {
             userId: members[0].userId,
             name: '담당자',
             receivedEvaluationCount: 1,
+            workSummary: midFeedback.workSummary,
             averageScores: {
               taskExecution: 4.25,
               responsibility: 3,
@@ -579,23 +590,25 @@ test('중간 피드백은 설명 문구 없이 서버 평균과 항목별 도움
   expect(mobileBoxes[1].y).toBeGreaterThanOrEqual(mobileBoxes[0].y + mobileBoxes[0].height - 1);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
-test('2인 팀 중간 피드백에서 내 완료 작업량 비율과 현재 작업 현황을 조회한다', async ({ page }) => {
-  await page.clock.setFixedTime(new Date('2026-10-15T09:00:00Z'));
-  await backend(page);
-  const own = { userId: members[0].userId, allocationPercent: 50 };
-  const other = { userId: members[1].userId, allocationPercent: 50 };
-  const task = { teamId: 1, weight: 2, startAt: '2026-10-12T09:00:00', dueAt: '2026-10-14T18:00:00', status: 'DONE', version: 0 };
-  const shared = { ...task, id: 20, title: '함께 완료한 작업', assignees: [own, other] };
-  const otherDone = { ...task, id: 21, title: '다른 팀원의 완료 작업', assignees: [{ ...other, allocationPercent: 100 }] };
-  const active = { ...task, id: 22, title: '내 진행 작업', status: 'IN_PROGRESS', assignees: [{ ...own, allocationPercent: 100 }] };
-  let tasks = [shared, otherDone, active];
-  await page.route('**/api/teams/1/tasks', (route) => route.fulfill({ json: tasks }));
+test('2인 팀 중간 피드백에서 평가 마감 시점의 내 작업 현황을 표시한다', async ({ page }) => {
+  const midFeedback = {
+    workSnapshotAt: '2026-10-14T18:00:00',
+    workSummary: {
+      completedTaskCount: 1,
+      inProgressTaskCount: 1,
+      overdueTaskCount: 1,
+      completedWorkSharePercent: 25,
+    },
+  };
+  const { requests } = await backend(page, { midFeedback });
   await page.goto('/spaces/1/teams/1/mid-feedback');
   const work = page.getByRole('region', { name: '내 작업 현황' });
   const share = work.getByRole('progressbar', { name: '팀 완료 작업량 중 내 비율' });
   await expect(share).toHaveText('25%');
+  await expect(work.getByRole('button', { name: '현재 내 작업 보기' })).toHaveCount(0);
   await expect(work.locator('dd')).toHaveText(['1건', '1건', '1건']);
-  await expect(work).not.toContainText('다른 팀원의 완료 작업');
+  await expect(work.locator('time')).toHaveAttribute('datetime', midFeedback.workSnapshotAt);
+  expect(requests.some(({ path }) => path === '/api/teams/1/tasks')).toBe(false);
   await page.setViewportSize({ width: 390, height: 844 });
   const help = work.getByRole('button', { name: '팀 완료 작업량 중 내 비율 설명' });
   await help.focus();
@@ -603,19 +616,24 @@ test('2인 팀 중간 피드백에서 내 완료 작업량 비율과 현재 작�
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.keyboard.press('Escape');
 
-  tasks = [otherDone, active];
+  midFeedback.workSummary.completedTaskCount = 0;
+  midFeedback.workSummary.completedWorkSharePercent = 0;
   await page.reload();
   await expect(share).toHaveText('0%');
-  tasks = [active];
+  midFeedback.workSummary.completedWorkSharePercent = null;
   await page.reload();
-  await expect(work.getByText('아직 완료된 작업이 없어요.')).toBeVisible();
+  await expect(work.getByText('마감 시점에 완료된 작업이 없습니다.')).toBeVisible();
   await expect(share).toHaveCount(0);
-  await work.getByRole('button', { name: '내 작업 보기', exact: true }).click();
-  await expect(page).toHaveURL(/\/tasks\?mine=1&view=list$/);
-  await expect(page.getByRole('button', { name: '내 진행 작업', exact: true })).toBeVisible();
+
+  midFeedback.workSnapshotAt = null;
+  midFeedback.workSummary = null;
+  await page.goto('/spaces/1/teams/1/mid-feedback');
+  await expect(page.getByRole('heading', { name: '중간 동료 평가 결과' })).toBeVisible();
+  await expect(work.getByText('마감 시점의 작업 현황을 확인할 수 없습니다.')).toBeVisible();
+  await expect(work.locator('dd')).toHaveCount(0);
 });
 
-test('중간 피드백은 화면을 다시 열면 평가 결과와 현재 작업을 조회한다', async ({ page }) => {
+test('중간 피드백 응답이 준비되면 평가 결과와 작업 현황을 함께 표시한다', async ({ page }) => {
   const { requests } = await backend(page);
   let pending = true;
   await page.route('**/api/teams/1/mid-feedback', (route) => pending
@@ -623,12 +641,14 @@ test('중간 피드백은 화면을 다시 열면 평가 결과와 현재 작업
     : route.fallback());
   await page.goto('/spaces/1/teams/1/mid-feedback');
   await expect(page.getByRole('heading', { name: '피드백을 준비하고 있습니다.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '내 작업 현황' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: '중간 동료 평가 결과' })).toHaveCount(0);
   await expect(page.locator('.mid-feedback-page > .page-heading').getByRole('button')).toHaveCount(0);
-  const taskReads = requests.filter((request) => request.path === '/api/teams/1/tasks').length;
   pending = false;
   await page.reload();
   await expect(page.getByRole('heading', { name: '중간 동료 평가 결과', exact: true })).toBeVisible();
-  await expect.poll(() => requests.filter((request) => request.path === '/api/teams/1/tasks').length).toBeGreaterThan(taskReads);
+  await expect(page.getByRole('heading', { name: '내 작업 현황', exact: true })).toBeVisible();
+  expect(requests.some(({ path }) => path === '/api/teams/1/tasks')).toBe(false);
 });
 
 for (const width of [1440, 390]) {

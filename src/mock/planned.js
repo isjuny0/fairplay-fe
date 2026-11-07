@@ -81,10 +81,14 @@ export function getMockState(context, initialScenario = 'active') {
     if (round.status === 'CLOSED' && !round.seeded)
       seedSubmittedRound(state, round);
     if (round.status === 'OPEN' && new Date(apiTimeToEpoch(round.closesAt)) <= new Date()) {
+      if (round.type === 'MID') captureMidWorkSnapshot(state, round);
       round.status = 'CLOSED';
       round.seeded = true;
 
       round.version++;
+    }
+    if (round.type === 'MID' && round.status === 'CLOSED' && state.midWorkSnapshot?.at !== round.closesAt) {
+      captureMidWorkSnapshot(state, round, true);
     }
   }
   for (const round of state.rounds) {
@@ -115,7 +119,10 @@ export function resetMockState(context, scenario = 'active') {
   memoryStates.delete(mockKey(context));
   globalThis.localStorage?.removeItem(mockKey(context));
   const state = getMockState(context, scenario);
-  if (['setup', 'building', 'recruiting'].includes(scenario)) state.rounds = [];
+  if (['setup', 'building', 'recruiting'].includes(scenario)) {
+    state.rounds = [];
+    delete state.midWorkSnapshot;
+  }
   if (scenario === 'recruiting') {
     state.spaceOverrides = {
       membershipLockedAt: null,
@@ -309,6 +316,27 @@ const publicReport = ({ details, evidenceTasks, ...report }, context) => ({
   members: report.members.filter((member) => context.manager || member.userId === context.user.id)
     .map((member) => ({ ...member, details: details[member.userId] })),
 });
+function captureMidWorkSnapshot(state, round, useFixtures = false) {
+  const cutoff = new Date(apiTimeToEpoch(round.closesAt));
+  // 이미 마감된 전시 회차는 마감 시점에 맞춘 예시 작업으로 초기화한다.
+  const teams = Object.fromEntries(Object.values(state.teams).map((entry) => {
+    const { team, members } = entry;
+    const tasks = useFixtures ? exampleTasks(team, members, state.scenario, Number(cutoff)) : entry.tasks;
+    return [team.id, Object.fromEntries(members.map(({ userId }) => {
+      const ownTasks = tasks.filter((task) => task.assignees.some((assignee) => assignee.userId === userId));
+      const summary = workSummary(team.id, userId, tasks, cutoff);
+      return [userId, {
+        completedTaskCount: ownTasks.filter((task) => task.status === 'DONE').length,
+        inProgressTaskCount: ownTasks.filter((task) => ['IN_PROGRESS', 'REVISING'].includes(task.status)).length,
+        overdueTaskCount: summary.myOverdueTaskCount,
+        completedWorkSharePercent: summary.teamDoneWeight
+          ? Math.round((summary.myDoneWeight / summary.teamDoneWeight) * 10000) / 100
+          : null,
+      }];
+    }))];
+  }));
+  state.midWorkSnapshot = { at: round.closesAt, teams };
+}
 function feedback(state, teamId, context) {
   const mid = state.rounds.find((round) => round.type === 'MID');
   if (!mid) fail('ROUND_NOT_FOUND', '중간 평가 회차가 아직 없습니다.', 404);
@@ -323,10 +351,12 @@ function feedback(state, teamId, context) {
       'MID_FEEDBACK_NOT_READY',
       '우리 팀의 필수 평가 제출이 모두 필요합니다.',
     );
+  const snapshot = state.midWorkSnapshot;
   return {
     roundId: mid.id,
     teamId,
     asOf: now(),
+    workSnapshotAt: snapshot?.at ?? null,
     members: entry.members
       .filter((member) => context.manager || member.userId === context.user.id)
       .map((member) => ({
@@ -339,6 +369,7 @@ function feedback(state, teamId, context) {
           collaboration: 2,
           communication: 1,
         },
+        workSummary: snapshot?.teams[teamId]?.[member.userId] ?? null,
         improvementGuidance: [
           '적극성: 팀 목표에 필요한 일이나 개선점을 찾아 제안하고, 문제 해결에 먼저 참여해 보세요.',
         ],
