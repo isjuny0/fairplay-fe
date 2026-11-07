@@ -1,5 +1,6 @@
 import { beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { sourceLocation } from '../src/lib/rag.js';
 import {
   previewContext,
   previewRequest,
@@ -23,6 +24,11 @@ beforeEach(() => {
   resetMockState(previewContext());
 });
 const base = '/api/teams/1/rag';
+test('PDF 근거는 페이지로, 텍스트 근거는 제목과 줄 범위로 표시한다', () => {
+  assert.equal(sourceLocation({ pageNumber: 3, startLine: 2, endLine: 4 }), 'PDF 3페이지');
+  assert.equal(sourceLocation({ pageNumber: null, headingPath: ['정책'], startLine: 2, endLine: 4 }), '정책 · 2–4행');
+});
+
 test('질문 결과의 근거는 현재 팀 자료·버전·실제 본문과 일치한다', async () => {
   const status = await previewRequest(`${base}/index-status?page=0&size=2`);
   assert.equal(status.items.length, 2);

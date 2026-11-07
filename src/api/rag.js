@@ -9,7 +9,8 @@ export const getRagIndexStatus = (teamId, page = 0, size = 20) =>
   apiRequest(
     `/api/teams/${teamId}/rag/index-status?${new URLSearchParams({ page, size })}`,
   );
-export const getRagSource = (teamId, deliverableId, expectedVersion) =>
-  apiRequest(
-    `/api/teams/${teamId}/rag/sources/${deliverableId}?${new URLSearchParams({ expectedVersion })}`,
-  );
+export const getRagSource = (teamId, deliverableId, expectedVersion, pageNumber) => {
+  const params = new URLSearchParams({ expectedVersion });
+  if (pageNumber != null) params.set('pageNumber', pageNumber);
+  return apiRequest(`/api/teams/${teamId}/rag/sources/${deliverableId}?${params}`);
+};
