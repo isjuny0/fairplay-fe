@@ -24,6 +24,7 @@ import assert from 'node:assert/strict';
 import { apiRequest, clearCsrfToken } from '../src/api/client.js';
 import { listSpaceAnnouncements, getSpaceAnnouncement, createSpaceAnnouncement, updateSpaceAnnouncement, deleteSpaceAnnouncement } from '../src/api/spaceAnnouncements.js';
 import { updateTask, recommendTaskAssignees } from '../src/api/tasks.js';
+import { getRagSource } from '../src/api/rag.js';
 import { getMyNotificationUnreadCount, listMyNotifications, listMyTodos, markAllNotificationsRead, markNotificationRead } from '../src/api/personalWork.js';
 import {
   listTaskComments,
@@ -66,6 +67,15 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
   clearCsrfToken();
   delete globalThis.window;
+});
+
+test('자료 원문 요청은 PDF 근거의 페이지와 버전을 함께 보내고 일반 텍스트 요청은 버전만 보낸다', async () => {
+  await getRagSource(1, 17, 2, 4);
+  await getRagSource(1, 18, 3);
+  assert.deepEqual(calls.map(({ url }) => url), [
+    '/api/teams/1/rag/sources/17?expectedVersion=2&pageNumber=4',
+    '/api/teams/1/rag/sources/18?expectedVersion=3',
+  ]);
 });
 
 test('회의록 5개 API는 페이지 배열·부분 수정·쿼리 버전 삭제 및 세션·CSRF 계약을 사용한다', async () => {

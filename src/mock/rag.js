@@ -7,7 +7,7 @@ function materialItems(entry, state) {
   return entry.deliverables.map((item, index) => {
     const supported =
       item.type === 'TEXT' ||
-      /\.(txt|md)$/i.test(item.file?.originalFilename || '');
+      /\.(txt|md|pdf)$/i.test(item.file?.originalFilename || '');
     return {
       deliverableId: item.id,
       deliverableVersion: item.version,

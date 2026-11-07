@@ -6,8 +6,8 @@ export const ragStatusLabels = {
 };
 export const ragFailureLabels = {
   DOCUMENT_LIMIT_EXCEEDED: '자료의 크기 또는 길이가 처리 한도를 넘었습니다.',
-  INVALID_TEXT: 'UTF-8 텍스트인지 확인해 주세요.',
-  EMPTY_TEXT: '본문에 검색할 내용이 없습니다.',
+  INVALID_TEXT: '본문을 읽을 수 없습니다. 파일이 열리는지 확인해 주세요.',
+  EMPTY_TEXT: '추출할 수 있는 텍스트가 없습니다. 팀 자료에서 원본을 확인해 주세요.',
   UPSTREAM_UNAVAILABLE: '자료 준비 서비스에 연결하지 못했습니다.',
   INDEX_TIMEOUT: '자료 준비 시간이 초과되었습니다.',
   INDEX_INTERRUPTED: '자료 준비가 중단되었습니다.',
@@ -55,6 +55,7 @@ export const noEvidenceMessage = (reason) =>
     NO_EVIDENCE: '등록된 자료만으로는 답변을 뒷받침할 수 없습니다.',
   })[reason] || '등록된 자료에서 확인할 수 없습니다.';
 export function sourceLocation(reference) {
+  if (Number.isInteger(reference.pageNumber)) return `PDF ${reference.pageNumber}페이지`;
   return `${reference.headingPath?.join(' › ') || '본문'} · ${reference.startLine}–${reference.endLine}행`;
 }
 export function ragSourceErrorGuidance(error) {
@@ -64,6 +65,7 @@ export function ragSourceErrorGuidance(error) {
       RAG_SOURCE_UNSUPPORTED: '이 형식의 원문은 지원하지 않습니다. 자료에서 파일을 확인해 주세요.',
       RAG_SOURCE_TOO_LARGE: '원문 조회 한도를 넘는 자료입니다. 자료에서 내용을 확인해 주세요.',
       RAG_SOURCE_UNREADABLE: '자료의 텍스트를 읽을 수 없습니다. 자료에서 내용을 확인해 주세요.',
+      RAG_SOURCE_PAGE_NOT_FOUND: '해당 PDF 페이지에서 추출한 텍스트를 찾을 수 없습니다.',
     }[error?.code] || error?.message || '원문을 불러오지 못했습니다.'
   );
 }

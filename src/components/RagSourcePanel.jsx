@@ -24,9 +24,9 @@ export default function RagSourcePanel({
   const original = useRef(null);
   const resource = useResource(
     () => getRagSource(
-      teamId, reference.deliverableId, reference.deliverableVersion,
+      teamId, reference.deliverableId, reference.deliverableVersion, reference.pageNumber,
     ),
-    [teamId, reference.deliverableId, reference.deliverableVersion],
+    [teamId, reference.deliverableId, reference.deliverableVersion, reference.pageNumber],
   );
   useEffect(() => {
     if (resource.error?.status === 403) onAccessError(resource.error);
@@ -50,6 +50,7 @@ export default function RagSourcePanel({
     content?.teamId === teamId &&
     content?.deliverableId === reference.deliverableId &&
     content?.deliverableVersion === reference.deliverableVersion &&
+    (reference.pageNumber == null || content?.pageNumber === reference.pageNumber) &&
     ['TEXT', 'FILE'].includes(content?.type) &&
     (reference.type == null || content?.type === reference.type) &&
     typeof content?.title === 'string' &&
@@ -93,7 +94,8 @@ export default function RagSourcePanel({
       </header>
       <div className="rag-source-meta">
         <h2>{reference.title}</h2>
-        <p>{hasCitation ? sourceLocation(reference) : '전체 원문'}</p>
+        <p>{hasCitation ? sourceLocation(reference) : matchesSource && content.pageNumber != null
+          ? sourceLocation(content) : '전체 원문'}</p>
       </div>
       {resource.loading ? (
         <p className="rag-source-message" role="status">
@@ -121,7 +123,7 @@ export default function RagSourcePanel({
         <div
           className="rag-original"
           role="region"
-          aria-label="줄 번호가 있는 원문"
+          aria-label={content.pageNumber != null ? 'PDF 페이지에서 추출한 텍스트' : '줄 번호가 있는 원문'}
           tabIndex={0}
           ref={original}
         >
