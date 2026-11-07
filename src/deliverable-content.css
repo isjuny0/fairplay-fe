@@ -95,12 +95,6 @@
 .deliverable-file-row > button {
   flex-shrink: 0;
 }
-.deliverable-detail .deliverable-file-row {
-  position: sticky;
-  bottom: 52px;
-  z-index: 1;
-  background: var(--surface);
-}
 .deliverable-content-footer {
   display: flex;
   flex-wrap: wrap;
@@ -109,6 +103,65 @@
   margin-top: 20px;
   color: var(--text-muted);
   font-size: var(--text-caption);
+}
+.deliverable-detail-modal .modal-header {
+  gap: var(--space-4);
+}
+.deliverable-detail-modal .modal-header h2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.deliverable-detail-modal .modal-header .icon-button {
+  flex: 0 0 auto;
+}
+.deliverable-detail-modal .modal-body {
+  scroll-padding-block: var(--space-4);
+}
+.deliverable-detail-modal .deliverable-context {
+  margin-top: 0;
+  align-items: center;
+}
+.deliverable-detail-modal .deliverable-kind {
+  padding: 2px 8px;
+  border-radius: var(--radius-control);
+  background: var(--surface-secondary);
+  font-size: var(--text-caption);
+  font-weight: 600;
+}
+.deliverable-detail-modal .deliverable-context a {
+  color: var(--brand-dark);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.deliverable-detail-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: var(--space-3);
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+}
+.deliverable-detail-modal .deliverable-description {
+  font-size: var(--text-body);
+}
+.deliverable-detail-modal .markdown-body {
+  font-size: 15px;
+}
+.deliverable-detail-modal .deliverable-file-row {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface-secondary);
+}
+.deliverable-detail-modal .deliverable-file-info {
+  display: grid;
+  gap: 4px;
+  font-size: var(--text-body);
 }
 .linked-deliverables .deliverable-card .heading-actions {
   margin-top: 12px;
@@ -139,5 +192,13 @@
   }
   .deliverable-file-row > button {
     margin-left: 30px;
+  }
+  .deliverable-detail-modal .deliverable-file-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .deliverable-detail-modal .deliverable-file-row > button {
+    grid-column: 1 / -1;
+    margin: 0;
+    justify-content: center;
   }
 }

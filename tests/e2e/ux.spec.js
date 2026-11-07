@@ -845,7 +845,7 @@ for (const width of [1440, 320]) {
     await title.focus();
     await page.keyboard.press('Enter');
     const dialog = page.getByRole('dialog', {
-      name: '팀 자료 상세',
+      name: '스페이스·팀 권한 정리',
       exact: true,
     });
     await expect(
@@ -876,11 +876,12 @@ for (const width of [1440, 320]) {
     await list
       .getByRole('button', { name: '팀 권한 점검표 파일', exact: true })
       .click();
+    const fileDialog = page.getByRole('dialog', { name: '팀 권한 점검표 파일', exact: true });
     await expect(
-      dialog.getByText('팀-권한-점검표.txt', { exact: true }),
+      fileDialog.getByText('팀-권한-점검표.txt', { exact: true }),
     ).toBeVisible();
     const downloaded = page.waitForEvent('download');
-    await dialog
+    await fileDialog
       .getByRole('button', { name: '파일 다운로드', exact: true })
       .click();
     expect((await downloaded).suggestedFilename()).toBe('팀-권한-점검표.txt');

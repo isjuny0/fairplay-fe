@@ -41,7 +41,7 @@ test('마크다운 미리보기·저장·수정·연결된 결과물에서 원�
   await dialog.getByRole('button', { name: /^(저장|팀 자료 등록)$/, exact: true }).click();
   const title = page.getByRole('button', { name: '마크다운 조사 기록', exact: true });
   await title.click();
-  dialog = page.getByRole('dialog', { name: '팀 자료 상세', exact: true });
+  dialog = page.getByRole('dialog', { name: '마크다운 조사 기록', exact: true });
   await expect(dialog.getByRole('heading', { name: '조사 결과', exact: true })).toBeVisible();
   await expect(dialog.getByRole('table')).toContainText('12건');
   await page.screenshot({ path: testInfo.outputPath('markdown-detail.png') });
@@ -126,7 +126,7 @@ for (const width of [1440, 320]) {
     page.on('request', request => { if (request.url().startsWith('https://example.com')) requests.push(request.url()); });
     await open(page, path, state => { state.teams[1].deliverables[0].text = `${sample}\n\n${malicious}${wideContent}`; });
     await page.getByRole('button', { name: 'Fairplay 프로젝트 소개', exact: true }).click();
-    const dialog = page.getByRole('dialog', { name: '팀 자료 상세', exact: true });
+    const dialog = page.getByRole('dialog', { name: 'Fairplay 프로젝트 소개', exact: true });
     await expect(dialog.getByRole('heading', { name: '조사 결과', exact: true })).toBeVisible();
     await expect(dialog.locator('script, img, iframe')).toHaveCount(0);
     await expect(dialog.getByRole('link', { name: '실행', exact: true })).toHaveCount(0);

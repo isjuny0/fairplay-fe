@@ -48,6 +48,7 @@ export default function DeliverableContent({
   deliverable,
   task,
   members,
+  detail = false,
   previewDocument = false,
   showTaskContext = true,
   onDownload,
@@ -55,20 +56,45 @@ export default function DeliverableContent({
   const { spaceId, teamId } = useParams();
   const { pathname } = useLocation();
   const prefix = isPreviewPath(pathname) ? "/preview" : "";
+  const isFile = deliverable.type === "FILE";
+  const kind = (
+    <span className="deliverable-kind">{isFile ? "파일" : "문서"}</span>
+  );
+  const metadata = (
+    <>
+      <span>등록자 {memberName(members, deliverable.authorId)}</span>
+      <span>
+        등록일{" "}
+        <time dateTime={deliverable.createdAt}>
+          {formatDate(deliverable.createdAt)}
+        </time>
+      </span>
+      {(!detail || deliverable.updatedAt !== deliverable.createdAt) && (
+        <span>
+          최종 수정일{" "}
+          <time dateTime={deliverable.updatedAt}>
+            {formatDate(deliverable.updatedAt)}
+          </time>
+        </span>
+      )}
+    </>
+  );
+  const description = deliverable.description && (
+    <p className="deliverable-description">{deliverable.description}</p>
+  );
   return (
     <div className="deliverable-content">
-      <header className="deliverable-content-header">
+      {!detail && <header className="deliverable-content-header">
         <div className="deliverable-title">
           <span className="deliverable-file-mark" aria-hidden="true">
             <Icon name="file" />
           </span>
           <h3>{deliverable.title}</h3>
         </div>
-        <span className="deliverable-kind">
-          {deliverable.type === "FILE" ? "파일" : "문서"}
-        </span>
-      </header>
+        {kind}
+      </header>}
       {showTaskContext && <div className="deliverable-context">
+        {detail && kind}
         {deliverable.taskId == null ? (
           <span>팀 공용 자료</span>
         ) : (
@@ -82,9 +108,8 @@ export default function DeliverableContent({
           </>
         )}
       </div>}
-      {deliverable.description && (
-        <p className="deliverable-description">{deliverable.description}</p>
-      )}
+      {detail && <div className="deliverable-detail-metadata">{metadata}</div>}
+      {(!detail || !isFile) && description}
       {deliverable.type === "TEXT" ? (
         <section className="deliverable-document" aria-label="자료 본문">
           {previewDocument ? (
@@ -111,21 +136,8 @@ export default function DeliverableContent({
           </button>
         </div>
       )}
-      <footer className="deliverable-content-footer">
-        <span>등록자 {memberName(members, deliverable.authorId)}</span>
-        <span>
-          등록일{" "}
-          <time dateTime={deliverable.createdAt}>
-            {formatDate(deliverable.createdAt)}
-          </time>
-        </span>
-        <span>
-          최종 수정일{" "}
-          <time dateTime={deliverable.updatedAt}>
-            {formatDate(deliverable.updatedAt)}
-          </time>
-        </span>
-      </footer>
+      {detail && isFile && description}
+      {!detail && <footer className="deliverable-content-footer">{metadata}</footer>}
     </div>
   );
 }

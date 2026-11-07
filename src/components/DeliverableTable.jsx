@@ -168,19 +168,15 @@ function MobileDeliverableList({ deliverables, taskMap, team, user, members, bus
           <dl className="mobile-record-meta">
             <div><dt>등록자</dt><dd>{memberName(members, deliverable.authorId)}</dd></div>
             <div><dt>수정일</dt><dd><time dateTime={deliverable.updatedAt}>{formatDate(deliverable.updatedAt)}</time></dd></div>
+            <div><dt>연결 작업</dt><dd>{deliverable.taskId == null ? '팀 공용' : taskMap.get(deliverable.taskId)?.title || '작업 정보 확인 불가'}</dd></div>
+            {deliverable.file && <div><dt>파일명</dt><dd>{deliverable.file.originalFilename}</dd></div>}
           </dl>
-          {!canManage && deliverable.type !== 'FILE' && <span className="field-help">조회만 가능</span>}
-          <details className="mobile-record-details">
-            <summary aria-label={`${deliverable.title} 자료 정보${canManage ? '·관리' : ''}`}>자료 정보{canManage ? '·관리' : ''}</summary>
-            <dl className="mobile-record-pairs">
-              <div><dt>연결 작업</dt><dd>{deliverable.taskId == null ? '팀 공용' : taskMap.get(deliverable.taskId)?.title || '작업 정보 확인 불가'}</dd></div>
-              {deliverable.file && <div><dt>파일명</dt><dd>{deliverable.file.originalFilename}</dd></div>}
-            </dl>
-            {canManage && <div className="mobile-record-actions">
-              {permissions.metadata && <button type="button" className="secondary-button" disabled={busy} onClick={() => onEdit(deliverable)}>수정</button>}
-              {permissions.remove && <button type="button" className="secondary-button danger" disabled={busy} onClick={() => onRemove(deliverable)}>삭제</button>}
-            </div>}
-          </details>
+          {canManage ? (
+            <div className="mobile-record-actions">
+              {permissions.metadata && <button type="button" className="ghost-button" disabled={busy} onClick={() => onEdit(deliverable)}>수정</button>}
+              {permissions.remove && <button type="button" className="ghost-button danger" disabled={busy} onClick={() => onRemove(deliverable)}>삭제</button>}
+            </div>
+          ) : deliverable.type !== 'FILE' && <span className="field-help">조회만 가능</span>}
         </li>;
       })}
     </ul>
