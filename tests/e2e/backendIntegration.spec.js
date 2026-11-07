@@ -1428,15 +1428,9 @@ test('팀원은 공개 결과와 본인 근거만 보고 관리 API를 호출하
   await evidence.getByRole('button', { name: /제목을 확인할 수 없는 작업/ }).click();
   await expect(evidence).toContainText('현재 작업을 조회할 수 없습니다.');
   await expect(evidence.getByText('이 작업의 60%를 담당했습니다.', { exact: true })).toHaveCount(0);
-  await expect(evidence.locator('.evidence-task-summary')).toContainText('작업량 ·');
-  await expect(evidence.locator('.evidence-task-summary')).not.toContainText('확정 작업량');
-  const allocationHelp = evidence.getByRole('button', { name: '담당 비율의 기여도 반영 방식', exact: true });
-  await allocationHelp.focus();
-  await expect(evidence.getByRole('tooltip')).toContainText('5점 × 60% = 3점 반영');
-  await expect(evidence.getByRole('tooltip')).toContainText('실제 소요 시간을 의미하지 않습니다.');
-  await allocationHelp.press('Escape');
-  await expect(evidence.getByRole('tooltip')).toHaveCount(0);
-  await expect(evidence.getByRole('link', { name: '현재 내 완료 작업 목록' })).toHaveAttribute('href', '/spaces/1/teams/1/tasks?view=list&status=DONE&mine=1');
+  await expect(evidence.locator('.evidence-task-completed')).toHaveText(/^완료 \d{4}\. \d{2}\. \d{2}\.$/);
+  await expect(evidence.getByRole('button', { name: '담당 비율의 기여도 반영 방식', exact: true })).toHaveCount(0);
+  await expect(evidence.getByRole('link', { name: '완료 작업 목록' })).toHaveAttribute('href', '/spaces/1/teams/1/tasks?view=list&status=DONE&mine=1');
   const reads = fixture.requests.filter((request) => request.path.endsWith('/report/evidence'));
   expect(reads.length).toBeGreaterThan(0);
   expect(reads.every((request) => new URLSearchParams(request.query).get('userId') === members[0].userId)).toBe(true);
