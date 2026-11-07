@@ -363,22 +363,7 @@
   white-space: nowrap;
 }
 .space-home-team-toolbar .directory-search {
-  position: relative;
-  display: block;
   margin-left: auto;
-}
-.space-home-team-toolbar .directory-search > .ui-icon {
-  position: absolute;
-  top: 50%;
-  left: 12px;
-  width: 16px;
-  height: 16px;
-  transform: translateY(-50%);
-  color: var(--text-muted);
-  pointer-events: none;
-}
-.space-home-team-toolbar .directory-search > input {
-  padding-left: 36px;
 }
 .space-home-team-columns {
   display: grid;

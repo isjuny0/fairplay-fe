@@ -40,6 +40,7 @@ import './workflow-work.css';
 import './workflow-evaluation.css';
 import './mobile-refinements.css';
 import './mobile-collections.css';
+import './collection-search.css';
 
 const router = createBrowserRouter([
   {

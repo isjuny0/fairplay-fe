@@ -4,12 +4,15 @@
   flex: 1;
   gap: 8px;
   min-width: 0;
+  box-sizing: border-box;
+  height: var(--collection-search-height);
+  min-height: var(--collection-search-height);
   padding-left: 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
   background: var(--surface);
 }
-.collection-search-input > .ui-icon {
+.collection-search-input > :is(.ui-icon, svg) {
   flex: 0 0 16px;
   width: 16px;
   color: var(--text-muted);
@@ -18,14 +21,34 @@
   outline: 2px solid var(--brand-light);
   border-color: var(--brand);
 }
-.collection-search-input input {
+.main-content .collection-search-input input[type='search'] {
   width: 100%;
   min-width: 0;
-  height: 40px;
-  min-height: 40px;
+  height: calc(var(--collection-search-height) - 2px);
+  min-height: calc(var(--collection-search-height) - 2px);
   padding: 8px 10px 8px 0;
   border: 0;
   background: transparent;
+  box-shadow: none;
   font-size: var(--text-support);
 }
-.collection-search-input input:focus-visible { outline: none; }
+.main-content .collection-search-input input[type='search']:focus-visible { outline: none; }
+
+/* Use the announcement list's 12px spacing above and below search controls. */
+.main-content :is(.announcements-page.is-list, .space-participants-page,
+  .task-board-page[data-task-view='list'],
+  .deliverables-section:has(> .deliverable-collection-controls)) {
+  row-gap: var(--collection-search-gap);
+}
+.main-content .task-board-page > .toolbar.collection-controls {
+  padding-block: 0;
+  border-bottom: 0;
+}
+.manager-dashboard .dashboard-team-list-header {
+  margin-bottom: var(--collection-search-gap);
+}
+.directory-toolbar { padding-bottom: var(--collection-search-gap); }
+.directory-toolbar .directory-search { flex: 0 1 320px; }
+@media (max-width: 600px) {
+  .directory-toolbar .directory-search { flex-basis: 100%; }
+}

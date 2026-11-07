@@ -54,6 +54,9 @@ const rows = (page) =>
     .getByRole("region", { name: "팀 자료 목록", exact: true })
     .locator("tbody tr, .mobile-material-list > li");
 
+const openFilters = (page) =>
+  page.getByRole("button", { name: /^필터.*펼치기$/ }).click();
+
 test("다른 페이지의 원본 파일명을 서버 검색으로 찾아 조건과 상세를 유지한다", async ({
   page,
 }) => {
@@ -67,6 +70,7 @@ test("다른 페이지의 원본 파일명을 서버 검색으로 찾아 조건�
   await page.getByLabel("자료 검색", { exact: true }).press("Enter");
   await expect(rows(page)).toHaveCount(1);
   await expect(page.getByText("1 페이지", { exact: true })).toBeVisible();
+  await openFilters(page);
   await page.getByLabel("작업별 조회").selectOption("COMMON");
   await page.getByLabel("자료 유형").selectOption("FILE");
   await page.getByLabel("자료 등록자").selectOption(members[0].userId);
@@ -90,7 +94,7 @@ test("다른 페이지의 원본 파일명을 서버 검색으로 찾아 조건�
     .last()
     .click();
   await expect(rows(page)).toHaveCount(1);
-  await page.getByRole("button", { name: "조회 조건 초기화" }).click();
+  await page.getByRole("button", { name: "필터 초기화" }).click();
   await expect(rows(page)).toHaveCount(20);
   expect(new URL(page.url()).search).toBe("");
 });
@@ -110,6 +114,7 @@ test("적용된 조건을 개별 해제해도 다른 조건·정렬을 유지하
   await expect(rows(page)).toHaveCount(1);
   const filters = page.getByRole("group", { name: "적용된 조회 조건" });
   await expect(filters.getByRole("button")).toHaveCount(5);
+  await openFilters(page);
   const steps = [
     ["검색: policy 조건 해제", "자료 검색", "q"],
     ["작업: 팀 공용 조건 해제", "작업별 조회", "unlinkedOnly"],
@@ -137,7 +142,7 @@ test("적용된 조건을 개별 해제해도 다른 조건·정렬을 유지하
   await expect(rows(page)).toHaveCount(20);
   await expect(page.getByLabel("자료 검색", { exact: true })).toHaveValue("");
   await page.getByLabel("자료 유형", { exact: true }).selectOption("FILE");
-  await page.getByRole("button", { name: "조회 조건 초기화" }).click();
+  await page.getByRole("button", { name: "필터 초기화" }).click();
   await expect(page.getByLabel("자료 검색", { exact: true })).toBeFocused();
   expect(new URL(page.url()).search).toBe("");
 });
@@ -150,6 +155,7 @@ test("서버 정렬·필터 후 페이지를 이동하고 조건 변경은 첫 �
   await expect(rows(page).first()).toContainText("산출물 45");
   await page.getByLabel("자료 정렬").selectOption("UPDATED_DESC");
   await expect(rows(page).first()).toContainText("오래된 정책 원본");
+  await openFilters(page);
   await page.getByLabel("자료 유형").selectOption("FILE");
   await expect(rows(page)).toHaveCount(20);
   await page.getByRole("button", { name: "다음", exact: true }).click();
@@ -171,6 +177,7 @@ test("검색 지연·오류와 빈 결과를 구분하고 오류에서도 조회
   const state = await fixture(page);
   await page.goto("/spaces/1/teams/1/deliverables");
   await expect(rows(page)).toHaveCount(20);
+  await openFilters(page);
   state.paused = true;
   await page.getByLabel("자료 유형").selectOption("TEXT");
   await expect(
@@ -188,10 +195,10 @@ test("검색 지연·오류와 빈 결과를 구분하고 오류에서도 조회
   );
   await expect(page.getByText("조건에 맞는 자료가 없습니다.")).toHaveCount(0);
   state.error = null;
-  await page.getByRole("button", { name: "조회 조건 초기화" }).click();
+  await page.getByRole("button", { name: "필터 초기화" }).click();
   await expect(rows(page)).toHaveCount(20);
   await page.getByLabel("자료 검색", { exact: true }).fill("없는 문서");
-  await page.getByRole("button", { name: "검색", exact: true }).click();
+  await page.getByRole("searchbox", { name: "자료 검색", exact: true }).press("Enter");
   await expect(page.getByText("조건에 맞는 자료가 없습니다.")).toBeVisible();
 });
 
@@ -222,6 +229,17 @@ test("웹과 좁은 화면에서 모든 탐색 제어를 사용할 수 있고 �
     await page.setViewportSize({ width, height: 820 });
     await page.goto("/spaces/1/teams/1/deliverables");
     await expect(rows(page)).toHaveCount(20);
+    await expect(page.getByLabel("자료 유형")).toBeHidden();
+    if (width > 720) {
+      const controls = await page.locator(".deliverable-search-primary").evaluate((toolbar) =>
+        [...toolbar.querySelectorAll("form, select, button")].map((control) => {
+          const { top, height } = control.getBoundingClientRect();
+          return top + height / 2;
+        }),
+      );
+      expect(Math.max(...controls) - Math.min(...controls)).toBeLessThanOrEqual(1);
+    }
+    await openFilters(page);
     for (const label of [
       "자료 유형",
       "자료 등록자",
@@ -234,8 +252,7 @@ test("웹과 좁은 화면에서 모든 탐색 제어를 사용할 수 있고 �
     });
     if (width <= 720) {
       await expect(table.locator('.mobile-material-list > li')).toHaveCount(20);
-      await rows(page).first().locator('summary').click();
-      await expect(rows(page).first().locator('.mobile-record-pairs')).toBeVisible();
+      await expect(rows(page).first().getByText('연결 작업', { exact: true })).toBeVisible();
       expect(await table.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
     } else {
       const actions = rows(page).first().locator('td:last-child');
@@ -260,7 +277,7 @@ test("웹과 좁은 화면에서 모든 탐색 제어를 사용할 수 있고 �
     }
     expect(
       await page
-        .getByRole("button", { name: "검색", exact: true })
+        .getByRole("searchbox", { name: "자료 검색", exact: true })
         .evaluate((element) => element.getBoundingClientRect().height),
     ).toBeLessThanOrEqual(48);
     expect(
@@ -283,6 +300,7 @@ test("로그인 없는 미리보기에서도 유형과 검색 조건을 적용�
 }) => {
   await page.goto("/preview/spaces/1/teams/1/deliverables");
   await expect(rows(page).first()).toBeVisible();
+  await openFilters(page);
   await page.getByLabel("자료 유형").selectOption("TEXT");
   await expect(rows(page).first()).toBeVisible();
   const firstTitle = await rows(page)
@@ -291,13 +309,13 @@ test("로그인 없는 미리보기에서도 유형과 검색 조건을 적용�
     .first()
     .innerText();
   await page.getByLabel("자료 검색", { exact: true }).fill(firstTitle);
-  await page.getByRole("button", { name: "검색", exact: true }).click();
+  await page.getByRole("searchbox", { name: "자료 검색", exact: true }).press("Enter");
   await expect(rows(page)).toHaveCount(1);
   await page
     .getByLabel("자료 검색", { exact: true })
     .fill("존재하지 않는 미리보기 자료");
-  await page.getByRole("button", { name: "검색", exact: true }).click();
+  await page.getByRole("searchbox", { name: "자료 검색", exact: true }).press("Enter");
   await expect(page.getByText("조건에 맞는 자료가 없습니다.")).toBeVisible();
-  await page.getByRole("button", { name: "조회 조건 초기화" }).click();
+  await page.getByRole("button", { name: "필터 초기화" }).click();
   await expect(rows(page).first()).toBeVisible();
 });

@@ -59,7 +59,7 @@ export default function RoundTeamSubmissions({ round, teams, directory, loading,
       <div><dt>미제출 인원</dt><dd className={view.summary.missing ? 'round-attention' : ''}>{view.summary.missing}<small>명</small></dd></div>
     </dl>
     <div className="round-team-search-row">
-      <label className="form-field round-team-search">
+      <label className="form-field round-team-search collection-search-input">
         <span className="sr-only">팀 이름 검색</span>
         <Search size={16} aria-hidden="true" />
         <input type="search" value={query} placeholder="팀 이름 검색" onChange={(event) => update('Search', event.target.value)} />

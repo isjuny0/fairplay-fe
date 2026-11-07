@@ -239,7 +239,7 @@ export default function SpaceHome({
           <h2 id="space-other-teams-heading">
             팀 목록 <span>{otherTeams.length}팀</span>
           </h2>
-          <label className="directory-search">
+          <label className="directory-search collection-search-input">
             <span className="sr-only">팀 이름 검색</span>
             <Icon name="search" />
             <input

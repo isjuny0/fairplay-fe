@@ -6,7 +6,10 @@ const team = '/preview/spaces/1/teams/1';
 async function assertControl(control) {
   await expect(control).toBeVisible();
   await expect(control).toHaveCSS('border-radius', '6px');
-  const fontSize = await control.evaluate(element => innerWidth <= 720 && ['SELECT', 'INPUT', 'TEXTAREA'].includes(element.tagName) ? '16px' : '14px');
+  const fontSize = await control.evaluate(element => {
+    if (innerWidth <= 720 && element.closest('.deliverable-collection-controls')) return '13px';
+    return innerWidth <= 720 && ['SELECT', 'INPUT', 'TEXTAREA'].includes(element.tagName) ? '16px' : '14px';
+  });
   await expect(control).toHaveCSS('font-size', fontSize);
   await expect(control).toHaveCSS('border-top-width', '1px');
   expect((await control.boundingBox()).height).toBeGreaterThanOrEqual(36);
@@ -41,7 +44,7 @@ for (const width of [1440, 390, 320]) {
   test(`${width}px 기본 선택 목록과 기존 커스텀 목록의 색·테두리를 통일한다`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto(team + '/deliverables');
-    if (width < 721) await page.getByRole('button', {name:/^필터.*펼치기$/}).click();
+    await page.getByRole('button', {name:/^필터.*펼치기$/}).click();
     const status = page.getByLabel('자료 유형', { exact: true });
     await assertControl(status);
     const heading = await page.locator('main h1').boundingBox();
@@ -126,7 +129,7 @@ for (const width of [1440, 390, 320]) {
 }
 
 test('기본 선택 상자의 비활성·필수 검증 스타일을 유지한다', async ({ page }) => {
-  await page.goto(team + '/tasks');
+  await page.goto(team + '/tasks?view=list');
   const status = page.getByLabel('작업 상태', { exact: true });
   await status.evaluate(el => el.disabled = true);
   await expect(status).toBeDisabled();

@@ -30,7 +30,6 @@
 @media (max-width: 400px) {
   .workflow-steps li { flex: 1 1 calc(50% - 6px); }
 }
-.deliverable-filter-toggle { display: none; }
 .editor-section-links { display: none; flex-wrap: wrap; gap: 6px; padding-bottom: 12px; }
 .editor-section-links button { border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; background: var(--surface-secondary); color: var(--text-primary); font: inherit; }
 .deliverable-form-layout > .editor-section-links { grid-column: 1 / -1; }
@@ -113,8 +112,6 @@
   .workspace-sidebar .desktop-team-navigation .nav-section { display: block; grid-column: 1 / -1; margin: 8px 10px 4px; }
   .workspace-sidebar .desktop-team-navigation .nav-item { width: 100%; min-height: 44px; }
   .workspace .mobile-team-navigation, .workspace .mobile-manager-navigation { display: none !important; }
-  .deliverable-filter-toggle { display: inline-flex; align-items: center; gap: 8px; align-self: start; }
-  .deliverable-search-toolbar .deliverable-filter-row:not(.is-expanded) { display: none; }
   .notification-unavailable-reason { flex-basis: 100%; max-width: none; padding-bottom: 12px; }
   .personal-notification.is-inaccessible { flex-wrap: wrap; }
   .task-editor-form .task-form-steps { position: sticky; top: 0; z-index: 5; background: var(--surface); }

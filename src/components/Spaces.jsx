@@ -229,8 +229,9 @@ export default function Spaces({ onSelect, onDirectoryContext, user }) {
             {resource.data?.length ? (
               <section className="directory-section" aria-label="스페이스 목록">
                 <div className="directory-toolbar">
-                  <label className="directory-search">
+                  <label className="directory-search collection-search-input">
                     <span className="sr-only">스페이스 이름 검색</span>
+                    <Icon name="search" />
                     <input
                       type="search"
                       placeholder="스페이스 이름 검색"

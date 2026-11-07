@@ -439,7 +439,7 @@ for (const width of [1440, 390, 320]) {
     await expect(page).toHaveURL(/teams\/1\/deliverables$/);
     await expect(page.getByRole('heading', { name: '팀 자료', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: '팀 자료 등록', exact: true })).toHaveCount(0);
-    if (width < 721) await page.getByRole('button', {name:/^필터.*펼치기$/}).click();
+    await page.getByRole('button', {name:/^필터.*펼치기$/}).click();
     await page.getByRole('combobox', { name: '자료 유형', exact: true }).selectOption('TEXT');
     await page.reload();
     await expect(links.getByRole('button', { name: '팀 자료 보기', exact: true })).toHaveAttribute('aria-current', 'page');
