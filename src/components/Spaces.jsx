@@ -13,7 +13,6 @@ import { listTeamsWithMembership } from '../api/teams.js';
 import useSpaceList from '../hooks/useSpaceList.js';
 import { useInteractions } from '../hooks/useInteractions.js';
 import {
-  buildingLabels,
   formatDate,
   fromDateInput,
   isApprovedMember,
@@ -265,7 +264,7 @@ export default function Spaces({ onSelect, onDirectoryContext, user }) {
                 <div className="space-directory-columns" aria-hidden="true">
                   <span>스페이스</span>
                   <span>내 역할</span>
-                  <span>팀 빌딩</span>
+                  <span>관리자</span>
                   <span />
                 </div>
                 {visibleSpaces.length ? (
@@ -281,11 +280,9 @@ export default function Spaces({ onSelect, onDirectoryContext, user }) {
                             </small>
                           </span>
                           <SpaceRoleBadge space={space} user={user} />
-                          <span className="building-status">
-                            <span
-                              className={`status-dot building-${space.teamBuildingStatus.toLowerCase()}`}
-                            />
-                            {buildingLabels[space.teamBuildingStatus]}
+                          <span className="directory-space-manager">
+                            <span className="directory-space-manager-label">관리자 </span>
+                            {space.managerName || '—'}
                           </span>
                           <Icon name="arrow" />
                         </button>
