@@ -557,9 +557,7 @@ test("빈 목록·조회 실패·재조회와 서버에서 삭제된 편집 대�
   ).toBe(true);
   await expect(page.getByText("등록된 팀 회의록이 없습니다.")).toBeVisible();
   api.control.failList = true;
-  await page
-    .getByRole("button", { name: "회의록 새로고침", exact: true })
-    .click();
+  await page.reload();
   await expect(page.getByRole("alert")).toContainText("회의록 조회 실패");
   api.control.failList = false;
   api.items.push(makeItem(1));
@@ -597,9 +595,7 @@ test("권한 회수·다른 팀 응답·삭제된 회의록은 이전 원문을 
     page.getByRole("heading", { name: "주간 회의 1", exact: true }),
   ).toBeVisible();
   api.control.foreign = true;
-  await page
-    .getByRole("button", { name: "회의록 새로고침", exact: true })
-    .click();
+  await page.reload();
   await expect(page.getByRole("alert")).toContainText(
     "이 팀의 회의록이 아닙니다.",
   );

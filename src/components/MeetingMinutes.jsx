@@ -16,8 +16,6 @@ import { isMeetingConflict, meetingSections } from "../lib/meetingMinutes.js";
 import { teamMenuPath } from "../lib/routes.js";
 import MeetingMinuteEditor from "./MeetingMinuteEditor.jsx";
 import MarkdownBody from "./MarkdownBody.jsx";
-import RefreshButton from "./RefreshButton.jsx";
-import MobileDisclosure from './MobileDisclosure.jsx';
 import { EmptyState, ErrorNotice, ResourceState } from "./ui.jsx";
 import "../meeting-minutes.css";
 
@@ -130,7 +128,7 @@ export default function MeetingMinutes({
     }
   };
   return (
-    <section className={`stack meeting-minutes-page${meetingMinuteId == null ? ' is-list' : ''}`}>
+    <section className={`stack meeting-minutes-page ${meetingMinuteId == null ? 'is-list' : 'is-detail'}`}>
       {meetingMinuteId != null && (
         <DetailBackButton onClick={() => navigate(`${base}${query}`)}>목록으로</DetailBackButton>
       )}
@@ -142,16 +140,8 @@ export default function MeetingMinutes({
               : (!failure && resource.data?.title) || "팀 회의록"}
           </h1>
         </div>
-        <div className="heading-actions">
-          <RefreshButton
-            label="회의록 새로고침"
-            disabled={resource.loading || busy}
-            onClick={() => {
-              setError(null);
-              resource.reload();
-            }}
-          />
-          {meetingMinuteId == null && (
+        {meetingMinuteId == null && (
+          <div className="heading-actions">
             <button
               className="primary-button"
               disabled={blocked}
@@ -159,8 +149,8 @@ export default function MeetingMinutes({
             >
               회의록 등록
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
       <ErrorNotice error={error} />
       <ResourceState
@@ -258,51 +248,51 @@ export default function MeetingMinutes({
             </>
           ) : (
             <article className="meeting-detail">
-              <dl className="meeting-metadata">
-                <div>
-                  <dt>회의일시</dt>
-                  <dd>{formatDate(resource.data.meetingAt)}</dd>
-                </div>
-                <div>
-                  <dt>최초 작성자</dt>
-                  <dd>{resource.data.authorName}</dd>
-                </div>
-                <div>
-                  <dt>등록일시</dt>
-                  <dd>{formatDate(resource.data.createdAt)}</dd>
-                </div>
-                <div>
-                  <dt>수정일시</dt>
-                  <dd>{formatDate(resource.data.updatedAt)}</dd>
-                </div>
-              </dl>
-              <section className="meeting-attendees" aria-label="회의 참석자">
-                <MobileDisclosure summary={`참석자 ${resource.data.attendees.length}명${resource.data.attendees.length ? ` · ${resource.data.attendees.slice(0, 2).map(person => person.name).join(', ')}${resource.data.attendees.length > 2 ? ' 외' : ''}` : ''}`}>
-                <h2>
-                  참석자{" "}
-                  <span className="field-help">
-                    {resource.data.attendees.length}명
-                  </span>
-                </h2>
-                <div className="meeting-attendee-chips">
-                  {resource.data.attendees.length ? (
-                    resource.data.attendees.map((person) => (
-                      <span key={person.userId} title={person.userId}>
-                        {person.name}
-                        {!members.some(
-                          (member) => member.userId === person.userId,
-                        ) && <small> · 이전 참석자</small>}
-                      </span>
-                    ))
-                  ) : (
-                    <p className="field-help">기록된 참석자가 없습니다.</p>
-                  )}
-                </div>
-                </MobileDisclosure>
-              </section>
+              <div className="meeting-overview">
+                <dl className="meeting-metadata">
+                  <div>
+                    <dt>회의일시</dt>
+                    <dd>{formatDate(resource.data.meetingAt)}</dd>
+                  </div>
+                  <div>
+                    <dt>최초 작성자</dt>
+                    <dd>{resource.data.authorName}</dd>
+                  </div>
+                  <div>
+                    <dt>등록일시</dt>
+                    <dd>{formatDate(resource.data.createdAt)}</dd>
+                  </div>
+                  <div>
+                    <dt>수정일시</dt>
+                    <dd>{formatDate(resource.data.updatedAt)}</dd>
+                  </div>
+                </dl>
+                <section className="meeting-attendees" aria-label="회의 참석자">
+                  <h2>
+                    참석자{" "}
+                    <span className="field-help">
+                      {resource.data.attendees.length}명
+                    </span>
+                  </h2>
+                  <div className="meeting-attendee-chips">
+                    {resource.data.attendees.length ? (
+                      resource.data.attendees.map((person) => (
+                        <span key={person.userId} title={person.userId}>
+                          {person.name}
+                          {!members.some(
+                            (member) => member.userId === person.userId,
+                          ) && <small> · 이전 참석자</small>}
+                        </span>
+                      ))
+                    ) : (
+                      <p className="field-help">기록된 참석자가 없습니다.</p>
+                    )}
+                  </div>
+                </section>
+              </div>
               {meetingSections.map(([key, label]) => (
                 <section
-                  className="meeting-content-section"
+                  className={`meeting-content-section${key === "decisions" && resource.data[key] ? " is-decisions" : ""}`}
                   key={key}
                   aria-label={label}
                 >

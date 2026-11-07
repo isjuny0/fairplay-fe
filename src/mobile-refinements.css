@@ -93,11 +93,6 @@
   .dashboard-team-overview .dashboard-team-list-header { margin-bottom: 8px; }
   .dashboard-team-overview .dashboard-list-context { margin-block: 8px; }
   .main-content .space-participants-page { gap: 12px; }
-  .main-content .meeting-detail { gap: 12px; }
-  .meeting-detail .meeting-metadata { gap: 8px; padding: 12px; }
-  .meeting-detail .meeting-attendees { margin-block: 0; }
-  .meeting-detail .meeting-attendees .mobile-disclosure h2 { display: none; }
-  .meeting-detail .meeting-content-section { padding-block: 12px; }
   .main-content .announcement-metadata { padding: 12px 16px; gap: 6px; }
   .member-directory-title { flex-wrap: wrap; }
   .rag-question-footer { flex-wrap: wrap; gap: 8px; }
