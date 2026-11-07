@@ -260,7 +260,7 @@ export default function TeamWorkspace({
             <PeerEvaluation context={context} />
           )}
           {currentMenu === '중간 피드백' && approved && (
-            <MidFeedback context={context} onNavigate={navigateToMenu} />
+            <MidFeedback context={context} />
           )}
           {currentMenu === '기여도 리포트' && approved && (
             <ContributionReport context={context} />

@@ -111,14 +111,13 @@ const capstoneTasks = [
   ],
 ];
 
-export function exampleTasks(team, members, scenario) {
+export function exampleTasks(team, members, scenario, now = Date.now()) {
   if (!members.length) return [];
   const lead = members[0].userId;
   const second = members[1]?.userId || lead;
   const exhibitionReviewer = team.id === previewTeams[0].id && scenario !== 'building'
     ? members[2]?.userId
     : null;
-  const now = Date.now();
   const states = [
     'DONE',
     'IN_PROGRESS',
