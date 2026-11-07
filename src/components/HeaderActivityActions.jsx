@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Bell, ListTodo, CheckCheck } from 'lucide-react';
+import { Bell, ListTodo } from 'lucide-react';
 import useResource from '../hooks/useResource.js';
 import useAppNavigate from '../hooks/useAppNavigate.js';
 import { useInteractions } from '../hooks/useInteractions.js';
@@ -66,7 +66,7 @@ export default function HeaderActivityActions() {
     });
   };
 
-  const taskCountLabel = `할 일·평가 ${taskPreview?.totalCount ?? 0}개`;
+  const taskCountLabel = `할 일 ${taskPreview?.totalCount ?? 0}개`;
   const visibleTodos = taskPreview?.items.filter(item => todoType === 'ALL' || item.type === todoType) || [];
 
   const openTodo = (todo) => {
@@ -122,7 +122,6 @@ export default function HeaderActivityActions() {
             {item.message && <span className="header-notification-preview-message">{item.message}</span>}
           </button>)}</div>
         </> : <p className="notification-popover-state">최근 알림이 없습니다.</p>}
-        <button type="button" className="notification-popover-all" onClick={() => { setOpen(false); navigate('/notifications'); }}><CheckCheck size={16} /> 알림함 열기</button>
       </section>}
     </div>
   );

@@ -68,7 +68,7 @@ test('통합 할 일 팝오버는 전체 작업·미제출 평가를 스크롤�
   await page.getByRole('button', { name: '할 일' }).click();
   const popover = page.getByRole('region', { name: '할 일 미리보기' });
   await expect(popover).toBeVisible();
-  await expect(popover).toContainText('할 일·평가 30개');
+  await expect(popover).toContainText('할 일 30개');
   await expect(popover).toContainText('최종 동료 평가');
   const list = popover.locator('.header-task-preview-cards');
   const cards = list.locator('.header-task-preview-card');
