@@ -430,6 +430,15 @@
   border-top: 1px solid #e5eae6;
   padding: 14px 18px;
 }
+.rag-source-footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rag-source-download-error {
+  margin: 0 0 8px;
+  font-size: 12px;
+}
 .rag-state {
   white-space: nowrap;
   padding: 4px 7px;

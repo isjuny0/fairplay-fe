@@ -32,8 +32,8 @@ test('PDF 근거는 페이지로, 텍스트 근거는 제목과 줄 범위로 �
 test('질문 결과의 근거는 현재 팀 자료·버전·실제 본문과 일치한다', async () => {
   const status = await previewRequest(`${base}/index-status?page=0&size=2`);
   assert.equal(status.items.length, 2);
-  assert.equal(status.totalElements, 10);
-  assert.equal(status.readyCount, 9);
+  assert.equal(status.totalElements, 12);
+  assert.equal(status.readyCount, 11);
   const answer = await previewRequest(`${base}/questions`, {
     method: 'POST',
     body: { question: '프로젝트 범위는?' },

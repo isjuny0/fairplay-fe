@@ -1,6 +1,7 @@
 import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
 import { exampleCalendarEvents, exampleDeliverables, exampleTasks, peerCriteria, previewMembers } from './fixtures.js';
 import { capstoneProjectMaterials, capstoneProjectMeetings, capstoneProjectScenario, capstoneProjectTasks } from './capstoneProject.js';
+import { previewRagFileMaterials } from './ragFiles.js';
 import { validatePeerResponse, workSummary } from '../lib/evaluation.js';
 import { defaultReportWeights, sameReportWeights, validReportWeights } from '../lib/reportWeights.js';
 
@@ -125,6 +126,15 @@ export function getMockState(context, initialScenario = 'active', recordsAt = Da
   const legacyProjectRecords = state.scenario === capstoneProjectScenario;
   if (legacyProjectRecords) state.scenario = 'active';
   const seededProjectRecords = useProjectRecords && !state.projectRecordsAt && seedProjectRecords(state, fixtureAt);
+  const seededRagFiles = useProjectRecords && state.projectRecordsAt && !state.ragFilesSeeded;
+  if (seededRagFiles) {
+    const entry = state.teams[1];
+    const firstId = Math.max(...entry.deliverables.map(({ id }) => id), entry.team.id * 1000) + 1;
+    entry.deliverables.push(...previewRagFileMaterials(
+      entry.team.id, previewMembers[0].userId, koreanDateTime(state.projectRecordsAt), firstId,
+    ));
+    state.ragFilesSeeded = true;
+  }
   // 마감 회차의 예시 응답은 실제 저장/제출 상태와 함께 만든다.
   for (const round of state.rounds) {
     if (round.status === 'CLOSED' && !round.seeded)
@@ -153,7 +163,7 @@ export function getMockState(context, initialScenario = 'active', recordsAt = Da
   state.reports ??= [];
   for (const report of state.reports) report.weights ??= { ...defaultReportWeights };
   state.reportWeights ??= state.reports[0]?.weights ?? null;
-  if (legacyProjectRecords || seededProjectRecords) saveMockState(context, state);
+  if (legacyProjectRecords || seededProjectRecords || seededRagFiles) saveMockState(context, state);
   memoryStates.set(key, state);
   return state;
 }

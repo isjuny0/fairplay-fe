@@ -1,4 +1,5 @@
 import { MockError } from './planned.js';
+import { previewRagFile } from './ragFiles.js';
 
 const projectTopics = [
   [/마감 (시점|집계|기준)|중간 평가|중간 피드백/, '중간 평가 마감 집계 기준'],
@@ -27,7 +28,7 @@ function materialItems(entry, state) {
           ? 'PREPARING'
           : state.ragScenario === 'failed' && index === 1
             ? 'FAILED'
-            : item.type === 'FILE'
+            : item.type === 'FILE' && !previewRagFile(item)
               ? 'PREPARING'
               : 'READY',
       failureCode:
@@ -100,19 +101,28 @@ export function previewRag(context, state, parts, url, method, body) {
     const projectTitle = state.projectRecordsAt
       ? projectTopics.find(([pattern]) => pattern.test(body.question))?.[1]
       : undefined;
+    const sampleFormat = /pdf|피디에프/i.test(body.question) ? 'pdf'
+      : /docx|word|워드/i.test(body.question) ? 'docx' : null;
+    const sampleId = sampleFormat
+      ? entry.deliverables.find((item) => item.ragSampleFormat === sampleFormat)?.id : null;
     const selected =
+      ready.find((item) => item.deliverableId === sampleId) ||
       (projectTitle && ready.find((item) => item.title === projectTitle)) ||
       ready.find((item) => item.title.includes(term)) || ready[0];
     const document = entry.deliverables.find(
       (item) => item.id === selected.deliverableId,
     );
-    const lines = document.text.split('\n');
-    const quote = lines[0].slice(0, 300);
+    const sample = previewRagFile(document);
+    const pageNumber = sample?.pages?.length ?? null;
+    const content = pageNumber == null ? sample?.content ?? document.text : sample.pages[pageNumber - 1];
+    const lines = content.split('\n');
+    const startLine = sample ? 2 : 1;
+    const quote = lines[startLine - 1].slice(0, 300);
     return {
       teamId,
       answerable: true,
       reason: null,
-      answer: `**${document.title}**에서 다음 내용을 확인할 수 있습니다.\n\n${document.text}`,
+      answer: `**${document.title}**에서 다음 내용을 확인할 수 있습니다.\n\n${content}`,
       references: [
         {
           sourceId: `source-${document.id}`,
@@ -122,8 +132,9 @@ export function previewRag(context, state, parts, url, method, body) {
           type: document.type,
           sourceUrl: `/api/teams/${teamId}/deliverables`,
           headingPath: [],
-          startLine: 1,
+          startLine,
           endLine: lines.length,
+          pageNumber,
           quote,
         },
       ],
@@ -138,7 +149,14 @@ export function previewRag(context, state, parts, url, method, body) {
     const version = Number(url.searchParams.get('expectedVersion'));
     if (version !== document.version)
       fail('RAG_SOURCE_CHANGED', '자료가 변경되었습니다. 다시 질문해주세요.');
-    if (document.type !== 'TEXT')
+    const sample = previewRagFile(document);
+    const requestedPage = url.searchParams.get('pageNumber');
+    if (requestedPage != null && (!sample?.pages || !/^[1-9]\d*$/.test(requestedPage)))
+      fail('INVALID_REQUEST', '페이지 번호를 확인해 주세요.', 400);
+    const pageNumber = sample?.pages ? Number(requestedPage ?? 1) : null;
+    if (sample?.pages && !sample.pages[pageNumber - 1])
+      fail('RAG_SOURCE_PAGE_NOT_FOUND', '해당 PDF 페이지에서 추출한 텍스트를 찾을 수 없습니다.', 404);
+    if (document.type !== 'TEXT' && !sample)
       fail(
         'RAG_SOURCE_UNSUPPORTED',
         '이 예시 자료의 원문은 파일 다운로드로 확인해 주세요.',
@@ -150,7 +168,8 @@ export function previewRag(context, state, parts, url, method, body) {
       deliverableVersion: version,
       title: document.title,
       type: document.type,
-      content: document.text,
+      content: sample?.pages ? sample.pages[pageNumber - 1] : sample?.content ?? document.text,
+      pageNumber,
     };
   }
   fail('NOT_FOUND', '지원하지 않는 자료 검색 API입니다.', 404);

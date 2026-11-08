@@ -1,4 +1,4 @@
-import { apiRequest } from "./client.js";
+import { ApiError, apiRequest } from "./client.js";
 export const listDeliverables = (
   teamId,
   {
@@ -59,3 +59,21 @@ export const deleteDeliverable = (id, expectedVersion) =>
   });
 export const downloadDeliverable = (id) =>
   apiRequest(`/api/deliverables/${id}/file`, { responseType: "blob" });
+
+export async function downloadRagSourceFile(teamId, reference) {
+  const blob = await downloadDeliverable(reference.deliverableId);
+  const size = 100;
+  // Check the version after fetching the bytes so a concurrent replacement cannot be served as the cited file.
+  for (let page = 0; ; page++) {
+    const materials = await listDeliverables(teamId, { q: reference.title, type: "FILE", page, size });
+    const material = materials.find((item) => item.id === reference.deliverableId);
+    if (material) {
+      if (material.teamId === teamId && material.version === reference.deliverableVersion && material.file?.originalFilename) {
+        return { blob, filename: material.file.originalFilename };
+      }
+      break;
+    }
+    if (materials.length < size) break;
+  }
+  throw new ApiError(409, { code: "RAG_SOURCE_CHANGED" });
+}

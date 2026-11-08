@@ -553,3 +553,19 @@ test('전시 가이드의 자유 탐색은 설정할 수 있는 일반 미리보
   await expect(page.getByRole('button', { name: '미리보기 설정', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '사용자 가이드', exact: true })).toHaveCount(0);
 });
+
+test('모바일 자료 검색에서 PDF·Word 원본 다운로드를 제공한다', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await preview(page, { path: '/spaces/1/teams/1/materials-search' });
+  for (const format of ['PDF', 'Word']) {
+    await page.locator('#rag-question').fill(`${format} 인용 검증을 알려줘.`);
+    await page.getByRole('button', { name: '질문 보내기', exact: true }).click();
+    await page.getByRole('button', { name: `팀 자료 검색 ${format} 검증 기록 원문 확인`, exact: true }).click();
+    const source = page.getByRole('region', { name: '근거 원문' });
+    await expect(source.getByText(/파일에서 추출한 텍스트/)).toBeVisible();
+    const download = page.waitForEvent('download');
+    await source.getByRole('button', { name: '원본 파일 다운로드' }).click();
+    expect((await download).suggestedFilename()).toBe(`팀-자료-검색-${format}-검증.${format === 'PDF' ? 'pdf' : 'docx'}`);
+    await source.getByRole('button', { name: '자료 패널 닫기' }).click();
+  }
+});

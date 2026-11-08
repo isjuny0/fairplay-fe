@@ -1,4 +1,5 @@
 import { previewRag } from './rag.js';
+import { previewRagFile } from './ragFiles.js';
 import { previewTeamHome } from './teamHome.js';
 import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
 import { isMutable } from '../lib/domain.js';
@@ -795,6 +796,13 @@ async function executePreviewRequest(
     const item =
       entry?.deliverables.find((item) => item.id === id) ||
       missing('DELIVERABLE_NOT_FOUND', '자료가 없습니다.');
+    const sample = previewRagFile(item);
+    if (responseType === 'blob' && sample) {
+      const response = await fetch(sample.assetUrl);
+      if (!response.ok) missing('DELIVERABLE_FILE_NOT_FOUND', '예시 파일을 불러오지 못했습니다.');
+      const bytes = await response.arrayBuffer();
+      return new Blob([bytes], { type: sample.contentType });
+    }
     if (responseType === 'blob')
       return (
         fileContents.get(id) ||
@@ -828,6 +836,7 @@ async function executePreviewRequest(
           contentType: file.type,
           sizeBytes: file.size,
         };
+        delete item.ragSampleFormat;
         fileContents.set(id, file);
       } else Object.assign(item, metadata);
       item.version++;

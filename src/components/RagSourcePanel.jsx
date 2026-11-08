@@ -1,8 +1,9 @@
 import { usePreviewGuide } from '../lib/previewGuideContext.js';
-import { useEffect, useRef } from 'react';
-import { ArrowLeft, ArrowUpRight, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowLeft, ArrowUpRight, Download, X } from 'lucide-react';
 import useResource from '../hooks/useResource.js';
 import { getRagSource } from '../api/rag.js';
+import { downloadRagSourceFile } from '../api/deliverables.js';
 import { sourceLocation, ragSourceErrorGuidance } from '../lib/rag.js';
 import { ErrorNotice } from './ui.jsx';
 
@@ -15,6 +16,8 @@ export default function RagSourcePanel({
   onOpenMaterials,
 }) {
   const panel = useRef(null);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState('');
   const guide = usePreviewGuide();
   const guidedSource = guide?.guiding && guide.scenarioId === 'materials-search' && guide.stepId === 'materials-source';
   const hasCitation = Number.isInteger(reference.startLine) &&
@@ -58,6 +61,34 @@ export default function RagSourcePanel({
   const reportSource = guide?.setMaterialsSource;
   const sourceReady = Boolean(matchesSource && hasCitation && !resource.loading && !resource.error
     && reference.endLine <= content.content.split('\n').length);
+  const sourcePage = reference.pageNumber ?? (matchesSource ? content.pageNumber : null);
+  const isFileSource = reference.type === 'FILE' || (matchesSource && content.type === 'FILE');
+  const location = sourcePage != null ? sourceLocation({ pageNumber: sourcePage })
+    : hasCitation ? sourceLocation(reference) : isFileSource ? '' : '전체 원문';
+  const downloadOriginal = async () => {
+    setDownloading(true);
+    setDownloadError('');
+    try {
+      const { blob, filename } = await downloadRagSourceFile(teamId, reference);
+      if (!panel.current) return;
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (failure) {
+      if (!panel.current) return;
+      if ([401, 403].includes(failure.status)) onAccessError(failure);
+      else setDownloadError(failure.code === 'RAG_SOURCE_CHANGED' || failure.status === 404
+        ? '원본 파일이 변경되었거나 삭제되었습니다. 팀 자료에서 확인해 주세요.'
+        : '원본 파일을 다운로드하지 못했습니다. 다시 시도해 주세요.');
+    } finally {
+      if (panel.current) setDownloading(false);
+    }
+  };
   useEffect(() => {
     if (!guidedSource) return;
     reportSource({ ready: sourceReady, loading: resource.loading, error: Boolean(resource.error), teamId, deliverableId: reference.deliverableId,
@@ -94,8 +125,7 @@ export default function RagSourcePanel({
       </header>
       <div className="rag-source-meta">
         <h2>{reference.title}</h2>
-        <p>{hasCitation ? sourceLocation(reference) : matchesSource && content.pageNumber != null
-          ? sourceLocation(content) : '전체 원문'}</p>
+        <p>{[location, isFileSource && '파일에서 추출한 텍스트'].filter(Boolean).join(' · ')}</p>
       </div>
       {resource.loading ? (
         <p className="rag-source-message" role="status">
@@ -123,7 +153,8 @@ export default function RagSourcePanel({
         <div
           className="rag-original"
           role="region"
-          aria-label={content.pageNumber != null ? 'PDF 페이지에서 추출한 텍스트' : '줄 번호가 있는 원문'}
+          aria-label={sourcePage != null ? 'PDF 페이지에서 추출한 텍스트'
+            : isFileSource ? '파일에서 추출한 텍스트' : '줄 번호가 있는 원문'}
           tabIndex={0}
           ref={original}
         >
@@ -142,12 +173,21 @@ export default function RagSourcePanel({
         </div>
       )}
       <footer>
-        {guidedSource && <button className="primary-button" data-guide="confirm-material-source"
-          disabled={!sourceReady} onClick={() => guide.confirmMaterialsStep('materials-source')}>원문 확인 완료</button>}
-        <button className="secondary-button" onClick={onOpenMaterials}>
-          팀 자료에서 찾기
-          <ArrowUpRight size={15} />
-        </button>
+        {downloadError && <p className="field-error rag-source-download-error" role="alert">{downloadError}</p>}
+        <div className="rag-source-footer-actions">
+          {guidedSource && <button className="primary-button" data-guide="confirm-material-source"
+            disabled={!sourceReady} onClick={() => guide.confirmMaterialsStep('materials-source')}>원문 확인 완료</button>}
+          {matchesSource && isFileSource && !resource.loading && !resource.error && (
+            <button type="button" className="secondary-button" onClick={downloadOriginal} disabled={downloading}>
+              <Download size={15} />
+              {downloading ? '다운로드 중…' : '원본 파일 다운로드'}
+            </button>
+          )}
+          <button className="secondary-button" onClick={onOpenMaterials}>
+            팀 자료에서 찾기
+            <ArrowUpRight size={15} />
+          </button>
+        </div>
       </footer>
     </aside>
   );
