@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { getAiReview, requestAiReview } from '../api/aiReviews.js';
 import useResource from '../hooks/useResource.js';
+import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import { canModifyTeamWork, formatDate, isAssignee, isMutable } from '../lib/domain.js';
 import { EmptyState, ErrorNotice, ResourceState } from './ui.jsx';
 import AiReviewFeedback from './AiReviewFeedback.jsx';
@@ -30,6 +31,13 @@ const failureMessages = {
   REVIEW_INTERRUPTED:
     '검토가 중단됐습니다. 현재 상태를 확인한 뒤 직접 다시 요청해 주세요.',
 };
+function reviewPollDelay(createdAt) {
+  const elapsed = Date.now() - apiTimeToEpoch(createdAt);
+  if (elapsed < 12_000) return 2_000;
+  if (elapsed >= 30_000) return 10_000;
+  return 5_000;
+}
+
 export default function AiReview({ context, onEditSource }) {
   const guide = usePreviewGuide();
   const guidedFeedback = Boolean(guide?.guiding && guide.stepId === 'ai-feedback' && context.task.id === guide.taskId);
@@ -68,32 +76,24 @@ export default function AiReview({ context, onEditSource }) {
   const requestAgain = Boolean(error || review?.status === 'FAILED' || (review && !review.isCurrent));
   const isPreviousResult = review?.status === 'COMPLETED' && !review.isCurrent;
   useEffect(() => {
-    if (
-      !active ||
-      resource.error ||
-      resource.loading ||
-      document.visibilityState !== 'visible'
-    )
-      return;
-    const timer = setTimeout(() => {
+    if (!active || resource.error || resource.loading) return;
+
+    const reloadIfVisible = () => {
       if (document.visibilityState === 'visible') resource.reload();
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, [
-    active,
-    resource.data,
-    resource.error,
-    resource.loading,
-    resource.reload,
-  ]);
-  useEffect(() => {
-    const resume = () => {
-      if (document.visibilityState === 'visible' && active && !resource.error)
-        resource.reload();
     };
-    document.addEventListener('visibilitychange', resume);
-    return () => document.removeEventListener('visibilitychange', resume);
-  }, [active, resource.error, resource.reload]);
+    const timer = document.visibilityState === 'visible'
+      ? setTimeout(reloadIfVisible, reviewPollDelay(resource.data.createdAt))
+      : undefined;
+    const handleVisibilityChange = () => {
+      clearTimeout(timer);
+      reloadIfVisible();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [active, resource.data, resource.error, resource.loading, resource.reload]);
   const requestReview = async () => {
     if (busy || active || !canRequest) return;
     setBusy(true);
