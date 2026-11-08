@@ -206,10 +206,11 @@ for (const width of [1440, 768, 390, 320]) {
 }
 
 for (const width of [1920, 1440, 1280, 1024, 768, 390, 320]) {
-  test(`작업 카드 ${width}px: 담당자·마감을 바로 보고 작업량·담당 비율을 펼친다`, async ({ page }) => {
+  test(`작업 카드 ${width}px: 담당자·마감·예상 작업량을 바로 확인한다`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
-    await page.goto('/preview/spaces/1/teams/1/tasks');
-    await expect(page.locator('.board-task-card')).toHaveCount(6);
+    await page.goto('/preview/spaces/1/teams/1/tasks?view=board');
+    const cards = page.locator('.board-task-card');
+    await expect(cards.first()).toBeVisible();
     await expect(page.locator('.list-summary')).toHaveCount(0);
     if (width > 720) {
       const columns = await page.locator('.task-column').evaluateAll((elements) => elements.map((el) => {
@@ -226,31 +227,25 @@ for (const width of [1920, 1440, 1280, 1024, 768, 390, 320]) {
       const board = await page.locator('.task-columns').evaluate(el => ({ width: el.clientWidth, contentWidth: el.scrollWidth }));
       expect(board.contentWidth).toBeLessThanOrEqual(board.width + 1);
     }
-    const firstCard = page.locator('.board-task-card').first();
-    const foldedHeight = await firstCard.evaluate((card) => card.getBoundingClientRect().height);
+    const firstCard = cards.first();
     await expect(firstCard.locator('.task-number')).toHaveCount(0);
     await expect(firstCard.locator('.board-card-assignees')).toBeVisible();
     const deadline = firstCard.locator('.task-deadline time');
     await expect(deadline).toHaveText(/\d+월 \d+일 마감$/);
     await expect(deadline).toHaveAttribute('title', /마감 .*\d{2}:\d{2}/);
     await expect(deadline).not.toHaveText(/\d{2}:\d{2}/);
-    await expect(firstCard.locator('.task-workload-line')).toHaveCount(0);
-    await expect(firstCard.locator('.task-card-meta')).toHaveCount(0);
+    await expect(cards.locator('.task-workload-line')).toHaveCount(await cards.count());
+    await expect(firstCard.locator('.task-workload-line')).toBeVisible();
+    await expect(firstCard.locator('.task-workload-line')).toContainText(/예상 작업량: \d+시간/);
+    await expect(cards.locator('.task-card-meta')).toHaveCount(0);
+    await expect(cards.getByRole('button', { name: /작업량·담당 비율/ })).toHaveCount(0);
     const overdueCard = page.locator('.board-task-card').filter({
       has: page.locator('.board-card-overdue'),
     }).first();
     const overdueDeadline = overdueCard.locator('.task-deadline');
     await expect(overdueDeadline.locator('.board-card-overdue')).toHaveText('지연');
-    const currentUser = await page.locator('.profile-name').textContent();
-    await expect(overdueCard.locator('.board-card-assignees .board-card-self')).toHaveText(currentUser);
+    await expect(overdueCard.locator('.board-card-assignees .board-card-self')).toHaveText('김준영');
     await expect(overdueCard.locator('.board-card-top')).not.toContainText('지연');
-    await firstCard.getByRole('button', { name: /작업량·담당 비율 보기$/ }).click();
-    await expect(firstCard.locator('.task-workload-line')).toBeVisible();
-    await expect(firstCard.locator('.task-card-meta')).toBeVisible();
-    await expect(firstCard.locator('.board-card-details-toggle')).toHaveAttribute('aria-expanded', 'true');
-    expect(await firstCard.evaluate((card) => card.getBoundingClientRect().height)).toBeGreaterThan(foldedHeight);
-    await firstCard.getByRole('button', { name: /작업량·담당 비율 접기$/ }).click();
-    await expect(firstCard.locator('.task-workload-line')).toHaveCount(0);
     await expect(firstCard.locator('.task-title-button > svg')).toHaveCount(0);
     const taskTitle = await firstCard.locator('h3').innerText();
     await firstCard.click({ position: { x: 4, y: 4 } });
@@ -259,17 +254,3 @@ for (const width of [1920, 1440, 1280, 1024, 768, 390, 320]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   });
 }
-
-test('상세 작업 카드는 담당자 수에 맞춰 높이를 사용한다', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto('/preview/spaces/1/teams/1/tasks');
-  const twoAssigneeCard = page.locator('.board-task-card').filter({ has: page.locator('[data-guide-task-id="102"]') });
-  const oneAssigneeCard = page.locator('.board-task-card').filter({ has: page.locator('[data-guide-task-id="103"]') });
-  await twoAssigneeCard.getByRole('button', { name: /작업량·담당 비율 보기$/ }).click();
-  await oneAssigneeCard.getByRole('button', { name: /작업량·담당 비율 보기$/ }).click();
-  const [twoAssigneeHeight, oneAssigneeHeight] = await Promise.all([
-    twoAssigneeCard.evaluate((card) => card.getBoundingClientRect().height),
-    oneAssigneeCard.evaluate((card) => card.getBoundingClientRect().height),
-  ]);
-  expect(twoAssigneeHeight).toBeGreaterThan(oneAssigneeHeight);
-});

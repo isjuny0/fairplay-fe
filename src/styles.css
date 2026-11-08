@@ -3416,7 +3416,9 @@ details > summary {
   justify-self: start;
   align-self: center;
   max-width: 100%;
-  font-size: clamp(9px, 7cqi, 14px);
+  font-size: var(--text-caption);
+  white-space: normal;
+  word-break: keep-all;
   padding: 4px;
   border-radius: 5px;
   background: #f3f5f7;

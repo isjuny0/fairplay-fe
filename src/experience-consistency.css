@@ -43,8 +43,6 @@
 .report-calculation-details > summary { cursor: pointer; padding: 12px 0; font-weight: 600; }
 .workflow-steps li[data-complete='true'] { color: var(--brand-dark); }
 .team-deletion-section.danger-zone { border-top: 2px solid #d9a4a4; padding-top: 24px; }
-.board-card-details-toggle { min-width: 36px; min-height: 36px; }
-.board-card-details-toggle:hover { background: var(--surface-secondary); }
 .main-content :is(.announcement-pagination, .meeting-pagination, .task-pagination, .personal-notification-simple-pagination) { gap: var(--space-4); padding-top: 0; font-size: var(--text-support); }
 .main-content :is(.announcement-pagination, .meeting-pagination, .task-pagination, .personal-notification-simple-pagination) > button { min-height: 44px; padding: 8px 18px; }
 .main-content :is(.announcement-pagination, .meeting-pagination, .task-pagination, .personal-notification-simple-pagination) > span { font-size: var(--text-support); }
@@ -115,7 +113,6 @@
   .notification-unavailable-reason { flex-basis: 100%; max-width: none; padding-bottom: 12px; }
   .personal-notification.is-inaccessible { flex-wrap: wrap; }
   .task-editor-form .task-form-steps { position: sticky; top: 0; z-index: 5; background: var(--surface); }
-  .board-card-details-toggle { min-width: 44px; min-height: 44px; }
   .editor-section-links button { min-height: 44px; }
   .report-personal-summary .report-score-total { min-height: 0; padding-block: 24px; }
   .workflow-steps { gap: 6px; }

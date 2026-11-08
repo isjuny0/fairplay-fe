@@ -2,7 +2,6 @@ import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
 import { screenLoaders } from '../lib/routeScreens.js';
 import { deferScreen } from './DeferredScreen.jsx';
 import Icon from './Icon.jsx';
-import { ChevronDown } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router';
 import { createTask, listTasks } from '../api/tasks.js';
@@ -14,7 +13,6 @@ import {
   canModifyTeamWork,
   formatDate,
   formatBoardWorkload,
-  formatExpectedWorkload,
   memberName,
   statusLabels,
 } from '../lib/domain.js';
@@ -65,7 +63,6 @@ export default function TaskBoard({
   const filterControls = useRef({});
   const filterToggle = useRef(null);
   const [preferences, setPreferences] = useState(readTaskViewPreferences);
-  const [expandedBoardTaskIds, setExpandedBoardTaskIds] = useState(() => new Set());
   const urlView = searchParams.get('view');
   const mobile = useMobileLayout('(max-width: 720px)');
   const requestedView = urlView !== null ? normalizeTaskView(urlView) : preferences.view;
@@ -164,13 +161,6 @@ export default function TaskBoard({
       setBusy(false);
     }
   };
-  const toggleBoardTaskDetails = (taskId) =>
-    setExpandedBoardTaskIds((current) => {
-      const next = new Set(current);
-      if (next.has(taskId)) next.delete(taskId);
-      else next.add(taskId);
-      return next;
-    });
   const canCreate =
     !readOnly && team.canCreateTask && members.length >= 2 && canModifyTeamWork(team);
   const hasFilters = appliedFilterCount > 0;
@@ -558,8 +548,6 @@ export default function TaskBoard({
                       {tasks
                         .filter((task) => task.status === status)
                         .map((task) => {
-                          const detailsExpanded = expandedBoardTaskIds.has(task.id);
-                          const detailsId = `board-task-details-${task.id}`;
                           const assignees = task.assignees.map(({ userId }) => ({
                             userId,
                             name: memberName(members, userId),
@@ -569,7 +557,7 @@ export default function TaskBoard({
                           return (
                             <article
                               key={task.id}
-                              className={`board-task-card${detailsExpanded ? ' is-expanded' : ''}`}
+                              className="board-task-card"
                             >
                               <div className="board-card-top">
                                 <span className="mobile-task-state">{label}</span>
@@ -606,48 +594,10 @@ export default function TaskBoard({
                                   {isOverdue && <span className="board-card-overdue">지연</span>}
                                 </div>
                               </div>
-                              <button
-                                className="board-card-details-toggle"
-                                aria-expanded={detailsExpanded}
-                                aria-controls={detailsId}
-                                aria-label={`${task.title} 작업량·담당 비율 ${detailsExpanded ? '접기' : '보기'}`}
-                                title={detailsExpanded ? '카드 정보 접기' : '카드 정보 펼치기'}
-                                onClick={() => toggleBoardTaskDetails(task.id)}
-                              >
-                                작업량·담당 비율
-                                <ChevronDown className="board-card-toggle-chevron" size={14} aria-hidden="true" />
-                              </button>
-                              {detailsExpanded && (
-                                <div id={detailsId} className="board-task-details">
-                                  <p
-                                    className="task-workload-line"
-                                    title={formatExpectedWorkload(task.weight)}
-                                    aria-label={formatExpectedWorkload(task.weight)}
-                                  >
-                                    {formatBoardWorkload(task.weight)}
-                                  </p>
-                                  <dl className="task-card-meta">
-                                    <div>
-                                      <dt>담당 비율</dt>
-                                      <dd>
-                                        {task.assignees.map((assignment) => (
-                                          <span
-                                            key={assignment.userId}
-                                            className={
-                                              assignment.userId === user.id
-                                                ? 'my-assignment'
-                                                : ''
-                                            }
-                                          >
-                                            {memberName(members, assignment.userId)}{' '}
-                                            <b>{assignment.allocationPercent}%</b>
-                                          </span>
-                                        ))}
-                                      </dd>
-                                    </div>
-                                  </dl>
-                                </div>
-                              )}
+                              <p className="task-workload-line">
+                                <span className="sr-only">예상 작업량: </span>
+                                {formatBoardWorkload(task.weight)}
+                              </p>
                             </article>
                           );
                         })}
