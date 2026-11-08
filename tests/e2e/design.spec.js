@@ -125,6 +125,9 @@ for (const width of [1440, 320]) {
     const card = page.locator('.login-card--compact');
     const shell = page.locator('.login-shell');
     await expect(shell.getByRole('img', { name: 'Fairplay', exact: true })).toBeVisible();
+    await expect(shell.locator('.login-art')).toHaveAttribute('aria-hidden', 'true');
+    await expect(shell.locator('.login-art-card')).toHaveCount(3);
+    await expect(shell.locator('.login-art-card--team')).toBeVisible();
     await expect(card.getByRole('button', { name: 'Google로 계속하기', exact: true })).toBeEnabled();
     await expect(card.locator('.login-description, ol')).toHaveCount(0);
     await expect(shell.getByRole('heading', { name: 'Fairplay에 로그인', exact: true })).toBeVisible();
@@ -136,6 +139,9 @@ for (const width of [1440, 320]) {
     const box = await card.boundingBox();
     expect(box.width).toBeLessThanOrEqual(400);
     expect(box.height).toBeLessThan(200);
+    const shellBox = await shell.boundingBox();
+    expect(shellBox.width).toBeLessThanOrEqual(400);
+    expect(shellBox.height).toBeLessThan(500);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath('compact-login-page.png') });
     await shell.screenshot({ path: testInfo.outputPath('compact-login-card.png') });
