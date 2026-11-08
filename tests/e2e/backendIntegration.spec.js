@@ -547,7 +547,7 @@ test('평가 비참여 상태는 대상·응답 조회를 요청하지 않는다
 });
 test('중간 피드백은 설명 문구 없이 서버 평균과 항목별 도움말을 표시한다', async ({
   page,
-}) => {
+}, testInfo) => {
   await backend(page);
   await page.goto('/spaces/1/teams/1/mid-feedback');
   await expect(page.getByText('4.3 / 5점', { exact: true })).toBeVisible();
@@ -560,7 +560,10 @@ test('중간 피드백은 설명 문구 없이 서버 평균과 항목별 도움
   await expect(page.getByText('확인할 항목', { exact: true })).toHaveCount(0);
   await expect(page.locator('.peer-criteria-track > span')).toHaveCount(4);
   await expect(page.locator('.peer-criteria-track').first()).toHaveCSS('height', '6px');
-  await expect(page.locator('.peer-criteria-track > span').first()).toHaveCSS('background-color', 'rgb(102, 134, 157)');
+  await expect(page.locator('.peer-criteria-track > span').first()).toHaveCSS('background-color', 'rgb(37, 99, 235)');
+  await expect(page.getByRole('meter', { name: '책임감 평균', exact: true }).locator('span')).toHaveCSS('background-color', 'rgb(37, 99, 235)');
+  await expect(page.getByRole('meter', { name: '의사소통 평균', exact: true }).locator('span')).toHaveCSS('background-color', 'rgb(37, 99, 235)');
+  await expect(page.getByRole('meter', { name: '적극성 평균', exact: true }).locator('span')).toHaveCSS('background-color', 'rgb(224, 86, 86)');
   await expect(page.getByText('목업', { exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: '내 담당 작업 보기', exact: true })).toHaveCount(0);
   await expect(page.getByText('평가 기준 보기', { exact: true })).toHaveCount(0);
@@ -585,10 +588,12 @@ test('중간 피드백은 설명 문구 없이 서버 평균과 항목별 도움
   const meterBoxes = await page.getByRole('meter').all();
   const meterPositions = await Promise.all(meterBoxes.map((meter) => meter.boundingBox()));
   for (let index = 1; index < meterPositions.length; index++) expect(meterPositions[index].x).toBeCloseTo(meterPositions[0].x, 0);
+  await page.locator('.mid-feedback-page').screenshot({ path: testInfo.outputPath('mid-feedback-desktop.png') });
   await page.setViewportSize({ width: 390, height: 844 });
   const mobileBoxes = await Promise.all(items.map((item) => item.boundingBox()));
   expect(mobileBoxes[1].y).toBeGreaterThanOrEqual(mobileBoxes[0].y + mobileBoxes[0].height - 1);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.locator('.mid-feedback-page').screenshot({ path: testInfo.outputPath('mid-feedback-mobile.png') });
 });
 test('2인 팀 중간 피드백에서 평가 마감 시점의 내 작업 현황을 표시한다', async ({ page }) => {
   const midFeedback = {
