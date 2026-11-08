@@ -23,6 +23,8 @@ for (const role of ['leader', 'manager']) {
         ? sidebar.getByRole('button', { name: '메뉴 닫기', exact: true })
         : page.getByRole('button', { name: '사이드바 접기', exact: true });
       const menu = sidebar.locator('.workspace-navigation-links');
+      await expect(menu).toHaveCSS('scrollbar-width', 'none');
+      expect(await menu.evaluate((element) => getComputedStyle(element, '::-webkit-scrollbar').display)).toBe('none');
       await expect(back).toBeInViewport();
       await expect(control).toBeInViewport();
       const backBefore = await back.boundingBox();
@@ -32,6 +34,13 @@ for (const role of ['leader', 'manager']) {
       await page.mouse.wheel(0, 1000);
       await expect.poll(() => menu.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
       await expect(menu.getByRole('button').last()).toBeInViewport();
+      // Keyboard focus must still reveal off-screen items without a visible scrollbar.
+      await menu.getByRole('button').first().focus();
+      await expect(menu.getByRole('button').first()).toBeFocused();
+      await expect(menu.getByRole('button').first()).toBeInViewport({ ratio: 1 });
+      await menu.getByRole('button').last().focus();
+      await expect(menu.getByRole('button').last()).toBeInViewport();
+      await expect.poll(() => menu.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
       expect((await back.boundingBox()).y).toBeCloseTo(backBefore.y, 1);
       expect((await control.boundingBox()).y).toBeCloseTo(controlBefore.y, 1);
       expect(await sidebar.evaluate((element) => element.scrollTop)).toBe(0);
@@ -66,6 +75,8 @@ test('모바일 내 스페이스 메뉴의 닫기도 목록 스크롤과 분리�
   const drawer = page.getByRole('dialog', { name: '내 스페이스 메뉴', exact: true });
   const close = drawer.getByRole('button', { name: '메뉴 닫기', exact: true });
   const content = drawer.locator('.directory-sidebar-content');
+  await expect(content).toHaveCSS('scrollbar-width', 'none');
+  expect(await content.evaluate((element) => getComputedStyle(element, '::-webkit-scrollbar').display)).toBe('none');
   const before = await close.boundingBox();
   await content.hover();
   await page.mouse.wheel(0, 1000);
@@ -74,4 +85,17 @@ test('모바일 내 스페이스 메뉴의 닫기도 목록 스크롤과 분리�
   await expect(content.getByRole('button').last()).toBeInViewport();
   await close.click();
   await expect(drawer).not.toBeVisible();
+});
+
+test('데스크톱 내 스페이스 목록도 스크롤바만 숨기고 스크롤을 유지한다', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 420 });
+  await page.goto('/preview/main');
+  const sidebar = page.getByRole('complementary', { name: '스페이스 사이드바' });
+  await expect(sidebar).toHaveCSS('scrollbar-width', 'none');
+  await expect(sidebar).toHaveCSS('overflow-y', 'auto');
+  expect(await sidebar.evaluate((element) => getComputedStyle(element, '::-webkit-scrollbar').display)).toBe('none');
+  await sidebar.hover();
+  await page.mouse.wheel(0, 1000);
+  await expect.poll(() => sidebar.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+  await expect(sidebar.getByRole('button').last()).toBeInViewport();
 });

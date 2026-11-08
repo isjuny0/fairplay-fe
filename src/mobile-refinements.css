@@ -15,12 +15,12 @@
 .mobile-drawer-layer .mobile-side-drawer .workspace-navigation-context { flex: 0 0 auto; }
 .mobile-drawer-layer .mobile-side-drawer .workspace-navigation-links,
 .mobile-drawer-layer .mobile-side-drawer .workspace-navigation-contextual { display: grid; gap: 8px; }
-.mobile-drawer-layer .mobile-side-drawer .workspace-navigation-links { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-width: thin; }
+.mobile-drawer-layer .mobile-side-drawer .workspace-navigation-links { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-width: none; }
 .mobile-drawer-layer .mobile-side-drawer .workspace-navigation-links > * { flex-shrink: 0; }
 .mobile-drawer-layer .mobile-side-drawer .desktop-team-navigation { display: flex; gap: 12px; }
 .mobile-drawer-layer .mobile-side-drawer .workspace-nav-group { display: grid; grid-template-columns: minmax(0, 1fr); width: 100%; gap: 4px; }
 .mobile-drawer-layer .mobile-side-drawer .nav-section { display: block; margin: 12px 10px 4px; }
-.mobile-drawer-layer .directory-sidebar-content { display: flex; flex: 1; min-height: 0; padding-top: 0; gap: 16px; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-width: thin; }
+.mobile-drawer-layer .directory-sidebar-content { display: flex; flex: 1; min-height: 0; padding-top: 0; gap: 16px; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-width: none; }
 .mobile-disclosure { min-width: 0; }
 .mobile-disclosure > summary { display: none; }
 .schedule-month-label-short { display: none; }
