@@ -20,7 +20,7 @@
   overflow-y: auto;
   border-right: 1px solid var(--border);
   background: #f8f9fa;
-  scrollbar-width: thin;
+  scrollbar-width: none;
   overscroll-behavior-y: contain;
 }
 @media (min-width: 721px) {
