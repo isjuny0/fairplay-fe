@@ -657,7 +657,7 @@ test('중간 피드백 응답이 준비되면 평가 결과와 작업 현황을 
 });
 
 for (const width of [1440, 390]) {
-  test(`${width}px 자료 준비 중에는 자동 갱신하고 오류와 준비 완료 후에는 수동 조회를 제공한다`, async ({ page }) => {
+  test(`${width}px 자료 준비 중에는 주기 조회 없이 상태를 확인할 수 있다`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.clock.install();
     await backend(page);
@@ -673,30 +673,27 @@ for (const width of [1440, 390]) {
     await page.goto('/spaces/1/teams/1/materials-search');
     if (width < 900) await page.locator('.rag-page').getByRole('button', { name: '팀 자료', exact: true }).click();
     const panel = page.getByRole('region', { name: '팀 자료', exact: true });
-    const refresh = panel.getByRole('button', { name: '팀 자료 새로고침', exact: true });
+    const refresh = panel.getByRole('button', { name: '자료 상태 새로고침', exact: true });
     await expect(panel).toContainText('준비 중 1개');
-    await expect(refresh).toHaveCount(0);
+    await expect(refresh).toBeVisible();
     const initialReads = reads;
     failed = true;
-    await page.clock.fastForward(5000);
-    await expect(panel.getByRole('alert')).toContainText('자료 상태를 조회할 수 없습니다.');
-    expect(reads).toBeGreaterThan(initialReads);
-    await expect(refresh).toBeVisible();
-    const failedReads = reads;
-    await page.clock.fastForward(10000);
-    expect(reads).toBe(failedReads);
-    failed = false;
+    await page.clock.fastForward(15000);
+    expect(reads).toBe(initialReads);
     await refresh.click();
-    await expect(panel).toContainText('준비 중 1개');
+    await expect(panel.getByRole('alert')).toContainText('자료 상태를 조회할 수 없습니다.');
     await expect(refresh).toHaveCount(0);
+    failed = false;
+    await panel.getByRole('button', { name: '다시 불러오기', exact: true }).click();
+    await expect(panel).toContainText('준비 중 1개');
     preparing = false;
-    await page.clock.fastForward(5000);
+    await refresh.click();
     await expect(panel).toContainText('검색 가능 1개');
-    await expect(refresh).toBeVisible();
+    await expect(refresh).toHaveCount(0);
     const completedReads = reads;
     await page.clock.fastForward(10000);
     expect(reads).toBe(completedReads);
-    await refresh.click();
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
     await expect.poll(() => reads).toBeGreaterThan(completedReads);
   });
 }

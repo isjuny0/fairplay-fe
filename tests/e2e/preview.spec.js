@@ -354,6 +354,38 @@ test('캡스톤디자인 미리보기는 팀 자료 검색에서 예시 답변�
   expect(calls).toEqual([]);
 });
 
+test('팀 자료 검색에서 질문 수정과 팀 메뉴 이동 후 답변이 유지된다', async ({ page }) => {
+  await preview(page, { path: '/spaces/1/teams/1/materials-search' });
+  const input = page.locator('#rag-question');
+  const question = '팀 가입과 작업 조회 권한을 알려줘.';
+  await input.fill(question);
+  await page.getByRole('button', { name: '질문 보내기', exact: true }).click();
+  const answer = page.getByRole('article', { name: '자료 검색 답변' });
+  await expect(answer).toBeVisible();
+  await page.getByRole('button', { name: '질문 수정', exact: true }).click();
+  await expect(input).toHaveValue(question);
+  const draft = '팀 가입 신청 뒤 작업을 언제 조회할 수 있나요?';
+  await input.fill(draft);
+  await expect(answer).toBeVisible();
+  await answer.getByRole('button', { name: '스페이스·팀 권한 정리 원문 확인', exact: true }).click();
+  await page.getByRole('button', { name: '팀 자료에서 찾기', exact: true }).click();
+  await expect(page).toHaveURL(/\/deliverables\?q=/);
+  await page.goBack();
+  await expect(answer).toContainText('참여 코드로 스페이스에 입장한 뒤 팀 가입을 별도로 신청합니다.');
+  await expect(input).toHaveValue(draft);
+  const teamMenu = page.getByRole('navigation', { name: '팀 메뉴', exact: true });
+  await teamMenu.getByRole('button', { name: '작업', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '작업', exact: true })).toBeVisible();
+  await teamMenu.getByRole('button', { name: '팀 자료 검색', exact: true }).click();
+  await expect(answer).toContainText('참여 코드로 스페이스에 입장한 뒤 팀 가입을 별도로 신청합니다.');
+  await expect(input).toHaveValue(draft);
+  await page.getByRole('button', { name: '새 질문으로 시작', exact: true }).click();
+  await teamMenu.getByRole('button', { name: '작업', exact: true }).click();
+  await teamMenu.getByRole('button', { name: '팀 자료 검색', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '팀 자료에서 어떤 내용을 찾고 있나요?' })).toBeVisible();
+  await expect(input).toHaveValue('');
+});
+
 test('미리보기 AI 검토는 피드백과 근거를 제공하고 작업 완료 후 추가 요청을 제공하지 않는다', async ({
   page,
 }) => {
