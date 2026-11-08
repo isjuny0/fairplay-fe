@@ -25,9 +25,9 @@
 .report-review-page .report-weight-input input { max-width: 120px; height: 42px; min-height: 42px; padding-block: 8px; font-size: 18px; font-weight: 500; }
 .report-weight-preview { display: flex; gap: 2px; height: 8px; margin-top: 20px; overflow: hidden; border-radius: 3px; background: #edf1ef; }
 .report-weight-segment { height: 100%; flex-shrink: 1; }
-.report-weight-segment--0 { background: #087c55; }
-.report-weight-segment--1 { background: #66869d; }
-.report-weight-segment--2 { background: #b19a64; }
+.report-weight-segment--0 { background: #00a86b; }
+.report-weight-segment--1 { background: #2563eb; }
+.report-weight-segment--2 { background: #facc15; }
 .report-review-page #report-weight-guidance { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; margin-block: 10px 0; font-size: 12px; }
 .report-review-page .report-weight-total { margin-left: 0; white-space: nowrap; }
 .report-generation-action { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 24px; }
@@ -66,12 +66,12 @@
   .report-generation-status { padding-left: 0; border: 0; }
 }
 
-.report-review-page .report-weight-fields .field-label > span:first-child::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 2px; background: #087c55; }
-.report-review-page .report-weight-fields .form-field:nth-child(2) .field-label > span:first-child::before { background: #66869d; }
-.report-review-page .report-weight-fields .form-field:nth-child(3) .field-label > span:first-child::before { background: #b19a64; }
-.report-applied-weights dt::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 2px; background: #087c55; }
-.report-applied-weights dl > div:nth-child(2) dt::before { background: #66869d; }
-.report-applied-weights dl > div:nth-child(3) dt::before { background: #b19a64; }
+.report-review-page .report-weight-fields .field-label > span:first-child::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 2px; background: #00a86b; }
+.report-review-page .report-weight-fields .form-field:nth-child(2) .field-label > span:first-child::before { background: #2563eb; }
+.report-review-page .report-weight-fields .form-field:nth-child(3) .field-label > span:first-child::before { background: #facc15; }
+.report-applied-weights dt::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 2px; background: #00a86b; }
+.report-applied-weights dl > div:nth-child(2) dt::before { background: #2563eb; }
+.report-applied-weights dl > div:nth-child(3) dt::before { background: #facc15; }
 
 
 .report-list-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }

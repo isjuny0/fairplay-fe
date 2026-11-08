@@ -45,6 +45,12 @@ for (const width of [1440, 1280, 390]) {
     await expect(summary).toBeVisible();
     await openCalculation(summary);
     await expect(summary.locator('.report-composition-track')).toHaveCount(1);
+    expect(await summary.locator('.report-composition-track > span').evaluateAll((segments) =>
+      segments.map((segment) => getComputedStyle(segment).backgroundColor)))
+      .toEqual(['rgb(0, 168, 107)', 'rgb(37, 99, 235)', 'rgb(250, 204, 21)']);
+    await expect(summary.locator('.report-component-color--mid').first()).toHaveCSS('background-color', 'rgb(37, 99, 235)');
+    await expect(summary.locator('.report-component-color--final').first()).toHaveCSS('background-color', 'rgb(250, 204, 21)');
+    await expect(summary.locator('.composite-criteria .peer-criteria-track > span').first()).toHaveCSS('background-color', 'rgb(37, 99, 235)');
     await expect(summary.locator('.report-component-meter')).toHaveCount(0);
     await expect(summary.locator('.report-component-value')).toContainText(['70.0점', '7.0점', '14.0점']);
     await expect(summary.locator('.composite-work-ratio > span').first()).toHaveText('내 완료 작업량 비율 80.0%');
@@ -104,6 +110,11 @@ for (const width of [1440, 1280, 390]) {
     await expect(evidence.locator('.report-visual-breakdown')).toBeVisible();
     await expect(evidence.locator('.report-total-ring')).toHaveCount(0);
     await expect(evidence.locator('.report-composition-track')).toHaveCount(1);
+    expect(await evidence.locator('.report-composition-track > span').evaluateAll((segments) =>
+      segments.map((segment) => getComputedStyle(segment).backgroundColor)))
+      .toEqual(['rgb(0, 168, 107)', 'rgb(37, 99, 235)', 'rgb(250, 204, 21)']);
+    await expect(evidence.locator('.report-component-color--mid').first()).toHaveCSS('background-color', 'rgb(37, 99, 235)');
+    await expect(evidence.locator('.report-component-color--final').first()).toHaveCSS('background-color', 'rgb(250, 204, 21)');
     await expect(evidence.locator('.report-component-weight')).toHaveText(['평가 비중70%', '평가 비중10%', '평가 비중20%']);
     await expect(evidence.getByRole('heading', { name: '반영된 완료 작업', exact: true })).toBeVisible();
     await expect(evidence.getByRole('tab')).toHaveCount(0);
