@@ -243,13 +243,6 @@
   min-height: 36px;
   font-size: var(--text-support);
 }
-.ai-review-guide summary {
-  font-size: var(--text-caption);
-  color: var(--text-muted);
-}
-.ai-review-guide p {
-  margin: 8px 0 0;
-}
 .task-ai-access-note {
   display: flex;
   align-items: flex-start;

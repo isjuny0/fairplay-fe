@@ -848,14 +848,17 @@ test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이
   });
   await page.clock.fastForward(5100);
   await expect(page.getByText('실제 응답 검토 요약')).toBeVisible();
+  await expect(page.getByRole('button', { name: '검토 범위 확인', exact: true })).toHaveCount(0);
+  await expect(page.locator('.ai-review-panel').getByText(/버전 \d/)).toHaveCount(0);
+  await expect(page.locator('.ai-review-findings h3')).toHaveText(['보완할 점', '선택 제안']);
   const overview = page.getByRole('list', { name: '피드백 항목 수', exact: true });
-  await expect(overview.getByRole('listitem')).toHaveText(['보완할 점 1', '선택 제안 1', '확인하지 못한 범위 1']);
-  await expect(page.getByRole('region', { name: '보완할 점', exact: true })).toContainText('약속한 결과를 확인해 주세요');
-  await expect(page.getByRole('region', { name: '선택 제안', exact: true })).toContainText('근거를 가까이 배치해 보세요');
-  await overview.getByRole('button', { name: '확인하지 못한 범위 1', exact: true }).click();
-  await expect(page.getByRole('region', { name: '확인하지 못한 범위', exact: true })).toBeFocused();
-  await page.getByText('관련 작업 설명', { exact: true }).click();
+  await expect(overview.getByRole('listitem')).toHaveText(['보완할 점 1', '선택 제안 1']);
+  await overview.getByRole('button', { name: '보완할 점 1', exact: true }).click();
+  await expect(page.getByRole('region', { name: '보완할 점', exact: true })).toBeFocused();
   await expect(page.getByText('요구사항을 정리합니다.', { exact: true })).toBeVisible();
+  await expect(page.getByText('발견과 근거가 분리되어 있습니다.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: '검토 범위', exact: true })
+    .getByRole('button', { name: /설문 분석 자료/ })).toBeVisible();
   let materialDenied = false;
   await page.route('**/api/teams/1/deliverables?*', (route) => route.fulfill(materialDenied
     ? { status: 403, json: { code: 'FORBIDDEN', message: '자료 조회 권한이 없습니다.' } }
@@ -865,7 +868,8 @@ test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이
   await sourceButton.click();
   const sourceDialog = page.getByRole('dialog', { name: '설문 분석 자료', exact: true });
   await expect(sourceDialog.getByText('현재 문서의 내용입니다.', { exact: true })).toBeVisible();
-  await expect(sourceDialog).toContainText('검토 당시 버전 1에서 변경된 자료입니다. 현재 자료(버전 2)를 표시합니다.');
+  await expect(sourceDialog).toContainText('검토 이후 수정된 자료입니다. 현재 내용을 표시합니다.');
+  await expect(sourceDialog.getByText(/버전 \d/)).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(sourceButton).toBeFocused();
   materialDenied = true;
@@ -876,9 +880,7 @@ test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이
 
   await expect(page.getByText('확인할 원문', { exact: true })).toBeVisible();
   await expect(page.getByText('외부 사실은 검증하지 않았습니다.', { exact: true })).toBeVisible();
-  await expect(
-    page.getByText(/최신 작업·결과물을 기준으로 한 결과가 아닙니다/),
-  ).toBeVisible();
+  await expect(page.getByText('이전 검토 결과', { exact: true })).toBeVisible();
   expect(
     requests.filter(
       (request) =>
@@ -916,13 +918,13 @@ test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이
   await page.reload();
   await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
   await expect(page.getByText('이전 결과의 확인할 내용', { exact: true })).toHaveCount(1);
-  await expect(page.getByText(/검토 당시 자료명·버전과 완료 시각이 저장되지 않은 결과/)).toBeVisible();
+  await expect(page.getByText(/검토한 자료와 완료 시각을 확인할 수 없는 이전 결과/)).toBeVisible();
   await expect(page.locator('.ai-review-result-context time')).toHaveCount(0);
   await expect(page.getByRole('button', { name: '피드백 다시 받기', exact: true })).toBeEnabled();
   materialDenied = false;
   await page.getByRole('button', { name: '현재 근거 자료 보기', exact: true }).click();
   const previousSource = page.getByRole('dialog', { name: '근거 자료', exact: true });
-  await expect(previousSource).toContainText('검토 당시 버전을 확인할 수 없어 현재 자료를 표시합니다.');
+  await expect(previousSource).toContainText('검토 당시 내용은 확인할 수 없어 현재 자료를 표시합니다.');
   await expect(previousSource).toContainText('현재 제목 · 설문 분석 자료');
   await page.keyboard.press('Escape');
 });

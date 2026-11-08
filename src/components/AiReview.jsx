@@ -1,5 +1,6 @@
 import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { useEffect, useState } from 'react';
+import { Sparkles } from 'lucide-react';
 import { getAiReview, requestAiReview } from '../api/aiReviews.js';
 import useResource from '../hooks/useResource.js';
 import { canModifyTeamWork, formatDate, isAssignee, isMutable } from '../lib/domain.js';
@@ -29,17 +30,22 @@ const failureMessages = {
   REVIEW_INTERRUPTED:
     '검토가 중단됐습니다. 현재 상태를 확인한 뒤 직접 다시 요청해 주세요.',
 };
-export default function AiReview({ context }) {
+export default function AiReview({ context, onEditSource }) {
   const guide = usePreviewGuide();
   const guidedFeedback = Boolean(guide?.guiding && guide.stepId === 'ai-feedback' && context.task.id === guide.taskId);
   const resource = useResource(
     () => getAiReview(context.task.id),
-    [context.task.id, context.task.version],
+    [context.task],
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const review = resource.data;
-  const active = review && ['PENDING', 'PROCESSING'].includes(review.status);
+  const active = ['PENDING', 'PROCESSING'].includes(review?.status);
+  const waitingForReview = active && !resource.error;
+  let loadingTitle;
+  if (busy) loadingTitle = '피드백 요청 중';
+  else if (waitingForReview) loadingTitle = statusLabels[review.status];
+  else if (!review && resource.loading) loadingTitle = '피드백 불러오는 중';
   const hasFeedback = Array.isArray(review?.findings);
   const reportFeedbackReady = guide?.setAiFeedbackReady;
   const feedbackReady = Boolean(review?.status === 'COMPLETED' && hasFeedback && review.isCurrent && !resource.loading && !resource.error);
@@ -60,6 +66,7 @@ export default function AiReview({ context }) {
   const showRequest = canRequest && !active && !resource.loading &&
     (!resource.error || resource.error.code === 'AI_REVIEW_NOT_FOUND') && !feedbackReady;
   const requestAgain = Boolean(error || review?.status === 'FAILED' || (review && !review.isCurrent));
+  const isPreviousResult = review?.status === 'COMPLETED' && !review.isCurrent;
   useEffect(() => {
     if (
       !active ||
@@ -103,8 +110,13 @@ export default function AiReview({ context }) {
   return (
     <section className="panel stack ai-review-panel" aria-label="AI 피드백">
       <div className="ai-review-heading">
-        <div>
+        <div className="ai-review-title">
           <h2>AI 피드백</h2>
+          {review && !loadingTitle && !resource.error && (
+            <span className={`status-badge${review.status === 'COMPLETED' ? ' task-state-done' : ''}`} role="status">
+              {isPreviousResult ? '이전 검토 결과' : statusLabels[review.status]}
+            </span>
+          )}
         </div>
         {showRequest && <div className="ai-review-actions">
             <button
@@ -118,17 +130,14 @@ export default function AiReview({ context }) {
         </div>}
       </div>
       {guidedFeedback && <p className="field-help">사용자 가이드의 예시 피드백입니다. 실제 AI 모델을 호출하지 않습니다.</p>}
-      <div className="ai-review-introduction">
+      {!loadingTitle && resource.error?.code === 'AI_REVIEW_NOT_FOUND' && canRequest && <div className="ai-review-introduction">
         <p>
           작업 설명과 결과물을 살펴보고 보완할 점과 개선 방법을 제안합니다.
         </p>
-        <details className="ai-review-guide">
-          <summary>검토 범위와 이용 안내</summary>
-          <p className="field-help">
-            피드백은 작업 완료의 필수 조건이 아닙니다. 개선 제안은 작업에 필요한 경우 선택해 반영해 주세요. 일부 파일 형식은 검토를 지원하지 않을 수 있습니다.
-          </p>
-        </details>
-      </div>
+        <p className="field-help">
+          AI 피드백 없이도 작업을 완료할 수 있습니다. 일부 파일 형식은 검토가 제한될 수 있습니다.
+        </p>
+      </div>}
       {(context.task.completionBlockReason === 'WORK_PERIOD_CLOSED' ||
         error?.code === 'TASK_WORK_CLOSED') && (
         <p className="notice">
@@ -137,7 +146,20 @@ export default function AiReview({ context }) {
         </p>
       )}
       <ErrorNotice error={error} />
-      {resource.error?.code === 'AI_REVIEW_NOT_FOUND' ? (
+      {loadingTitle ? (
+        <div className="ai-review-loading" role="status">
+          <span className="ai-review-loading-icon" aria-hidden="true">
+            <span className="loading-spinner" />
+            <Sparkles size={16} />
+          </span>
+          <div>
+            <strong>{loadingTitle}</strong>
+            {waitingForReview && <p>{review.status === 'PENDING'
+              ? '검토 순서를 기다리고 있습니다.'
+              : '작업 설명과 연결된 결과물을 검토하고 있습니다.'} 결과가 준비되면 자동으로 표시됩니다.</p>}
+          </div>
+        </div>
+      ) : resource.error?.code === 'AI_REVIEW_NOT_FOUND' ? (
         <EmptyState>
           {canRequest ? '아직 받은 AI 피드백이 없습니다. 결과물을 추가한 뒤 피드백을 받아보세요.' : '저장된 AI 피드백이 없습니다.'}
         </EmptyState>
@@ -145,28 +167,6 @@ export default function AiReview({ context }) {
         <ResourceState resource={resource}>
           {review && (
             <div className="ai-review-result">
-              <div className="ai-review-result-context">
-                <span
-                  className={`status-badge ${review.status === 'COMPLETED' ? 'task-state-done' : ''}`}
-                >
-                  {statusLabels[review.status]}
-                </span>
-                <span>
-                  {review.isCurrent ? '최신 작업·결과물 기준' : '이전 검토 결과'}
-                </span>
-                {review.status === 'COMPLETED' && review.completedAt && <time dateTime={review.completedAt}>검토 {formatDate(review.completedAt)}</time>}
-              </div>
-              {!review.isCurrent && (
-                <p className="notice">
-                  최신 작업·결과물을 기준으로 한 결과가 아닙니다.
-                  {canRequest && ' 현재 자료로 다시 피드백을 받아보세요.'}
-                </p>
-              )}
-              {active && (
-                <p className="field-help" role="status">
-                  작업 설명과 연결된 결과물을 살펴보고 있습니다. 결과가 준비되면 자동으로 표시합니다.
-                </p>
-              )}
               {review.status === 'FAILED' && (
                 <p className="notice">
                   {failureMessages[review.failureCode] ||
@@ -177,8 +177,11 @@ export default function AiReview({ context }) {
               )}
               {review.status === 'COMPLETED' && (
                 <>
-                  {hasFeedback ? <AiReviewFeedback key={review.id} review={review} context={context} />
+                  {hasFeedback ? <AiReviewFeedback key={review.id} review={review} context={context} onEditSource={onEditSource} />
                     : <ErrorNotice error={new Error('피드백 내용을 표시하지 못했습니다. 잠시 후 다시 불러와 주세요.')} onRetry={resource.reload} />}
+                  {review.completedAt && <div className="ai-review-result-context">
+                    <time dateTime={review.completedAt}>검토 {formatDate(review.completedAt)}</time>
+                  </div>}
                   {guidedFeedback && (
                     <div className="heading-actions">
                       <button
