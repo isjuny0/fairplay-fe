@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { BookOpen, Monitor, X } from 'lucide-react';
+import { BookOpen, Check, FileText, Monitor, Users, X } from 'lucide-react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 import { getCurrentUser, loginWithGoogle, logout } from '../api/auth.js';
 import AppRoutes from './AppRoutes.jsx';
@@ -218,6 +218,26 @@ export default function Application({ previewRuntime, onPreviewExit }) {
       <main className="login-page login-page--entry">
         <section className="login-shell" aria-labelledby="login-heading">
           <div className="login-brand"><BrandLogo /></div>
+          <div className="login-art" aria-hidden="true">
+            <span className="login-art-orbit" />
+            <span className="login-art-dot login-art-dot--green" />
+            <span className="login-art-dot login-art-dot--blue" />
+            <div className="login-art-card login-art-card--task">
+              <span className="login-art-icon"><Check size={17} /></span>
+              <i className="login-art-line" /><i className="login-art-line login-art-line--short" />
+              <span className="login-art-check"><Check size={9} /></span>
+            </div>
+            <div className="login-art-card login-art-card--team">
+              <span className="login-art-icon"><Users size={23} /></span>
+              <span className="login-art-avatars"><i /><i /><i /></span>
+              <i className="login-art-line" />
+            </div>
+            <div className="login-art-card login-art-card--file">
+              <span className="login-art-icon"><FileText size={17} /></span>
+              <i className="login-art-line" /><i className="login-art-line login-art-line--short" />
+              <span className="login-art-chart"><i /><i /><i /></span>
+            </div>
+          </div>
           <header className="login-card-heading">
             <h1 id="login-heading">Fairplay에 로그인</h1>
             <p>Google 계정으로 간편하게 시작하세요.</p>

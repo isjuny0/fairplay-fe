@@ -590,17 +590,43 @@
   padding-bottom: 12px;
 }
 
-/* Keep the identity, page heading and Google action visually distinct. */
-.login-page--entry { padding: 48px 24px; }
-.login-shell { display: flex; flex-direction: column; align-items: center; gap: 24px; width: min(400px, 100%); text-align: center; }
+/* A quiet brand illustration brings the single sign-in action into focus. */
+.login-page--entry { padding: 32px 20px; }
+.login-shell { display: flex; flex-direction: column; align-items: center; gap: 22px; width: min(400px, 100%); padding: 30px 28px 22px; border: 1px solid #dce9e2; border-radius: 18px; background: #fff; box-shadow: 0 18px 56px -24px #0b65452b; text-align: center; }
 .login-shell .login-brand .brand-logo { width: 140px; }
+.login-art { position: relative; width: 100%; max-width: 292px; height: 112px; isolation: isolate; }
+.login-art::before { content: ''; position: absolute; inset: 16px 24px 0; border-radius: 50%; background: #eff9f3; }
+.login-art-orbit { position: absolute; inset: 4px 4px 6px; border: 1px dashed #c5e4d2; border-radius: 50%; transform: rotate(-12deg); }
+.login-art-dot { position: absolute; z-index: 3; width: 6px; height: 6px; border: 2px solid #fff; border-radius: 50%; box-sizing: content-box; }
+.login-art-dot--green { left: 18px; top: 10px; background: #00a86b; }
+.login-art-dot--blue { right: 18px; bottom: 8px; background: #2563eb; }
+.login-art-card { position: absolute; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; width: 72px; height: 86px; padding: 10px; border: 1px solid #dce7e1; border-radius: 10px; background: #fff; box-shadow: 0 8px 16px #1e5b3b0c; }
+.login-art-card--task { left: 30px; top: 18px; transform: rotate(-12deg); }
+.login-art-card--team { z-index: 2; left: calc(50% - 45px); top: 0; align-items: center; justify-content: center; width: 90px; height: 102px; gap: 9px; border-color: #bddfce; box-shadow: 0 10px 24px #0e674719; }
+.login-art-card--file { right: 30px; top: 18px; transform: rotate(12deg); }
+.login-art-icon { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; background: #e6f7ee; color: #008657; }
+.login-art-card--team .login-art-icon { width: 36px; height: 36px; border-radius: 10px; background: #edf3ff; color: #2563eb; }
+.login-art-card--file .login-art-icon { background: #fff8d9; color: #b57c00; }
+.login-art-line { display: block; width: 100%; height: 4px; flex-shrink: 0; border-radius: 3px; background: #e7eeea; }
+.login-art-line--short { width: 65%; }
+.login-art-card--team .login-art-line { width: 42px; }
+.login-art-check { display: grid; place-items: center; width: 12px; height: 12px; border-radius: 50%; color: #fff; background: #00a86b; }
+.login-art-avatars { display: flex; padding-left: 4px; }
+.login-art-avatars i { width: 15px; height: 15px; margin-left: -4px; border: 2px solid #fff; border-radius: 50%; background: #00a86b; }
+.login-art-avatars i:nth-child(2) { background: #2563eb; }
+.login-art-avatars i:nth-child(3) { background: #facc15; }
+.login-art-chart { display: flex; align-items: flex-end; gap: 3px; height: 12px; }
+.login-art-chart i { width: 6px; height: 6px; border-radius: 2px 2px 0 0; background: #00a86b; }
+.login-art-chart i:nth-child(2) { height: 9px; background: #2563eb; }
+.login-art-chart i:nth-child(3) { height: 12px; background: #facc15; }
 .login-card-heading h1 { margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.6px; line-height: 1.4; }
 .login-card-heading p { margin: 10px 0 0; color: var(--text-muted); font-size: 13px; line-height: 1.6; word-break: keep-all; }
 .login-card.login-card--compact {
   width: 100%;
-  padding: 20px;
+  padding: 0;
   gap: 0;
-  border-radius: 10px;
+  border: 0;
+  border-radius: 0;
 }
 .login-shell .login-home-link { position: static; padding: 4px 8px; color: var(--text-muted); font-size: 12px; line-height: 1.6; }
 .login-shell .login-home-link:hover { color: var(--brand); text-decoration: underline; text-underline-offset: 4px; }
@@ -713,7 +739,8 @@
   .own-work-panel .metric-card:last-child {
     border-bottom: 0;
   }
-  .login-card.login-card--compact { padding: 18px; }
+  .login-shell { padding: 26px 22px 20px; gap: 20px; }
+  .login-card.login-card--compact { padding: 0; }
 }
 
 /* Compact time picker: one neutral palette, with the existing input anchor preserved. */

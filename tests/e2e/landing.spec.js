@@ -33,7 +33,7 @@ test('기능 소개는 가상 UI 대신 실제 서비스 캡처를 표시한다'
 test('수업·동아리의 여러 팀 운영과 팀 협업을 밝은 색감으로 소개한다', async ({ page }) => {
   await freezeClock(page);
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('여러 팀의 활동을 한 공간에서,함께한 기여까지 선명하게.');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('여러 팀의 활동을 한 공간에서함께한 기여까지 선명하게.');
   await expect(page.locator('.landing-hero-description')).toContainText('수업·동아리·프로젝트 프로그램');
   await expect(page.locator('.landing-use-case-grid h3')).toHaveText(['수업과 캡스톤디자인', '동아리와 학회', '스터디와 프로젝트 모임']);
   const accents = ['rgb(0, 168, 107)', 'rgb(37, 99, 235)', 'rgb(250, 204, 21)'];
@@ -48,15 +48,17 @@ test('수업·동아리의 여러 팀 운영과 팀 협업을 밝은 색감으�
   const structure = page.getByRole('figure', { name: '하나의 스페이스 안에 여러 팀이 있는 구조 예시' });
   await expect(structure.locator('.landing-team-node strong')).toHaveText(['A팀', 'B팀', 'C팀']);
   await expect(page.locator('.landing-role-list dt')).toHaveText(['관리자', '팀 리더·팀원']);
-  await expect(page.locator('#manager-title')).toHaveText('팀이 많아져도,진행 상황을 놓치지 않도록.');
+  await expect(page.locator('#manager-title')).toHaveText('팀이 많아져도진행 상황을 놓치지 않도록.');
   await expect(page.locator('.landing-manager-copy li')).toHaveText(['전체 공지사항과 참여자·팀 구성 관리', '팀별 작업 진행 상황과 등록 자료 확인', '동료 평가 일정과 팀별 제출 현황 관리']);
   const managerImage = page.locator('.landing-manager-screen img');
   await managerImage.scrollIntoViewIfNeeded();
   await expect.poll(() => managerImage.evaluate((image) => image.complete && image.naturalWidth === 2880)).toBe(true);
-  await expect(page.locator('.landing-workflow-grid h3')).toHaveText(['무엇을 맡고, 어디까지 했는지 명확하게.', '결과물과 그 과정을 함께 남기세요.', '함께한 노력을, 기억이 아닌 기록으로.']);
+  await expect(page.locator('.landing-workflow-grid h3')).toHaveText(['무엇을 맡고 어디까지 했는지 명확하게.', '결과물과 그 과정을 함께 남기세요.', '함께한 노력을 기억이 아닌 기록으로.']);
   await expect(page.locator('.landing-workflow-grid p').last()).toContainText('숫자 하나로 단정하는 대신');
   await expect(page.locator('.landing-workflow-grid p').nth(1)).toContainText('AI 피드백');
-  await expect(page.locator('.landing-bottom-cta h2')).toHaveText('여러 팀의 시작부터,함께한 과정의 마무리까지.');
+  await expect(page.locator('.landing-bottom-cta h2')).toHaveText('여러 팀의 시작부터함께한 과정의 마무리까지.');
+  await expect(page.locator('.landing-bottom-cta')).not.toContainText('관리자에게는 전체를 보는 시야를');
+  await expect(page.locator('.landing-cta-tagline')).toHaveCount(0);
   await expect(page.locator('.landing-bottom-cta')).toHaveCSS('background-color', 'rgb(2, 106, 82)');
   await expect(page.locator('.landing-bottom-cta')).toHaveCSS('color', 'rgb(255, 255, 255)');
   await expect(page.locator('.landing-bottom-cta .landing-button')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
@@ -102,7 +104,7 @@ test('소개 메인은 서버 요청 없이 열리고 기존 로그인 화면으
   );
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toContainText(
-    '여러 팀의 활동을 한 공간에서,',
+    '여러 팀의 활동을 한 공간에서',
   );
   await expect(
     page.getByRole('heading', { name: '내 스페이스', exact: true }),
@@ -327,6 +329,14 @@ for (const width of [320, 375, 768, 1280, 1440]) {
       await section.screenshot({ path: testInfo.outputPath(`landing-${name}.png`), animations: 'disabled' });
     }
     await page.locator('.landing-workflow').screenshot({ path: testInfo.outputPath('landing-benefits.png'), animations: 'disabled' });
+    for (const meta of await page.locator('.landing-feature-meta').all()) {
+      const number = await meta.locator('small').boundingBox();
+      const icon = await meta.locator('.landing-feature-icon').boundingBox();
+      expect(icon.x - number.x - number.width).toBeCloseTo(20, 1);
+      expect(Math.abs(icon.y + icon.height / 2 - number.y - number.height / 2)).toBeLessThan(1);
+    }
+    await expect(page.locator('.landing-use-cases')).toHaveCSS('margin-top', `${width <= 600 ? 80 : width <= 800 ? 96 : 128}px`);
+    await expect(page.locator('.landing-workflow-grid')).toHaveCSS('row-gap', `${width <= 600 ? 64 : width <= 800 ? 84 : 112}px`);
     const cta = page.locator('.landing-bottom-cta');
     expect(await cta.locator('h2').evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeLessThanOrEqual(20);
     await expect(cta.locator('p').first()).toHaveCSS('font-size', '11px');
@@ -346,21 +356,23 @@ for (const width of [320, 375, 768, 1280, 1440]) {
       expect(layout.heroWidth).toBeLessThanOrEqual(1200);
       expect(layout.headlineSize).toBeLessThanOrEqual(42);
       expect(layout.ctaHeight).toBeLessThan(220);
-      expect(layout.ctaGap).toBeGreaterThanOrEqual(150);
-      const tagline = page.locator('.landing-cta-tagline');
-      await expect(tagline).toHaveText('관리자에게는 전체를 보는 시야를, 팀원에게는 노력이 남는 기록을.');
-      expect(await tagline.evaluate((element) => element.getBoundingClientRect().height / parseFloat(getComputedStyle(element).lineHeight))).toBeCloseTo(1, 1);
+      expect(layout.ctaGap).toBe(224);
     }
-    expect(layout.ctaGap).toBeGreaterThanOrEqual(100);
+    expect(layout.ctaGap).toBe(width <= 600 ? 160 : width <= 800 ? 184 : 224);
     await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
     await page.screenshot({ path: testInfo.outputPath('landing-full-page.png'), fullPage: true, animations: 'disabled' });
   });
 }
 
-test('소개 문구는 원문을 유지하고 의미 단위로 줄바꿈한다', async ({ page }) => {
+test('소개 문구는 불필요한 쉼표를 줄이고 의미 단위의 줄바꿈을 유지한다', async ({ page }) => {
   await page.goto('/');
   const description = page.locator('.landing-space-copy > p').last();
-  expect(await description.textContent()).toBe('수업이나 동아리를 하나의 ‘스페이스’로 구성하고,\n그 안에서 여러 팀이 각자의 프로젝트를 진행합니다.');
+  expect(await description.textContent()).toBe('수업이나 동아리를 하나의 ‘스페이스’로 구성하고\n그 안에서 여러 팀이 각자의 프로젝트를 진행합니다.');
+  for (const heading of await page.locator('.landing-page h1, .landing-page h2, .landing-page h3').all()) {
+    expect(await heading.textContent()).not.toMatch(/(?:에서|까지|부터|해도|져도|맡고|노력을),/);
+  }
+  await expect(page.locator('.landing-workflow-grid p').first()).toContainText('작업별 담당자와 일정,');
+  await expect(page.locator('.landing-space-shared')).toHaveText('전체 공지와 운영은 함께, 협업은 팀별로.');
   await expect(description).toHaveCSS('white-space', 'pre-line');
   for (const selector of ['.landing-use-case-grid p', '.landing-workflow-grid p', '.landing-manager-copy > p:not(.landing-eyebrow)', '.landing-role-list dd']) {
     for (const element of await page.locator(selector).all()) {
