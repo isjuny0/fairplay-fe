@@ -1,4 +1,4 @@
-import { apiRequest } from "./client.js";
+import { ApiError, apiRequest } from "./client.js";
 export const listDeliverables = (
   teamId,
   {
@@ -25,6 +25,20 @@ export const listDeliverables = (
   if (unlinkedOnly) query.set("unlinkedOnly", "true");
   return apiRequest(`/api/teams/${teamId}/deliverables?${query}`);
 };
+export async function findTaskDeliverable(teamId, taskId, deliverableId) {
+  const size = 100;
+  for (let page = 0; ; page++) {
+    const materials = await listDeliverables(teamId, { taskId, page, size });
+    const material = materials.find((item) => item.id === deliverableId);
+    if (material) {
+      if (material.teamId !== teamId || material.taskId !== taskId)
+        throw new ApiError(502, { message: "자료 정보를 확인하지 못했습니다." });
+      return material;
+    }
+    if (materials.length < size)
+      throw new ApiError(404, { message: "자료가 삭제되었거나 연결이 변경되어 현재 작업에서 조회할 수 없습니다." });
+  }
+}
 export const createDeliverable = (teamId, body) =>
   apiRequest(`/api/teams/${teamId}/deliverables`, { method: "POST", body });
 export const uploadDeliverable = (teamId, input, file) => {

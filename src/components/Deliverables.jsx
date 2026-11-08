@@ -6,12 +6,14 @@ import DeliverableContent from "./DeliverableContent.jsx";
 import MarkdownEditor from "./MarkdownEditor.jsx";
 import { ArrowRight, FileText, Upload } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useLocation, useSearchParams } from "react-router";
 import { parseRouteId, teamMenuPath } from "../lib/routes.js";
 import {
   createDeliverable,
   deleteDeliverable,
   downloadDeliverable,
+  findTaskDeliverable,
   listDeliverables,
   updateDeliverable,
   uploadDeliverable,
@@ -366,6 +368,8 @@ export default function Deliverables({
   tasksResource,
   taskId,
   onChanged = () => {},
+  sourceEdit,
+  onCloseSourceEdit,
 }) {
   const { confirm, notify } = useInteractions();
   const taskOptionsReady =
@@ -508,14 +512,25 @@ export default function Deliverables({
       sort,
     ],
   );
-  const [editing, setEditing] = useState(undefined);
+  const [localEditing, setEditing] = useState(undefined);
+  const editing = sourceEdit ?? localEditing;
   const [selectedDeliverableId, setSelectedDeliverableId] = useState(null);
   const selectedDeliverable = resource.data?.find(
     (item) => item.id === selectedDeliverableId,
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [editorError, setEditorError] = useState(null);
   const taskMap = new Map(tasks.map((task) => [task.id, task]));
+  const editingTask = editing && taskMap.get(editing.taskId);
+  const permissions = editing ? deliverablePermissions(editing, editingTask, team, user.id) : null;
+  const editorBlocked =
+    !taskOptionsReady ||
+    teamWorkBlocked(team) ||
+    ((editing?.taskId ?? taskId) != null && !canModifyTeamWork(team)) ||
+    Boolean(sourceEdit && (
+      editingTask?.completionBlockReason === "WORK_PERIOD_CLOSED" || !permissions?.metadata
+    ));
   const eligibleTasks = tasks.filter(
     (task) =>
       canModifyTeamWork(team) && isMutable(task) && isAssignee(task, user.id),
@@ -527,30 +542,30 @@ export default function Deliverables({
     isApprovedMember(team) &&
     !teamWorkBlocked(team) &&
     (taskId == null || eligibleTasks.some((task) => task.id === taskId));
+  const closeEditor = () => {
+    setEditorError(null);
+    if (sourceEdit) onCloseSourceEdit();
+    else setEditing(undefined);
+  };
   const openRegistration = () => {
     if (!canCreate || busy || !taskOptionsReady) return;
     setError(null);
     setEditing(null);
   };
   const save = async (input, file, type) => {
-    if (
-      !taskOptionsReady ||
-      teamWorkBlocked(team) ||
-      (taskId != null && !canModifyTeamWork(team))
-    )
-      return;
+    if (editorBlocked) return;
     setBusy(true);
-    setError(null);
+    setEditorError(null);
     try {
       if (editing) await updateDeliverable(editing.id, input, file);
       else if (type === "FILE") await uploadDeliverable(team.id, input, file);
       else await createDeliverable(team.id, input);
-      setEditing(undefined);
+      closeEditor();
       notify(`${resourceName}${isCollection ? "를" : "을"} ${editing ? "수정" : isCollection ? "등록" : "추가"}했습니다.`);
       resource.reload();
       onChanged();
     } catch (requestError) {
-      setError(requestError);
+      setEditorError(requestError);
     } finally {
       setBusy(false);
     }
@@ -594,6 +609,47 @@ export default function Deliverables({
       setError(requestError);
     }
   };
+  const editor = editing !== undefined && (
+    <DeliverableForm
+      key={editing?.id || "new"}
+      initial={editing}
+      resourceName={resourceName}
+      createLabel={createLabel}
+      taskId={taskId}
+      tasks={eligibleTasks}
+      permissions={permissions}
+      busy={busy}
+      blocked={editorBlocked}
+      error={editorError}
+      onLoadLatest={
+        editing
+          ? async () => {
+              const [deliverable, context] = await Promise.all([
+                sourceEdit
+                  ? findTaskDeliverable(team.id, taskId, editing.id)
+                  : listDeliverables(team.id, searchOptions).then((items) =>
+                      items.find((item) => item.id === editing.id)),
+                getTeamWorkContext(team.id),
+              ]);
+              if (!deliverable)
+                throw new Error(
+                  "현재 페이지에서 자료를 찾지 못했습니다. 입력은 유지됩니다. 창을 닫고 목록에서 위치를 다시 확인해 주세요.",
+                );
+              const task =
+                deliverable.taskId == null
+                  ? null
+                  : (await getTask(deliverable.taskId)).task;
+              return {
+                deliverable,
+                permissions: deliverablePermissions(deliverable, task, context.team, user.id),
+              };
+            }
+          : undefined
+      }
+      onClose={closeEditor}
+      onSave={save}
+    />
+  );
   return (
     <section className="stack deliverables-section">
       <div
@@ -991,65 +1047,7 @@ export default function Deliverables({
           />
         </Modal>
       )}
-      {editing !== undefined && (
-        <DeliverableForm
-          key={editing?.id || "new"}
-          initial={editing}
-          resourceName={resourceName}
-          createLabel={createLabel}
-          taskId={taskId}
-          tasks={eligibleTasks}
-          permissions={
-            editing
-              ? deliverablePermissions(
-                  editing,
-                  taskMap.get(editing.taskId),
-                  team,
-                  user.id,
-                )
-              : null
-          }
-          busy={busy}
-          blocked={
-            !taskOptionsReady ||
-            teamWorkBlocked(team) ||
-            ((editing?.taskId ?? taskId) != null && !canModifyTeamWork(team))
-          }
-          error={error}
-          onLoadLatest={
-            editing
-              ? async () => {
-                  const [latestPage, context] = await Promise.all([
-                    listDeliverables(team.id, searchOptions),
-                    getTeamWorkContext(team.id),
-                  ]);
-                  const deliverable = latestPage.find(
-                    (item) => item.id === editing.id,
-                  );
-                  if (!deliverable)
-                    throw new Error(
-                      "현재 페이지에서 자료를 찾지 못했습니다. 입력은 유지됩니다. 창을 닫고 목록에서 위치를 다시 확인해 주세요.",
-                    );
-                  const task =
-                    deliverable.taskId == null
-                      ? null
-                      : (await getTask(deliverable.taskId)).task;
-                  return {
-                    deliverable,
-                    permissions: deliverablePermissions(
-                      deliverable,
-                      task,
-                      context.team,
-                      user.id,
-                    ),
-                  };
-                }
-              : undefined
-          }
-          onClose={() => setEditing(undefined)}
-          onSave={save}
-        />
-      )}
+      {sourceEdit ? createPortal(editor, document.body) : editor}
     </section>
   );
 }

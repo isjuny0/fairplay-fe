@@ -157,11 +157,13 @@ export default function TaskDetail({
   const [revisionAssigneeId, setRevisionAssigneeId] = useState('');
   const [showAllAssignees, setShowAllAssignees] = useState(false);
   const [activeTab, setActiveTab] = useState('task-description-section');
+  const [sourceEdit, setSourceEdit] = useState(null);
   const [sectionToFocus, setSectionToFocus] = useState(null);
   useEffect(() => {
     setShowAllAssignees(false);
     setReopening(false);
     setActiveTab('task-description-section');
+    setSourceEdit(null);
     setSectionToFocus(null);
   }, [taskId]);
   const { confirm, confirmDiscard, notify } = useInteractions();
@@ -594,6 +596,8 @@ export default function TaskDetail({
                     tasks={[task]}
                     taskId={task.id}
                     onChanged={reload}
+                    sourceEdit={sourceEdit?.taskId === task.id ? sourceEdit : undefined}
+                    onCloseSourceEdit={() => setSourceEdit(null)}
                   />
                 </div>
                 {!readOnly && isAssignee(task, user.id) ? (
@@ -604,6 +608,7 @@ export default function TaskDetail({
                     tabIndex={0}
                   >
                     <AiReview
+                      onEditSource={setSourceEdit}
                       context={{
                         task,
                         team,
