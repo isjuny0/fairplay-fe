@@ -25,6 +25,10 @@
     width: 240px;
     flex-basis: 240px;
     padding: 12px 12px 24px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
     scrollbar-width: thin;
     overscroll-behavior-y: contain;
     transition: transform 180ms ease;
@@ -76,9 +80,14 @@
     outline-offset: 2px;
   }
   .workspace-sidebar #workspace-navigation {
+    flex: 1;
+    min-height: 0;
+    flex-wrap: nowrap;
+    overflow: hidden;
     gap: 0;
   }
   .workspace-navigation-context {
+    flex: 0 0 auto;
     padding-bottom: 16px;
     border-bottom: 1px solid var(--border);
   }
@@ -109,8 +118,16 @@
   .workspace-navigation-links {
     display: flex;
     flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    overscroll-behavior-y: contain;
     gap: 12px;
     padding-top: 12px;
+  }
+  .workspace-navigation-links > * {
+    flex-shrink: 0;
   }
   .workspace-navigation-contextual {
     display: flex;

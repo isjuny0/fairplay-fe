@@ -11,9 +11,9 @@ const useCases = [
   { title: '스터디와 프로젝트 모임', icon: Trophy, description: '스터디부터 공모전까지\n공동의 목표에 맞춰 역할과 일정을 나누세요.\n함께한 과정과 결과물을\n다음 협업을 위한 기록으로 남깁니다.' },
 ];
 const teamFeatures = [
-  { title: '무엇을 맡고 어디까지 했는지 명확하게.', description: '작업별 담당자와 일정,\n예상 작업량과 담당 비율을 정하세요.\n팀 리더는 업무 배분과 진행 흐름을 살펴보고\n팀원은 자신이 맡은 작업에 집중할 수 있습니다.' },
-  { title: '결과물과 그 과정을 함께 남기세요.', description: '문서와 파일을 관련 작업에 연결하고\n수행 설명을 남기세요.\n회의록과 팀 자료 검색으로 필요한 내용을 다시 찾고\nAI 피드백으로 결과물의 개선 방향도\n살펴볼 수 있습니다.' },
-  { title: '함께한 노력을 기억이 아닌 기록으로.', description: '완료 작업과 담당 비율, 동료 평가를 바탕으로\n기여도와 그 근거를 확인하세요.\n숫자 하나로 단정하는 대신\n서로의 노력을 이해하고\n다음 협업을 개선하는 자료로 활용합니다.' },
+  { title: '무엇을 맡고 어디까지 했는지 명확하게', description: '작업별 담당자와 일정,\n예상 작업량과 담당 비율을 정하세요.\n팀 리더는 업무 배분과 진행 흐름을 살펴보고\n팀원은 자신이 맡은 작업에 집중할 수 있습니다.' },
+  { title: '결과물과 그 과정을 함께 남기세요', description: '문서와 파일을 관련 작업에 연결하고\n수행 설명을 남기세요.\n회의록과 팀 자료 검색으로 필요한 내용을 다시 찾고\nAI 피드백으로 결과물의 개선 방향도\n살펴볼 수 있습니다.' },
+  { title: '함께한 노력을 기억이 아닌 기록으로', description: '완료 작업과 담당 비율, 동료 평가를 바탕으로\n기여도와 그 근거를 확인하세요.\n숫자 하나로 단정하는 대신\n서로의 노력을 이해하고\n다음 협업을 개선하는 자료로 활용합니다.' },
 ];
 
 export default function LandingPage() {
@@ -33,7 +33,7 @@ export default function LandingPage() {
           <div className="landing-hero-inner">
             <div className="landing-hero-copy">
               <p className="landing-eyebrow"><span />여러 팀의 운영과 협업을 연결하는 Fairplay</p>
-              <h1>여러 팀의 활동을 한 공간에서<br /><em>함께한 기여까지 선명하게.</em></h1>
+              <h1>여러 팀의 활동을 한 공간에서<br /><em>함께한 기여까지 선명하게</em></h1>
               <p className="landing-hero-description">
                 수업·동아리·프로젝트 프로그램의 운영부터<br />
                 팀별 협업과 개인의 기여도 확인까지 연결합니다.
@@ -55,7 +55,7 @@ export default function LandingPage() {
         <section className="landing-use-cases landing-content-section" id="use-cases" aria-labelledby="use-cases-title">
           <div className="landing-section-heading">
             <span>함께 활동하는 모두를 위해</span>
-            <h2 id="use-cases-title">수업부터 동아리까지<br />함께 활동하는 곳 어디서나.</h2>
+            <h2 id="use-cases-title">수업부터 동아리까지<br />함께 활동하는 곳 어디서나</h2>
             <p>{'하나의 팀을 넘어\n여러 팀이 함께하는 활동에 맞춰 사용하세요.'}</p>
           </div>
           <div className="landing-use-case-grid">
@@ -72,7 +72,7 @@ export default function LandingPage() {
           <div className="landing-space-inner">
             <div className="landing-space-copy">
               <p className="landing-eyebrow"><Layers size={16} aria-hidden="true" />스페이스로 연결되는 활동</p>
-              <h2 id="space-structure-title">하나의 스페이스 안에서<br />팀마다 이어지는 협업.</h2>
+              <h2 id="space-structure-title">하나의 스페이스 안에서<br />팀마다 이어지는 협업</h2>
               <p>{'수업이나 동아리를 하나의 ‘스페이스’로 구성하고\n그 안에서 여러 팀이 각자의 프로젝트를 진행합니다.'}</p>
               <dl className="landing-role-list">
                 <div><dt>관리자</dt><dd>{'전체 공지와 참여자,\n여러 팀의 활동을 한눈에 관리합니다.'}</dd></div>
@@ -95,7 +95,7 @@ export default function LandingPage() {
         <section className="landing-manager landing-content-section" aria-labelledby="manager-title">
           <div className="landing-manager-copy">
             <p className="landing-eyebrow"><LayoutDashboard size={16} aria-hidden="true" />관리자를 위한 운영 공간</p>
-            <h2 id="manager-title">팀이 많아져도<br />진행 상황을 놓치지 않도록.</h2>
+            <h2 id="manager-title">팀이 많아져도<br />진행 상황을 놓치지 않도록</h2>
             <p>{'여러 팀의 정보를 각각 찾아다니지 않아도 됩니다.\n전체 현황을 살펴보고\n필요한 팀의 세부 내용으로 이동하세요.'}</p>
             <ul>
               {['전체 공지사항과 참여자·팀 구성 관리', '팀별 작업 진행 상황과 등록 자료 확인', '동료 평가 일정과 팀별 제출 현황 관리'].map((item) => (
@@ -114,14 +114,14 @@ export default function LandingPage() {
 
         <div className="landing-collaboration-intro landing-content-section">
           <p className="landing-eyebrow">팀 리더와 팀원을 위한 협업 공간</p>
-          <h2>역할을 나누는 순간부터<br />함께한 과정을 돌아볼 때까지.</h2>
+          <h2>역할을 나누는 순간부터<br />함께한 과정을 돌아볼 때까지</h2>
           <p>작업·자료·평가를 연결해 팀의 협업 흐름을 이어갑니다.</p>
         </div>
         <LandingShowcase />
         <section className="landing-workflow" aria-labelledby="workflow-title">
           <div className="landing-section-heading">
             <span>협업의 과정이 기여의 근거로</span>
-            <h2 id="workflow-title">역할부터 결과물,<br />기여도까지 하나의 흐름으로.</h2>
+            <h2 id="workflow-title">역할부터 결과물,<br />기여도까지 하나의 흐름으로</h2>
             <p>{'누가 무엇을 맡았고 어떤 결과를 남겼는지\n기록을 바탕으로 함께 확인하세요.'}</p>
           </div>
           <div className="landing-workflow-grid">
@@ -139,7 +139,7 @@ export default function LandingPage() {
         </section>
         <section className="landing-bottom-cta">
           <div>
-            <h2>여러 팀의 시작부터<br />함께한 과정의 마무리까지.</h2>
+            <h2>여러 팀의 시작부터<br />함께한 과정의 마무리까지</h2>
             <p className="landing-cta-description">수업과 동아리, 다음 프로젝트를 Fairplay에서 시작하세요.</p>
           </div>
           <Link className="landing-button" to="/login">지금 시작하기 <ArrowRight size={17} /></Link>
