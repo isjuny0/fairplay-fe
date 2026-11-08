@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { BookOpen, Monitor, X } from 'lucide-react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 import { getCurrentUser, loginWithGoogle, logout } from '../api/auth.js';
-import MobileDisclosure from './MobileDisclosure.jsx';
 import AppRoutes from './AppRoutes.jsx';
 import { loginReturnPath } from '../lib/routes.js';
 import { ErrorNotice } from './ui.jsx';
@@ -216,53 +215,43 @@ export default function Application({ previewRuntime, onPreviewExit }) {
     return <Navigate to={loginReturnPath(location.state?.returnTo)} replace />;
   if (!user || location.pathname === '/preview/login')
     return (
-      <main className="login-page">
-        <button className="login-home-link" onClick={() => navigate('/')}>
-          ← Fairplay 소개로
-        </button>
-        <section className="login-card">
-          <div className="login-introduction">
-            <h1 className="login-brand"><BrandLogo /></h1>
-            <p className="login-description">
-              팀 프로젝트의 역할과 수행 과정을 기록하고,
-              <br />
-              기여도를 근거와 함께 확인하세요.
-            </p>
-            <MobileDisclosure className="login-benefits-disclosure" summary="서비스에서 할 수 있는 일" media="(max-width: 720px) and (max-height: 700px)">
-            <ol className="login-benefits">
-              <li>작업을 나누고 수행 내용을 기록</li>
-              <li>결과물을 등록하고 직접 완료</li>
-              <li>협업을 돌아보고 기여도 확인</li>
-            </ol>
-            </MobileDisclosure>
+      <main className="login-page login-page--entry">
+        <section className="login-shell" aria-labelledby="login-heading">
+          <div className="login-brand"><BrandLogo /></div>
+          <header className="login-card-heading">
+            <h1 id="login-heading">Fairplay에 로그인</h1>
+            <p>Google 계정으로 간편하게 시작하세요.</p>
+          </header>
+          <div className="login-card login-card--compact">
+            <div className="login-actions">
+              <button
+                className="google-button"
+                disabled={busy || preview}
+                onClick={authenticate}
+              >
+                <img
+                  className="google-login-logo"
+                  src={googleLogo}
+                  alt=""
+                  aria-hidden="true"
+                  width="20"
+                  height="20"
+                />
+                <span>
+                  {preview
+                    ? 'Google 로그인 · 실제 서비스에서 연결'
+                    : busy
+                      ? '로그인 연결 중…'
+                      : 'Google로 계속하기'}
+                </span>
+              </button>
+              {sessionNotice && <p role="status">{sessionNotice}</p>}
+              <ErrorNotice error={error} />
+            </div>
           </div>
-          <div className="login-actions">
-            <h2>함께 만드는 프로젝트</h2>
-            <p>로그인하고 내 작업 공간을 시작하세요.</p>
-            <button
-              className="google-button"
-              disabled={busy || preview}
-              onClick={authenticate}
-            >
-              <img
-                className="google-login-logo"
-                src={googleLogo}
-                alt=""
-                aria-hidden="true"
-                width="20"
-                height="20"
-              />
-              <span>
-                {preview
-                  ? 'Google 로그인 · 실제 서비스에서 연결'
-                  : busy
-                    ? '로그인 연결 중…'
-                    : 'Google로 계속하기'}
-              </span>
-            </button>
-            {sessionNotice && <p role="status">{sessionNotice}</p>}
-            <ErrorNotice error={error} />
-          </div>
+          <button className="login-home-link" onClick={() => navigate('/')}>
+            ← Fairplay 소개로
+          </button>
         </section>
       </main>
     );

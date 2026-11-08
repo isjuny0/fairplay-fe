@@ -283,7 +283,7 @@ test('로그인 미리보기에는 공개 가이드 진입 버튼이 없다', as
   const calls = await preview(page, { path: '/main' });
   await page.goto('/preview/login');
   await expect(
-    page.getByRole('heading', { name: 'Fairplay', exact: true }),
+    page.getByRole('heading', { name: 'Fairplay에 로그인', exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole('button', { name: 'Google 로그인 · 실제 서비스에서 연결' }),
