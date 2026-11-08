@@ -398,6 +398,7 @@ for (const width of [320, 1440]) {
     await scenario.waitFor({ state: 'attached' });
     if (!await scenario.isVisible()) await page.getByRole('button', { name: '미리보기 설정', exact: true }).click();
     await scenario.selectOption('building');
+    await page.getByRole('dialog', { name: '미리보기 상황 변경' }).getByRole('button', { name: '상황 변경', exact: true }).click();
     await page.goto('/preview/spaces/1');
     const firstApply = page.getByRole('button', { name: '삼위일체 가입 신청', exact: true });
     const secondApply = page.getByRole('button', { name: '파도 가입 신청', exact: true });

@@ -2,6 +2,8 @@ import { previewRag } from './rag.js';
 import { previewTeamHome } from './teamHome.js';
 import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
 import { isMutable } from '../lib/domain.js';
+import { spacePath, teamMenuPaths } from '../lib/routes.js';
+import { availableTeamMenus } from '../lib/teamNavigation.js';
 import { previewTaskComments } from './taskComments.js';
 import { previewSpaceAnnouncements } from './spaceAnnouncements.js';
 import { previewMeetingMinutes } from './meetingMinutes.js';
@@ -80,11 +82,32 @@ export function setRagPreviewScenario(scenario) {
   state.ragScenario = scenario;
   saveMockState(context, state);
 }
-export function getRagPreviewScenario() {
-  return getMockState(previewContext()).ragScenario || 'ready';
-}
 export function resetPreview(scenario) {
   resetMockState(previewContext(), scenario);
+}
+
+export function previewRoleFallback(pathname) {
+  const [, root, section, spaceId, view, teamId, segment = ''] = pathname.split('/');
+  if (root !== 'preview' || section !== 'spaces') return null;
+
+  const context = previewContext();
+  const state = getMockState(context);
+  if (isRemovedSpaceParticipant(context, state, Number(spaceId))) return '/preview/main';
+
+  const home = `/preview${spacePath(spaceId)}`;
+  const manager = Number(spaceId) === context.space.id ? context.manager : state.extraSpace?.myRole === 'MANAGER';
+  if (['dashboard', 'participants', 'rounds', 'reports', 'settings', 'manager'].includes(view))
+    return manager ? null : home;
+  if (view !== 'teams') return null;
+
+  const entry = state.teams[teamId];
+  if (!entry || entry.team.spaceId !== Number(spaceId)) return home;
+  const approved = entry.members.some(({ userId }) => userId === context.user.id);
+  if (approved) return null;
+  if (!manager) return home;
+  const readOnlyMenus = ['작업', ...availableTeamMenus(null)];
+  return readOnlyMenus.some((menu) => teamMenuPaths[menu] === segment)
+    ? null : `${home}/dashboard?teamId=${teamId}`;
 }
 const missing = (code, message) => {
   throw new MockError(code, message, 404);

@@ -361,7 +361,7 @@ test("미리보기는 서버 호출 없이 참여자를 삭제하고 새로고�
   });
   await page.goto(`/preview${path}`);
   const remove = page.getByRole("button", {
-    name: "박선우 참여자 삭제",
+    name: "한지민 참여자 삭제",
     exact: true,
   });
   await remove.click();

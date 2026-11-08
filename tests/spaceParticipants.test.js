@@ -27,6 +27,15 @@ beforeEach(() => {
   resetMockState(previewContext(), "building");
 });
 
+function clearParticipantTasks(context, state) {
+  for (const task of state.teams[1].tasks) {
+    if (task.assignees.some((item) => item.userId === id(3))) {
+      task.assignees = [{ userId: id(1), allocationPercent: 100 }];
+    }
+  }
+  saveMockState(context, state);
+}
+
 test("참여자 명단은 관리자 우선이며 팀 미소속·신청자도 승인 팀 없이 포함하고 민감정보를 반환하지 않는다", async () => {
   const rows = await previewRequest(base);
   assert.equal(rows.length, 7);
@@ -37,7 +46,8 @@ test("참여자 명단은 관리자 우선이며 팀 미소속·신청자도 승
   );
   assert.equal(rows.find((row) => row.userId === id(7)).team, null);
   assert.equal(rows.find((row) => row.userId === id(1)).team.role, "LEADER");
-  assert.equal(rows.find((row) => row.userId === id(3)).canRemove, true);
+  assert.equal(rows.find((row) => row.userId === id(3)).canRemove, false);
+  assert.equal(rows.find((row) => row.userId === id(7)).canRemove, true);
   const state = getMockState(previewContext());
   const before = structuredClone(state);
   await previewRequest(base);
@@ -69,8 +79,8 @@ test("참여자 삭제는 소속·신청·개인 설정만 정리하고 팀·공
     workFrozen: true,
     canDelete: true,
   };
+  clearParticipantTasks(context, state);
   const oldTeam = structuredClone(state.teams[1]);
-  saveMockState(context, state);
   assert.equal(
     await previewRequest(`${base}/${id(3)}`, { method: "DELETE" }),
     null,
@@ -111,6 +121,7 @@ test("관리자·팀 리더·완료 작업 담당자는 보호하고 업무 의�
     );
   const context = previewContext(),
     state = getMockState(context);
+  clearParticipantTasks(context, state);
   state.teams[1].deliverables.push({ id: 999, taskId: null, authorId: id(3) });
   saveMockState(context, state);
   assert.equal(
@@ -164,6 +175,8 @@ test("다른 스페이스·잘못된 ID·일반 회원 요청은 명단을 노�
 });
 
 test("제거 후 역할 전환에도 접근을 해제하고 재가입해도 이전 팀·신청을 복구하지 않는다", async () => {
+  const context = previewContext();
+  clearParticipantTasks(context, getMockState(context));
   await previewRequest(`${base}/${id(3)}`, { method: "DELETE" });
   setPreviewRole("teammate");
   assert.deepEqual(await previewRequest("/api/spaces"), []);

@@ -18,10 +18,19 @@ import ScrollAffordances from './ScrollAffordances.jsx';
 import '../preview-controls.css';
 import '../header-profile.css';
 
+const previewScenarios = [
+  ['building', '팀 구성 중'],
+  ['setup', '평가 시작 전'],
+  ['active', '최종 평가 진행 중'],
+  ['evaluated', '평가 마감 · 리포트 생성 전'],
+  ['review', '리포트 검토 중'],
+  ['published', '리포트 공개 완료'],
+];
+
 export default function Application({ previewRuntime, onPreviewExit }) {
   const {
-    getMockState, getPreviewUser, previewRole, setPreviewRole,
-    resetPreview, previewContext, getRagPreviewScenario, setRagPreviewScenario,
+    getMockState, getPreviewUser, previewRole, setPreviewRole, previewRoleFallback,
+    resetPreview, previewContext, setRagPreviewScenario,
   } = previewRuntime || {};
   const guide = usePreviewGuide();
   const navigate = useNavigate();
@@ -34,6 +43,10 @@ export default function Application({ previewRuntime, onPreviewExit }) {
   const [scenario, setScenario] = useState(() =>
     preview ? getMockState(previewContext()).scenario : 'active',
   );
+  const selectedScenario = scenario === 'recruiting' ? 'setup' : scenario;
+  const [previewMember, setPreviewMember] = useState(() => previewRole?.() === 'teammate' ? 'teammate' : 'member');
+  const role = previewRole?.();
+  const isPreviewMember = role === 'member' || role === 'teammate';
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [headerContext, setHeaderContext] = useState(null);
@@ -64,17 +77,52 @@ export default function Application({ previewRuntime, onPreviewExit }) {
     if (!previewSettingsOpen) return;
     previewControls.current?.querySelector('select')?.focus();
     const closeOutside = (event) => {
-      if (!previewControls.current?.contains(event.target)) setPreviewSettingsOpen(false);
+      if (!previewControls.current?.contains(event.target) && !event.target.closest('[role="dialog"]'))
+        setPreviewSettingsOpen(false);
     };
     document.addEventListener('pointerdown', closeOutside);
     return () => document.removeEventListener('pointerdown', closeOutside);
   }, [previewSettingsOpen]);
-  const { confirmDiscard } = useInteractions();
+  const { confirm, confirmDiscard } = useInteractions();
+  const changePreviewRole = async (nextRole) => {
+    if (nextRole === role || !(await confirmDiscard())) return;
+    if (guide && !(await guide.endForSettings())) return;
+    invalidateSharedReads();
+    setPreviewRole(nextRole);
+    if (nextRole === 'member' || nextRole === 'teammate') setPreviewMember(nextRole);
+    setUser(getPreviewUser());
+    setCurrentWorkspace(null);
+    setPreviewRevision((value) => value + 1);
+    const fallback = previewRoleFallback(location.pathname);
+    if (fallback) navigate(fallback, { replace: true });
+  };
+  const changePreviewScenario = async (nextScenario, reset = false) => {
+    if (!reset && nextScenario === scenario) return;
+    if (!(await confirm({
+      title: reset ? '예시 데이터 초기화' : '미리보기 상황 변경',
+      message: '지금까지 미리보기에서 바꾼 내용이 초기화됩니다.',
+      label: reset ? '초기화' : '상황 변경',
+    }))) return;
+    if (!(await confirmDiscard())) return;
+    if (guide && !(await guide.endForSettings())) return;
+    invalidateSharedReads();
+    resetPreview(nextScenario);
+    setScenario(nextScenario);
+    setPreviewRevision((value) => value + 1);
+    const fallback = previewRoleFallback(location.pathname);
+    if (fallback) navigate(fallback, { replace: true });
+  };
   useEffect(() => {
     let active = true;
     setChecking(true);
     setError(null);
-    if (preview) setScenario(getMockState(previewContext()).scenario);
+    if (preview) {
+      const state = getMockState(previewContext());
+      setScenario(state.scenario);
+      if (state.ragScenario && state.ragScenario !== 'ready') {
+        setRagPreviewScenario('ready');
+      }
+    }
     const expired = () => {
       invalidateSharedReads();
       setUser(null);
@@ -260,7 +308,8 @@ export default function Application({ previewRuntime, onPreviewExit }) {
                   }
                 }}
                 onBlur={(event) => {
-                  if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) {
+                  if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)
+                    && !event.relatedTarget.closest('[role="dialog"]')) {
                     setPreviewSettingsOpen(false);
                   }
                 }}
@@ -300,81 +349,38 @@ export default function Application({ previewRuntime, onPreviewExit }) {
                       역할
                       <select
                         aria-label="미리보기 역할"
-                        value={previewRole()}
-                        onChange={async (event) => {
-                          const nextRole = event.target.value;
-                          if (!(await confirmDiscard())) return;
-                          if (guide && !(await guide.endForSettings())) return;
-                          invalidateSharedReads();
-                          setPreviewRole(nextRole);
-                          setUser(getPreviewUser());
-                          setPreviewRevision((value) => value + 1);
-                          navigate('/preview/main');
-                        }}
+                        value={isPreviewMember ? 'member' : role}
+                        onChange={(event) => changePreviewRole(event.target.value === 'member' ? previewMember : event.target.value)}
                       >
                         <option value="leader">팀 리더</option>
-                        <option value="participant">
-                          스페이스 참여자·팀 미가입
-                        </option>
-                        <option value="member">일반 담당자</option>
-                        <option value="teammate">다른 팀원</option>
+                        <option value="member">팀원</option>
                         <option value="manager">스페이스 관리자</option>
+                        <option value="participant">팀 미가입 참여자</option>
                       </select>
                     </label>
+                    {isPreviewMember && (
+                      <label>
+                        팀원
+                        <select aria-label="미리보기 팀원" value={role} onChange={(event) => changePreviewRole(event.target.value)}>
+                          <option value="member">김영진</option>
+                          <option value="teammate">박선우</option>
+                        </select>
+                      </label>
+                    )}
                     <label>
                       상황
                       <select
                         aria-label="미리보기 상황"
-                        value={scenario}
-                        onChange={async (event) => {
-                          const nextScenario = event.target.value;
-                          if (!(await confirmDiscard())) return;
-                          if (guide && !(await guide.endForSettings())) return;
-                          invalidateSharedReads();
-                          setScenario(nextScenario);
-                          resetPreview(nextScenario);
-                          setPreviewRevision((value) => value + 1);
-                        }}
+                        value={selectedScenario}
+                        onChange={(event) => changePreviewScenario(event.target.value)}
                       >
-                        <option value="active">평가 진행 중</option>
-                        <option value="setup">평가 시작 전</option>
-                        <option value="building">팀 생성 기간 진행 중</option>
-                        <option value="recruiting">팀 생성 마감 · 가입 가능</option>
-                        <option value="evaluated">평가 완료·리포트 미생성</option>
-                        <option value="review">리포트 검토</option>
-                        <option value="published">리포트 공개 완료</option>
+                        {previewScenarios.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                       </select>
                     </label>
-                    {location.pathname.endsWith('/materials-search') && (
-                      <label>
-                        자료 검색
-                        <select
-                          aria-label="자료 검색 미리보기 상황"
-                          value={getRagPreviewScenario()}
-                          onChange={async (event) => {
-                            const nextScenario = event.target.value;
-                            if (!(await confirmDiscard())) return;
-                            setRagPreviewScenario(nextScenario);
-                            setPreviewRevision((value) => value + 1);
-                          }}
-                        >
-                          <option value="ready">검색 가능</option>
-                          <option value="no-evidence">관련 근거 없음</option>
-                          <option value="preparing">자료 준비 중</option>
-                          <option value="failed">준비 실패</option>
-                          <option value="disabled">기능 비활성화</option>
-                        </select>
-                      </label>
-                    )}
                     <button
                       className="secondary-button"
-                      onClick={async () => {
-                        if (!(await confirmDiscard())) return;
-                        if (guide && !(await guide.endForSettings())) return;
-                        invalidateSharedReads();
-                        resetPreview(scenario);
-                        setPreviewRevision((value) => value + 1);
-                      }}
+                      type="button"
+                      onClick={() => changePreviewScenario(selectedScenario, true)}
                     >
                       예시 초기화
                     </button>

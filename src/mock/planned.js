@@ -1,5 +1,6 @@
 import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
-import { exampleCalendarEvents, exampleDeliverables, exampleTasks, peerCriteria } from './fixtures.js';
+import { exampleCalendarEvents, exampleDeliverables, exampleTasks, peerCriteria, previewMembers } from './fixtures.js';
+import { capstoneProjectMaterials, capstoneProjectMeetings, capstoneProjectScenario, capstoneProjectTasks } from './capstoneProject.js';
 import { validatePeerResponse, workSummary } from '../lib/evaluation.js';
 import { defaultReportWeights, sameReportWeights, validReportWeights } from '../lib/reportWeights.js';
 
@@ -24,33 +25,78 @@ export function mockKey(context) {
     return guideScope ? `${baseKey}:guide:${guideScope}` : baseKey;
   } catch { return baseKey; }
 }
-export function getMockState(context, initialScenario = 'active') {
-  const key = mockKey(context);
-  let state = memoryStates.get(key);
+
+function readMockState(key) {
   try {
-    state =
-      JSON.parse(globalThis.localStorage?.getItem(key) || 'null') || state;
+    return JSON.parse(globalThis.localStorage?.getItem(key) || 'null') || memoryStates.get(key);
   } catch {
-    /* 저장 공간이 없어도 현재 탭에서 동작한다. */
+    return memoryStates.get(key);
   }
+}
+
+function seedProjectRecords(state, timestamp) {
+  const entry = state.teams[1];
+  const members = previewMembers.map(({ userId }) => entry?.members.find((member) => member.userId === userId));
+  if (members.some((member) => !member)) return false;
+
+  const tasks = capstoneProjectTasks(entry.team.id, members, timestamp);
+  const materials = capstoneProjectMaterials(tasks);
+  const taskIds = new Map();
+  const existingTaskIds = new Set(Object.values(state.teams).flatMap(({ tasks: existing }) => existing.map(({ id }) => id)));
+  let nextTaskId = Math.max(...tasks.map(({ id }) => id), ...existingTaskIds) + 1;
+  for (const task of tasks) {
+    const id = existingTaskIds.has(task.id) ? nextTaskId++ : task.id;
+    taskIds.set(task.id, id);
+    entry.tasks.push({ ...task, id });
+  }
+
+  let nextMaterialId = Math.max(...materials.map(({ id }) => id), ...entry.deliverables.map(({ id }) => id)) + 1;
+  for (const item of materials) {
+    const id = entry.deliverables.some((existing) => existing.id === item.id) ? nextMaterialId++ : item.id;
+    entry.deliverables.push({ ...item, id, taskId: taskIds.get(item.taskId) });
+  }
+
+  state.calendarEvents ??= [];
+  let nextEventId = Math.max(0, ...state.calendarEvents.map(({ id }) => id)) + 1;
+  const existingEventTitles = new Set(exampleCalendarEvents().map(({ title }) => title));
+  for (const event of exampleCalendarEvents(timestamp)) {
+    if (!existingEventTitles.has(event.title)) state.calendarEvents.push({ ...event, id: nextEventId++ });
+  }
+
+  if (state.meetingMinutes) {
+    let nextMeetingId = Math.max(state.nextMeetingMinuteId || 1, ...state.meetingMinutes.map(({ id }) => id + 1));
+    state.meetingMinutes.push(...capstoneProjectMeetings(entry.team, members, timestamp)
+      .map((meeting) => ({ ...meeting, id: nextMeetingId++ })));
+    state.nextMeetingMinuteId = nextMeetingId;
+  }
+  state.projectRecordsAt = timestamp;
+  return true;
+}
+
+export function getMockState(context, initialScenario = 'active', recordsAt = Date.now()) {
+  const key = mockKey(context);
+  const useProjectRecords = context.preview && !key.includes(':guide:');
+  let state = readMockState(key);
+  const fixtureAt = state?.projectRecordsAt ?? recordsAt;
   if (!state) {
     const timestamp = Date.now();
+    const hasEvaluationSchedule = !['setup', 'building', 'recruiting'].includes(initialScenario);
     state = {
       teams: {},
       responses: {},
       submitted: {},
       reports: [],
       calendarEvents: context.preview ? exampleCalendarEvents() : [],
-      scenario: initialScenario,
-      rounds: [
+      scenario: initialScenario === capstoneProjectScenario ? 'active' : initialScenario,
+      rounds: hasEvaluationSchedule ? [
         {
           id: context.space.id * 10 + 1,
           spaceId: context.space.id,
           type: 'MID',
           status: 'CLOSED',
           version: 1,
-          opensAt: koreanDateTime(timestamp - 15 * 86400000),
-          closesAt: koreanDateTime(timestamp - 8 * 86400000),
+          opensAt: koreanDateTime(fixtureAt - 15 * 86400000),
+          closesAt: koreanDateTime(fixtureAt - 8 * 86400000),
         },
         {
           id: context.space.id * 10 + 2,
@@ -61,21 +107,24 @@ export function getMockState(context, initialScenario = 'active') {
           opensAt: koreanDateTime(timestamp - 86400000),
           closesAt: koreanDateTime(timestamp + 7 * 86400000),
         },
-      ],
+      ] : [],
     };
   }
   for (const entry of context.teamContexts ||
     (context.team ? [{ team: context.team, members: context.members }] : [])) {
     if (!state.teams[entry.team.id]) {
-      const tasks = exampleTasks(entry.team, entry.members, state.scenario);
+      const tasks = exampleTasks(entry.team, entry.members, fixtureAt);
       state.teams[entry.team.id] = {
         team: clone(entry.team),
         members: clone(entry.members),
         tasks,
-        deliverables: exampleDeliverables(entry.team, tasks, entry.members),
+        deliverables: exampleDeliverables(entry.team, tasks, entry.members, fixtureAt),
       };
     }
   }
+  const legacyProjectRecords = state.scenario === capstoneProjectScenario;
+  if (legacyProjectRecords) state.scenario = 'active';
+  const seededProjectRecords = useProjectRecords && !state.projectRecordsAt && seedProjectRecords(state, fixtureAt);
   // 마감 회차의 예시 응답은 실제 저장/제출 상태와 함께 만든다.
   for (const round of state.rounds) {
     if (round.status === 'CLOSED' && !round.seeded)
@@ -104,6 +153,7 @@ export function getMockState(context, initialScenario = 'active') {
   state.reports ??= [];
   for (const report of state.reports) report.weights ??= { ...defaultReportWeights };
   state.reportWeights ??= state.reports[0]?.weights ?? null;
+  if (legacyProjectRecords || seededProjectRecords) saveMockState(context, state);
   memoryStates.set(key, state);
   return state;
 }
@@ -116,13 +166,11 @@ export function saveMockState(context, state) {
   }
 }
 export function resetMockState(context, scenario = 'active') {
-  memoryStates.delete(mockKey(context));
-  globalThis.localStorage?.removeItem(mockKey(context));
-  const state = getMockState(context, scenario);
-  if (['setup', 'building', 'recruiting'].includes(scenario)) {
-    state.rounds = [];
-    delete state.midWorkSnapshot;
-  }
+  const key = mockKey(context);
+  const recordsAt = readMockState(key)?.projectRecordsAt;
+  memoryStates.delete(key);
+  globalThis.localStorage?.removeItem(key);
+  const state = getMockState(context, scenario, recordsAt);
   if (scenario === 'recruiting') {
     state.spaceOverrides = {
       membershipLockedAt: null,
@@ -321,7 +369,7 @@ function captureMidWorkSnapshot(state, round, useFixtures = false) {
   // 이미 마감된 전시 회차는 마감 시점에 맞춘 예시 작업으로 초기화한다.
   const teams = Object.fromEntries(Object.values(state.teams).map((entry) => {
     const { team, members } = entry;
-    const tasks = useFixtures ? exampleTasks(team, members, state.scenario, Number(cutoff)) : entry.tasks;
+    const tasks = useFixtures ? exampleTasks(team, members, Number(cutoff), state.projectRecordsAt) : entry.tasks;
     return [team.id, Object.fromEntries(members.map(({ userId }) => {
       const ownTasks = tasks.filter((task) => task.assignees.some((assignee) => assignee.userId === userId));
       const summary = workSummary(team.id, userId, tasks, cutoff);

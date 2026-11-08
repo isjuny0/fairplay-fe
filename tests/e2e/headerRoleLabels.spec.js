@@ -246,6 +246,7 @@ for (const width of [320, 390, 720, 953, 1440]) {
     await expect(popover).toBeHidden();
     await toggle.click();
     await page.getByLabel('미리보기 상황', { exact: true }).selectOption('published');
+    await page.getByRole('dialog', { name: '미리보기 상황 변경' }).getByRole('button', { name: '상황 변경', exact: true }).click();
     await expect(page.getByLabel('미리보기 상황', { exact: true })).toHaveValue('published');
     await popover.getByRole('button', { name: '미리보기 종료', exact: true }).click();
     await expect(page).toHaveURL('/');
