@@ -26,6 +26,22 @@
 .ai-section-heading h3 { margin: 0; }
 .ai-section-heading > span { color: var(--text-muted); font-size: var(--text-caption); }
 .ai-review-summary > p { margin: 0; line-height: 1.8; white-space: pre-line; overflow-wrap: anywhere; }
+.ai-review-overview { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 12px 0 0; padding: 0; }
+.ai-review-overview li > * {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  color: var(--text-muted);
+  background: var(--surface-secondary);
+  font-size: var(--text-support);
+}
+.ai-review-overview button { color: var(--brand-dark); background: var(--surface); cursor: pointer; }
+.ai-review-overview button:hover { border-color: var(--brand); background: var(--brand-light); }
+.ai-review-summary > .ai-review-no-issues { margin-top: 12px; color: var(--text-muted); font-size: var(--text-support); }
+.ai-review-findings, .ai-review-limitations { scroll-margin-top: calc(var(--header-height) + 16px); }
 .ai-finding-list { list-style: none; padding: 0; margin: 0; }
 .ai-finding-list > li { padding: 24px 0; border-top: 1px solid var(--border); min-width: 0; }
 .ai-finding-list > li:first-child { padding-top: 0; border-top: 0; }
@@ -33,17 +49,6 @@
 .ai-finding-list h4 { margin: 8px 0; font-size: var(--text-body); line-height: 1.6; overflow-wrap: anywhere; }
 .ai-finding-list p { margin: 0; line-height: 1.8; white-space: pre-line; overflow-wrap: anywhere; }
 .ai-finding-description { color: var(--text-muted); font-size: var(--text-support); }
-.ai-finding-type {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--text-caption);
-  font-weight: 600;
-  color: var(--text-muted);
-}
-.ai-finding-type::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.ai-finding-type--issue { color: #956626; }
-.ai-finding-type--suggestion { color: #087c55; }
 .ai-finding-action { padding: 12px 16px; margin-top: 14px; border-left: 2px solid var(--border); background: var(--surface-secondary); }
 .ai-finding-action > strong { display: block; margin-bottom: 4px; font-size: var(--text-caption); color: var(--text-muted); font-weight: 500; }
 .ai-finding-action p { font-size: var(--text-support); }
