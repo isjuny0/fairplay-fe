@@ -1,5 +1,14 @@
 import { MockError } from './planned.js';
 
+const projectTopics = [
+  [/마감 (시점|집계|기준)|중간 평가|중간 피드백/, '중간 평가 마감 집계 기준'],
+  [/인계|탈퇴/, '팀 탈퇴와 작업 인계 검증 시나리오'],
+  [/타임라인|담당자 아이콘/, '작업 타임라인 화면 점검표'],
+  [/AI\s*(검토|피드백)|재검토/i, 'AI 검토 응답 점검 기록'],
+  [/재순위화|벡터 검색/, '팀 자료 검색 재순위화 점검표'],
+  [/리포트 공개|평가 비중|종합점수/, '리포트 생성·공개 확인 순서'],
+];
+
 const fail = (code, message, status = 409) => {
   throw new MockError(code, message, status);
 };
@@ -88,7 +97,11 @@ export function previewRag(context, state, parts, url, method, body) {
       : /검색|인용|원문/.test(body.question)
         ? '검색'
         : '프로젝트';
+    const projectTitle = state.projectRecordsAt
+      ? projectTopics.find(([pattern]) => pattern.test(body.question))?.[1]
+      : undefined;
     const selected =
+      (projectTitle && ready.find((item) => item.title === projectTitle)) ||
       ready.find((item) => item.title.includes(term)) || ready[0];
     const document = entry.deliverables.find(
       (item) => item.id === selected.deliverableId,

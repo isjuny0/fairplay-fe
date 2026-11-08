@@ -20,8 +20,8 @@ async function preview(
   await selectPreviewOption(page, '미리보기 역할', role);
   if (scenario !== 'active')
     await selectPreviewOption(page, '미리보기 상황', scenario);
+  await expect(page.getByLabel('미리보기 역할')).toHaveValue(role === 'teammate' ? 'member' : role);
   await page.goto(`/preview${path}`);
-  await expect(page.getByLabel('미리보기 역할')).toHaveValue(role);
   return apiCalls;
 }
 
@@ -88,7 +88,7 @@ test('팀 홈과 관리자 현황은 가중치 숫자 대신 비율과 계산 �
     page.getByRole('row').filter({
       has: page.getByRole('rowheader', { name: '김준영 수행 상세', exact: true }),
     }),
-  ).toContainText('80.00%');
+  ).toContainText('61.00%');
   await page.evaluate(() => {
     const key = 'fairplay:mock:v11:preview:1';
     const state = JSON.parse(localStorage.getItem(key));
@@ -391,7 +391,10 @@ test('팀 빌딩 상황에서는 가입 승인 및 미가입 참여자의 팀 �
   await expect(
     page.getByLabel('현재 팀원 4명', { exact: true }),
   ).toBeVisible();
-  await selectPreviewOption(page, '미리보기 상황', 'building');
+  await page.getByRole('button', { name: '미리보기 설정', exact: true }).click();
+  await page.getByRole('button', { name: '예시 초기화', exact: true }).click();
+  await page.getByRole('dialog', { name: '예시 데이터 초기화' })
+    .getByRole('button', { name: '초기화', exact: true }).click();
   await selectPreviewOption(page, '미리보기 역할', 'participant');
   await page.goto('/preview/spaces/1');
   await expect(page.getByRole('button', { name: '팀 만들기', exact: true })).toHaveCount(0);
@@ -412,7 +415,12 @@ test('팀 빌딩 상황에서는 가입 승인 및 미가입 참여자의 팀 �
   await expect(page).toHaveURL(/\/preview\/spaces\/1\/teams\/\d+$/);
 });
 test('팀 생성 마감 후 기존 팀에 신청하고 리더 승인으로 팀 홈에 진입한다', async ({ page }) => {
-  const calls = await preview(page, { role: 'participant', scenario: 'recruiting', path: '/spaces/1' });
+  const calls = await preview(page, { role: 'participant', path: '/spaces/1' });
+  await page.evaluate(async () => {
+    const { resetPreview } = await import('/src/mock/preview.js');
+    resetPreview('recruiting');
+  });
+  await page.reload();
   const schedule = page.getByRole('region', { name: '프로젝트 일정' });
   await expect(schedule).toContainText('팀 구성');
   await expect(schedule).toContainText('가입 가능');
@@ -515,6 +523,7 @@ test('평가 완료 상황에서 관리자가 전체 리포트를 생성하고 �
   await expect(page.getByRole('heading', { name: '전체 리포트 공개 완료', exact: true })).toBeVisible();
   await page.getByRole('button', { name: '미리보기 설정', exact: true }).click();
   await page.getByRole('button', { name: '예시 초기화', exact: true }).click();
+  await page.getByRole('dialog', { name: '예시 데이터 초기화' }).getByRole('button', { name: '초기화', exact: true }).click();
   await expect(generate).toBeEnabled();
   await expect(page.getByRole('region', { name: '팀별 리포트 결과', exact: true })).toHaveCount(0);
   expect(calls).toEqual([]);

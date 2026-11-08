@@ -1,4 +1,7 @@
 import { koreanDateTime } from '../lib/koreanTime.js';
+import {
+  capstoneProjectCalendarEntries, capstoneProjectTasks,
+} from './capstoneProject.js';
 
 export const previewPermissionChecklistFilename = '팀-권한-점검표.txt';
 export const previewUsers = {
@@ -56,11 +59,12 @@ export { peerCriteria, peerGuides } from '../lib/peerCriteria.js';
 
 export const capstoneReviewDate = '2026-10-19';
 
-export function exampleCalendarEvents() {
+export function exampleCalendarEvents(projectRecordsAt) {
   return [
     ['2026-09-16', '2026-09-17', '캡스톤디자인 설명회', 'milestone', '캡스톤디자인 프로젝트 일정과 운영 방식 안내'],
     [capstoneReviewDate, '2026-10-20', 'UI/UX 회의', 'meeting', '스페이스·팀 이동, 작업 보드, 결과물 등록 화면 점검'],
     ['2026-10-26', '2026-10-27', 'UI/UX·기능 개선 논의', 'meeting', 'Fairplay 화면 구성과 사용 흐름 점검'],
+    ...(projectRecordsAt ? capstoneProjectCalendarEntries(projectRecordsAt) : []),
   ].map(([day, nextDay, title, kind, notes], index) => ({
     id: index + 1,
     teamId: previewTeams[0].id,
@@ -111,11 +115,11 @@ const capstoneTasks = [
   ],
 ];
 
-export function exampleTasks(team, members, scenario, now = Date.now()) {
+export function exampleTasks(team, members, now = Date.now(), projectRecordsAt) {
   if (!members.length) return [];
   const lead = members[0].userId;
   const second = members[1]?.userId || lead;
-  const exhibitionReviewer = team.id === previewTeams[0].id && scenario !== 'building'
+  const exhibitionReviewer = team.id === previewTeams[0].id
     ? members[2]?.userId
     : null;
   const states = [
@@ -126,7 +130,7 @@ export function exampleTasks(team, members, scenario, now = Date.now()) {
     'DONE',
     'DONE',
   ];
-  return capstoneTasks.map(([title, description, contribution], index) => {
+  const tasks = capstoneTasks.map(([title, description, contribution], index) => {
     const assignees = index === 1
       ? [{ userId: lead, allocationPercent: 60 }, { userId: second, allocationPercent: 40 }]
       : index === 3 && exhibitionReviewer
@@ -160,6 +164,10 @@ export function exampleTasks(team, members, scenario, now = Date.now()) {
         states[index] === 'IN_PROGRESS' ? null : 'INVALID_TASK_STATE',
     };
   });
+  if (projectRecordsAt && team.id === previewTeams[0].id && members.length >= 3) {
+    tasks.push(...capstoneProjectTasks(team.id, members, projectRecordsAt, now));
+  }
+  return tasks;
 }
 
 export const capstonePermissionChecklist = [
@@ -170,8 +178,8 @@ export const capstonePermissionChecklist = [
   '- 공개 리포트에서 일반 팀원은 본인 결과를 확인한다.',
 ].join('\n');
 
-export function exampleDeliverables(team, tasks, members) {
-  return [
+export function exampleDeliverables(team, tasks, members, now = Date.now()) {
+  const deliverables = [
     {
       id: team.id * 1000 + 1,
       teamId: team.id,
@@ -243,7 +251,8 @@ export function exampleDeliverables(team, tasks, members) {
   ].map((item) => ({
     ...item,
     authorId: item.authorId ?? members[0]?.userId,
-    createdAt: koreanDateTime(),
-    updatedAt: koreanDateTime(),
+    createdAt: koreanDateTime(now),
+    updatedAt: koreanDateTime(now),
   }));
+  return deliverables;
 }

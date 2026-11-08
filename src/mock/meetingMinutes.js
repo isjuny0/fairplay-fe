@@ -1,6 +1,7 @@
 import { koreanDateTime } from "../lib/koreanTime.js";
 import { validateMeetingMinute } from "../lib/meetingMinutes.js";
 import { MockError } from "./planned.js";
+import { capstoneProjectMeetings } from "./capstoneProject.js";
 import { capstoneReviewDate } from "./fixtures.js";
 
 const fail = (code, message, status = 409) => {
@@ -18,23 +19,29 @@ export function previewMeetingMinutes(
   body,
 ) {
   // Seed once; an empty collection after deletion remains empty, including after reload.
-  state.meetingMinutes ??= Object.values(state.teams)
-    .filter((entry) => entry.members.length)
-    .map((entry) => ({
-      id: entry.team.id,
-      teamId: entry.team.id,
-      title: entry.team.id === 1 ? "UI/UX 회의" : "주간 진행 상황 공유",
-      meetingAt: `${capstoneReviewDate}T12:00:00`,
-      authorId: entry.members[0].userId,
-      authorName: entry.members[0].name,
-      attendees: entry.members.map(({ userId, name }) => ({ userId, name })),
-      agenda: "- 스페이스 홈과 팀 이동 흐름 확인\n- 작업 보드와 상세 화면 개선",
-      content: "팀 홈의 지표 설명, 작업 상세 댓글, 결과물 등록 화면의 개선 항목을 정리했습니다.",
-      decisions: "- 완료 승인 제거와 완료 작업의 수정 흐름을 화면에 반영합니다.\n- 주요 화면의 제목과 레이아웃을 맞춥니다.",
-      version: 0,
-      createdAt: `${capstoneReviewDate}T12:00:00`,
-      updatedAt: `${capstoneReviewDate}T12:00:00`,
-    }));
+  if (!state.meetingMinutes) {
+    state.meetingMinutes = Object.values(state.teams)
+      .filter((entry) => entry.members.length)
+      .map((entry) => ({
+        id: entry.team.id,
+        teamId: entry.team.id,
+        title: entry.team.id === 1 ? "UI/UX 회의" : "주간 진행 상황 공유",
+        meetingAt: `${capstoneReviewDate}T12:00:00`,
+        authorId: entry.members[0].userId,
+        authorName: entry.members[0].name,
+        attendees: entry.members.map(({ userId, name }) => ({ userId, name })),
+        agenda: "- 스페이스 홈과 팀 이동 흐름 확인\n- 작업 보드와 상세 화면 개선",
+        content: "팀 홈의 지표 설명, 작업 상세 댓글, 결과물 등록 화면의 개선 항목을 정리했습니다.",
+        decisions: "- 완료 승인 제거와 완료 작업의 수정 흐름을 화면에 반영합니다.\n- 주요 화면의 제목과 레이아웃을 맞춥니다.",
+        version: 0,
+        createdAt: `${capstoneReviewDate}T12:00:00`,
+        updatedAt: `${capstoneReviewDate}T12:00:00`,
+      }));
+    const projectTeam = state.teams[1];
+    if (state.projectRecordsAt && projectTeam?.members.length >= 3) {
+      state.meetingMinutes.push(...capstoneProjectMeetings(projectTeam.team, projectTeam.members, state.projectRecordsAt));
+    }
+  }
   const byTeam = parts[1] === "teams";
   if (!positiveId(parts[2]) || parts.length !== (byTeam ? 4 : 3))
     fail("INVALID_REQUEST", "회의록 경로를 확인해 주세요.", 400);

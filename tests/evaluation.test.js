@@ -50,14 +50,40 @@ test('적극성 표시 이름은 기존 collaboration API 키를 유지한다', 
   });
 });
 
+test('미리보기 상황을 바꿔도 캡스톤 프로젝트 기록은 동일하다', async () => {
+  const leader = context('leader');
+  let shared;
+  for (const [scenario, roundStatuses, reportStatus] of [
+    ['building', [], null],
+    ['setup', [], null],
+    ['active', ['CLOSED', 'OPEN'], null],
+    ['evaluated', ['CLOSED', 'CLOSED'], null],
+    ['review', ['CLOSED', 'CLOSED'], 'UNPUBLISHED'],
+    ['published', ['CLOSED', 'CLOSED'], 'PUBLISHED'],
+  ]) {
+    resetMockState(leader, scenario);
+    const meetings = await previewRequest('/api/teams/1/meeting-minutes');
+    const { teams, calendarEvents, reports, rounds, submitted } = getMockState(leader);
+    const { tasks, deliverables } = teams[1];
+    assert.equal(tasks.length, 14);
+    assert.equal(deliverables.length, 10);
+    const project = { teams, meetings, calendarEvents };
+    shared ??= project;
+    assert.deepEqual(project, shared);
+    assert.deepEqual(rounds.map((round) => round.status), roundStatuses);
+    assert.deepEqual(reports.map((report) => report.status), reportStatus ? [reportStatus, reportStatus] : []);
+    if (!rounds.length) assert.deepEqual(submitted, {});
+  }
+});
+
 test('작업 현황은 가중치와 본인 배분을 반영하며 분모가 없으면 null이다', () => {
   const leader = context('leader');
   const tasks = getMockState(leader).teams[1].tasks;
   const summary = workSummary(1, leader.user.id, tasks);
-  assert.equal(summary.teamProgressRate, 50);
-  assert.equal(summary.myAssignedShare, 70);
-  assert.equal(summary.myCompletedContributionRate, 40);
-  assert.equal(summary.myTaskCompletionRate, 57.14);
+  assert.equal(summary.teamProgressRate, 53.19);
+  assert.equal(summary.myAssignedShare, 54.57);
+  assert.equal(summary.myCompletedContributionRate, 32.45);
+  assert.equal(summary.myTaskCompletionRate, 59.45);
   assert.equal(
     workSummary(1, 'not-assigned', tasks).myTaskCompletionRate,
     null,
@@ -183,7 +209,7 @@ test('리포트 생성과 공개는 해당 팀 제출만 확인하고 AI 점수�
     method: 'POST',
   });
   assert.equal(report.members.length, 3);
-  assert.equal(report.members[0].details.taskRatioPercent, 80);
+  assert.equal(report.members[0].details.taskRatioPercent, 61);
   assert.equal(report.members[0].details.taskWeightedScore, 70);
   assert.equal(report.members[0].details.aiRatioPercent, undefined);
   const current = getMockState(manager);
@@ -1184,7 +1210,7 @@ test('종합 평가 예시는 개인별 점수를 계산하며 팀 합계를 100
   const { validReportScore } = await import('../src/lib/reportScore.js');
   assert.equal(validReportScore(report), true);
   assert.equal(report.evaluatedMemberCount, 3);
-  assert.equal(report.members[0].details.taskRatioPercent, 80);
+  assert.equal(report.members[0].details.taskRatioPercent, 61);
   assert.equal(report.members[0].details.taskScore, 100);
   assert.ok(report.members.reduce((sum, member) => sum + member.totalScore, 0) > 100);
   for (const member of report.members) {
