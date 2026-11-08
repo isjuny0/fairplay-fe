@@ -286,11 +286,16 @@ test('AI 검토는 현재 담당자만 조회·실행할 수 있다', async () =
   assert.equal(completed.reviewedSources[0].version, reviewedSource.version);
   assert.equal('improvements' in completed, false);
   assert.equal('completesAt' in completed, false);
-  const changedState = getMockState(context('leader'));
-  changedState.teams[1].deliverables.find((item) => item.id === reviewedSource.id).version++;
-  changedState.reviews[102].isCurrent = false;
-  saveMockState(context('leader'), changedState);
+  const { task: beforeEdit } = await previewRequest('/api/tasks/102');
+  const updatedSource = await previewRequest(`/api/deliverables/${reviewedSource.id}`, {
+    method: 'PATCH',
+    body: { expectedVersion: reviewedSource.version, text: '피드백을 참고해 수정한 새 결과물 본문입니다.' },
+  });
+  const { task: afterEdit, deliverableSummary } = await previewRequest('/api/tasks/102');
+  assert.equal(afterEdit.version, beforeEdit.version + 1);
+  assert.equal(deliverableSummary.find((item) => item.id === reviewedSource.id).version, updatedSource.version);
   const previousFeedback = await previewRequest('/api/tasks/102/ai-review');
+  assert.equal(previousFeedback.isCurrent, false);
   assert.equal(previousFeedback.reviewedSources[0].version, reviewedSource.version);
   assert.equal(previousFeedback.completedAt, completed.completedAt);
   context('teammate');

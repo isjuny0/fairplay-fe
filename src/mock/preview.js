@@ -175,6 +175,14 @@ function previewTaskResponse(state, context, entry, task) {
   return { ...task, completionBlockReason };
 }
 
+function updateLinkedTaskAfterDeliverableChange(state, entry, taskId, updatedAt, reviewInputChanged) {
+  const task = entry.tasks.find((item) => item.id === taskId);
+  if (!task) return;
+  task.version++;
+  task.updatedAt = updatedAt;
+  if (reviewInputChanged) invalidateReview(state, task.id);
+}
+
 async function executePreviewRequest(
   path,
   { method = 'GET', body, responseType } = {},
@@ -544,7 +552,7 @@ async function executePreviewRequest(
       };
       if (body instanceof FormData) fileContents.set(item.id, body.get('file'));
       entry.deliverables.push(item);
-      invalidateReview(state, item.taskId);
+      updateLinkedTaskAfterDeliverableChange(state, entry, item.taskId, item.updatedAt, true);
       result = item;
     } else if (parts[3] === 'deletion-request') {
       const deletion =
@@ -794,7 +802,7 @@ async function executePreviewRequest(
           ? capstonePermissionChecklist : '미리보기 자료입니다.'], { type: 'text/plain' })
       );
     if (method === 'DELETE') {
-      invalidateReview(state, item.taskId);
+      updateLinkedTaskAfterDeliverableChange(state, entry, item.taskId, koreanDateTime(), true);
       entry.deliverables = entry.deliverables.filter(
         (deliverable) => deliverable.id !== id,
       );
@@ -810,11 +818,8 @@ async function executePreviewRequest(
           '다른 사용자가 먼저 자료를 수정했습니다.',
           409,
         );
-      if (
-        body instanceof FormData ||
-        (metadata.text != null && metadata.text !== item.text)
-      )
-        invalidateReview(state, item.taskId);
+      const reviewInputChanged =
+        body instanceof FormData || (metadata.text != null && metadata.text !== item.text);
       if (body instanceof FormData) {
         Object.assign(item, metadata);
         const file = body.get('file');
@@ -827,6 +832,7 @@ async function executePreviewRequest(
       } else Object.assign(item, metadata);
       item.version++;
       item.updatedAt = koreanDateTime();
+      updateLinkedTaskAfterDeliverableChange(state, entry, item.taskId, item.updatedAt, reviewInputChanged);
       result = item;
     }
   } else if (parts[1] === 'team-deletion-requests') {
