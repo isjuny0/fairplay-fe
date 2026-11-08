@@ -344,6 +344,7 @@ async function backend(
       });
     if (path === '/api/tasks/10/ai-review') {
       if (method === 'POST') {
+        const now = koreanDateTime(await page.evaluate(() => Date.now()));
         review = {
           id: 1,
           taskId: 10,
@@ -357,8 +358,8 @@ async function backend(
           limitations: [],
           failureCode: null,
           failureDeliverableId: null,
-          createdAt: '2026-10-14T19:00:00',
-          updatedAt: '2026-10-14T19:00:00',
+          createdAt: now,
+          updatedAt: now,
         };
         return respond(review, 202);
       }
@@ -843,7 +844,7 @@ test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이
     failureCode: null,
     failureDeliverableId: null,
   });
-  await page.clock.fastForward(5100);
+  await page.clock.fastForward(2100);
   await expect(page.getByText('실제 응답 검토 요약')).toBeVisible();
   await expect(page.getByRole('button', { name: '검토 범위 확인', exact: true })).toHaveCount(0);
   await expect(page.locator('.ai-review-panel').getByText(/버전 \d/)).toHaveCount(0);
@@ -961,7 +962,7 @@ test('AI 검토는 진행 중에만 조회하고 실패 결과 이후 반복 조
     failureCode: 'DOCUMENT_UNREADABLE',
     failureDeliverableId: 40,
   });
-  await page.clock.fastForward(5100);
+  await page.clock.fastForward(2100);
   await expect(page.getByText('검토 실패', { exact: true })).toBeVisible();
   await expect(page.getByText(/연결된 결과물을 확인해 주세요/)).toBeVisible();
   const terminalRequestCount = requests.filter((request) =>
@@ -979,7 +980,7 @@ test('AI 검토는 진행 중에만 조회하고 실패 결과 이후 반복 조
 test('AI 상태 조회 오류는 자동 조회를 멈추고 다시 불러오기로 GET만 재시도한다', async ({ page }) => {
   await page.clock.install();
   const { requests, setReview } = await backend(page);
-  setReview({ id: 1, taskId: 10, status: 'PENDING', isCurrent: true });
+  setReview({ id: 1, taskId: 10, status: 'PENDING', isCurrent: true, createdAt: koreanDateTime() });
   await page.goto('/spaces/1/teams/1/tasks/10');
   await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
   await expect(page.getByText('검토 대기', { exact: true })).toBeVisible();
@@ -993,7 +994,7 @@ test('AI 상태 조회 오류는 자동 조회를 멈추고 다시 불러오기�
       : { json: { id: 1, taskId: 10, status: 'COMPLETED', isCurrent: true,
         summary: '이미 완료된 피드백입니다.', findings: [], strengths: [], limitations: [], reviewedSources: [], completedAt: null } });
   });
-  await page.clock.fastForward(5100);
+  await page.clock.fastForward(2100);
   const panel = page.getByRole('region', { name: 'AI 피드백', exact: true });
   await expect(panel.getByRole('alert')).toContainText('피드백 상태를 불러오지 못했습니다.');
   await expect(panel.locator('.ai-review-heading button')).toHaveCount(0);
