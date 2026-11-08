@@ -57,7 +57,14 @@ test('수업·동아리의 여러 팀 운영과 팀 협업을 밝은 색감으�
   await expect(page.locator('.landing-workflow-grid p').last()).toContainText('숫자 하나로 단정하는 대신');
   await expect(page.locator('.landing-workflow-grid p').nth(1)).toContainText('AI 피드백');
   await expect(page.locator('.landing-bottom-cta h2')).toHaveText('여러 팀의 시작부터,함께한 과정의 마무리까지.');
-  await expect(page.locator('.landing-bottom-cta')).toHaveCSS('background-color', 'rgb(236, 250, 243)');
+  await expect(page.locator('.landing-bottom-cta')).toHaveCSS('background-color', 'rgb(2, 106, 82)');
+  await expect(page.locator('.landing-bottom-cta')).toHaveCSS('color', 'rgb(255, 255, 255)');
+  await expect(page.locator('.landing-bottom-cta .landing-button')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(page.locator('.landing-header').getByRole('link', { name: '시작하기', exact: true })).toHaveCount(0);
+  await expect(page.locator('.landing-header').getByRole('link', { name: '로그인', exact: true })).toBeVisible();
+  await expect(page.locator('.landing-space-node')).toHaveCSS('background-color', 'rgb(8, 124, 85)');
+  await expect(page.locator('.landing-space-node')).toHaveCSS('color', 'rgb(255, 255, 255)');
+  await expect(page.locator('.landing-space-node span')).toHaveCSS('color', 'rgb(255, 255, 255)');
   await expect(page.locator('.landing-process, .landing-principle, .showcase-intro, .showcase-story')).toHaveCount(0);
   await expect(page.locator('.landing-hero-art')).toHaveCount(0);
   await expect(page.locator('.landing-workflow-grid article').first()).toHaveCSS('border-radius', '0px');
@@ -69,6 +76,7 @@ test('수업·동아리의 여러 팀 운영과 팀 협업을 밝은 색감으�
   await expect(page.locator('.landing-footer .brand-logo')).toBeVisible();
   await expect(page.locator('.hero-visual-backdrop > .hero-visual-board')).toHaveCount(1);
   await expect(page.locator('.hero-visual-backdrop')).toHaveCSS('border-top-width', '1px');
+  await expect(page.locator('.hero-visual-backdrop')).toHaveCSS('transform', 'none');
   await expect(page.getByRole('button', { name: '미리보기 설정', exact: true })).toHaveCount(0);
 });
 
@@ -266,7 +274,7 @@ test('Google 인증 성공 후 소개 화면이 아닌 스페이스 목록으로
   await expect(page).toHaveURL('/main');
 });
 
-for (const width of [320, 375, 768, 1440]) {
+for (const width of [320, 375, 768, 1280, 1440]) {
   test(`${width}px 화면에서 예시 패널과 소개 페이지가 가로로 잘리지 않는다`, async ({
     page,
   }, testInfo) => {
@@ -310,6 +318,8 @@ for (const width of [320, 375, 768, 1440]) {
       ).toBe(true);
     }
     await page.locator('.landing-hero').screenshot({ path: testInfo.outputPath('landing-introduction.png'), animations: 'disabled' });
+    await expect(page.locator('.hero-visual-backdrop')).toHaveCSS('transform', 'none');
+    await expect(page.locator('.hero-visual-board')).not.toHaveCSS('transform', 'none');
     for (const [selector, name] of [['.landing-use-cases', 'use-cases'], ['.landing-space-section', 'space-structure'], ['.landing-manager', 'manager']]) {
       const section = page.locator(selector);
       await expect(section).toBeVisible();
@@ -317,10 +327,48 @@ for (const width of [320, 375, 768, 1440]) {
       await section.screenshot({ path: testInfo.outputPath(`landing-${name}.png`), animations: 'disabled' });
     }
     await page.locator('.landing-workflow').screenshot({ path: testInfo.outputPath('landing-benefits.png'), animations: 'disabled' });
+    const cta = page.locator('.landing-bottom-cta');
+    expect(await cta.locator('h2').evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeLessThanOrEqual(20);
+    await expect(cta.locator('p').first()).toHaveCSS('font-size', '11px');
+    await cta.screenshot({ path: testInfo.outputPath('landing-start-card.png'), animations: 'disabled' });
+    const layout = await page.evaluate(() => {
+      const hero = document.querySelector('.landing-hero-inner');
+      const cta = document.querySelector('.landing-bottom-cta');
+      const workflow = document.querySelector('.landing-workflow');
+      return {
+        heroWidth: hero.getBoundingClientRect().width,
+        headlineSize: parseFloat(getComputedStyle(hero.querySelector('h1')).fontSize),
+        ctaHeight: cta.getBoundingClientRect().height,
+        ctaGap: cta.getBoundingClientRect().top - workflow.getBoundingClientRect().bottom,
+      };
+    });
+    if (width >= 1280) {
+      expect(layout.heroWidth).toBeLessThanOrEqual(1200);
+      expect(layout.headlineSize).toBeLessThanOrEqual(42);
+      expect(layout.ctaHeight).toBeLessThan(220);
+      expect(layout.ctaGap).toBeGreaterThanOrEqual(150);
+      const tagline = page.locator('.landing-cta-tagline');
+      await expect(tagline).toHaveText('관리자에게는 전체를 보는 시야를, 팀원에게는 노력이 남는 기록을.');
+      expect(await tagline.evaluate((element) => element.getBoundingClientRect().height / parseFloat(getComputedStyle(element).lineHeight))).toBeCloseTo(1, 1);
+    }
+    expect(layout.ctaGap).toBeGreaterThanOrEqual(100);
     await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
     await page.screenshot({ path: testInfo.outputPath('landing-full-page.png'), fullPage: true, animations: 'disabled' });
   });
 }
+
+test('소개 문구는 원문을 유지하고 의미 단위로 줄바꿈한다', async ({ page }) => {
+  await page.goto('/');
+  const description = page.locator('.landing-space-copy > p').last();
+  expect(await description.textContent()).toBe('수업이나 동아리를 하나의 ‘스페이스’로 구성하고,\n그 안에서 여러 팀이 각자의 프로젝트를 진행합니다.');
+  await expect(description).toHaveCSS('white-space', 'pre-line');
+  for (const selector of ['.landing-use-case-grid p', '.landing-workflow-grid p', '.landing-manager-copy > p:not(.landing-eyebrow)', '.landing-role-list dd']) {
+    for (const element of await page.locator(selector).all()) {
+      expect(await element.textContent()).toContain('\n');
+      await expect(element).toHaveCSS('white-space', 'pre-line');
+    }
+  }
+});
 
 for (const width of [1440, 1920]) {
   test(`${width}px 데스크톱 실제 화면은 16:9 비율이며 전환해도 높이가 유지된다`, async ({

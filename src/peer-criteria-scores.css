@@ -9,6 +9,7 @@
 .peer-criteria-scores dd .is-unavailable { margin-left: auto; width: auto; font-size: 12px; color: var(--text-muted); font-weight: 400; }
 .peer-criteria-track { height: 6px; flex: 1; background: #edf1ef; overflow: hidden; border-radius: 2px; }
 .peer-criteria-track > span { display: block; height: 100%; background: #66869d; }
+.mid-feedback-page .peer-criteria-track > span { background: #2563eb; }
 @media (max-width: 720px) {
   .peer-criteria-scores > div { grid-template-columns: 80px minmax(0, 1fr); gap: 16px; }
   .peer-criteria-scores dd { gap: 12px; }
