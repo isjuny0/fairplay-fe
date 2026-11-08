@@ -6,29 +6,77 @@ async function freezeClock(page) {
   await page.clock.pauseAt(new Date('2026-10-18T12:00:01Z'));
 }
 
-test('예시 창은 맥 창 색상과 작업 상태·파일 종류별 색상을 유지한다', async ({
+test('기능 소개는 가상 UI 대신 실제 서비스 캡처를 표시한다', async ({
   page,
 }) => {
+  await freezeClock(page);
   await page.goto('/');
   const dots = page.locator('.showcase-window-dots i');
   await expect(dots.nth(0)).toHaveCSS('background-color', 'rgb(255, 95, 87)');
   await expect(dots.nth(1)).toHaveCSS('background-color', 'rgb(254, 188, 46)');
   await expect(dots.nth(2)).toHaveCSS('background-color', 'rgb(40, 200, 64)');
-  const colors = await page
-    .locator('.showcase-column-heading')
-    .evaluateAll((elements) =>
-      elements.map((element) => getComputedStyle(element).color),
-    );
-  expect(new Set(colors).size).toBe(4);
+  await expect(page.locator('.showcase-board, .showcase-sidebar, .showcase-chart')).toHaveCount(0);
+  await expect(page.locator('.showcase-example-badge')).toHaveText('실제 서비스 화면');
+  await expect(page.locator('.showcase-slide img')).toHaveCount(3);
+  await expect.poll(() => page.locator('.showcase-slide img').evaluateAll((images) => images.every((image) => image.complete && image.naturalWidth === 2880 && image.naturalHeight === 1620))).toBe(true);
+  await expect(activeSlide(page).getByRole('img')).toHaveAttribute('src', /\/landing\/tasks-desktop\.jpg\?v=.+/);
   await page.getByRole('button', { name: '팀 자료', exact: true }).click();
-  await expect(page.locator('[data-file-type="pdf"] svg').first()).toHaveCSS(
-    'color',
-    'rgb(209, 92, 88)',
-  );
-  await expect(page.locator('[data-file-type="design"] svg')).toHaveCSS(
-    'color',
-    'rgb(133, 100, 182)',
-  );
+  await expect(activeSlide(page).getByRole('img')).toHaveAttribute('src', /\/landing\/materials-desktop\.jpg\?v=.+/);
+  await page.getByRole('button', { name: '기여도 리포트', exact: true }).click();
+  await expect(activeSlide(page).getByRole('img')).toHaveAttribute('src', /\/landing\/report-desktop\.jpg\?v=.+/);
+  const revisions = await page.locator('.landing-page img[src*="/landing/"], .landing-page source[srcset*="/landing/"]').evaluateAll((elements) =>
+    elements.map((element) => new URL(element.getAttribute('src') || element.getAttribute('srcset'), location.href).searchParams.get('v')));
+  expect(revisions.every(Boolean)).toBe(true);
+  expect(new Set(revisions).size).toBe(1);
+});
+
+test('수업·동아리의 여러 팀 운영과 팀 협업을 밝은 색감으로 소개한다', async ({ page }) => {
+  await freezeClock(page);
+  await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('여러 팀의 활동을 한 공간에서,함께한 기여까지 선명하게.');
+  await expect(page.locator('.landing-hero-description')).toContainText('수업·동아리·프로젝트 프로그램');
+  await expect(page.locator('.landing-use-case-grid h3')).toHaveText(['수업과 캡스톤디자인', '동아리와 학회', '스터디와 프로젝트 모임']);
+  const accents = ['rgb(0, 168, 107)', 'rgb(37, 99, 235)', 'rgb(250, 204, 21)'];
+  for (const [index, color] of accents.entries()) {
+    const card = page.locator('.landing-use-case-grid article').nth(index);
+    await expect(card).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    await expect(card).toHaveCSS('border-top-width', '1px');
+    await expect(card).toHaveCSS('border-top-color', color);
+    await expect(card.locator('.landing-use-case-icon')).toHaveCSS('color', color);
+    await expect(card.locator('.landing-use-case-icon')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  }
+  const structure = page.getByRole('figure', { name: '하나의 스페이스 안에 여러 팀이 있는 구조 예시' });
+  await expect(structure.locator('.landing-team-node strong')).toHaveText(['A팀', 'B팀', 'C팀']);
+  await expect(page.locator('.landing-role-list dt')).toHaveText(['관리자', '팀 리더·팀원']);
+  await expect(page.locator('#manager-title')).toHaveText('팀이 많아져도,진행 상황을 놓치지 않도록.');
+  await expect(page.locator('.landing-manager-copy li')).toHaveText(['전체 공지사항과 참여자·팀 구성 관리', '팀별 작업 진행 상황과 등록 자료 확인', '동료 평가 일정과 팀별 제출 현황 관리']);
+  const managerImage = page.locator('.landing-manager-screen img');
+  await managerImage.scrollIntoViewIfNeeded();
+  await expect.poll(() => managerImage.evaluate((image) => image.complete && image.naturalWidth === 2880)).toBe(true);
+  await expect(page.locator('.landing-workflow-grid h3')).toHaveText(['무엇을 맡고, 어디까지 했는지 명확하게.', '결과물과 그 과정을 함께 남기세요.', '함께한 노력을, 기억이 아닌 기록으로.']);
+  await expect(page.locator('.landing-workflow-grid p').last()).toContainText('숫자 하나로 단정하는 대신');
+  await expect(page.locator('.landing-workflow-grid p').nth(1)).toContainText('AI 피드백');
+  await expect(page.locator('.landing-bottom-cta h2')).toHaveText('여러 팀의 시작부터,함께한 과정의 마무리까지.');
+  await expect(page.locator('.landing-bottom-cta')).toHaveCSS('background-color', 'rgb(236, 250, 243)');
+  await expect(page.locator('.landing-process, .landing-principle, .showcase-intro, .showcase-story')).toHaveCount(0);
+  await expect(page.locator('.landing-hero-art')).toHaveCount(0);
+  await expect(page.locator('.landing-workflow-grid article').first()).toHaveCSS('border-radius', '0px');
+  await expect(page.locator('.landing-hero .landing-eyebrow')).toHaveCSS('padding', '0px');
+  await expect(page.locator('.landing-feature-preview')).toHaveCount(0);
+  await expect(page.locator('.landing-feature-visual img')).toHaveCount(3);
+  await expect(page.locator('.landing-hero-visual')).toHaveAttribute('aria-hidden', 'true');
+  await expect(page.locator('.landing-footer')).not.toContainText('팀의 과정에 기록을, 기여에 근거를.');
+  await expect(page.locator('.landing-footer .brand-logo')).toBeVisible();
+  await expect(page.locator('.hero-visual-backdrop > .hero-visual-board')).toHaveCount(1);
+  await expect(page.locator('.hero-visual-backdrop')).toHaveCSS('border-top-width', '1px');
+  await expect(page.getByRole('button', { name: '미리보기 설정', exact: true })).toHaveCount(0);
+});
+
+test('소개용 캡처를 정리해도 실제 서비스의 미리보기 버튼은 유지한다', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('fairplay:preview-role', 'leader'));
+  await page.goto('/preview/spaces/1/teams/1/tasks');
+  await expect(page.getByRole('heading', { name: '작업', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '미리보기 설정', exact: true })).toBeVisible();
 });
 
 test('소개 메인은 서버 요청 없이 열리고 기존 로그인 화면으로 연결된다', async ({
@@ -46,7 +94,7 @@ test('소개 메인은 서버 요청 없이 열리고 기존 로그인 화면으
   );
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toContainText(
-    '함께 만드는 프로젝트,',
+    '여러 팀의 활동을 한 공간에서,',
   );
   await expect(
     page.getByRole('heading', { name: '내 스페이스', exact: true }),
@@ -71,7 +119,7 @@ test('소개 메인은 서버 요청 없이 열리고 기존 로그인 화면으
   await expect(page).toHaveURL('/');
 });
 
-test('예시는 자동 전환 없이 탭을 선택할 때만 페이드 전환된다', async ({
+test('실제 기능 화면은 정확히 3초 간격으로 전환하고 처음으로 순환한다', async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -81,16 +129,12 @@ test('예시는 자동 전환 없이 탭을 선택할 때만 페이드 전환된
     'aria-label',
     '1 / 3 · 작업보드',
   );
-  await page.clock.fastForward(15000);
+  await page.clock.runFor(2999);
   await expect(activeSlide(page)).toHaveAttribute(
     'aria-label',
     '1 / 3 · 작업보드',
   );
-  await expect(page.getByText('5초마다 자동 전환')).toHaveCount(0);
-  await expect(
-    page.getByRole('button', { name: /예시 자동 전환/ }),
-  ).toHaveCount(0);
-  await page.getByRole('button', { name: '팀 자료', exact: true }).click();
+  await page.clock.runFor(1);
   await expect(activeSlide(page)).toHaveAttribute(
     'aria-label',
     '2 / 3 · 팀 자료',
@@ -99,9 +143,7 @@ test('예시는 자동 전환 없이 탭을 선택할 때만 페이드 전환된
     'transition-duration',
     '0.65s, 0.65s',
   );
-  await page
-    .getByRole('button', { name: '기여도 리포트', exact: true })
-    .click();
+  await page.clock.runFor(3000);
   await expect(activeSlide(page)).toHaveAttribute(
     'aria-label',
     '3 / 3 · 기여도 리포트',
@@ -109,6 +151,47 @@ test('예시는 자동 전환 없이 탭을 선택할 때만 페이드 전환된
   await expect(
     page.getByRole('button', { name: '기여도 리포트', exact: true }),
   ).toHaveAttribute('aria-pressed', 'true');
+  await page.clock.runFor(3000);
+  await expect(activeSlide(page)).toHaveAttribute('aria-label', '1 / 3 · 작업보드');
+  await expect(page.locator('.showcase-screen')).toHaveAttribute('aria-live', 'off');
+});
+
+test('자동 전환은 마우스·키보드로 살펴보는 동안 멈추고 영역을 벗어나면 재개한다', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await freezeClock(page);
+  await page.goto('/');
+  await page.locator('#features').hover();
+  await page.clock.runFor(9000);
+  await expect(activeSlide(page)).toHaveAttribute('aria-label', '1 / 3 · 작업보드');
+  await page.mouse.move(0, 0);
+  await page.clock.runFor(3000);
+  await expect(activeSlide(page)).toHaveAttribute('aria-label', '2 / 3 · 팀 자료');
+  await page.getByRole('button', { name: '팀 자료', exact: true }).focus();
+  await page.clock.runFor(9000);
+  await expect(activeSlide(page)).toHaveAttribute('aria-label', '2 / 3 · 팀 자료');
+  await page.getByRole('link', { name: 'Fairplay 시작하기', exact: true }).focus();
+  await page.clock.runFor(3000);
+  await expect(activeSlide(page)).toHaveAttribute('aria-label', '3 / 3 · 기여도 리포트');
+});
+
+test('일시정지·재생과 탭·이전·다음 수동 선택을 지원한다', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await freezeClock(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: '화면 자동 전환 일시정지', exact: true }).click();
+  await page.mouse.move(0, 0);
+  await page.clock.runFor(9000);
+  await expect(activeSlide(page)).toHaveAttribute('aria-label', '1 / 3 · 작업보드');
+  await page.getByRole('button', { name: '이전 기능 화면', exact: true }).click();
+  await expect(activeSlide(page)).toHaveAttribute('aria-label', '3 / 3 · 기여도 리포트');
+  await page.getByRole('button', { name: '다음 기능 화면', exact: true }).click();
+  await expect(activeSlide(page)).toHaveAttribute('aria-label', '1 / 3 · 작업보드');
+  await page.getByRole('button', { name: '팀 자료', exact: true }).click();
+  await expect(activeSlide(page)).toHaveAttribute('aria-label', '2 / 3 · 팀 자료');
+  await page.getByRole('button', { name: '화면 자동 전환 재생', exact: true }).click();
+  await page.locator('.landing-header').hover();
+  await page.clock.runFor(3000);
+  await expect(activeSlide(page)).toHaveAttribute('aria-label', '3 / 3 · 기여도 리포트');
 });
 
 test('모션 감소 설정에서는 자동 전환 없이 수동 선택을 제공한다', async ({
@@ -183,19 +266,20 @@ test('Google 인증 성공 후 소개 화면이 아닌 스페이스 목록으로
   await expect(page).toHaveURL('/main');
 });
 
-for (const width of [375, 768, 1440]) {
+for (const width of [320, 375, 768, 1440]) {
   test(`${width}px 화면에서 예시 패널과 소개 페이지가 가로로 잘리지 않는다`, async ({
     page,
-  }) => {
+  }, testInfo) => {
     await page.setViewportSize({ width, height: 900 });
+    await freezeClock(page);
     await page.goto('/');
     const spacing = await page.locator('.showcase-tabs').evaluate((element) => {
       const tabs = element.getBoundingClientRect();
       return {
         above:
           tabs.top -
-          document.querySelector('.landing-hero').getBoundingClientRect()
-            .bottom,
+          document.querySelector('.showcase-controls').getBoundingClientRect()
+            .top,
         below:
           document.querySelector('.showcase-window').getBoundingClientRect()
             .top - tabs.bottom,
@@ -203,30 +287,48 @@ for (const width of [375, 768, 1440]) {
     });
     expect(spacing.above).toBe(width <= 600 ? 24 : 32);
     expect(spacing.below).toBe(spacing.above);
+    let firstWindowY;
     for (const title of ['작업보드', '팀 자료', '기여도 리포트']) {
       await page.getByRole('button', { name: title, exact: true }).click();
       await expect(activeSlide(page)).toBeVisible();
+      const image = activeSlide(page).getByRole('img');
+      await expect.poll(() => image.evaluate((element) => element.complete && element.naturalWidth > 0)).toBe(true);
+      expect(await image.evaluate((element) => element.currentSrc)).toContain(width <= 600 ? '-mobile.jpg' : '-desktop.jpg');
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= window.innerWidth,
         ),
       ).toBe(true);
+      const y = await page.locator('.showcase-window').evaluate((element) => element.getBoundingClientRect().top + scrollY);
+      if (firstWindowY === undefined) firstWindowY = y;
+      expect(y).toBe(firstWindowY);
+      await page.locator('#features').screenshot({ path: testInfo.outputPath(`actual-screen-${title}.png`), animations: 'disabled' });
       expect(
         await activeSlide(page).evaluate(
           (element) => element.scrollHeight <= element.clientHeight,
         ),
       ).toBe(true);
     }
+    await page.locator('.landing-hero').screenshot({ path: testInfo.outputPath('landing-introduction.png'), animations: 'disabled' });
+    for (const [selector, name] of [['.landing-use-cases', 'use-cases'], ['.landing-space-section', 'space-structure'], ['.landing-manager', 'manager']]) {
+      const section = page.locator(selector);
+      await expect(section).toBeVisible();
+      expect(await section.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+      await section.screenshot({ path: testInfo.outputPath(`landing-${name}.png`), animations: 'disabled' });
+    }
+    await page.locator('.landing-workflow').screenshot({ path: testInfo.outputPath('landing-benefits.png'), animations: 'disabled' });
+    await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+    await page.screenshot({ path: testInfo.outputPath('landing-full-page.png'), fullPage: true, animations: 'disabled' });
   });
 }
 
 for (const width of [1440, 1920]) {
-  test(`${width}px 데스크톱 예시 창은 16:9 모니터 비율이다`, async ({
+  test(`${width}px 데스크톱 실제 화면은 16:9 비율이며 전환해도 높이가 유지된다`, async ({
     page,
   }) => {
     await page.setViewportSize({ width, height: 1080 });
     await page.goto('/');
-    const window = page.locator('.showcase-window');
+    const window = page.locator('.showcase-screen');
     await expect(window).toBeVisible();
     const bounds = await window.boundingBox();
     expect(bounds.width / bounds.height).toBeCloseTo(16 / 9, 2);

@@ -73,9 +73,10 @@
 .report-score-total > :not(.report-total-ring) { position: relative; }
 .report-score-total .preview-guide-report-confirm { position: absolute; top: calc(100% + 12px); white-space: nowrap; }
 .report-personal-summary:has(.preview-guide-report-confirm) { padding-bottom: 64px; }
-.report-component-color--task { background: #087c55; }
-.report-component-color--mid { background: #66869d; }
-.report-component-color--final { background: #b19a64; }
+.report-component-color--task { background: #00a86b; }
+.report-component-color--mid { background: #2563eb; }
+.report-component-color--final { background: #facc15; }
+.composite-criteria .peer-criteria-track > span { background: #2563eb; }
 .report-composition-track { display: flex; height: 16px; border-radius: 4px; overflow: hidden; background: #edf1ef; margin: 0 0 14px; gap: 2px; }
 .report-composition-track > span { height: 100%; min-width: 0; }
 .report-visual-breakdown > p { margin-bottom: 12px; }
