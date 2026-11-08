@@ -66,7 +66,7 @@ test('미리보기 상황을 바꿔도 캡스톤 프로젝트 기록은 동일�
     const { teams, calendarEvents, reports, rounds, submitted } = getMockState(leader);
     const { tasks, deliverables } = teams[1];
     assert.equal(tasks.length, 14);
-    assert.equal(deliverables.length, 10);
+    assert.equal(deliverables.length, 12);
     const project = { teams, meetings, calendarEvents };
     shared ??= project;
     assert.deepEqual(project, shared);

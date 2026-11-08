@@ -51,7 +51,7 @@ for (const width of [1920, 1440, 1280, 900, 721, 390, 320]) {
     await page.screenshot({ path: testInfo.outputPath('compact-team-summary.png'), animations: 'disabled' });
     expect(await overview.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    await expect(page.getByRole('navigation', { name: '팀 조회 바로가기' }).getByRole('button')).toHaveText(['작업 보기', '팀 자료 보기10개']);
+    await expect(page.getByRole('navigation', { name: '팀 조회 바로가기' }).getByRole('button')).toHaveText(['작업 보기', '팀 자료 보기12개']);
     await page.getByRole('button', { name: '← 팀 목록', exact: true }).click();
     await expect(page.getByRole('heading', { name: '팀 관리', exact: true })).toBeVisible();
     await expect(page.locator('.manager-dashboard--team')).toHaveCount(0);
