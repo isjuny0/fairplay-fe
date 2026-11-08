@@ -51,9 +51,9 @@ export const noEvidenceMessage = (reason) =>
     NO_READY_SOURCES:
       '검색 준비가 끝난 자료가 없습니다. 자료 준비 현황을 확인해 주세요.',
     NO_RELEVANT_SOURCES:
-      '질문과 관련된 근거를 찾지 못했습니다. 기능명이나 문서 내용을 구체적으로 적어 보세요.',
-    NO_EVIDENCE: '등록된 자료만으로는 답변을 뒷받침할 수 없습니다.',
-  })[reason] || '등록된 자료에서 확인할 수 없습니다.';
+      '기능명이나 문서 제목을 넣어 질문을 구체화해 보세요.',
+    NO_EVIDENCE: '확인할 항목을 하나씩 나누어 질문해 보세요.',
+  })[reason] || '질문을 구체화하거나 검색 가능한 자료를 확인해 보세요.';
 export function sourceLocation(reference) {
   if (Number.isInteger(reference.pageNumber)) return `PDF ${reference.pageNumber}페이지`;
   return `${reference.headingPath?.join(' › ') || '본문'} · ${reference.startLine}–${reference.endLine}행`;

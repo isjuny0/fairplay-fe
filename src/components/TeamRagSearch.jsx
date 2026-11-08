@@ -1,5 +1,5 @@
 import { usePreviewGuide } from '../lib/previewGuideContext.js';
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   ArrowUp,
   ArrowUpRight,
@@ -21,21 +21,25 @@ import { ErrorNotice } from './ui.jsx';
 import MarkdownBody from './MarkdownBody.jsx';
 import RagSourcePanel from './RagSourcePanel.jsx';
 import RagMaterialList from './RagMaterialList.jsx';
+import { RagConversationContext } from './RagConversationContext.js';
 import '../team-rag.css';
 
 export default function TeamRagSearch({ context }) {
-  const { team, user } = context;
+  const { space, team } = context;
   const guide = usePreviewGuide();
-  return <TeamMaterialSearch key={`${team.id}:${user.id}:${guide?.scope || 'free'}`} context={context} />;
+  const conversationKey = JSON.stringify([space.id, team.id, guide?.scope]);
+  return <TeamMaterialSearch key={conversationKey} context={context} conversationKey={conversationKey} />;
 }
-function TeamMaterialSearch({ context }) {
+function TeamMaterialSearch({ context, conversationKey }) {
   const { team, space } = context;
   const navigate = useAppNavigate();
   const guide = usePreviewGuide();
   const guidedMaterials = Boolean(guide?.guiding && guide.scenarioId === 'materials-search' && team.id === 1);
-  const [question, setQuestion] = useState('');
-  const [submittedQuestion, setSubmittedQuestion] = useState('');
-  const [result, setResult] = useState(null);
+  const conversations = useContext(RagConversationContext);
+  const [restored] = useState(() => conversations.get(conversationKey));
+  const [question, setQuestion] = useState(restored?.question ?? '');
+  const [submittedQuestion, setSubmittedQuestion] = useState(restored?.submittedQuestion ?? '');
+  const [result, setResult] = useState(restored?.result ?? null);
   const [error, setError] = useState(null);
   const [inputError, setInputError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -43,11 +47,10 @@ function TeamMaterialSearch({ context }) {
   const active = useRef(true);
   const [reference, setReference] = useState(null);
   const [isMaterialsOpen, setMaterialsOpen] = useState(false);
-  const [isSplitView, setSplitView] = useState(false);
   const [statusPage, setStatusPage] = useState(0);
   const input = useRef(null);
   const conversation = useRef(null);
-  const workspace = useRef(null);
+  const composerStart = useRef(null);
   const sidePanel = useRef(null);
   const materialsToggle = useRef(null);
   const status = useResource(
@@ -70,16 +73,20 @@ function TeamMaterialSearch({ context }) {
   const permissionError =
     [401, 403, 404].includes(error?.status) ||
     [401, 403, 404].includes(status.error?.status);
-  const autoRefreshingMaterials = !permissionError && (isSplitView || isMaterialsOpen)
-    && !reference && Boolean(data?.enabled && data.preparingCount > 0) && !status.error;
+  const canSaveConversation = !permissionError && Boolean(data?.enabled && !status.error);
+  const canShowConversation = !permissionError && (!restored || canSaveConversation);
+  const visibleQuestion = canShowConversation ? submittedQuestion : '';
+  const isWelcome = !visibleQuestion && !error;
+  const canShowDraft = !restored || canShowConversation;
+  const visibleDraft = canShowDraft ? question : '';
   useEffect(() => {
-    // Match the workspace container query, including sidebar width changes.
-    const observer = new ResizeObserver(([entry]) => {
-      setSplitView(entry.contentRect.width >= 720);
-    });
-    observer.observe(workspace.current);
-    return () => observer.disconnect();
-  }, []);
+    if (permissionError || data?.enabled === false) {
+      conversations.delete(conversationKey);
+      setResult(null);
+      setSubmittedQuestion('');
+      if (restored) setQuestion('');
+    }
+  }, [conversations, conversationKey, permissionError, data?.enabled, restored]);
   useEffect(() => {
     active.current = true;
     return () => {
@@ -91,16 +98,38 @@ function TeamMaterialSearch({ context }) {
     window.addEventListener('focus', refresh);
     return () => window.removeEventListener('focus', refresh);
   }, [status.reload]);
-  useEffect(() => {
-    if (!autoRefreshingMaterials) return;
-    const timer = window.setInterval(() => {
-      if (document.visibilityState === 'visible') status.reload();
-    }, 5000);
-    return () => window.clearInterval(timer);
-  }, [autoRefreshingMaterials, status.reload]);
-  useEffect(() => {
-    conversation.current?.scrollTo({ top: 0 });
-  }, [submittedQuestion]);
+  const returnScroll = useRef(restored?.scrollTop);
+  useLayoutEffect(() => {
+    if (!visibleQuestion) return;
+    conversation.current?.scrollTo({ top: returnScroll.current ?? 0 });
+    returnScroll.current = undefined;
+  }, [visibleQuestion]);
+  useLayoutEffect(() => {
+    const start = composerStart.current;
+    if (isWelcome || !start) return;
+    composerStart.current = null;
+    const { form, top } = start;
+    const distance = top - form.getBoundingClientRect().top;
+    if (!distance) return;
+    const animation = form.animate?.([
+      { transform: `translateY(${distance}px)` },
+      { transform: 'translateY(0)' },
+    ], { duration: 260, easing: 'cubic-bezier(.2, .7, .3, 1)' });
+    return () => animation?.cancel();
+  }, [isWelcome]);
+  useLayoutEffect(() => {
+    if (!canSaveConversation) return;
+    if (!question && !result && !busy) {
+      conversations.delete(conversationKey);
+      return;
+    }
+    conversations.set(conversationKey, {
+      question: busy ? submittedQuestion : question,
+      submittedQuestion: result ? submittedQuestion : '',
+      result,
+      scrollTop: conversation.current?.scrollTop ?? 0,
+    });
+  }, [conversations, conversationKey, canSaveConversation, question, submittedQuestion, result, busy]);
   const openMaterials = (title = '') =>
     navigate(
       `${teamMenuPath(space.id, team.id, '팀 자료')}${title ? `?${new URLSearchParams({ q: title })}` : ''}`,
@@ -133,6 +162,10 @@ function TeamMaterialSearch({ context }) {
       input.current?.focus();
       return;
     }
+    if (isWelcome && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const form = event.currentTarget;
+      composerStart.current = { form, top: form.getBoundingClientRect().top };
+    }
     busyRef.current = true;
     setBusy(true);
     setError(null);
@@ -159,8 +192,13 @@ function TeamMaterialSearch({ context }) {
       }
     }
   };
-  const startQuestion = (previousQuestion = '') => {
-    setQuestion(previousQuestion);
+  const editQuestion = () => {
+    setQuestion(submittedQuestion);
+    setInputError('');
+    requestAnimationFrame(() => input.current?.focus({ preventScroll: true }));
+  };
+  const startQuestion = () => {
+    setQuestion('');
     setSubmittedQuestion('');
     setInputError('');
     setReference(null);
@@ -204,51 +242,45 @@ function TeamMaterialSearch({ context }) {
         <p className="notice" role="status">
           {data.preparingCount
             ? '자료를 검색할 수 있도록 준비하고 있습니다. 준비가 완료되면 질문할 수 있습니다.'
-            : '검색 가능한 자료가 없습니다. 문서를 작성하거나 UTF-8 TXT·MD, 텍스트가 있는 PDF, Word(.docx)를 등록해 주세요.'}
+            : '검색 가능한 자료가 없습니다. 문서를 작성하거나 UTF-8 TXT·MD, 텍스트가 있는 PDF, Word(.docx) 파일을 등록해 주세요.'}
           <button className="rag-inline-link" onClick={showMaterials}>
             팀 자료 확인
           </button>
         </p>
       )}
-      <div className={`rag-workspace ${isMaterialsOpen ? 'is-materials-open' : ''} ${!submittedQuestion && !error ? 'is-welcome' : ''}`} ref={workspace}>
+      <div className={`rag-workspace ${isMaterialsOpen ? 'is-materials-open' : ''} ${isWelcome ? 'is-welcome' : ''}`}>
         <div className="rag-main">
           <div
             className="rag-conversation"
             ref={conversation}
+            onScroll={(event) => {
+              const saved = conversations.get(conversationKey);
+              if (saved && canSaveConversation) saved.scrollTop = event.currentTarget.scrollTop;
+            }}
             role="region"
             aria-label="질문과 답변"
             tabIndex={0}
           >
-            {!submittedQuestion && !error && (
+            {isWelcome && !(restored?.result && status.loading) && (
               <div className="rag-welcome">
                 <h2>팀 자료에서 어떤 내용을 찾고 있나요?</h2>
-                <div className="rag-examples">
+                <ul className="rag-examples" role="list">
                   {ragExamples.slice(0, 2).map((example) => (
-                    <button
-                      key={example}
-                      disabled={busy || permissionError}
-                      onClick={() => {
-                        setQuestion(example);
-                        setInputError('');
-                        input.current?.focus();
-                      }}
-                    >
-                      {example}<ArrowUpRight size={14} />
-                    </button>
+                    <li key={example}>{example}</li>
                   ))}
-                </div>
+                </ul>
               </div>
             )}
-            {submittedQuestion && !error && !permissionError && (
+            {visibleQuestion && !error && (
               <div className="rag-submitted-question">
                 <div className="rag-question-message">
                   <span className="sr-only">내 질문</span>
-                  <h2>{submittedQuestion}</h2>
+                  <h2>{visibleQuestion}</h2>
                 </div>
                 {!busy && (
                   <button
                     className="rag-message-edit"
-                    onClick={() => startQuestion(submittedQuestion)}
+                    onClick={editQuestion}
                   >
                     질문 수정
                   </button>
@@ -276,7 +308,7 @@ function TeamMaterialSearch({ context }) {
                 </small>
               </div>
             )}
-            {result && !permissionError && (
+            {result && canShowConversation && (
               <article
                 className="rag-answer"
                 aria-label="자료 검색 답변"
@@ -339,7 +371,7 @@ function TeamMaterialSearch({ context }) {
                 ) : (
                   <section className="rag-no-evidence">
                     <FileSearch size={24} />
-                    <h3>등록된 자료에서 확인할 수 없습니다.</h3>
+                    <h3>이번 검색에서 답변 근거를 찾지 못했습니다.</h3>
                     <p>{noEvidenceMessage(result.reason)}</p>
                     <button
                       className="secondary-button"
@@ -361,11 +393,11 @@ function TeamMaterialSearch({ context }) {
               ref={input}
               rows={2}
               maxLength={1000}
-              value={question}
-              disabled={busy || permissionError}
+              value={visibleDraft}
+              disabled={busy || permissionError || !canShowDraft}
               placeholder={busy
                 ? '자료에서 답변을 찾고 있습니다…'
-                : '예: 인터뷰에서 발견한 주요 문제는 무엇인가요?'}
+                : '팀 자료에 대해 질문해 보세요.'}
               aria-invalid={Boolean(inputError)}
               aria-describedby={inputError ? 'rag-input-error' : undefined}
               onChange={(event) => {
@@ -386,8 +418,15 @@ function TeamMaterialSearch({ context }) {
               <p id="rag-input-error" className="field-error" role="alert">{inputError}</p>
             )}
             <div className="rag-question-footer">
+              {data?.enabled && !permissionError && !status.error && (
+                <button type="button" className="rag-composer-materials" onClick={showMaterials}
+                  aria-controls="rag-materials-panel" aria-expanded={isMaterialsOpen}>
+                  <span>검색 가능 {data.readyCount.toLocaleString()}개</span>
+                  {data.preparingCount > 0 && <span>준비 중 {data.preparingCount.toLocaleString()}개</span>}
+                </button>
+              )}
               <div className="rag-send-actions">
-                <span className="rag-character-count" aria-label="질문 글자 수">{question.length.toLocaleString()} / 1,000</span>
+                <span className="rag-character-count" aria-label="질문 글자 수">{visibleDraft.length.toLocaleString()} / 1,000</span>
                 <button
                   className="primary-button rag-send-button"
                   type="submit"
@@ -402,7 +441,7 @@ function TeamMaterialSearch({ context }) {
                 </button>
               </div>
             </div>
-            {submittedQuestion && !busy && !permissionError && (
+            {visibleQuestion && !busy && (
               <div className="rag-question-tools">
                 <button type="button" className="rag-reset-question" onClick={() => startQuestion()}>
                   새 질문으로 시작
@@ -422,7 +461,6 @@ function TeamMaterialSearch({ context }) {
               onSelect={(item) => { setReference(item); setMaterialsOpen(true); }}
               onDismiss={closeMaterials}
               active={!reference}
-              autoRefreshing={autoRefreshingMaterials}
             />
           </div>
           {reference && !permissionError && (

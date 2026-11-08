@@ -1,12 +1,12 @@
 import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { useLayoutEffect, useRef } from 'react';
 import { ChevronRight, FileText, X } from 'lucide-react';
-import RefreshButton from './RefreshButton.jsx';
 import { ragStatusLabels, ragFailureLabels } from '../lib/rag.js';
+import RefreshButton from './RefreshButton.jsx';
 import { ResourceState } from './ui.jsx';
 
 export default function RagMaterialList({
-  resource, page, setPage, onSelect, onDismiss, active, autoRefreshing = false,
+  resource, page, setPage, onSelect, onDismiss, active,
 }) {
   const data = resource.data;
   const guide = usePreviewGuide();
@@ -42,11 +42,6 @@ export default function RagMaterialList({
       <header className="rag-panel-heading">
         <h2>팀 자료 {data && <span>{data.totalElements.toLocaleString()}개</span>}</h2>
         <div className="rag-panel-actions">
-          {!autoRefreshing && <RefreshButton
-            label="팀 자료 새로고침"
-            disabled={resource.loading}
-            onClick={resource.reload}
-          />}
           <button
             type="button"
             className="icon-button rag-mobile-panel-close"
@@ -60,7 +55,18 @@ export default function RagMaterialList({
       {data && !resource.error && (
         <div className="rag-material-summary" aria-label="자료 준비 요약">
           <span className="rag-summary-status is-ready">검색 가능 {data.readyCount.toLocaleString()}개</span>
-          {data.preparingCount > 0 && <span className="rag-summary-status is-preparing">준비 중 {data.preparingCount.toLocaleString()}개</span>}
+          {data.preparingCount > 0 && (
+            <>
+              <span className="rag-summary-status is-preparing">준비 중 {data.preparingCount.toLocaleString()}개</span>
+              {data.enabled && (
+                <RefreshButton
+                  label="자료 상태 새로고침"
+                  disabled={resource.loading}
+                  onClick={resource.reload}
+                />
+              )}
+            </>
+          )}
           {data.failedCount > 0 && <span className="rag-summary-status is-failed">실패 {data.failedCount.toLocaleString()}개</span>}
           {data.unsupportedCount > 0 && <span className="rag-summary-status is-unsupported">미지원 {data.unsupportedCount.toLocaleString()}개</span>}
         </div>
@@ -129,7 +135,10 @@ export default function RagMaterialList({
           disabled={resource.loading || Boolean(resource.error) || !data?.enabled || !data.readyCount}
           onClick={() => guide.confirmMaterialsStep('materials-overview')}>자료 확인 완료</button>
       </div>}
-      <p className="rag-material-support">작성 문서, UTF-8 TXT·MD, 텍스트가 있는 PDF, Word(.docx)를 검색합니다.</p>
+      <p className="rag-material-support">
+        <strong>검색 범위</strong>
+        <span>팀 자료에서 작성한 문서, TXT·MD 파일, 텍스트가 있는 PDF, Word(.docx)</span>
+      </p>
     </section>
   );
 }

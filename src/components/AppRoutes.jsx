@@ -1,6 +1,6 @@
 import { screenLoaders, preloadRoute } from '../lib/routeScreens.js';
 import { deferScreen } from './DeferredScreen.jsx';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useParams, useLocation } from 'react-router';
 import { parseRouteId, spacePath, teamPath, teamMenuPaths } from '../lib/routes.js';
 
@@ -8,6 +8,7 @@ import UnavailablePage from './UnavailablePage.jsx';
 import useAppNavigate from '../hooks/useAppNavigate.js';
 import WorkspaceNavigation from './WorkspaceNavigation.jsx';
 import SpaceDirectorySidebar from './SpaceDirectorySidebar.jsx';
+import { RagConversationContext } from './RagConversationContext.js';
 
 const Spaces = deferScreen(screenLoaders.Spaces, '스페이스 목록');
 const SpaceWorkspace = deferScreen(screenLoaders.SpaceWorkspace, '스페이스 화면');
@@ -92,11 +93,13 @@ function SpacesRoute({ user, setCurrentWorkspace }) {
 
 export default function AppRoutes({ user, prefix = '', currentWorkspace, setCurrentWorkspace }) {
   const { pathname } = useLocation();
+  // AppRoutes remounts on account changes and preview resets.
+  const [ragConversations] = useState(() => new Map());
   useEffect(() => {
     // The screen boundary handles import failures; preloading must not reject globally.
     preloadRoute(pathname).catch(() => {});
   }, [pathname]);
-  return (
+  const routes = (
     <Routes>
       <Route
         path={prefix || '/'}
@@ -149,5 +152,10 @@ export default function AppRoutes({ user, prefix = '', currentWorkspace, setCurr
         }
       />
     </Routes>
+  );
+  return (
+    <RagConversationContext.Provider value={ragConversations}>
+      {routes}
+    </RagConversationContext.Provider>
   );
 }
