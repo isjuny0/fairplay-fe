@@ -173,13 +173,13 @@ test('화면 키보드가 줄인 표시 영역에 작성 창을 맞춘다', asyn
   await expect(page.locator('body')).not.toHaveClass(/has-screen-keyboard/);
 });
 
-test('높이가 낮은 로그인에서는 설명을 접고 로그인 동작을 먼저 보여준다', async ({ page }) => {
+test('높이가 낮은 로그인에서도 제목과 로그인 동작을 한 화면에 표시한다', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 568 });
   await page.goto('/preview/login');
-  await expect(page.locator('.login-benefits')).not.toBeVisible();
+  await expect(page.locator('.login-benefits, .login-benefits-disclosure')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Fairplay에 로그인', exact: true })).toBeInViewport();
   await expect(page.locator('.google-button')).toBeInViewport();
-  await page.locator('.login-benefits-disclosure summary').click();
-  await expect(page.locator('.login-benefits')).toBeVisible();
+  await expect(page.getByRole('button', { name: '← Fairplay 소개로', exact: true })).toBeInViewport();
 });
 
 test('알림 읽음 처리 후 전체 목록의 읽기 위치를 유지한다', async ({ page }) => {

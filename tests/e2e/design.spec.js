@@ -108,14 +108,41 @@ for (const width of [1440, 390]) {
 
 test('로그인 미리보기에도 흰 배경과 담백한 카드 적용', async ({ page }) => {
   await page.goto('/preview/login');
-  await expect(page.getByRole('heading', { name: 'Fairplay', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Fairplay에 로그인', exact: true })).toBeVisible();
   await expect(page.locator('.login-page')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(page.locator('.login-card')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(page.locator('.login-page')).toHaveCSS('background-image', 'none');
-  await expect(page.locator('.login-card h1')).toHaveCSS('font-weight', '400');
-  await expect(page.locator('.login-card h1')).toHaveCSS('font-size', '29px');
+  await expect(page.locator('.login-card-heading h1')).toHaveCSS('font-weight', '600');
+  await expect(page.locator('.login-card-heading h1')).toHaveCSS('font-size', '24px');
   await expect(page.locator('.login-card')).toHaveCSS('box-shadow', 'none');
 });
+
+for (const width of [1440, 320]) {
+  test(`실제 로그인 ${width}px: 작은 카드에 로그인 제목과 짧은 안내를 표시한다`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.route('**/api/me', (route) => route.fulfill({ status: 401, json: { code: 'UNAUTHORIZED' } }));
+    await page.goto('/login');
+    const card = page.locator('.login-card--compact');
+    const shell = page.locator('.login-shell');
+    await expect(shell.getByRole('img', { name: 'Fairplay', exact: true })).toBeVisible();
+    await expect(card.getByRole('button', { name: 'Google로 계속하기', exact: true })).toBeEnabled();
+    await expect(card.locator('.login-description, ol')).toHaveCount(0);
+    await expect(shell.getByRole('heading', { name: 'Fairplay에 로그인', exact: true })).toBeVisible();
+    await expect(shell.locator('.login-card-heading p')).toHaveText('Google 계정으로 간편하게 시작하세요.');
+    await expect(card.getByRole('button')).toHaveCSS('border-top-color', 'rgb(116, 119, 117)');
+    await expect(card.getByRole('button')).toHaveCSS('font-weight', '500');
+    // Authentication/session notices remain available; only promotional copy is removed.
+    await expect(card.locator('.login-actions > p:not([role="status"])')).toHaveCount(0);
+    const box = await card.boundingBox();
+    expect(box.width).toBeLessThanOrEqual(400);
+    expect(box.height).toBeLessThan(200);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath('compact-login-page.png') });
+    await shell.screenshot({ path: testInfo.outputPath('compact-login-card.png') });
+    await shell.getByRole('button', { name: '← Fairplay 소개로', exact: true }).click();
+    await expect(page).toHaveURL('/');
+  });
+}
 
 for (const width of [1440, 390]) {
   test(`문서형 워크스페이스 ${width}px: 초록 강조·카드·구분선과 상태색`, async ({ page }, testInfo) => {
@@ -144,7 +171,7 @@ for (const width of [1440, 390]) {
 }
 
 for (const width of [1440, 768, 390, 320]) {
-  test(`새 레이아웃 ${width}px: 스페이스 목록과 로그인 영역의 반응형 배치`, async ({ page }) => {
+  test(`새 레이아웃 ${width}px: 스페이스 목록과 간결한 로그인 카드`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/preview/main');
     await expect(page.locator('.topbar .brand-logo')).toBeVisible();
@@ -155,14 +182,19 @@ for (const width of [1440, 768, 390, 320]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
     await page.goto('/preview/login');
     await expect(page.getByRole('button', { name: 'Google 로그인 · 실제 서비스에서 연결' })).toBeVisible();
-    const intro = await page.locator('.login-introduction').boundingBox();
-    const actions = await page.locator('.login-actions').boundingBox();
-    if (width > 720) {
-      expect(Math.abs(intro.y - actions.y)).toBeLessThanOrEqual(1);
-      expect(actions.x).toBeGreaterThanOrEqual(intro.x + intro.width - 1);
-    } else {
-      expect(actions.y).toBeGreaterThanOrEqual(intro.y + intro.height - 1);
-    }
+    const card = page.locator('.login-card');
+    await expect(card.locator('.login-introduction, .login-description, .login-benefits')).toHaveCount(0);
+    const shell = page.locator('.login-shell');
+    await expect(shell.getByRole('heading', { name: 'Fairplay에 로그인', exact: true })).toBeVisible();
+    await expect(shell.locator('.login-card-heading p')).toHaveText('Google 계정으로 간편하게 시작하세요.');
+    const box = await card.boundingBox();
+    expect(box.width).toBeLessThanOrEqual(400);
+    expect(box.height).toBeLessThan(200);
+    const logo = await shell.locator('.brand-logo').boundingBox();
+    const button = await card.getByRole('button').boundingBox();
+    expect(button.y).toBeGreaterThan(logo.y + logo.height);
+    expect(Math.abs(logo.x + logo.width / 2 - box.x - box.width / 2)).toBeLessThan(1);
+    await page.screenshot({ path: testInfo.outputPath('compact-login.png') });
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   });
 }
