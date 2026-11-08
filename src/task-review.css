@@ -73,6 +73,13 @@
 .ai-reviewed-sources button > small { color: var(--text-muted); white-space: nowrap; }
 .ai-source-preview .modal-body { overflow-wrap: anywhere; }
 .ai-source-preview .markdown-body { min-width: 0; }
+.ai-source-preview h3 { margin: 0 0 6px; font-size: var(--text-subheading); }
+.ai-source-evidence { display: grid; gap: 8px; margin-bottom: 20px; padding: 16px; background: var(--surface-secondary); border-radius: var(--radius-card); }
+.ai-source-evidence h3, .ai-source-evidence p, .ai-source-evidence blockquote { margin: 0; }
+.ai-source-evidence blockquote { padding-left: 12px; border-left: 2px solid var(--border); white-space: pre-line; }
+.ai-source-current-heading, .ai-source-location { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; }
+.ai-source-current-heading { justify-content: space-between; }
+.ai-source-location { color: var(--text-muted); font-size: var(--text-support); }
 @media (max-width: 600px) {
   .ai-review-actions { width: 100%; }
   .ai-review-actions button { flex: 1; min-width: 0; padding-inline: 8px; }

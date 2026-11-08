@@ -158,6 +158,8 @@ export default function TaskDetail({
   const [showAllAssignees, setShowAllAssignees] = useState(false);
   const [activeTab, setActiveTab] = useState('task-description-section');
   const [sectionToFocus, setSectionToFocus] = useState(null);
+  const deliverableEditor = useRef(null);
+  const deliverablesTab = useRef(null);
   useEffect(() => {
     setShowAllAssignees(false);
     setReopening(false);
@@ -291,6 +293,11 @@ export default function TaskDetail({
     );
     setSectionToFocus(id);
   };
+  const editReviewedDeliverable = (material) => {
+    deliverablesTab.current?.focus({ preventScroll: true });
+    setActiveTab('task-deliverables-section');
+    deliverableEditor.current?.openEditor(material);
+  };
   useEffect(() => {
     if (!guide?.guiding || Number(taskId) !== guide.taskId) return;
     const section = guide.section || 'task-description-section';
@@ -318,6 +325,7 @@ export default function TaskDetail({
           {tabs.map(([id, label], index) => (
             <button
               key={id}
+              ref={id === 'task-deliverables-section' ? deliverablesTab : null}
               id={`${id}-tab`}
               type="button"
               role="tab"
@@ -593,6 +601,7 @@ export default function TaskDetail({
                     members={members}
                     tasks={[task]}
                     taskId={task.id}
+                    editorRef={deliverableEditor}
                     onChanged={reload}
                   />
                 </div>
@@ -611,6 +620,7 @@ export default function TaskDetail({
                         user,
                         members,
                         manager: false,
+                        onEditDeliverable: editReviewedDeliverable,
                       }}
                     />
                   </div>

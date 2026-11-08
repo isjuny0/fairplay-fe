@@ -1,9 +1,9 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronRight, Download, FileText } from 'lucide-react';
-import { ApiError } from '../api/client.js';
-import { downloadDeliverable, listDeliverables } from '../api/deliverables.js';
+import { downloadDeliverable, getLinkedDeliverable } from '../api/deliverables.js';
 import useResource from '../hooks/useResource.js';
-import { formatDate } from '../lib/domain.js';
+import { deliverablePermissions, formatDate } from '../lib/domain.js';
 import MarkdownBody from './MarkdownBody.jsx';
 import { ErrorNotice, Modal, ResourceState } from './ui.jsx';
 
@@ -22,7 +22,7 @@ function References({ references = [], sources, onOpenSource }) {
         <div className="ai-evidence-heading">
           <span>{source?.title || '근거 자료'}{source?.version != null && <small> · 버전 {source.version}</small>}</span>
           <button type="button" className="ai-source-link"
-            onClick={() => onOpenSource(source || { deliverableId: reference.deliverableId, title: null, version: null })}
+            onClick={() => onOpenSource({ ...source, deliverableId: reference.deliverableId, evidence: reference })}
             aria-label={source?.title ? `${source.title} 보기` : '현재 근거 자료 보기'}>
             {source ? '자료 보기' : '현재 자료 보기'} <ChevronRight size={14} aria-hidden="true" />
           </button>
@@ -120,25 +120,37 @@ export default function AiReviewFeedback({ review, context }) {
       검토 당시 자료명·버전과 완료 시각이 저장되지 않은 결과입니다. 자료를 열면 현재 내용을 표시합니다.
     </p>}
     {selectedSource && <SourcePreview key={`${review.id}:${selectedSource.deliverableId}`}
-      source={selectedSource} context={context} onClose={() => setSelectedSource(null)} />}
+      source={selectedSource} context={context} onClose={() => setSelectedSource(null)}
+      onEdit={context.onEditDeliverable && ((material) => {
+        setSelectedSource(null);
+        context.onEditDeliverable(material);
+      })} />}
   </>;
 }
 
-function SourcePreview({ source, context, onClose }) {
-  const resource = useResource(async () => {
-    for (let page = 0; ; page++) {
-      const materials = await listDeliverables(context.team.id, { taskId: context.task.id, page, size: 100 });
-      const material = materials.find((item) => item.id === source.deliverableId);
-      if (material) {
-        if (material.teamId !== context.team.id || material.taskId !== context.task.id) throw new ApiError(502, { message: '자료 정보를 확인하지 못했습니다.' });
-        return material;
-      }
-      if (materials.length < 100) throw new ApiError(404, { message: '자료가 삭제되었거나 연결이 변경되어 현재 작업에서 조회할 수 없습니다.' });
-    }
-  }, [context.team.id, context.task.id, source.deliverableId]);
+function SourcePreview({ source, context, onClose, onEdit }) {
+  const { team, task, user } = context;
+  const resource = useResource(
+    () => getLinkedDeliverable(team.id, task.id, source.deliverableId),
+    [team.id, task.id, source.deliverableId],
+  );
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState(null);
+  const [copyStatus, setCopyStatus] = useState(null);
   const material = resource.data;
+  const evidence = source.evidence;
+  const canCopyLocation = (source.type ?? material?.type) === 'FILE' && evidence?.location;
+  const canEdit = Boolean(onEdit && material && !resource.loading &&
+    task.completionBlockReason !== 'WORK_PERIOD_CLOSED' &&
+    deliverablePermissions(material, task, team, user.id).content);
+  const copyLocation = async () => {
+    try {
+      await navigator.clipboard.writeText(evidence.location);
+      setCopyStatus('copied');
+    } catch {
+      setCopyStatus('failed');
+    }
+  };
   const download = async () => {
     setDownloading(true);
     setDownloadError(null);
@@ -153,10 +165,30 @@ function SourcePreview({ source, context, onClose }) {
     } catch (error) { setDownloadError(error); }
     finally { setDownloading(false); }
   };
-  return <Modal title={source.title || '근거 자료'} onClose={onClose} wide className="ai-source-preview">
+  return createPortal(<Modal title={source.title || '근거 자료'} onClose={onClose} wide className="ai-source-preview">
+    {evidence && <section className="ai-source-evidence" aria-label="검토 당시 근거">
+      <h3>검토 당시 근거</h3>
+      <div className="ai-source-context">
+        <span>{source.version == null ? '검토 당시 버전 정보 없음' : `검토 버전 ${source.version}`}</span>
+        <span>{evidence.quote ? '원문 인용' : '내용 관찰'}</span>
+      </div>
+      <blockquote>{evidence.quote || evidence.observation}</blockquote>
+      {evidence.location && <div className="ai-source-location">
+        <span>위치 · {evidence.location}</span>
+        {canCopyLocation && <button type="button" className="secondary-button" onClick={copyLocation}>근거 위치 복사</button>}
+      </div>}
+      {copyStatus === 'copied' && <p className="field-help" role="status">근거 위치를 복사했습니다.</p>}
+      {copyStatus === 'failed' && <p className="field-help" role="alert">위치를 선택해 복사해 주세요.</p>}
+    </section>}
     <ResourceState resource={resource} label="근거 자료">
-      {material && <div className="stack">
-        <div className="ai-source-context"><span>현재 자료 · 버전 {material.version}</span><span>수정 {formatDate(material.updatedAt)}</span></div>
+      {material && <section className="stack" aria-label="현재 자료">
+        <div className="ai-source-current-heading">
+          <div>
+            <h3>현재 자료</h3>
+            <div className="ai-source-context"><span>버전 {material.version}</span><span>수정 {formatDate(material.updatedAt)}</span></div>
+          </div>
+          {canEdit && <button type="button" className="secondary-button" onClick={() => onEdit(material)}>결과물 수정</button>}
+        </div>
         {source.version == null ? <p className="notice">검토 당시 버전을 확인할 수 없어 현재 자료를 표시합니다.</p>
           : source.version !== material.version && <p className="notice">검토 당시 버전 {source.version}에서 변경된 자료입니다. 현재 자료(버전 {material.version})를 표시합니다.</p>}
         {material.title !== source.title && <p className="field-help">현재 제목 · {material.title}</p>}
@@ -167,7 +199,7 @@ function SourcePreview({ source, context, onClose }) {
           </button>
           <ErrorNotice error={downloadError} />
         </>}
-      </div>}
+      </section>}
     </ResourceState>
-  </Modal>;
+  </Modal>, document.body);
 }

@@ -5,13 +5,14 @@ import DeliverableTable from "./DeliverableTable.jsx";
 import DeliverableContent from "./DeliverableContent.jsx";
 import MarkdownEditor from "./MarkdownEditor.jsx";
 import { ArrowRight, FileText, Upload } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useImperativeHandle, useRef, useState } from "react";
 import { useLocation, useSearchParams } from "react-router";
 import { parseRouteId, teamMenuPath } from "../lib/routes.js";
 import {
   createDeliverable,
   deleteDeliverable,
   downloadDeliverable,
+  getLinkedDeliverable,
   listDeliverables,
   updateDeliverable,
   uploadDeliverable,
@@ -365,6 +366,7 @@ export default function Deliverables({
   tasks = [],
   tasksResource,
   taskId,
+  editorRef,
   onChanged = () => {},
 }) {
   const { confirm, notify } = useInteractions();
@@ -532,6 +534,11 @@ export default function Deliverables({
     setError(null);
     setEditing(null);
   };
+  const openEditor = (deliverable) => {
+    setError(null);
+    setEditing(deliverable);
+  };
+  useImperativeHandle(editorRef, () => ({ openEditor }));
   const save = async (input, file, type) => {
     if (
       !taskOptionsReady ||
@@ -845,10 +852,7 @@ export default function Deliverables({
               busy={busy}
               onOpen={setSelectedDeliverableId}
               onDownload={download}
-              onEdit={(deliverable) => {
-                setError(null);
-                setEditing(deliverable);
-              }}
+              onEdit={openEditor}
               onRemove={remove}
             />
           ) : (
@@ -879,10 +883,7 @@ export default function Deliverables({
                           <button
                             className="secondary-button"
                             disabled={busy}
-                            onClick={() => {
-                              setError(null);
-                              setEditing(deliverable);
-                            }}
+                            onClick={() => openEditor(deliverable)}
                           >
                             수정
                           </button>
@@ -1019,13 +1020,13 @@ export default function Deliverables({
           onLoadLatest={
             editing
               ? async () => {
-                  const [latestPage, context] = await Promise.all([
-                    listDeliverables(team.id, searchOptions),
+                  const [deliverable, context] = await Promise.all([
+                    taskId == null
+                      ? listDeliverables(team.id, searchOptions)
+                          .then((items) => items.find((item) => item.id === editing.id))
+                      : getLinkedDeliverable(team.id, taskId, editing.id),
                     getTeamWorkContext(team.id),
                   ]);
-                  const deliverable = latestPage.find(
-                    (item) => item.id === editing.id,
-                  );
                   if (!deliverable)
                     throw new Error(
                       "현재 페이지에서 자료를 찾지 못했습니다. 입력은 유지됩니다. 창을 닫고 목록에서 위치를 다시 확인해 주세요.",

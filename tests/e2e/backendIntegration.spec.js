@@ -864,6 +864,10 @@ test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이
   const sourceButton = page.locator('.ai-review-findings').getByRole('button', { name: '설문 분석 자료 보기', exact: true });
   await sourceButton.click();
   const sourceDialog = page.getByRole('dialog', { name: '설문 분석 자료', exact: true });
+  await expect(sourceDialog.getByRole('region', { name: '검토 당시 근거', exact: true }))
+    .toContainText('발견과 근거가 분리되어 있습니다.');
+  await expect(sourceDialog.getByRole('region', { name: '현재 자료', exact: true }))
+    .toContainText('현재 문서의 내용입니다.');
   await expect(sourceDialog.getByText('현재 문서의 내용입니다.', { exact: true })).toBeVisible();
   await expect(sourceDialog).toContainText('검토 당시 버전 1에서 변경된 자료입니다. 현재 자료(버전 2)를 표시합니다.');
   await page.keyboard.press('Escape');
@@ -924,7 +928,14 @@ test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이
   const previousSource = page.getByRole('dialog', { name: '근거 자료', exact: true });
   await expect(previousSource).toContainText('검토 당시 버전을 확인할 수 없어 현재 자료를 표시합니다.');
   await expect(previousSource).toContainText('현재 제목 · 설문 분석 자료');
+  await previousSource.getByRole('button', { name: '결과물 수정', exact: true }).click();
+  await expect(previousSource).toHaveCount(0);
+  const editor = page.getByRole('dialog', { name: '결과물 수정', exact: true });
+  await expect(editor.getByRole('textbox', { name: '제목', exact: true })).toHaveValue('설문 분석 자료');
+  await expect(editor.locator('textarea[name="text"]')).toHaveValue('현재 문서의 내용입니다.');
   await page.keyboard.press('Escape');
+  await expect(editor).toHaveCount(0);
+  await expect(page.getByRole('tab', { name: '결과물', exact: true })).toBeFocused();
 });
 
 test('AI 검토는 진행 중에만 조회하고 실패 결과 이후 반복 조회를 멈춘다', async ({
