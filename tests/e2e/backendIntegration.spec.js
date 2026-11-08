@@ -848,7 +848,12 @@ test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이
   });
   await page.clock.fastForward(5100);
   await expect(page.getByText('실제 응답 검토 요약')).toBeVisible();
-  expect(await page.locator('[data-feedback-type]').evaluateAll((items) => items.map((item) => item.dataset.feedbackType))).toEqual(['SUGGESTION', 'ISSUE']);
+  const overview = page.getByRole('list', { name: '피드백 항목 수', exact: true });
+  await expect(overview.getByRole('listitem')).toHaveText(['보완할 점 1', '선택 제안 1', '확인하지 못한 범위 1']);
+  await expect(page.getByRole('region', { name: '보완할 점', exact: true })).toContainText('약속한 결과를 확인해 주세요');
+  await expect(page.getByRole('region', { name: '선택 제안', exact: true })).toContainText('근거를 가까이 배치해 보세요');
+  await overview.getByRole('button', { name: '확인하지 못한 범위 1', exact: true }).click();
+  await expect(page.getByRole('region', { name: '확인하지 못한 범위', exact: true })).toBeFocused();
   await page.getByText('관련 작업 설명', { exact: true }).click();
   await expect(page.getByText('요구사항을 정리합니다.', { exact: true })).toBeVisible();
   let materialDenied = false;
@@ -896,7 +901,9 @@ test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이
   const completedReadCount = requests.filter((request) => request.path.endsWith('/ai-review')).length;
   await page.clock.fastForward(30000);
   expect(requests.filter((request) => request.path.endsWith('/ai-review'))).toHaveLength(completedReadCount);
-  await expect(page.getByRole('region', { name: '중요한 피드백', exact: true })).toHaveCount(0);
+  await expect(page.getByText('검토한 범위에서 보완할 점을 찾지 못했습니다.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: '보완할 점', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: '선택 제안', exact: true })).toHaveCount(0);
   await expect(page.getByRole('region', { name: '유지하면 좋은 점', exact: true })).toHaveCount(0);
   await expect(page.getByRole('region', { name: '확인하지 못한 범위', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: '피드백 받기', exact: true })).toHaveCount(0);

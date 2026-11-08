@@ -8,9 +8,10 @@ import MarkdownBody from './MarkdownBody.jsx';
 import { ErrorNotice, Modal, ResourceState } from './ui.jsx';
 
 const findingLabels = {
-  ISSUE: { label: '보완할 점', action: '권장 수정' },
-  SUGGESTION: { label: '개선 제안', action: '개선 방법' },
+  ISSUE: { id: 'ai-review-issues', label: '보완할 점', action: '권장 수정' },
+  SUGGESTION: { id: 'ai-review-suggestions', label: '선택 제안', action: '개선 방법' },
 };
+const limitationsSection = { id: 'ai-review-limitations', label: '확인하지 못한 범위' };
 
 function References({ references = [], sources, onOpenSource }) {
   if (!references.length) return null;
@@ -34,33 +35,69 @@ function References({ references = [], sources, onOpenSource }) {
   </div>;
 }
 
+function FindingSection({ group, sources, onOpenSource }) {
+  const { id, label, action, findings } = group;
+  return <section id={id} tabIndex={-1} className="ai-review-findings" aria-labelledby={`${id}-heading`}>
+    <div className="ai-section-heading"><h3 id={`${id}-heading`}>{label}</h3><span>{findings.length}개</span></div>
+    <ol className="ai-finding-list">
+      {findings.map((finding, index) => (
+        <li key={index}>
+          <h4>{finding.title}</h4>
+          {finding.description !== finding.title && <p className="ai-finding-description">{finding.description}</p>}
+          <div className="ai-finding-action"><strong>{action}</strong><p>{finding.action}</p></div>
+          {finding.requirementQuote && <details className="ai-requirement">
+            <summary>관련 작업 설명</summary><blockquote>{finding.requirementQuote}</blockquote>
+          </details>}
+          <References references={finding.references} sources={sources} onOpenSource={onOpenSource} />
+        </li>
+      ))}
+    </ol>
+  </section>;
+}
+
+function showFeedbackSection(id) {
+  const section = document.getElementById(id);
+  section?.focus({ preventScroll: true });
+  section?.scrollIntoView({ block: 'start' });
+}
+
 export default function AiReviewFeedback({ review, context }) {
   const [selectedSource, setSelectedSource] = useState(null);
   const sources = review.reviewedSources || [];
   const strengths = review.strengths || [];
   const limitations = review.limitations || [];
+  const issues = review.findings.filter((finding) => finding.type === 'ISSUE');
+  const suggestions = review.findings.filter((finding) => finding.type === 'SUGGESTION');
+  const findingGroups = [
+    { ...findingLabels.ISSUE, findings: issues },
+    { ...findingLabels.SUGGESTION, findings: suggestions },
+  ];
+  const overview = [
+    ...findingGroups.map(({ id, label, findings }) => ({ id, label, count: findings.length })),
+    { ...limitationsSection, count: limitations.length },
+  ];
   return <>
     <section className="ai-review-summary" aria-label="핵심 요약">
       <h3>핵심 요약</h3>
       <p>{review.summary}</p>
+      <ul className="ai-review-overview" aria-label="피드백 항목 수">
+        {overview.map(({ id, label, count }) => <li key={id}>
+          {count > 0
+            ? <button type="button" onClick={() => showFeedbackSection(id)} aria-controls={id}>{label} {count}</button>
+            : <span>{label} {count}</span>}
+        </li>)}
+      </ul>
+      {!issues.length && (
+        <p className="ai-review-no-issues">검토한 범위에서 보완할 점을 찾지 못했습니다.</p>
+      )}
     </section>
-    {review.findings.length > 0 && <section className="ai-review-findings" aria-label="중요한 피드백">
-      <div className="ai-section-heading"><h3>중요한 피드백</h3><span>{review.findings.length}개</span></div>
-      <ol className="ai-finding-list">
-        {review.findings.map((finding, index) => {
-          const labels = findingLabels[finding.type];
-          return <li key={index} data-feedback-type={finding.type}>
-            <span className={`ai-finding-type ai-finding-type--${finding.type.toLowerCase()}`}>{labels?.label || '피드백'}</span>
-            <h4>{finding.title}</h4>
-            {finding.description !== finding.title && <p className="ai-finding-description">{finding.description}</p>}
-            <div className="ai-finding-action"><strong>{labels?.action || '권장 행동'}</strong><p>{finding.action}</p></div>
-            {finding.requirementQuote && <details className="ai-requirement">
-              <summary>관련 작업 설명</summary><blockquote>{finding.requirementQuote}</blockquote>
-            </details>}
-            <References references={finding.references} sources={sources} onOpenSource={setSelectedSource} />
-          </li>;
-        })}
-      </ol>
+    {findingGroups.filter((group) => group.findings.length > 0).map((group) => (
+      <FindingSection key={group.id} group={group} sources={sources} onOpenSource={setSelectedSource} />
+    ))}
+    {limitations.length > 0 && <section id={limitationsSection.id} tabIndex={-1}
+      className="ai-review-limitations" aria-labelledby={`${limitationsSection.id}-heading`}>
+      <h3 id={`${limitationsSection.id}-heading`}>{limitationsSection.label}</h3>
+      <ul>{limitations.map((limitation, index) => <li key={index}>{limitation}</li>)}</ul>
     </section>}
     {strengths.length > 0 && <section className="ai-review-strengths" aria-label="유지하면 좋은 점">
       <h3>유지하면 좋은 점</h3>
@@ -68,10 +105,6 @@ export default function AiReviewFeedback({ review, context }) {
         <p>{strength.message}</p>
         <References references={strength.references} sources={sources} onOpenSource={setSelectedSource} />
       </li>)}</ul>
-    </section>}
-    {limitations.length > 0 && <section className="ai-review-limitations" aria-label="확인하지 못한 범위">
-      <h3>확인하지 못한 범위</h3>
-      <ul>{limitations.map((limitation, index) => <li key={index}>{limitation}</li>)}</ul>
     </section>}
     {sources.length > 0 && <details className="ai-reviewed-sources">
       <summary>검토한 자료 {sources.length}개</summary>
