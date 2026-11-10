@@ -98,7 +98,7 @@ test('390px: 작성 창 입력은 확대 없이 읽을 수 있고 주요 버튼�
   const dialog = page.getByRole('dialog');
   const input = dialog.getByRole('textbox').first();
   await expect(input).toHaveCSS('font-size','16px');
-  const save = dialog.getByRole('button',{name:'등록',exact:true});
+  const save = dialog.getByRole('button',{name:'다음',exact:true});
   await expect(save).toBeInViewport();
   expect((await save.boundingBox()).height).toBeGreaterThanOrEqual(44);
 });

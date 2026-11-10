@@ -16,6 +16,7 @@ import {
 } from "../lib/meetingMinutes.js";
 import { focusFirstFieldError } from "../lib/formValidation.js";
 import DateTimeInput from "./DateTimeInput.jsx";
+import { defaultFormDateTime } from "../lib/dateTime.js";
 import MarkdownEditor from "./MarkdownEditor.jsx";
 import SaveRecovery from "./SaveRecovery.jsx";
 import { ErrorNotice, Field, FormActions, Modal } from "./ui.jsx";
@@ -28,8 +29,13 @@ export default function MeetingMinuteEditor({
   onSaved,
   onAccessError,
 }) {
-  const [form, setForm] = useState(() => meetingDraft(initial));
-  const [section, setSection] = useState("agenda");
+  const [initialForm] = useState(() => ({
+    ...meetingDraft(initial),
+    ...(!initial ? { meetingAt: defaultFormDateTime() } : {}),
+  }));
+  const [form, setForm] = useState(initialForm);
+  const [step, setStep] = useState(0);
+  const steps = ["기본 정보", ...meetingSections.map(([, label]) => label)];
   const [errors, setErrors] = useState({});
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -44,8 +50,8 @@ export default function MeetingMinuteEditor({
     inFlight = useRef(false);
   const { confirm, clearChanges } = useInteractions();
   const input = meetingInput(form, initial);
-  const dirty =
-    Object.keys(meetingInput(form, initial || { attendees: [] })).length > 0;
+  const dirty = initial ? Object.keys(input).length > 0
+    : JSON.stringify(form) !== JSON.stringify(initialForm);
   const conflict = isMeetingConflict(error);
   const blocked =
     team.workFrozen ||
@@ -61,11 +67,30 @@ export default function MeetingMinuteEditor({
   ];
   useEffect(() => {
     active.current = true;
-    titleInput.current?.focus();
     return () => {
       active.current = false;
     };
   }, []);
+  useEffect(() => {
+    const target = step === 0 ? titleInput.current
+      : element.current?.querySelector(`[data-meeting-step="${step}"]`);
+    target?.focus({ preventScroll: true });
+    const scroll = element.current?.querySelector('.meeting-editor-scroll');
+    if (scroll) scroll.scrollTop = 0;
+  }, [step]);
+  const validateStep = () => {
+    const fields = step === 0 ? ["title", "meetingAt", "attendeeIds"]
+      : [meetingSections[step - 1][0]];
+    const invalid = Object.fromEntries(Object.entries(validateMeetingMinute(form))
+      .filter(([key]) => fields.includes(key)));
+    setErrors(current => ({ ...current,
+      ...Object.fromEntries(fields.map(key => [key, undefined])), ...invalid }));
+    if (Object.keys(invalid).length) {
+      focusFirstFieldError(element.current, invalid);
+      return false;
+    }
+    return true;
+  };
   const update = (key, value) => {
     setForm((current) => ({ ...current, [key]: value }));
     setErrors((current) => ({ ...current, [key]: undefined }));
@@ -101,16 +126,20 @@ export default function MeetingMinuteEditor({
   };
   const submit = async (event) => {
     event.preventDefault();
-    if (inFlight.current || blocked || !dirty || (conflict && !recovery.latest))
+    if (inFlight.current || blocked) return;
+    if (step < steps.length - 1) {
+      if (validateStep()) setStep(current => current + 1);
       return;
+    }
+    if (!dirty || (conflict && !recovery.latest)) return;
     const invalid = validateMeetingMinute({
       ...form,
       title: form.title.trim(),
     });
     setErrors(invalid);
     if (Object.keys(invalid).length) {
-      const invalidSection = meetingSections.find(([key]) => invalid[key]);
-      if (invalidSection) setSection(invalidSection[0]);
+      const invalidSection = meetingSections.findIndex(([key]) => invalid[key]);
+      setStep(invalid.title || invalid.meetingAt || invalid.attendeeIds ? 0 : invalidSection + 1);
       focusFirstFieldError(element.current, invalid);
       return;
     }
@@ -172,6 +201,11 @@ export default function MeetingMinuteEditor({
         onSubmit={submit}
         noValidate
       >
+        <ol className="task-form-steps meeting-form-steps" aria-label="회의록 입력 단계">
+          {steps.map((label, index) => <li key={label} aria-current={step === index ? 'step' : undefined}>
+            <span>{index + 1}</span>{label}
+          </li>)}
+        </ol>
         <div className="meeting-editor-scroll">
           <ErrorNotice error={error} />
           {blocked && (
@@ -183,7 +217,7 @@ export default function MeetingMinuteEditor({
             disabled={busy || recovery.loading || blocked}
             className="meeting-editor-layout"
           >
-            <section className="meeting-form-section">
+            <section className="meeting-form-section" hidden={step !== 0} aria-label="기본 정보 입력">
               <h3 className="form-section-title">기본 정보</h3>
               <Field label="제목" error={errors.title}>
                 <input
@@ -198,7 +232,6 @@ export default function MeetingMinuteEditor({
               <Field
                 label="회의일시"
                 error={errors.meetingAt}
-                help="한국 시간 기준입니다. 과거·미래 회의 모두 기록할 수 있습니다."
               >
                 <DateTimeInput
                   name="meetingAt"
@@ -211,7 +244,7 @@ export default function MeetingMinuteEditor({
                 <legend>
                   참석자{" "}
                   <span className="field-help">
-                    {form.attendeeIds.length} / 100명
+                    {form.attendeeIds.length} / {participants.length}명
                   </span>
                 </legend>
                 <p className="field-help">
@@ -261,49 +294,26 @@ export default function MeetingMinuteEditor({
                   </p>
                 )}
               </fieldset>
-              <p className="field-help">
-                승인된 팀원 모두 함께 수정할 수 있습니다. 파일 첨부나 작업 연결
-                없이 독립적인 회의 기록으로 저장됩니다.
-              </p>
             </section>
-            <section className="meeting-form-section">
-              <h3 className="form-section-title">회의 기록</h3>
-              <div
-                className="meeting-section-switch"
-                role="group"
-                aria-label="회의 기록 항목"
-              >
-                {meetingSections.map(([key, label]) => (
-                  <button
-                    type="button"
-                    key={key}
-                    aria-pressed={section === key}
-                    onClick={() => setSection(key)}
-                  >
-                    {label}
-                    {errors[key] ? " · 오류" : ""}
-                  </button>
-                ))}
-              </div>
-              {meetingSections.map(([key, label]) => (
-                <div hidden={section !== key} key={key}>
-                  <Field
-                    label={label}
-                    error={errors[key]}
-                    help={`${form[key].length.toLocaleString()} / ${meetingLimits[key].toLocaleString()}자 · 선택 사항`}
-                  >
-                    <MarkdownEditor
-                      name={key}
-                      value={form[key]}
-                      maxLength={meetingLimits[key]}
-                      rows={12}
-                      onValueChange={(value) => update(key, value)}
-                      onChange={(event) => update(key, event.target.value)}
-                    />
-                  </Field>
-                </div>
-              ))}
-            </section>
+            {meetingSections.map(([key, label], index) => (
+              <section className="meeting-form-section" hidden={step !== index + 1} key={key} aria-label={`${label} 입력`}>
+                <h3 className="form-section-title" tabIndex={-1} data-meeting-step={index + 1}>{label}</h3>
+                <Field
+                  label={label}
+                  error={errors[key]}
+                  help={`${form[key].length.toLocaleString()} / ${meetingLimits[key].toLocaleString()}자 · 선택 사항`}
+                >
+                  <MarkdownEditor
+                    name={key}
+                    value={form[key]}
+                    maxLength={meetingLimits[key]}
+                    rows={12}
+                    onValueChange={(value) => update(key, value)}
+                    onChange={(event) => update(key, event.target.value)}
+                  />
+                </Field>
+              </section>
+            ))}
           </fieldset>
           <SaveRecovery
             error={error}
@@ -334,9 +344,10 @@ export default function MeetingMinuteEditor({
         </div>
         <FormActions
           busy={busy || recovery.loading}
-          disabled={blocked || !dirty || (conflict && !recovery.latest)}
+          disabled={blocked || (step === steps.length - 1 && (!dirty || (conflict && !recovery.latest)))}
           onCancel={onClose}
-          label={initial ? "수정 저장" : "등록"}
+          onBack={step > 0 ? () => setStep(current => current - 1) : undefined}
+          label={step < steps.length - 1 ? "다음" : initial ? "수정 저장" : "등록"}
         />
       </form>
     </Modal>
