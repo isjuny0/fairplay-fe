@@ -201,7 +201,7 @@ function DeliverableForm({
       onClose={onClose}
       wide
       editor={canEditContent}
-      className={`deliverable-registration-modal${step === "choose" ? " deliverable-choice-modal" : form.type === "FILE" ? " is-file-registration" : ""}`}
+      className={`deliverable-registration-modal${step === "choose" ? " deliverable-choice-modal" : canEditContent ? " is-content-editor" : ""}${step === "editor" && form.type === "FILE" ? " is-file-registration" : ""}`}
       dirty={dirty}
     >
       <form
@@ -240,13 +240,6 @@ function DeliverableForm({
             disabled={busy || recovery.loading || blocked}
             className={`form-fields deliverable-form-layout${canEditContent ? "" : " deliverable-metadata-only"}`}
           >
-              {canEditContent && <nav className="editor-section-links" aria-label="산출물 입력 위치">
-                {['기본 정보', form.type === 'FILE' ? '파일 업로드' : '본문 작성'].map((label, index) => <button type="button" key={label} onClick={event => {
-                  const section = event.currentTarget.closest('fieldset').querySelector(index === 0 ? '.deliverable-basic-section' : '.deliverable-content-section');
-                  section?.scrollIntoView({block:'start',behavior:'auto'});
-                  section?.querySelector('input:not([type="hidden"]), textarea, button')?.focus({preventScroll:true});
-                }}>{label}</button>)}
-              </nav>}
             {canEditContent && form.type === "FILE" && fileContent}
             <section className="deliverable-form-section deliverable-basic-section" aria-label={`${resourceName} 기본 정보 입력`}>
               <Field label="제목" error={fieldErrors.title}>

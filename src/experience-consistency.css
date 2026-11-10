@@ -112,7 +112,6 @@
   .workspace .mobile-team-navigation, .workspace .mobile-manager-navigation { display: none !important; }
   .notification-unavailable-reason { flex-basis: 100%; max-width: none; padding-bottom: 12px; }
   .personal-notification.is-inaccessible { flex-wrap: wrap; }
-  .task-editor-form .task-form-steps { position: sticky; top: 0; z-index: 5; background: var(--surface); }
   .editor-section-links button { min-height: 44px; }
   .report-personal-summary .report-score-total { min-height: 0; padding-block: 24px; }
   .workflow-steps { gap: 6px; }

@@ -48,6 +48,7 @@ for(const width of [320,390,1440]) {
     await dialog.getByLabel('작업 제목',{exact:true}).fill('회의 결과 공유');
     await dialog.getByLabel('작업 설명',{exact:true}).fill('회의에서 결정한 내용을 팀원에게 공유합니다.');
     await dialog.getByRole('button',{name:'다음',exact:true}).click();
+    await dialog.getByRole('button',{name:'다음',exact:true}).click();
     const review=dialog.getByRole('region',{name:'등록 전 확인',exact:true});
     await expect(review).toContainText('회의 결과 공유');
     await expect(review).toContainText('담당자를 선택해 주세요.');

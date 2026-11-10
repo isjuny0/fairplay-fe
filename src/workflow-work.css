@@ -3,7 +3,7 @@
 .deliverable-mobile-download { display: none; }
 .task-next-action:focus { outline: 2px solid var(--brand); outline-offset: 3px; }
 .allocation-selected-names { flex-basis: 100%; color: var(--text-muted); font-weight: 400; overflow-wrap: anywhere; }
-.task-editor-form .allocation-summary { position: sticky; top: 52px; z-index: 3; flex-wrap: wrap; padding: 10px 12px; background: var(--surface-secondary); border: 1px solid var(--border); border-radius: 6px; }
+.task-editor-form .allocation-summary { flex-wrap: wrap; padding: 10px 12px; background: var(--surface-secondary); border: 1px solid var(--border); border-radius: 6px; }
 @media (max-width: 720px) {
 .meeting-list-scroll, .collection-table-scroll:has(.deliverable-table) { container-type: inline-size; }
 .meeting-list-scroll .meeting-table { width: calc(100cqw + 200px); min-width: 0; table-layout: fixed; }

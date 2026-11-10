@@ -92,6 +92,11 @@ for (const width of [1440, 390, 320]) {
     await page.goto(team + '/tasks');
     await page.getByRole('button', { name: '새 작업 만들기', exact: true }).click();
     const editor = page.getByRole('dialog', { name: '새 작업 만들기', exact: true });
+    {
+      await editor.getByLabel('작업 제목', { exact: true }).fill('선택기 확인');
+      await editor.getByLabel('작업 설명', { exact: true }).fill('작업 계획의 선택기 스타일을 확인합니다.');
+      await editor.getByRole('button', { name: '다음', exact: true }).click();
+    }
     const workload = editor.getByLabel('예상 작업량', { exact: true });
     await assertControl(workload);
     const originalBox = await editor.boundingBox();

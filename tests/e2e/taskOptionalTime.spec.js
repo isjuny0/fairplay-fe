@@ -113,12 +113,14 @@ for (const width of [1440, 390]) {
     await editor
       .getByLabel('작업 설명', { exact: true })
       .fill('날짜만 지정한 작업입니다.');
+    await editor.getByRole('button', { name: '다음', exact: true }).click();
     const defaults = [];
     for (const [index, label] of ['시작일', '마감'].entries()) {
       const time = editor.getByRole('textbox', {
         name: `${label} 시간`,
         exact: true,
       });
+      await expect(time).toHaveValue('00:00');
       defaults.push(await time.inputValue());
       await time.fill('');
       await editor

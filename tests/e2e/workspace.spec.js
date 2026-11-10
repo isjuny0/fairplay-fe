@@ -440,6 +440,9 @@ for (const [label, weight] of [
     await page.getByRole('button', { name: '작업', exact: true }).click();
     await page.getByRole('button', { name: '새 작업 만들기', exact: true }).click();
     const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('작업 제목').fill('예상 작업량 확인');
+    await dialog.getByLabel('작업 설명', { exact: true }).fill('팀과 합의한 작업 범위입니다.');
+    await dialog.getByRole('button', { name: '다음', exact: true }).click();
     const workload = dialog.getByLabel('예상 작업량', { exact: true });
     await expect(workload).toHaveValue('3');
     await expect(workload.locator('option')).toHaveText([
@@ -450,8 +453,6 @@ for (const [label, weight] of [
       '12시간 이상의 작업',
     ]);
     await workload.selectOption({ label });
-    await dialog.getByLabel('작업 제목').fill('예상 작업량 확인');
-    await dialog.getByLabel('작업 설명', { exact: true }).fill('팀과 합의한 작업 범위입니다.');
     await fillDateTime(dialog, '마감', '2030-12-01T18:00');
     await dialog.getByRole('button', { name: '다음', exact: true }).click();
     await dialog.getByLabel('담당자 · 팀원').check();
@@ -488,6 +489,7 @@ test('담당자가 작업을 생성하고 PATCH 상태와 버전으로 직접 �
   await dialog
     .getByLabel('작업 설명', { exact: true })
     .fill('완료 조건과 담당 범위를 정의합니다.');
+  await dialog.getByRole('button', { name: '다음', exact: true }).click();
   await fillDateTime(dialog, '마감', '2030-12-01T18:00');
   await dialog.getByRole('button', { name: '다음', exact: true }).click();
   await dialog.getByLabel('담당자 · 팀원').check();
@@ -759,6 +761,7 @@ test('모바일·태블릿·데스크톱에서 팀 탐색과 작업 생성 폼�
     if (width <= 600) {
       await dialog.getByLabel('작업 제목', { exact: true }).fill('반응형 입력 검증');
       await dialog.getByLabel('작업 설명', { exact: true }).fill('각 화면 폭에서 담당·배분 설정을 확인합니다.');
+      await dialog.getByRole('button', { name: '다음', exact: true }).click();
       await fillDateTime(dialog, '마감', '2030-12-01T18:00');
       await dialog.getByRole('button', { name: '다음', exact: true }).click();
     }
@@ -1626,6 +1629,7 @@ test('작업 시작일은 생성 시 필수이며 일정 검증 후 오프셋과
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('작업 제목', { exact: true }).fill('계획 일정 작업');
   await dialog.getByLabel('작업 설명', { exact: true }).fill('예정된 기간에 수행할 작업입니다.');
+  await dialog.getByRole('button', { name: '다음', exact: true }).click();
   await fillDateTime(dialog, '마감', '2030-12-01T18:00');
   await dialog.getByLabel('시작일 날짜', { exact: true }).fill('');
   await dialog.getByRole('button', { name: '다음', exact: true }).click();

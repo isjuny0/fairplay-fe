@@ -52,9 +52,16 @@ async function savedDeliverable(page, title) {
 for (const viewport of [
   { width: 1440, height: 900 }, { width: 1280, height: 720 },
   { width: 390, height: 844 }, { width: 320, height: 640 }, { width: 800, height: 500 },
+  { width: 474, height: 1244 }, { width: 720, height: 1000 },
 ]) {
   test(`방식 선택과 입력·등록 버튼이 화면 안에서 동작한다 ${viewport.width}x${viewport.height}`, async ({ page }, testInfo) => {
     await page.setViewportSize(viewport);
+    let meetingBox;
+    if (viewport.width <= 720) {
+      await page.goto('/preview/spaces/1/teams/1/meeting-minutes');
+      await page.getByRole('button', { name: '회의록 등록', exact: true }).click();
+      meetingBox = await page.getByRole('dialog', { name: '팀 회의록 등록', exact: true }).boundingBox();
+    }
     const dialog = await openRegistration(page);
     await expect(dialog.getByLabel('제목', { exact: true })).toBeFocused();
     await expect(dialog.getByRole('button', { name: '방식 변경', exact: true })).toBeVisible();
@@ -66,6 +73,7 @@ for (const viewport of [
     for (const type of ['문서 작성', '파일 업로드']) {
       await chooseType(dialog, type);
       await expect(dialog).toHaveAccessibleName(type);
+      await expect(dialog.getByRole('navigation', { name: '산출물 입력 위치', exact: true })).toHaveCount(0);
       await expect(dialog.locator('.deliverable-selected-method')).toHaveCount(0);
       await expect(dialog.getByLabel(type === '파일 업로드' ? '파일' : '제목', { exact: true })).toBeFocused();
       if (type === '파일 업로드') {
@@ -74,6 +82,8 @@ for (const viewport of [
         expect(fileField.y + fileField.height).toBeLessThan(titleField.y);
       }
       const box = await dialog.boundingBox();
+      if (meetingBox) expect(box).toEqual(meetingBox);
+      else expect(box.width).toBe(Math.min(type === '문서 작성' ? 820 : 720, viewport.width - 48));
       expect(box.width).toBeLessThanOrEqual(viewport.width);
       expect(box.height).toBeLessThanOrEqual(viewport.height);
       expect(box.x).toBeGreaterThanOrEqual(0);
