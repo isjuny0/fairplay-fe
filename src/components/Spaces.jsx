@@ -5,7 +5,7 @@ import DateTimeInput from './DateTimeInput.jsx';
 import SpaceDirectorySidebar from './SpaceDirectorySidebar.jsx';
 import SpaceRoleBadge from './SpaceRoleBadge.jsx';
 import WorkspaceContextSelect from './WorkspaceContextSelect.jsx';
-import { currentDateTime } from '../lib/dateTime.js';
+import { defaultFormDateTime } from '../lib/dateTime.js';
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { createSpace, joinSpace } from '../api/spaces.js';
@@ -116,7 +116,7 @@ export default function Spaces({ onSelect, onDirectoryContext, user }) {
     setError(null);
     setFieldErrors({});
     setModal(type);
-    const current = currentDateTime();
+    const current = defaultFormDateTime();
     const next = {
       name: '',
       description: '',

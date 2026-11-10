@@ -61,7 +61,7 @@ export default function TimeInput({
       onClose();
       return;
     }
-    const initial = validTime(value) ? value : currentDateTime().slice(11);
+    const initial = validTime(value) ? value : '00:00';
     setHour(Number(initial.slice(0, 2)));
     setMinute(Number(initial.slice(3, 5)));
     onOpen();
