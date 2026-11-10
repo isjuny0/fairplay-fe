@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import DateTimeInput from './DateTimeInput.jsx';
 import TaskWorkloadHelp from './TaskWorkloadHelp.jsx';
-import { currentDateTime } from '../lib/dateTime.js';
+import { defaultFormDateTime } from '../lib/dateTime.js';
 import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import useMobileLayout from '../hooks/useMobileLayout.js';
 import useSaveRecovery from '../hooks/useSaveRecovery.js';
@@ -67,7 +67,7 @@ export default function TaskForm({
   const { confirm } = useInteractions();
   const recovery = useSaveRecovery(serverError);
   const editingMembers = recovery.latest?.members || members;
-  const [defaultDateTime] = useState(currentDateTime);
+  const [defaultDateTime] = useState(defaultFormDateTime);
   const [initialForm] = useState({
     title: task?.title || '',
     description: task?.description || '',
@@ -92,8 +92,16 @@ export default function TaskForm({
   );
   const mobile = useMobileLayout();
   const creating = !task;
+  const splitPlanning = creating;
   const stepped = creating || mobile;
-  const finalStep = creating ? 1 : 2;
+  const finalStep = 2;
+  const assignmentStep = splitPlanning ? 2 : 1;
+  const fieldStep = (name) =>
+    ['title', 'description'].includes(name)
+      ? 0
+      : ['weight', 'startAt', 'dueAt'].includes(name)
+        ? splitPlanning ? 1 : 0
+        : assignmentStep;
   const [step, setStep] = useState(0);
   const formElement = useRef(null);
   const goToStep = (nextStep) => {
@@ -220,23 +228,13 @@ export default function TaskForm({
     const errors =
       stepped && step < finalStep
         ? Object.fromEntries(
-            Object.entries(allErrors).filter(([name]) =>
-              step === 0
-                ? ['title', 'description', 'startAt', 'dueAt'].includes(name)
-                : !['title', 'description', 'startAt', 'dueAt'].includes(name),
-            ),
+            Object.entries(allErrors).filter(([name]) => fieldStep(name) === step),
           )
         : allErrors;
     setFieldErrors(errors);
     if (Object.keys(errors).length) {
       if (stepped && step === finalStep)
-        setStep(
-          ['title', 'description', 'startAt', 'dueAt'].some(
-            (name) => errors[name],
-          )
-            ? 0
-            : 1,
-        );
+        setStep(Math.min(...Object.keys(errors).map(fieldStep)));
       focusFirstFieldError(event.currentTarget, errors);
       return;
     }
@@ -315,6 +313,111 @@ export default function TaskForm({
       </div>
     </dl>
   );
+  const contentFields = (
+    <>
+      <h3
+        tabIndex={-1}
+        data-step-title="0"
+        className="form-section-title"
+      >
+        작업 내용
+      </h3>
+      <TaskField label="작업 제목" error={fieldErrors.title}>
+        <input
+          name="title"
+          required
+          maxLength={100}
+          placeholder="어떤 작업인가요?"
+          value={form.title}
+          onChange={(event) => update('title', event.target.value)}
+        />
+      </TaskField>
+      <div className="task-description-field">
+        <TaskField label="작업 설명" error={fieldErrors.description}>
+          <textarea
+            name="description"
+            required
+            maxLength={1000}
+            rows={4}
+            placeholder="수행할 내용과 결과물에 포함할 내용을 적어 주세요."
+            value={form.description}
+            onChange={(event) =>
+              update('description', event.target.value)
+            }
+          />
+        </TaskField>
+        <p className="character-count">
+          {form.description.length} / 1000자
+        </p>
+      </div>
+    </>
+  );
+  const planFields = (
+    <>
+      <div className="task-workload-field">
+        <TaskField
+          label="예상 작업량"
+          labelAccessory={<TaskWorkloadHelp />}
+          help="담당자 전체의 예상 시간을 합산해 선택하세요."
+        >
+          <select
+            name="weight"
+            required
+            value={form.weight}
+            onChange={(event) =>
+              update('weight', Number(event.target.value))
+            }
+          >
+            {expectedWorkloadOptions.map(({ weight, label }) => (
+              <option key={weight} value={weight}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </TaskField>
+      </div>
+      <section
+        className="task-schedule-fields"
+        aria-label="계획 일정 입력"
+      >
+        <h4>계획 일정</h4>
+        <div className="two-columns">
+          <TaskField
+            label="시작일"
+            error={fieldErrors.startAt}
+            showRequiredIndicator={false}
+          >
+            <DateTimeInput
+              name="startAt"
+              compactTime
+              required
+              timeRequired={false}
+              showRequirements
+              value={form.startAt}
+              onChange={(event) =>
+                update('startAt', event.target.value)
+              }
+            />
+          </TaskField>
+          <TaskField
+            label="마감"
+            error={fieldErrors.dueAt}
+            showRequiredIndicator={false}
+          >
+            <DateTimeInput
+              name="dueAt"
+              compactTime
+              required
+              timeRequired={false}
+              showRequirements
+              value={form.dueAt}
+              onChange={(event) => update('dueAt', event.target.value)}
+            />
+          </TaskField>
+        </div>
+      </section>
+    </>
+  );
   return (
     <Modal
       title={task ? '작업 수정' : '새 작업 만들기'}
@@ -333,7 +436,7 @@ export default function TaskForm({
       >
         {stepped && (
           <ol className="task-form-steps" aria-label="작업 입력 단계">
-            {(creating ? ['작업 내용', '담당자 배분'] : ['작업 내용', '담당·배분', '저장 전 확인']).map((label, index) => (
+            {(creating ? ['작업 내용', '작업 계획', '담당자 배분'] : ['작업 내용', '담당·배분', '저장 전 확인']).map((label, index) => (
               <li
                 key={label}
                 aria-current={step === index ? 'step' : undefined}
@@ -354,111 +457,23 @@ export default function TaskForm({
               className="task-form-section"
               aria-label="작업 내용 입력"
             >
-              <h3
-                tabIndex={-1}
-                data-step-title="0"
-                className="form-section-title"
-              >
-                작업 내용
-              </h3>
-              <TaskField label="작업 제목" error={fieldErrors.title}>
-                <input
-                  name="title"
-                  required
-                  maxLength={100}
-                  placeholder="어떤 작업인가요?"
-                  value={form.title}
-                  onChange={(event) => update('title', event.target.value)}
-                />
-              </TaskField>
-              <div className="task-description-field">
-                <TaskField label="작업 설명" error={fieldErrors.description}>
-                  <textarea
-                    name="description"
-                    required
-                    maxLength={1000}
-                    rows={4}
-                    placeholder="수행할 내용과 결과물에 포함할 내용을 적어 주세요."
-                    value={form.description}
-                    onChange={(event) =>
-                      update('description', event.target.value)
-                    }
-                  />
-                </TaskField>
-                <p className="character-count">
-                  {form.description.length} / 1000자
-                </p>
-              </div>
-              <div className="task-workload-field">
-                <TaskField
-                  label="예상 작업량"
-                  labelAccessory={<TaskWorkloadHelp />}
-                  help="담당자 전체의 예상 시간을 합산해 선택하세요."
-                >
-                  <select
-                    required
-                    value={form.weight}
-                    onChange={(event) =>
-                      update('weight', Number(event.target.value))
-                    }
-                  >
-                    {expectedWorkloadOptions.map(({ weight, label }) => (
-                      <option key={weight} value={weight}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </TaskField>
-              </div>
-              <section
-                className="task-schedule-fields"
-                aria-label="계획 일정 입력"
-              >
-                <h4>계획 일정</h4>
-                <div className="two-columns">
-                  <TaskField
-                    label="시작일"
-                    error={fieldErrors.startAt}
-                    showRequiredIndicator={false}
-                  >
-                    <DateTimeInput
-                      name="startAt"
-                      compactTime
-                      required
-                      timeRequired={false}
-                      showRequirements
-                      value={form.startAt}
-                      onChange={(event) =>
-                        update('startAt', event.target.value)
-                      }
-                    />
-                  </TaskField>
-                  <TaskField
-                    label="마감"
-                    error={fieldErrors.dueAt}
-                    showRequiredIndicator={false}
-                  >
-                    <DateTimeInput
-                      name="dueAt"
-                      compactTime
-                      required
-                      timeRequired={false}
-                      showRequirements
-                      value={form.dueAt}
-                      onChange={(event) => update('dueAt', event.target.value)}
-                    />
-                  </TaskField>
-                </div>
-              </section>
+              {contentFields}
+              {!splitPlanning && planFields}
             </section>
+            {splitPlanning && (
+              <section hidden={step !== 1} className="task-form-section" aria-label="작업 계획 입력">
+                <h3 tabIndex={-1} data-step-title="1" className="form-section-title">작업 계획</h3>
+                {planFields}
+              </section>
+            )}
             <section
-              hidden={stepped && step !== 1}
+              hidden={stepped && step !== assignmentStep}
               className="task-form-section assignment-form-section"
               aria-label="담당·배분 설정 입력"
             >
               <h3
                 tabIndex={-1}
-                data-step-title="1"
+                data-step-title={assignmentStep}
                 className="form-section-title"
               >
                 담당자·담당 비율{' '}
@@ -663,7 +678,7 @@ export default function TaskForm({
                   </p>
                 )}
             </section>
-            {creating && step === 1 && (
+            {creating && step === assignmentStep && (
               <details className="task-form-section task-form-review">
                 <summary><strong>생성할 작업 요약</strong></summary>
                 {reviewFacts}
@@ -800,7 +815,7 @@ export default function TaskForm({
           }
           onCancel={onClose}
           label={
-            creating && step === 0
+            creating && step < finalStep
               ? '다음'
               : mobile && step < finalStep
               ? step === 0

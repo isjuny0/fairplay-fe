@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   calendarDays,
   currentDateTime,
+  defaultFormDateTime,
   dateKey,
   daysInMonth,
   isValidDate,
@@ -39,4 +40,15 @@ test('달력은 시작 요일에 맞추고 방향키 이동은 월·연도를 �
   assert.equal(days.at(-1), 31);
   assert.equal(shiftDate('2026-12-31', 1), '2027-01-01');
   assert.equal(shiftDate('2028-03-01', -1), '2028-02-29');
+});
+
+
+test('입력폼 기본 시간은 한국 날짜의 00:00이며 현재 시각 함수는 유지한다', () => {
+  for (const [instant, expected] of [
+    ['2026-11-10T11:43:00Z', '2026-11-10T00:00'],
+    ['2026-11-10T15:01:00Z', '2026-11-11T00:00'],
+    ['2026-12-31T15:00:00Z', '2027-01-01T00:00'],
+    ['2028-02-28T15:00:00Z', '2028-02-29T00:00'],
+  ]) assert.equal(defaultFormDateTime(Date.parse(instant)), expected);
+  assert.match(defaultFormDateTime(), /^\d{4}-\d{2}-\d{2}T00:00$/);
 });

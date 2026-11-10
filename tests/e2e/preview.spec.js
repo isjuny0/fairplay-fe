@@ -264,6 +264,7 @@ test('평가 일정 저장 시 자동 시작과 팀 구성 고정을 안내하�
   });
   await page.getByRole('button', { name: '중간 평가 일정 설정', exact: true }).click();
   const dialog = page.getByRole('dialog');
+  await fillDateTime(dialog, '평가 시작 시각', toDateInput(koreanDateTime()));
   await fillDateTime(
     dialog,
     '평가 마감 시각',

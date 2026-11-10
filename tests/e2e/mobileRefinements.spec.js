@@ -168,7 +168,7 @@ test('화면 키보드가 줄인 표시 영역에 작성 창을 맞춘다', asyn
   await page.evaluate(() => { visualViewport.height = 500; visualViewport.dispatchEvent(new Event('resize')); });
   await expect(page.locator('body')).toHaveClass(/has-screen-keyboard/);
   expect((await dialog.boundingBox()).height).toBeLessThanOrEqual(484);
-  await expect(dialog.getByRole('button', { name: '등록', exact: true })).toBeInViewport();
+  await expect(dialog.getByRole('button', { name: '다음', exact: true })).toBeInViewport();
   await page.evaluate(() => { visualViewport.height = 844; visualViewport.dispatchEvent(new Event('resize')); });
   await expect(page.locator('body')).not.toHaveClass(/has-screen-keyboard/);
 });

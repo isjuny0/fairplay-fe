@@ -146,8 +146,6 @@
 .dashboard-team-card-identity .table-name-button { max-width: 100%; padding: 0; text-align: left; overflow-wrap: anywhere; }
 .dashboard-team-card-progress { display: grid; justify-items: center; gap: var(--space-1); }
 .dashboard-team-card-progress > span { display: flex; align-items: center; color: var(--text-muted); font-size: var(--text-caption); }
-.dashboard-team-card-progress .team-progress-ring--compact { width: 64px; height: 64px; }
-.dashboard-team-card-progress .team-progress-ring--compact strong { font-size: 16px; }
 .dashboard-team-card-footer { display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--text-muted); font-size: var(--text-caption); }
 .dashboard-team-card-footer strong { margin-left: 4px; color: var(--text-primary); font-weight: 500; }
 .manager-dashboard .dashboard-teams-table :is(th, td) { padding: 18px 16px; }

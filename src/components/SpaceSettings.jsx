@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router';
 import SectionTabs from './SectionTabs.jsx';
 import RefreshButton from './RefreshButton.jsx';
 import DateTimeInput from './DateTimeInput.jsx';
-import { currentDateTime } from '../lib/dateTime.js';
+import { defaultFormDateTime } from '../lib/dateTime.js';
 import {
   createJoinCode,
   getJoinCode,
@@ -42,7 +42,7 @@ export default function SpaceSettings({ space, onChanged }) {
       throw error;
     }
   }, [space.id, activeTab === 'join-code']);
-  const [defaultDateTime] = useState(currentDateTime);
+  const [defaultDateTime] = useState(defaultFormDateTime);
   const initialOpensAt =
     toDateInput(space.teamBuildingOpensAt) || defaultDateTime;
   const initialClosesAt =

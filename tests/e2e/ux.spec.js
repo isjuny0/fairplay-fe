@@ -188,6 +188,7 @@ for (const height of [844, 500])
     await dialog
       .getByLabel('작업 설명', { exact: true })
       .fill('키보드가 열린 높이에서도 다음 행동을 확인합니다.');
+    await next.click();
     await fillDateTime(dialog, '마감', '2030-12-01T18:00');
     await next.click();
 
@@ -214,6 +215,7 @@ test('세 담당자 균등 배분으로 작업을 생성한다', async ({
   await dialog
     .getByLabel('작업 설명', { exact: true })
     .fill('모든 담당자의 역할과 결과를 함께 확인합니다.');
+  await dialog.getByRole('button', { name: '다음', exact: true }).click();
   await fillDateTime(dialog, '마감', '2030-12-01T18:00');
   await dialog.getByRole('button', { name: '다음', exact: true }).click();
   for (const member of ['김준영 · 리더', '김영진 · 팀원', '박선우 · 팀원'])
@@ -504,6 +506,7 @@ test('모바일 작업 입력은 첫 오류로 초점을 옮기고 배분을 고
   await dialog
     .getByLabel('작업 설명', { exact: true })
     .fill('대상과 일정을 확정하고 조사 계획을 공유합니다.');
+  await dialog.getByRole('button', { name: '다음', exact: true }).click();
   await fillDateTime(dialog, '마감', '2030-12-01T18:00');
   await dialog
     .getByRole('button', { name: '다음', exact: true })

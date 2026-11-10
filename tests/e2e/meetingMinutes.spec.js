@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { fillDateTime } from "./helpers/dateTime.js";
+import { goToMeetingStep, submitMeeting } from "./helpers/meetingEditor.js";
 
 const path = "/spaces/1/teams/1/meeting-minutes";
 const base = "/api/teams/1/meeting-minutes";
@@ -254,7 +255,7 @@ test("팀 작업 메뉴에서 등록·상세·공동 수정·삭제와 KST·CSRF
   ).toHaveCount(0);
   await expect(page.locator(".meeting-minutes-page > .page-heading")).toHaveCSS(
     "border-bottom-width",
-    "0px",
+    "1px",
   );
   await expect(page.getByRole("region", { name: "회의록 목록" })).toHaveCSS(
     "border-top-width",
@@ -264,10 +265,11 @@ test("팀 작업 메뉴에서 등록·상세·공동 수정·삭제와 KST·CSRF
   await dialog.getByLabel("제목", { exact: true }).fill("신규 회의");
   await fillDateTime(dialog, "회의일시", "2026-11-01T19:30");
   await dialog.getByLabel("현재 팀원", { exact: true }).check();
+  await goToMeetingStep(dialog, 1);
   await dialog
     .getByRole("textbox", { name: "안건", exact: true })
     .fill(" 안건\n ");
-  await dialog.getByRole("button", { name: "논의 내용", exact: true }).click();
+  await goToMeetingStep(dialog, 2);
   await dialog
     .getByRole("textbox", { name: "논의 내용", exact: true })
     .fill("**작성 내용**");
@@ -275,18 +277,14 @@ test("팀 작업 메뉴에서 등록·상세·공동 수정·삭제와 KST·CSRF
   await expect(
     dialog.getByRole("region", { name: "본문 미리보기" }),
   ).toContainText("작성 내용");
-  await dialog.getByRole("button", { name: "등록", exact: true }).click();
+  await submitMeeting(dialog, "등록");
   await expect(
     page.getByRole("heading", { name: "신규 회의", exact: true }),
   ).toBeVisible();
-  const detailToolbar = page.locator(".meeting-detail-toolbar");
-  await expect(detailToolbar.getByRole("button")).toHaveCount(1);
-  await expect(
-    detailToolbar.getByRole("button", { name: "← 목록으로" }),
-  ).toBeVisible();
-  await expect(
-    detailToolbar.getByText("팀 회의록", { exact: true }),
-  ).toHaveCount(0);
+  const back = page.locator('.meeting-minutes-page > .detail-back-button');
+  await expect(back).toHaveCount(1);
+  await expect(back).toHaveText('← 목록으로');
+  await expect(back).toBeVisible();
   const created = api.calls.find(
     (call) => call.method === "POST" && call.target === base,
   );
@@ -307,7 +305,7 @@ test("팀 작업 메뉴에서 등록·상세·공동 수정·삭제와 KST·CSRF
   const edit = page.getByRole("dialog", { name: "팀 회의록 수정" });
   await expect(edit.getByLabel("탈퇴한 참석자 · 이전 참석자")).toBeChecked();
   await edit.getByLabel("제목", { exact: true }).fill("팀원이 공동 수정");
-  await edit.getByRole("button", { name: "수정 저장", exact: true }).click();
+  await submitMeeting(edit, "수정 저장");
   await expect(
     page.getByRole("heading", { name: "팀원이 공동 수정" }),
   ).toBeVisible();
@@ -339,7 +337,7 @@ test("버전 충돌은 입력을 보존하고 최신 필드 비교와 확인 후
   api.items[0].version = 1;
   api.items[0].title = "서버 최신 제목";
   api.items[0].content = "다른 팀원의 최신 논의";
-  await dialog.getByRole("button", { name: "수정 저장", exact: true }).click();
+  await submitMeeting(dialog, "수정 저장");
   await expect(dialog.getByLabel("제목", { exact: true })).toHaveValue(
     "내 수정",
   );
@@ -367,7 +365,7 @@ test("버전 충돌은 입력을 보존하고 최신 필드 비교와 확인 후
     "서버 최신 제목",
   );
   expect(api.calls.filter((call) => call.method === "PATCH")).toHaveLength(1);
-  await dialog.getByRole("button", { name: "수정 저장", exact: true }).click();
+  await submitMeeting(dialog, "수정 저장");
   await page
     .getByRole("dialog", { name: "최신 내용에 내 수정 반영" })
     .getByRole("button", { name: "내 수정 저장", exact: true })
@@ -388,7 +386,7 @@ test("저장 실패·미저장 닫기 확인 및 빈 본문 등록을 처리한�
   await page.goto(path);
   const dialog = await editor(page);
   await dialog.getByLabel("제목", { exact: true }).fill(" ");
-  await dialog.getByRole("button", { name: "등록", exact: true }).click();
+  await dialog.getByRole("button", { name: "다음", exact: true }).click();
   await expect(
     dialog.getByText("제목은 공백을 제외하고 1~100자로 입력해 주세요.", {
       exact: true,
@@ -399,7 +397,7 @@ test("저장 실패·미저장 닫기 확인 및 빈 본문 등록을 처리한�
   await dialog.getByLabel("제목", { exact: true }).fill("제목과 일시만");
   await fillDateTime(dialog, "회의일시", "2031-01-01T19:00");
   api.control.failWrite = true;
-  await dialog.getByRole("button", { name: "등록", exact: true }).click();
+  await submitMeeting(dialog, "등록");
   await expect(
     dialog.getByText("입력한 내용은 유지하고 있습니다"),
   ).toBeVisible();
@@ -412,7 +410,7 @@ test("저장 실패·미저장 닫기 확인 및 빈 본문 등록을 처리한�
     "제목과 일시만",
   );
   api.control.failWrite = false;
-  await dialog.getByRole("button", { name: "등록", exact: true }).click();
+  await submitMeeting(dialog, "등록");
   await expect(
     page.getByRole("heading", { name: "제목과 일시만", exact: true }),
   ).toBeVisible();
@@ -497,7 +495,7 @@ test("승인된 관리자와 1인 팀은 종료된 스페이스에서도 작성�
   const dialog = await editor(page);
   await dialog.getByLabel("제목", { exact: true }).fill("혼자 기록");
   await fillDateTime(dialog, "회의일시", "2026-10-27T09:00");
-  await dialog.getByRole("button", { name: "등록", exact: true }).click();
+  await submitMeeting(dialog, "등록");
   await expect(
     page.getByRole("heading", { name: "혼자 기록", exact: true }),
   ).toBeVisible();
@@ -530,7 +528,7 @@ test("편집 중 시작된 삭제 동의는 입력을 보존하며 변경 요청
   const dialog = page.getByRole("dialog", { name: "팀 회의록 수정" });
   await dialog.getByLabel("제목", { exact: true }).fill("동결 시 보존할 제목");
   api.control.freezeWrite = true;
-  await dialog.getByRole("button", { name: "수정 저장", exact: true }).click();
+  await submitMeeting(dialog, "수정 저장");
   await expect(dialog.getByLabel("제목", { exact: true })).toHaveValue(
     "동결 시 보존할 제목",
   );
@@ -574,7 +572,7 @@ test("빈 목록·조회 실패·재조회와 서버에서 삭제된 편집 대�
   const dialog = page.getByRole("dialog", { name: "팀 회의록 수정" });
   await dialog.getByLabel("제목", { exact: true }).fill("삭제된 회의의 초안");
   api.items.length = 0;
-  await dialog.getByRole("button", { name: "수정 저장", exact: true }).click();
+  await submitMeeting(dialog, "수정 저장");
   await expect(dialog.getByRole("alert")).toContainText(
     "회의록이 삭제되었습니다.",
   );
@@ -617,7 +615,7 @@ test("편집 중 접근 권한이 사라지면 원문과 모달을 숨기고 자
   const dialog = page.getByRole("dialog", { name: "팀 회의록 수정" });
   await dialog.getByLabel("제목", { exact: true }).fill("보존할 입력");
   api.control.denied = true;
-  await dialog.getByRole("button", { name: "수정 저장", exact: true }).click();
+  await submitMeeting(dialog, "수정 저장");
   await expect(dialog).toHaveCount(0);
   await expect(page.locator(".meeting-detail")).toHaveCount(0);
   expect(api.calls.filter((call) => call.method === "PATCH")).toHaveLength(1);
@@ -669,17 +667,12 @@ for (const width of [320, 390, 1440])
       .click();
     const dialog = page.getByRole("dialog", { name: "팀 회의록 수정" });
     await dialog.getByLabel("제목", { exact: true }).fill("반응형 확인");
-    const save = dialog.getByRole("button", { name: "수정 저장", exact: true });
+    const save = dialog.locator(".modal-actions button[type=submit]");
     await expect(save).toBeInViewport();
     expect(
       await dialog.evaluate((node) => node.scrollWidth <= node.clientWidth),
     ).toBe(true);
-    await dialog
-      .getByRole("button", { name: "논의 내용", exact: true })
-      .scrollIntoViewIfNeeded();
-    await dialog
-      .getByRole("button", { name: "논의 내용", exact: true })
-      .click();
+    await goToMeetingStep(dialog, 2);
     await expect(
       dialog.getByRole("textbox", { name: "논의 내용", exact: true }),
     ).toBeVisible();
@@ -687,7 +680,7 @@ for (const width of [320, 390, 1440])
     await page.screenshot({
       path: testInfo.outputPath(`meeting-editor-${width}.png`),
     });
-    await save.click();
+    await submitMeeting(dialog, "수정 저장");
     await expect(
       page.getByRole("heading", { name: "반응형 확인", exact: true }),
     ).toBeVisible();
@@ -705,7 +698,7 @@ test("미리보기 CRUD는 실제 서버를 호출하지 않고 새로고침 후
   const dialog = await editor(page);
   await dialog.getByLabel("제목", { exact: true }).fill("미리보기 회의");
   await fillDateTime(dialog, "회의일시", "2026-10-27T19:00");
-  await dialog.getByRole("button", { name: "등록", exact: true }).click();
+  await submitMeeting(dialog, "등록");
   await expect(
     page.getByRole("heading", { name: "미리보기 회의", exact: true }),
   ).toBeVisible();

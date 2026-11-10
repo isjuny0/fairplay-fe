@@ -10,6 +10,44 @@ const person = (dialog, index) =>
 const percent = (dialog, index) =>
   dialog.getByLabel(`${names[index]} 배분율`, { exact: true });
 
+for (const [width, height] of [[320, 844], [390, 500], [1440, 900]]) {
+  test(`${width}×${height} 스크롤 중 단계·담당 요약이 담당자 선택과 배분율을 덮지 않는다`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await page.goto('/preview/spaces/1/teams/1/tasks');
+    await page.getByRole('button', { name: '새 작업 만들기', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '새 작업 만들기', exact: true });
+    await dialog.getByLabel('작업 제목', { exact: true }).fill('스크롤 중 배분 확인');
+    await dialog.getByLabel('작업 설명', { exact: true }).fill('단계와 담당 요약이 입력을 가리지 않는지 확인합니다.');
+    await dialog.getByRole('button', { name: '다음', exact: true }).click();
+    await dialog.getByRole('button', { name: '다음', exact: true }).click();
+    await expect(dialog.getByRole('heading', { name: '담당자·담당 비율', exact: true })).toBeFocused();
+    const body = dialog.locator('.modal-body');
+    const steps = dialog.getByRole('list', { name: '작업 입력 단계', exact: true });
+    const summary = dialog.locator('.allocation-summary');
+    await body.evaluate(el => { el.scrollTop = 0; });
+    const beforeSteps = await steps.boundingBox();
+    const beforeSummary = await summary.boundingBox();
+    await body.evaluate(el => { el.scrollTop = 250; });
+    const distance = await body.evaluate(el => el.scrollTop);
+    expect(distance).toBeGreaterThan(80);
+    expect(Math.abs((await steps.boundingBox()).y - beforeSteps.y + distance)).toBeLessThanOrEqual(1);
+    expect(Math.abs((await summary.boundingBox()).y - beforeSummary.y + distance)).toBeLessThanOrEqual(1);
+    for (const index of [0, 2]) {
+      await person(dialog, index).scrollIntoViewIfNeeded();
+      await person(dialog, index).check();
+      await expect(person(dialog, index)).toBeChecked();
+    }
+    await percent(dialog, 0).fill('60');
+    await percent(dialog, 2).fill('40');
+    await body.evaluate(el => { el.scrollTop = el.scrollHeight; });
+    await expect(dialog.getByRole('button', { name: '닫기', exact: true })).toBeInViewport();
+    await expect(dialog.getByRole('button', { name: '이전', exact: true })).toBeInViewport();
+    await expect(dialog.getByRole('button', { name: '저장', exact: true })).toBeInViewport();
+    await dialog.getByRole('button', { name: '저장', exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+  });
+}
+
 async function expectAllocation(dialog, values) {
   for (let index = 0; index < values.length; index++) {
     if (values[index] == null)
@@ -44,6 +82,7 @@ for (const width of [1440, 390]) {
     await dialog
       .getByLabel('작업 설명', { exact: true })
       .fill('선택한 담당자에게 자동으로 배분합니다.');
+    await dialog.getByRole('button', { name: '다음', exact: true }).click();
     await dialog.getByRole('button', { name: '다음', exact: true }).click();
 
     await person(dialog, 0).check();

@@ -127,7 +127,7 @@ export default function DateTimeInput({
     setDraft(selected);
     change(
       selected,
-      timeValue || (timeRequired === false ? '' : currentDateTime().slice(11)),
+      timeValue || (timeRequired === false ? '' : '00:00'),
     );
     setOpen(false);
     trigger.current?.focus();
@@ -187,7 +187,7 @@ export default function DateTimeInput({
         className="date-time-caption"
         title={
           showRequirements && !isTimeRequired
-            ? '미입력 시 기존 시간(새 작업은 기본 시간)을 유지합니다.'
+            ? '미입력 시 기존 시간(새 작업은 00:00)을 유지합니다.'
             : undefined
         }
       >
@@ -216,7 +216,7 @@ export default function DateTimeInput({
             change(
               event.target.value,
               timeValue ||
-                (timeRequired === false ? '' : currentDateTime().slice(11)),
+                (timeRequired === false ? '' : '00:00'),
             );
           }}
         />

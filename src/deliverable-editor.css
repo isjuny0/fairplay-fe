@@ -199,3 +199,14 @@
   .deliverable-linked-task { flex-wrap: wrap; gap: 4px 12px; }
   .deliverable-file-input { padding: 16px 12px; }
 }
+@media (max-width: 720px) {
+  .modal-backdrop:has(.deliverable-registration-modal.is-content-editor) { padding: 0; }
+  .modal.deliverable-registration-modal.is-content-editor {
+    width: 100%;
+    height: min(680px, calc(var(--mobile-available-height, 100dvh) - 24px));
+    max-height: min(680px, calc(var(--mobile-available-height, 100dvh) - 24px));
+  }
+  .deliverable-registration-modal.is-content-editor .modal-header { padding: 8px 12px; }
+  .deliverable-registration-modal.is-content-editor .deliverable-editor-scroll { padding: 12px; }
+  .deliverable-registration-modal.is-content-editor .deliverable-editor-form > .modal-actions { padding: 8px 12px; }
+}

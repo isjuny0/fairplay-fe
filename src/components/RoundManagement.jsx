@@ -1,4 +1,5 @@
-import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
+import { apiTimeToEpoch } from '../lib/koreanTime.js';
+import { defaultFormDateTime } from '../lib/dateTime.js';
 import RefreshButton from './RefreshButton.jsx';
 import '../space-operation.css';
 import { useEffect, useId, useRef, useState } from 'react';
@@ -121,11 +122,15 @@ export default function RoundManagement({ context, onChanged }) {
     setEditing({ kind, round });
     const earliestStart = Math.max(Date.now(), apiTimeToEpoch(context.space.teamBuildingClosesAt) || 0,
       round.type === 'FINAL' ? apiTimeToEpoch(rounds.find((item) => item.type === 'MID')?.closesAt) || 0 : 0);
+    const midnight = defaultFormDateTime(earliestStart);
+    // Keep automatic evaluation starts after the existing scheduling boundary.
+    const defaultStart = apiTimeToEpoch(midnight) < earliestStart
+      ? defaultFormDateTime(earliestStart + 86400000) : midnight;
     const nextForm = guidedEvaluation && guide.stepId === 'evaluation-schedule' && kind === 'create' && round.type === 'MID'
       ? { ...guide.evaluationSchedule } : {
         type: round.type,
-        opensAt: toDateInput(round.opensAt) || koreanDateTime(earliestStart).slice(0, 16),
-        closesAt: toDateInput(round.closesAt) || koreanDateTime(earliestStart + 7 * 86400000).slice(0, 16),
+        opensAt: toDateInput(round.opensAt) || defaultStart,
+        closesAt: toDateInput(round.closesAt) || defaultFormDateTime(apiTimeToEpoch(defaultStart) + 7 * 86400000),
       };
     setForm(nextForm);
     setInitialForm(nextForm);

@@ -16,7 +16,7 @@ async function openCreate(page) {
 test('새 스페이스는 시작 시각만 채우고 종료일을 선택해야 만들 수 있다', async ({ page }) => {
   const dialog = await openCreate(page);
   await expect(dialog.getByLabel('프로젝트 시작 날짜', { exact: true })).toHaveValue('2026-10-12');
-  await expect(dialog.getByLabel('프로젝트 시작 시간', { exact: true })).toHaveValue('18:15');
+  await expect(dialog.getByLabel('프로젝트 시작 시간', { exact: true })).toHaveValue('00:00');
   const endDate = dialog.getByLabel('프로젝트 종료 날짜', { exact: true });
   await expect(endDate).toHaveValue('');
   await expect(dialog.getByLabel('프로젝트 종료 시간', { exact: true })).toHaveValue('');
@@ -82,7 +82,7 @@ for (const width of [1440, 390]) {
     ).toHaveValue('2028-02-29');
     await expect(
       dialog.getByLabel('프로젝트 시작 시간', { exact: true }),
-    ).toHaveValue('18:15');
+    ).toHaveValue('00:00');
     await dialog
       .getByLabel('프로젝트 시작 시간', { exact: true })
       .fill('10:45');
@@ -236,7 +236,7 @@ for (const width of [1440, 390, 320]) {
     await expect(picker.getByLabel('선택한 시간')).toHaveText('09:35');
     await expect(
       dialog.getByLabel('프로젝트 시작 시간', { exact: true }),
-    ).toHaveValue('18:15');
+    ).toHaveValue('00:00');
     await picker
       .getByRole('button', { name: '시간 적용', exact: true })
       .click();
@@ -277,17 +277,17 @@ test('시간 선택 방향키와 Escape, 날짜·시간 선택기 상호 닫기,
   await trigger.click();
   const picker = dialog.getByRole('region', { name: '시간 선택', exact: true });
   await picker
-    .getByRole('button', { name: '18시', exact: true })
+    .getByRole('button', { name: '00시', exact: true })
     .press('ArrowDown');
   await expect(
-    picker.getByRole('button', { name: '19시', exact: true }),
+    picker.getByRole('button', { name: '01시', exact: true }),
   ).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(picker).toHaveCount(0);
   await expect(trigger).toBeFocused();
   await expect(
     dialog.getByLabel('프로젝트 시작 시간', { exact: true }),
-  ).toHaveValue('18:15');
+  ).toHaveValue('00:00');
   await dialog
     .getByRole('button', {
       name: '프로젝트 시작 달력 열기',

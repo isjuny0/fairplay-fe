@@ -2,8 +2,9 @@
   width: min(1120px, calc(100vw - 48px));
 }
 .real-modal.task-create-modal {
+  --task-create-height: min(800px, calc(100dvh - 48px));
   width: min(900px, calc(100vw - 48px));
-  height: min(800px, calc(100dvh - 48px));
+  height: var(--task-create-height);
 }
 .task-create-modal .modal-body { flex: 1; }
 .task-create-form { display: flex; flex-direction: column; min-height: 100%; }
@@ -66,6 +67,10 @@
 .task-editor-form .task-description-field textarea {
   min-height: 104px;
   height: 104px;
+}
+.task-create-form .task-description-field textarea {
+  min-height: 140px;
+  height: clamp(140px, calc(var(--task-create-height) - 452px), 360px);
 }
 .task-editor-form .task-description-field .character-count {
   margin: 6px 0 0;
@@ -354,9 +359,12 @@
   }
 }
 @media (max-width: 720px) {
-  .real-modal.task-create-modal { width: 100%; height: calc(100dvh - 24px); max-height: calc(100dvh - 24px); }
-  .modal-editor:has(.task-editor-form) {
+  .modal.modal-editor:has(.task-editor-form) {
+    --task-create-height: min(680px, calc(var(--mobile-available-height, 100dvh) - 24px));
     width: 100%;
+    height: min(680px, calc(var(--mobile-available-height, 100dvh) - 24px));
+    max-height: min(680px, calc(var(--mobile-available-height, 100dvh) - 24px));
+    border-radius: 12px;
   }
   .task-editor-form .task-form-section {
     gap: 18px;
@@ -367,7 +375,6 @@
     grid-template-columns: minmax(0, 1fr);
   }
   .task-editor-form .task-form-steps {
-    top: -20px;
     margin-top: 0;
   }
   .task-editor-form .assignment-allocation-panel {
