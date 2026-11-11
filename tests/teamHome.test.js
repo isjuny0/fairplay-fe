@@ -109,3 +109,52 @@ test('공유 일정은 삭제 동의 중 조회만 가능하고 개인 메모는
     status: 403,
   });
 });
+
+
+test('브리핑은 펼침·재조회만으로 확인되지 않고 확인한 뒤에만 사라진다', async () => {
+  const first = await previewRequest('/api/teams/1/briefing');
+  assert.equal(first.hasUpdates, true);
+  assert.equal(first.highlights.length, Math.min(2, first.items.length));
+  assert.equal(first.totalEventCount, first.items.length);
+  assert.equal(first.additionalCount, first.items.length - first.highlights.length);
+  const second = await previewRequest('/api/teams/1/briefing');
+  assert.deepEqual(second.items, first.items);
+  const material = first.items.find(({ targetType }) => targetType === 'DELIVERABLE');
+  assert.equal((await previewRequest(`/api/deliverables/${material.targetId}`)).id, material.targetId);
+  const result = await previewRequest('/api/teams/1/briefing/acknowledge', {
+    method: 'POST', body: { ackToken: first.ackToken },
+  });
+  assert.equal(result, null);
+  const empty = await previewRequest('/api/teams/1/briefing');
+  assert.equal(empty.hasUpdates, false);
+  assert.deepEqual(empty.items, []);
+  assert.equal(empty.ackToken, null);
+});
+
+test('브리핑 확인은 다른 사용자와 관리자의 접근을 거부한다', async () => {
+  const briefing = await previewRequest('/api/teams/1/briefing');
+  setPreviewRole('member');
+  await assert.rejects(previewRequest('/api/teams/1/briefing/acknowledge', {
+    method: 'POST', body: { ackToken: briefing.ackToken },
+  }), { code: 'FORBIDDEN' });
+  setPreviewRole('manager');
+  await assert.rejects(previewRequest('/api/teams/1/briefing'), { code: 'FORBIDDEN' });
+  setPreviewRole('leader');
+  assert.equal((await previewRequest('/api/teams/1/briefing')).hasUpdates, true);
+});
+
+test('이전 브리핑 확인을 반복해도 조회 이후의 새 변경은 남아 있다', async () => {
+  const briefing = await previewRequest('/api/teams/1/briefing');
+  const context = previewContext(), state = getMockState(context);
+  state.teamBriefingEvents[1].push({
+    ...briefing.items[0], id: 'task-new-change', position: briefing.totalEventCount + 1,
+    title: '조회 이후의 새 변경',
+  });
+  saveMockState(context, state);
+  for (let repeat = 0; repeat < 2; repeat++) await previewRequest('/api/teams/1/briefing/acknowledge', {
+    method: 'POST', body: { ackToken: briefing.ackToken },
+  });
+  const next = await previewRequest('/api/teams/1/briefing');
+  assert.equal(next.items.length, 1);
+  assert.equal(next.items[0].title, '조회 이후의 새 변경');
+});

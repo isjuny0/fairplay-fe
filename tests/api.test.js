@@ -1,3 +1,5 @@
+import { getTeamBriefing, acknowledgeTeamBriefing } from '../src/api/teamBriefing.js';
+import { getDeliverable } from '../src/api/deliverables.js';
 import {
   getTeamReport,
   generateTeamReport,
@@ -742,4 +744,20 @@ test('스페이스 리포트는 백엔드 확정 DTO와 비율 확정 여부를 
     globalThis.fetch = async () => jsonResponse({ ...response, ...change });
     await assert.rejects(getSpaceReports(7), { code: 'REPORT_MANAGEMENT_INVALID' });
   }
+});
+
+
+test('팀 브리핑 조회와 확인은 팀 경로와 서버 토큰을 사용한다', async () => {
+  await getTeamBriefing(12);
+  await acknowledgeTeamBriefing(12, 'server-token');
+  assert.equal(calls[0].url, '/api/teams/12/briefing');
+  const request = calls.find(({ method }) => method === 'POST');
+  assert.equal(request.url, '/api/teams/12/briefing/acknowledge');
+  assert.equal(request.headers['X-CSRF-TOKEN'], 'token');
+  assert.deepEqual(JSON.parse(request.body), { ackToken: 'server-token' });
+});
+
+test('브리핑 자료는 목록 페이지와 무관하게 ID로 상세 조회한다', async () => {
+  await getDeliverable(17);
+  assert.equal(calls[0].url, '/api/deliverables/17');
 });

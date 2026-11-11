@@ -39,6 +39,7 @@ export async function findTaskDeliverable(teamId, taskId, deliverableId) {
       throw new ApiError(404, { message: "자료가 삭제되었거나 연결이 변경되어 현재 작업에서 조회할 수 없습니다." });
   }
 }
+export const getDeliverable = (id) => apiRequest(`/api/deliverables/${id}`);
 export const createDeliverable = (teamId, body) =>
   apiRequest(`/api/teams/${teamId}/deliverables`, { method: "POST", body });
 export const uploadDeliverable = (teamId, input, file) => {

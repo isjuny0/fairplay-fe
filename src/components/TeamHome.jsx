@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import Icon from './Icon.jsx';
 import TeamHomeCalendar from './TeamHomeCalendar.jsx';
+import TeamBriefingCard from './team-briefing/TeamBriefingCard.jsx';
 import DashboardMetricHelp from './DashboardMetricHelp.jsx';
 import DashboardWidgetFrame from './DashboardWidgetFrame.jsx';
 import TeamHomeContribution from './TeamHomeContribution.jsx';
@@ -547,6 +548,7 @@ function TeamDashboard({
           </details>
         </div>
       </header>
+      <TeamBriefingCard spaceId={context.space.id} teamId={context.team.id} userId={context.user.id} />
       <ErrorNotice error={saveError} />
       {saving && (
         <p role="status" className="field-help">
