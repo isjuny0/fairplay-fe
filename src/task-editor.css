@@ -1,18 +1,18 @@
 .modal-editor:has(.task-editor-form) {
   width: min(1120px, calc(100vw - 48px));
 }
-.real-modal.task-create-modal {
-  --task-create-height: min(800px, calc(100dvh - 48px));
+.real-modal.task-wizard-modal {
+  --task-wizard-height: min(800px, calc(100dvh - 48px));
   width: min(900px, calc(100vw - 48px));
-  height: var(--task-create-height);
+  height: var(--task-wizard-height);
 }
-.task-create-modal .modal-body { flex: 1; }
-.task-create-form { display: flex; flex-direction: column; min-height: 100%; }
-.task-create-form > .form-fields { flex: 1 0 auto; align-content: start; }
-.task-editor-form.task-create-form .task-form-layout { display: grid; grid-template-columns: minmax(0, 1fr); }
-.task-create-form .task-form-steps { position: static; flex-shrink: 0; margin: 0 0 20px; padding: 0; }
+.task-wizard-modal .modal-body { flex: 1; }
+.task-wizard-form { display: flex; flex-direction: column; min-height: 100%; }
+.task-wizard-form > .form-fields { flex: 1 0 auto; align-content: start; }
+.task-editor-form.task-wizard-form .task-form-layout { display: grid; grid-template-columns: minmax(0, 1fr); }
+.task-wizard-form .task-form-steps { position: static; flex-shrink: 0; margin: 0 0 20px; padding: 0; }
 @media (min-width: 721px) {
-  .task-create-form > .form-review-summary { margin-top: var(--space-4); }
+  .task-wizard-form > .form-review-summary { margin-top: var(--space-4); }
 }
 .task-editor-form .required-asterisk {
   color: #d83b45;
@@ -71,9 +71,9 @@
   min-height: 104px;
   height: 104px;
 }
-.task-create-form .task-description-field textarea {
+.task-wizard-form .task-description-field textarea {
   min-height: 140px;
-  height: clamp(140px, calc(var(--task-create-height) - 452px), 360px);
+  height: clamp(140px, calc(var(--task-wizard-height) - 452px), 360px);
 }
 .task-editor-form .task-description-field .character-count {
   margin: 6px 0 0;
@@ -363,7 +363,7 @@
 }
 @media (max-width: 720px) {
   .modal.modal-editor:has(.task-editor-form) {
-    --task-create-height: min(680px, calc(var(--mobile-available-height, 100dvh) - 24px));
+    --task-wizard-height: min(680px, calc(var(--mobile-available-height, 100dvh) - 24px));
     width: 100%;
     height: min(680px, calc(var(--mobile-available-height, 100dvh) - 24px));
     max-height: min(680px, calc(var(--mobile-available-height, 100dvh) - 24px));

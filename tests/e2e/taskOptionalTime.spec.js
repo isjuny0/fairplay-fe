@@ -1,3 +1,4 @@
+import { goToTaskFormStep } from './helpers/taskForm.js';
 import { test, expect } from '@playwright/test';
 
 for (const width of [1440, 390, 320]) {
@@ -8,6 +9,7 @@ for (const width of [1440, 390, 320]) {
     await page.goto('/preview/spaces/1/teams/1/tasks/103');
     await page.getByRole('button', { name: '작업 수정', exact: true }).click();
     const editor = page.getByRole('dialog', { name: '작업 수정', exact: true });
+    await goToTaskFormStep(editor, 1);
     await expect(editor.locator('.task-editor-intro')).toHaveCount(0);
     await expect(editor.getByText('필수 입력', { exact: true })).toHaveCount(0);
     const times = [];
@@ -34,17 +36,11 @@ for (const width of [1440, 390, 320]) {
       await date.fill(`2030-12-0${index + 1}`);
       await expect(time).toHaveValue('');
     }
-    if (width <= 600) {
-      await editor
-        .getByRole('button', { name: '다음: 담당·배분', exact: true })
-        .click();
-      await editor
-        .getByRole('button', { name: '다음: 저장 전 확인', exact: true })
-        .click();
-    }
+    await goToTaskFormStep(editor, 2);
     await editor.getByRole('button', { name: '저장', exact: true }).click();
     await expect(editor).toHaveCount(0);
     await page.getByRole('button', { name: '작업 수정', exact: true }).click();
+    await goToTaskFormStep(editor, 1);
     for (const [index, label] of ['시작일', '마감'].entries()) {
       await expect(
         editor.getByRole('textbox', { name: `${label} 날짜`, exact: true }),
@@ -62,10 +58,11 @@ for (const width of [1440, 390, 320]) {
     await page.goto('/preview/spaces/1/teams/1/tasks/103');
     await page.getByRole('button', { name: '작업 수정', exact: true }).click();
     const editor = page.getByRole('dialog', { name: '작업 수정', exact: true });
+    await goToTaskFormStep(editor, 1);
     const next = () =>
       editor
         .getByRole('button', {
-          name: width <= 600 ? '다음: 담당·배분' : '저장',
+          name: '다음',
           exact: true,
         })
         .click();
@@ -135,6 +132,7 @@ for (const width of [1440, 390]) {
     await expect(editor).toHaveCount(0);
     await page.getByRole('button', { name: '작업 수정', exact: true }).click();
     const edit = page.getByRole('dialog', { name: '작업 수정', exact: true });
+    await goToTaskFormStep(edit, 1);
     for (const [index, label] of ['시작일', '마감'].entries()) {
       await expect(
         edit.getByRole('textbox', { name: `${label} 시간`, exact: true }),

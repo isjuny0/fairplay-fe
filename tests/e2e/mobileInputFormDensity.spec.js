@@ -68,8 +68,7 @@ for (const [width, height] of [[320, 844], [390, 500], [481, 1248], [720, 1000]]
       await page.getByRole('button', { name: editing ? '작업 수정' : '새 작업 만들기', exact: true }).click();
       const dialog = page.getByRole('dialog', { name: editing ? '작업 수정' : '새 작업 만들기', exact: true });
       expect(await dialog.boundingBox()).toEqual(meetingBox);
-      if (editing) await expect(dialog.getByLabel('작업 설명', { exact: true })).toHaveCSS('height', '104px');
-      else expect((await dialog.getByLabel('작업 설명', { exact: true }).boundingBox()).height).toBeGreaterThan(104);
+      expect((await dialog.getByLabel('작업 설명', { exact: true }).boundingBox()).height).toBeGreaterThan(104);
       await expect(dialog.getByRole('button', { name: '닫기', exact: true })).toBeInViewport();
       await expect(dialog.getByRole('button', { name: '취소', exact: true })).toBeInViewport();
       if (!editing) {

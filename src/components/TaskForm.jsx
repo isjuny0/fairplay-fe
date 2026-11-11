@@ -10,7 +10,6 @@ import DateTimeInput from './DateTimeInput.jsx';
 import TaskWorkloadHelp from './TaskWorkloadHelp.jsx';
 import { defaultFormDateTime } from '../lib/dateTime.js';
 import { apiTimeToEpoch } from '../lib/koreanTime.js';
-import useMobileLayout from '../hooks/useMobileLayout.js';
 import useSaveRecovery from '../hooks/useSaveRecovery.js';
 import { getTask, recommendTaskAssignees } from '../api/tasks.js';
 import './task-assignee-recommendation.css';
@@ -120,18 +119,14 @@ export default function TaskForm({
     initialForm.dueAt || defaultDateTime,
   );
   const estimatedMinutes = Number(form.estimatedMinutes);
-  const mobile = useMobileLayout();
   const creating = !task;
-  const splitPlanning = creating;
-  const stepped = creating || mobile;
   const finalStep = 2;
-  const assignmentStep = splitPlanning ? 2 : 1;
   const fieldStep = (name) =>
     ['title', 'description'].includes(name)
       ? 0
       : ['estimatedMinutes', 'startAt', 'dueAt'].includes(name)
-        ? splitPlanning ? 1 : 0
-        : assignmentStep;
+        ? 1
+        : 2;
   const [step, setStep] = useState(0);
   const formElement = useRef(null);
   const goToStep = (nextStep) => {
@@ -261,19 +256,19 @@ export default function TaskForm({
           : {}),
     });
     const errors =
-      stepped && step < finalStep
+      step < finalStep
         ? Object.fromEntries(
             Object.entries(allErrors).filter(([name]) => fieldStep(name) === step),
           )
         : allErrors;
     setFieldErrors(errors);
     if (Object.keys(errors).length) {
-      if (stepped && step === finalStep)
+      if (step === finalStep)
         setStep(Math.min(...Object.keys(errors).map(fieldStep)));
       focusFirstFieldError(event.currentTarget, errors);
       return;
     }
-    if (stepped && step < finalStep) {
+    if (step < finalStep) {
       goToStep(step + 1);
       return;
     }
@@ -309,45 +304,6 @@ export default function TaskForm({
       version,
     );
   };
-  const reviewFacts = (
-    <dl className="review-facts">
-      <div>
-        <dt>작업 제목</dt>
-        <dd>{form.title}</dd>
-      </div>
-      <div>
-        <dt>작업 설명</dt>
-        <dd className="preserve-lines">{form.description}</dd>
-      </div>
-      <div>
-        <dt>예상 시간</dt>
-        <dd>{formatEstimatedTime(estimatedMinutes)}</dd>
-      </div>
-      <div>
-        <dt>시작일</dt>
-        <dd>
-          {reviewDate(startAt)}
-        </dd>
-      </div>
-      <div>
-        <dt>마감</dt>
-        <dd>
-          {reviewDate(dueAt)}
-        </dd>
-      </div>
-      <div>
-        <dt>담당 배분</dt>
-        <dd>
-          {form.assignees.map((assignment) => (
-            <span key={assignment.userId}>
-              {memberName(editingMembers, assignment.userId)}{' '}
-              {assignment.allocationPercent}%<br />
-            </span>
-          ))}
-        </dd>
-      </div>
-    </dl>
-  );
   const contentFields = (
     <>
       <h3
@@ -457,55 +413,50 @@ export default function TaskForm({
       onClose={onClose}
       wide
       editor
-      className={creating ? 'task-create-modal' : ''}
+      className="task-wizard-modal"
       dirty={dirty}
     >
       <form
-        className={`task-editor-form${creating ? ' task-create-form' : ''}`}
+        className="task-editor-form task-wizard-form"
         ref={formElement}
         onSubmit={submit}
         noValidate
       >
-        {stepped && (
-          <ol className="task-form-steps" aria-label="작업 입력 단계">
-            {(creating ? ['작업 내용', '작업 계획', '담당자 배분'] : ['작업 내용', '담당·배분', '저장 전 확인']).map((label, index) => (
-              <li
-                key={label}
-                aria-current={step === index ? 'step' : undefined}
-              >
-                <span>{index + 1}</span>
-                {label}
-              </li>
-            ))}
-          </ol>
-        )}
+        <ol className="task-form-steps" aria-label="작업 입력 단계">
+          {['작업 내용', '작업 계획', '담당자 배분'].map((label, index) => (
+            <li
+              key={label}
+              aria-current={step === index ? 'step' : undefined}
+            >
+              <span>{index + 1}</span>
+              {label}
+            </li>
+          ))}
+        </ol>
         <fieldset
           className="form-fields"
           disabled={busy || recovery.loading || blocked || recommending}
         >
           <div className="task-form-layout">
             <section
-              hidden={stepped && step !== 0}
+              hidden={step !== 0}
               className="task-form-section"
               aria-label="작업 내용 입력"
             >
               {contentFields}
-              {!splitPlanning && planFields}
             </section>
-            {splitPlanning && (
-              <section hidden={step !== 1} className="task-form-section" aria-label="작업 계획 입력">
-                <h3 tabIndex={-1} data-step-title="1" className="form-section-title">작업 계획</h3>
-                {planFields}
-              </section>
-            )}
+            <section hidden={step !== 1} className="task-form-section" aria-label="작업 계획 입력">
+              <h3 tabIndex={-1} data-step-title="1" className="form-section-title">작업 계획</h3>
+              {planFields}
+            </section>
             <section
-              hidden={stepped && step !== assignmentStep}
+              hidden={step !== finalStep}
               className="task-form-section assignment-form-section"
               aria-label="담당·배분 설정 입력"
             >
               <h3
                 tabIndex={-1}
-                data-step-title={assignmentStep}
+                data-step-title="2"
                 className="form-section-title"
               >
                 담당자·담당 비율{' '}
@@ -710,40 +661,6 @@ export default function TaskForm({
                   </p>
                 )}
             </section>
-            {!creating && mobile && step === 2 && (
-              <section
-                className="task-form-section task-form-review"
-                aria-label="작업 저장 전 요약"
-              >
-                <h3
-                  tabIndex={-1}
-                  data-step-title="2"
-                  className="form-section-title"
-                >
-                  저장 전 확인
-                </h3>
-                {reviewFacts}
-                <div className="heading-actions">
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={() => goToStep(0)}
-                  >
-                    작업 내용 수정
-                  </button>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={() => goToStep(1)}
-                  >
-                    담당·배분 수정
-                  </button>
-                </div>
-                <p className="field-help">
-                  아직 저장되지 않았습니다. 내용을 확인한 뒤 저장해 주세요.
-                </p>
-              </section>
-            )}
           </div>
         </fieldset>
         {blocked && (
@@ -822,11 +739,11 @@ export default function TaskForm({
             <p>현재 작업 상태: {statusLabels[recovery.latest.task.status]}</p>
           )}
         </SaveRecovery>
-        {creating && step === finalStep && <section className="form-review-summary" aria-label="등록 전 확인">
-          <h3>등록 전 확인</h3>
+        {step === finalStep && <section className="form-review-summary" aria-label={creating ? '등록 전 확인' : '저장 전 확인'}>
+          <h3>{creating ? '등록 전 확인' : '저장 전 확인'}</h3>
           <dl>
             <div><dt>작업</dt><dd>{form.title || '제목을 입력해 주세요.'}</dd></div>
-            <div><dt>기간</dt><dd>{formatDate(startAt)} ~ {formatDate(dueAt)}</dd></div>
+            <div><dt>기간</dt><dd>{reviewDate(startAt)} ~ {reviewDate(dueAt)}</dd></div>
             <div><dt>예상 시간</dt><dd>{formatEstimatedTime(estimatedMinutes)}</dd></div>
             <div><dt>담당·배분</dt><dd>{form.assignees.length ? form.assignees.map(assignment => `${memberName(editingMembers, assignment.userId)} ${assignment.allocationPercent}%`).join(' · ') : '담당자를 선택해 주세요.'}</dd></div>
           </dl>
@@ -836,24 +753,20 @@ export default function TaskForm({
           disabled={
             recommending ||
             blocked ||
-            ((!stepped || step === finalStep) &&
+            (step === finalStep &&
               ((conflict && !recovery.latest) || !canReapply))
           }
           onCancel={onClose}
           label={
-            creating && step < finalStep
+            step < finalStep
               ? '다음'
-              : mobile && step < finalStep
-              ? step === 0
-                ? '다음: 담당·배분'
-                : '다음: 저장 전 확인'
               : recovery.latest
                 ? '내 입력으로 다시 저장'
                 : serverError
                   ? '다시 저장'
                   : '저장'
           }
-          onBack={stepped && step > 0 ? () => goToStep(step - 1) : undefined}
+          onBack={step > 0 ? () => goToStep(step - 1) : undefined}
         />
       </form>
     </Modal>

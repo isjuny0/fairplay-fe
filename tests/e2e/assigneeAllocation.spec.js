@@ -1,3 +1,4 @@
+import { goToTaskFormStep } from './helpers/taskForm.js';
 import { test, expect } from '@playwright/test';
 
 const names = ['김준영', '김영진', '박선우'];
@@ -112,10 +113,7 @@ for (const width of [1440, 390]) {
     await expect(dialog).toHaveCount(0);
     await page.getByRole('button', { name: '작업 수정', exact: true }).click();
     const edit = page.getByRole('dialog', { name: '작업 수정', exact: true });
-    if (width <= 600)
-      await edit
-        .getByRole('button', { name: '다음: 담당·배분', exact: true })
-        .click();
+    await goToTaskFormStep(edit, 2);
     await expectAllocation(edit, [50, 50, null]);
   });
 
@@ -129,21 +127,14 @@ for (const width of [1440, 390]) {
     await dialog
       .getByLabel('작업 제목', { exact: true })
       .fill('기존 비율 유지 확인');
-    if (width <= 600)
-      await dialog
-        .getByRole('button', { name: '다음: 담당·배분', exact: true })
-        .click();
+    await goToTaskFormStep(dialog, 2);
     await expectAllocation(dialog, [60, 40, null]);
     await percent(dialog, 0).fill('80');
     await percent(dialog, 1).fill('20');
     await expectAllocation(dialog, [80, 20, null]);
-    if (width <= 600) {
-      await dialog
-        .getByRole('button', { name: '다음: 저장 전 확인', exact: true })
-        .click();
-      await dialog.getByRole('button', { name: '이전', exact: true }).click();
-      await expectAllocation(dialog, [80, 20, null]);
-    }
+    await goToTaskFormStep(dialog, 1);
+    await goToTaskFormStep(dialog, 2);
+    await expectAllocation(dialog, [80, 20, null]);
     await person(dialog, 2).check();
     await expectAllocation(dialog, [34, 33, 33]);
     await person(dialog, 2).uncheck();

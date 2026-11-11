@@ -1,3 +1,4 @@
+import { goToTaskFormStep } from './helpers/taskForm.js';
 import { test, expect } from '@playwright/test';
 
 for (const width of [1920, 1440, 1024, 768, 390, 320]) {
@@ -20,6 +21,7 @@ for (const width of [1920, 1440, 1024, 768, 390, 320]) {
       }),
     ).toHaveCount(0);
     await expect(editor.locator('.form-help')).toHaveCount(0);
+    await goToTaskFormStep(editor, 1);
     const select = editor.getByLabel('예상 시간', { exact: true });
     const original = await select.inputValue();
     await expect(editor.getByText(
@@ -77,7 +79,7 @@ for (const width of [1920, 1440, 1024, 768, 390, 320]) {
 
     await trigger.click();
     await expect(help).toBeVisible();
-    await editor.getByLabel('작업 제목', { exact: true }).click();
+    await editor.getByRole('heading', { name: '작업 계획', exact: true }).click();
     await expect(help).toHaveCount(0);
     await trigger.click();
     await help
