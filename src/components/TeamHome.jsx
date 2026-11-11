@@ -12,7 +12,6 @@ import TeamBriefingCard from './team-briefing/TeamBriefingCard.jsx';
 import DashboardWidgetFrame from './DashboardWidgetFrame.jsx';
 import DashboardWidgetCatalogItem from './DashboardWidgetCatalogItem.jsx';
 import TeamDashboardWidget from './TeamDashboardWidget.jsx';
-import DashboardWidgetPreview from './DashboardWidgetPreview.jsx';
 import useMobileLayout from '../hooks/useMobileLayout.js';
 import { getHomePreferences, updateHomePreferences } from '../api/teamHome.js';
 import { useInteractions } from '../hooks/useInteractions.js';
@@ -74,7 +73,7 @@ function TeamDashboard({
   const [memoDirty, setMemoDirty] = useState(false);
   const [catalog, setCatalog] = useState(false);
   const [catalogPreview, setCatalogPreview] = useState(null);
-  const catalogMobile = useMobileLayout('(max-width: 1000px)');
+  const catalogMobile = useMobileLayout('(max-width: 720px)');
   const [editing, setEditing] = useState(false);
   const widgetGrid = useRef(null);
   const [highlightedWidgets, setHighlightedWidgets] = useState([]);
@@ -325,9 +324,6 @@ function TeamDashboard({
               );
             })}
           </div>
-          {!catalogMobile && <aside className="dashboard-catalog-preview-panel" aria-label="위젯 미리보기 영역">
-            {catalogPreview ? <DashboardWidgetPreview widget={dashboardWidgets.find(widget => widget.id === catalogPreview)} /> : <p className="dashboard-preview-empty">항목에 마우스를 올려 미리보기를 확인하세요.</p>}
-          </aside>}
           </div>
           <p className="dashboard-settings-note">
             일정은 팀원 모두와 공유됩니다. 위젯 구성과 메모는 내 계정에만 저장됩니다.
