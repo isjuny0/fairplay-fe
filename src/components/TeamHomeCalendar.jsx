@@ -57,7 +57,7 @@ const sortEvents = (events) =>
   );
 const weekStart = (date) => shiftDate(date, -dateWeekday(date));
 
-export default function TeamHomeCalendar({ team, today }) {
+export default function TeamHomeCalendar({ team, today, preview = false }) {
   const [selected, setSelected] = useState(today);
   const [month, setMonth] = useState(today.slice(0, 7));
   const [calendarView, setCalendarView] = useState('month');
@@ -93,17 +93,18 @@ export default function TeamHomeCalendar({ team, today }) {
   const to = days.filter(Boolean).at(-1);
   const resource = useResource(
     async () =>
-      (await listCalendarEvents(team.id, from, to)).map(
+      preview ? [] : (await listCalendarEvents(team.id, from, to)).map(
         calendarEventFromResponse,
       ),
-    [team.id, from, to],
+    [team.id, from, to, preview],
   );
   const events = resource.data || [];
   useEffect(() => {
+    if (preview) return;
     const refresh = () => resource.reload();
     window.addEventListener('focus', refresh);
     return () => window.removeEventListener('focus', refresh);
-  }, [resource.reload]);
+  }, [resource.reload, preview]);
   const daily = sortEvents(
     events.filter((event) => eventOccursOn(event, selected)),
   );

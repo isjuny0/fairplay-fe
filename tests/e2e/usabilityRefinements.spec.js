@@ -10,25 +10,26 @@ test('스페이스를 방문한 뒤 내 스페이스 목록으로 돌아갈 수 
 });
 
 for (const width of [320, 390, 1440]) {
-  test(`${width}px: 팀 홈 설정은 별도로 열고 위젯 추가 후 원래 버튼으로 돌아간다`, async ({ page }) => {
+  test(`${width}px: 위젯 편집 버튼으로 바로 편집하고 추가 창을 닫아도 편집을 유지한다`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/preview/spaces/1/teams/1');
-    const settings = page.getByRole('button', { name: '화면 설정', exact: true });
-    await expect(settings).toBeVisible();
-    await expect(page.getByRole('button', { name: '위젯 추가', exact: true })).toBeHidden();
-    await settings.click();
-    await page.getByRole('button', { name: '위젯 추가', exact: true }).click();
-    await page.getByRole('dialog', { name: '위젯 추가', exact: true }).getByRole('button', { name: '완료', exact: true }).click();
-    await expect(settings).toBeFocused();
-    await settings.click();
-    await page.getByRole('button', { name: '위젯 편집', exact: true }).click();
+    const edit = page.getByRole('button', { name: '위젯 편집', exact: true });
+    const add = page.getByRole('button', { name: '필요한 위젯 추가하기', exact: true });
+    await expect(edit).toBeVisible();
+    await expect(add).toHaveCount(0);
+    await edit.click();
     const done = page.getByRole('button', { name: '편집 완료', exact: true });
-    await expect(done).toBeVisible();
     await expect(done).toBeFocused();
+    await expect(add).toBeVisible();
+    await add.click();
+    const catalog = page.getByRole('dialog', { name: '위젯 추가', exact: true });
+    await catalog.getByRole('button', { name: '완료', exact: true }).click();
+    await expect(add).toBeFocused();
     await expect(page.locator('.dashboard-edit-hint')).toBeVisible();
     await done.press('Space');
     await expect(page.locator('.dashboard-edit-hint')).toHaveCount(0);
-    await expect(settings).toBeFocused();
+    await expect(add).toHaveCount(0);
+    await expect(edit).toBeFocused();
   });
 }
 
@@ -46,7 +47,7 @@ for (const width of [320, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/preview/spaces/1/teams/1/meeting-minutes');
     const table = page.getByRole('region', { name: '회의록 목록', exact: true });
-    const date = table.locator('tbody td').first();
+    const date = table.locator('.mobile-meeting-list time').first();
     await expect(date).toBeVisible();
     const region = await table.boundingBox();
     const cell = await date.boundingBox();
@@ -60,10 +61,9 @@ for (const width of [320, 390]) {
   });
 }
 
-test('작업 빠른 필터가 내 담당과 마감 지남 조건을 적용한다', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 900 });
-  await page.goto('/preview/spaces/1/teams/1/tasks');
-  await page.getByRole('button', { name: '필터', exact: true }).click();
+test('작업 목록 필터가 내 담당과 마감 지남 조건을 적용한다', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/preview/spaces/1/teams/1/tasks?view=list');
   await page.getByRole('checkbox', { name: '내 담당 작업만', exact: true }).check();
   await expect(page).toHaveURL(/mine=1/);
   await page.getByRole('checkbox', { name: '마감 지난 작업만', exact: true }).check();

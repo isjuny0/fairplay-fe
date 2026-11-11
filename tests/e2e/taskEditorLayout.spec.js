@@ -1,30 +1,37 @@
+import { goToTaskFormStep } from './helpers/taskForm.js';
 import { test, expect } from '@playwright/test';
 import { openCalendarEventEditor } from './helpers/teamDashboard.js';
 
-for (const width of [1024, 1440, 1920]) {
-  test(`${width}px 작업 내용과 담당 배분 제목·상단 여백이 같은 줄에 맞는다`, async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width, height: 1000 });
+for (const width of [1440, 900, 720, 390, 320]) {
+  test(`${width}px 작업 등록·수정은 같은 크기와 3단계 구성으로 입력한다`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/preview/spaces/1/teams/1/tasks');
+    await page.getByRole('button', { name: '새 작업 만들기', exact: true }).click();
+    const create = page.getByRole('dialog', { name: '새 작업 만들기', exact: true });
+    const createBox = await create.boundingBox();
+    const descriptionHeight = (await create.getByLabel('작업 설명', { exact: true }).boundingBox()).height;
+    await create.getByRole('button', { name: '닫기', exact: true }).click();
     await page.goto('/preview/spaces/1/teams/1/tasks/103');
     await page.getByRole('button', { name: '작업 수정', exact: true }).click();
-    const editor = page.getByRole('dialog', { name: '작업 수정', exact: true });
-    const left = await editor
-      .getByRole('heading', { name: '작업 내용', exact: true })
-      .boundingBox();
-    const right = await editor
-      .getByRole('heading', { name: '담당자·담당 비율', exact: true })
-      .boundingBox();
-    expect(Math.abs(left.y - right.y)).toBeLessThanOrEqual(1);
-    expect(Math.abs(left.height - right.height)).toBeLessThanOrEqual(1);
-    const firstField = await editor
-      .locator('.task-form-section > .form-field')
-      .first()
-      .boundingBox();
-    const panel = await editor
-      .locator('.assignment-allocation-panel')
-      .boundingBox();
-    expect(Math.abs(firstField.y - panel.y)).toBeLessThanOrEqual(1);
+    const edit = page.getByRole('dialog', { name: '작업 수정', exact: true });
+    expect(await edit.boundingBox()).toEqual(createBox);
+    expect((await edit.getByLabel('작업 설명', { exact: true }).boundingBox()).height).toEqual(descriptionHeight);
+    await expect(edit.getByRole('list', { name: '작업 입력 단계', exact: true }).locator('li')).toHaveText(['1작업 내용', '2작업 계획', '3담당자 배분']);
+    await expect(edit.getByLabel('작업 제목', { exact: true })).toHaveValue('AI 피드백 화면 개선');
+    await expect(edit.getByLabel('예상 시간', { exact: true })).toBeHidden();
+    await expect(edit.getByRole('button', { name: '저장', exact: true })).toHaveCount(0);
+    await goToTaskFormStep(edit, 1);
+    expect(await edit.boundingBox()).toEqual(createBox);
+    await expect(edit.getByRole('heading', { name: '작업 계획', exact: true })).toBeFocused();
+    await expect(edit.getByLabel('작업 제목', { exact: true })).toBeHidden();
+    const dueAt = await edit.getByLabel('마감 날짜', { exact: true }).inputValue();
+    await goToTaskFormStep(edit, 2);
+    expect(await edit.boundingBox()).toEqual(createBox);
+    await expect(edit.getByRole('region', { name: '저장 전 확인', exact: true })).toBeVisible();
+    await expect(edit.getByRole('button', { name: '작업량 기준 자동 선택', exact: true })).toHaveCount(0);
+    await goToTaskFormStep(edit, 1);
+    await expect(edit.getByLabel('마감 날짜', { exact: true })).toHaveValue(dueAt);
+    expect(await edit.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
   });
 }
 
@@ -49,10 +56,7 @@ for (const width of [1440, 768, 390, 320]) {
     await dialog
       .getByLabel('작업 제목', { exact: true })
       .fill(`작성 화면 개선 ${width}`);
-    if (width <= 600)
-      await dialog
-        .getByRole('button', { name: '다음: 담당·배분', exact: true })
-        .click();
+    await goToTaskFormStep(dialog, 2);
     await dialog
       .getByRole('checkbox', { name: '김영진 · 팀원', exact: true })
       .check();
@@ -69,10 +73,7 @@ for (const width of [1440, 768, 390, 320]) {
         elements.every((el) => el.scrollWidth <= el.clientWidth + 1),
       ),
     ).toBe(true);
-    if (width <= 600)
-      await dialog
-        .getByRole('button', { name: '다음: 저장 전 확인', exact: true })
-        .click();
+
     await dialog.getByRole('button', { name: '저장', exact: true }).click();
     await expect(dialog).toHaveCount(0);
     await expect(
@@ -123,6 +124,7 @@ for (const width of [1440, 390, 320]) {
     await page.goto('/preview/spaces/1/teams/1/tasks/103');
     await page.getByRole('button', { name: '작업 수정', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: '작업 수정', exact: true });
+    await goToTaskFormStep(dialog, 1);
     const date = dialog.getByRole('textbox', {
       name: '시작일 날짜',
       exact: true,
@@ -163,7 +165,7 @@ for (const width of [1440, 390, 320]) {
     await dialog
       .getByRole('button', { name: '마감 시간 선택 열기', exact: true })
       .click();
-    await dialog.getByLabel('작업 제목', { exact: true }).click();
+    await dialog.getByLabel('예상 시간', { exact: true }).click();
     await expect(picker).toHaveCount(0);
     await expect(dialog).toBeVisible();
   });

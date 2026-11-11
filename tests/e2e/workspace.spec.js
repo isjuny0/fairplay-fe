@@ -1,3 +1,4 @@
+import { goToTaskFormStep } from './helpers/taskForm.js';
 import { koreanDateTime } from '../../src/lib/koreanTime.js';
 import { fillDateTime } from './helpers/dateTime.js';
 import { expect, test } from '@playwright/test';
@@ -450,8 +451,10 @@ for (const [minutes, label] of [[30, '30분'], [90, '1시간 30분'], [270, '4�
     expect(JSON.parse(request.body)).not.toHaveProperty('weight');
     await expect(page.getByLabel('작업 기본 정보').getByText(label, { exact: true })).toBeVisible();
     await page.getByRole('button', { name: '작업 수정', exact: true }).click();
+    await goToTaskFormStep(dialog, 1);
     await expect(workload).toHaveValue(String(minutes));
     await workload.fill('120');
+    await goToTaskFormStep(dialog, 2);
     await dialog.getByRole('button', { name: '저장', exact: true }).click();
     await expect(dialog).toHaveCount(0);
     const update = requests.find(({ method, path }) => method === 'PATCH' && path === '/api/tasks/10');
@@ -578,6 +581,7 @@ test('버전 충돌에서 요청을 재전송하지 않고 입력 내용을 유�
   await page.getByRole('button', { name: '작업 수정', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('작업 제목').fill('입력 보존 확인');
+  await goToTaskFormStep(dialog, 2);
   state.setConflict();
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
   await expect(dialog.getByRole('alert')).toContainText(
@@ -1219,6 +1223,7 @@ test('다른 팀원의 삭제 요청을 확인하면 이미 열린 작업 수정
   await page.getByRole('button', { name: '작업 수정', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('작업 제목').fill('아직 저장하지 않은 제목');
+  await goToTaskFormStep(dialog, 2);
   state.setDeletion(deletionRequest());
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
   await expect(
@@ -1492,6 +1497,7 @@ test('다른 작업 정보를 저장해도 미저장 수행 설명을 보존한�
   await page.getByRole('button', { name: '작업 수정', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('작업 제목', { exact: true }).fill('회원 탈퇴 구현 수정');
+  await goToTaskFormStep(dialog, 2);
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByRole('heading', { name: '회원 탈퇴 구현 수정', exact: true })).toBeVisible();
@@ -1527,6 +1533,7 @@ test('작업 충돌은 내 입력과 최신 내용을 비교한 뒤 확인한 �
   await page.getByRole('button', { name: '작업 수정', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '작업 수정' });
   await dialog.getByLabel('작업 제목', { exact: true }).fill('내가 작성한 제목');
+  await goToTaskFormStep(dialog, 2);
   state.changeTask({ title: '팀원이 수정한 최신 제목', version: 2 });
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
   await expect(dialog.getByRole('button', { name: '다시 저장', exact: true })).toBeDisabled();
@@ -1556,6 +1563,7 @@ for (const changedState of ['DONE']) test(`최신 작업이 ${changedState}로 �
   await page.getByRole('button', { name: '작업 수정', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '작업 수정' });
   await dialog.getByLabel('작업 제목', { exact: true }).fill('보존할 입력');
+  await goToTaskFormStep(dialog, 2);
   state.changeTask({ status: changedState, version: 1 });
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
   await dialog.getByRole('button', { name: '최신 내용 확인', exact: true }).click();
@@ -1570,6 +1578,7 @@ test('충돌 후 현재 담당자·리더 권한을 잃으면 내 입력으로 �
   await page.getByRole('button', { name: '작업 수정', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '작업 수정' });
   await dialog.getByLabel('작업 제목', { exact: true }).fill('유지할 제목');
+  await goToTaskFormStep(dialog, 2);
   state.changeTask({ assignees: [{ userId: 'leader', allocationPercent: 100 }], version: 1 });
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
   await dialog.getByRole('button', { name: '최신 내용 확인', exact: true }).click();
@@ -1584,6 +1593,7 @@ test('충돌의 최신 조회가 실패하면 입력을 보존하고 확인 없�
   await page.getByRole('button', { name: '작업 수정', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '작업 수정' });
   await dialog.getByLabel('작업 제목', { exact: true }).fill('보존할 초안');
+  await goToTaskFormStep(dialog, 2);
   state.setConflict();
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
   await page.route('**/api/tasks/10', (route) => route.request().method() === 'GET' ? route.fulfill({ status: 503, json: { code: 'TEMPORARILY_UNAVAILABLE', message: '최신 조회를 잠시 사용할 수 없습니다.' } }) : route.fallback());
@@ -1636,8 +1646,10 @@ test('작업 시작일은 생성 시 필수이며 일정 검증 후 오프셋과
   expect(JSON.parse(created.body)).toMatchObject({ startAt: '2030-12-01T18:00:00', dueAt: '2030-12-01T18:00:00' });
   await expect(page.getByLabel('작업 기본 정보').locator('div').filter({ has: page.getByText('계획 시작일', { exact: true }) }).getByText('2030. 12. 01. 18:00', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '작업 수정', exact: true }).click();
+  await goToTaskFormStep(dialog, 1);
   await expect(dialog.getByLabel('시작일 날짜', { exact: true })).toHaveValue('2030-12-01');
   await fillDateTime(dialog, '시작일', '2030-11-30T09:00');
+  await goToTaskFormStep(dialog, 2);
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   const updated = requests.find(({ method, path }) => method === 'PATCH' && path.startsWith('/api/tasks/'));
@@ -1650,13 +1662,16 @@ test('저장된 시작일은 비울 수 없고 제목만 수정할 때 기존 �
   await page.goto('/spaces/1/teams/1/tasks/10');
   await page.getByRole('button', { name: '작업 수정', exact: true }).click();
   const dialog = page.getByRole('dialog');
+  await goToTaskFormStep(dialog, 1);
   await expect(dialog.getByLabel('시작일 시간', { exact: true })).toHaveValue('09:00');
   await dialog.getByLabel('시작일 날짜', { exact: true }).fill('');
-  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+  await dialog.getByRole('button', { name: '다음', exact: true }).click();
   await expect(dialog.getByLabel('시작일 날짜', { exact: true })).toBeFocused();
   expect(requests.filter(({ method, path }) => method === 'PATCH' && path === '/api/tasks/10')).toHaveLength(0);
   await fillDateTime(dialog, '시작일', '2030-11-01T09:00');
+  await goToTaskFormStep(dialog, 0);
   await dialog.getByLabel('작업 제목', { exact: true }).fill('시각 정밀도 유지');
+  await goToTaskFormStep(dialog, 2);
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   const update = requests.find(({ method, path }) => method === 'PATCH' && path === '/api/tasks/10');
