@@ -13,6 +13,6 @@ export async function goToMeetingStep(dialog, target) {
 }
 
 export async function submitMeeting(dialog, label) {
-  await goToMeetingStep(dialog, 3);
+  await goToMeetingStep(dialog, 1);
   await dialog.getByRole('button', { name: label, exact: true }).click();
 }

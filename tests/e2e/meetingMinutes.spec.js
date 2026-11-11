@@ -1,3 +1,4 @@
+import { formatMeetingRecord } from '../../src/lib/meetingRecord.js';
 import { test, expect } from "@playwright/test";
 import { fillDateTime } from "./helpers/dateTime.js";
 import { goToMeetingStep, submitMeeting } from "./helpers/meetingEditor.js";
@@ -266,13 +267,8 @@ test("팀 작업 메뉴에서 등록·상세·공동 수정·삭제와 KST·CSRF
   await fillDateTime(dialog, "회의일시", "2026-11-01T19:30");
   await dialog.getByLabel("현재 팀원", { exact: true }).check();
   await goToMeetingStep(dialog, 1);
-  await dialog
-    .getByRole("textbox", { name: "안건", exact: true })
-    .fill(" 안건\n ");
-  await goToMeetingStep(dialog, 2);
-  await dialog
-    .getByRole("textbox", { name: "논의 내용", exact: true })
-    .fill("**작성 내용**");
+  await dialog.getByRole("textbox", { name: "회의 기록", exact: true })
+    .fill(formatMeetingRecord({ agenda: " 안건\n ", content: "**작성 내용**" }));
   await dialog.getByRole("button", { name: "미리보기", exact: true }).click();
   await expect(
     dialog.getByRole("region", { name: "본문 미리보기" }),
@@ -324,6 +320,36 @@ test("팀 작업 메뉴에서 등록·상세·공동 수정·삭제와 KST·CSRF
     query: "?expectedVersion=1",
     body: null,
   });
+});
+
+test("통합 기록 수정은 원문·시간 정밀도를 보존하고 충돌 후에도 바뀐 항목만 저장한다", async ({ page }) => {
+  const api = await backend(page);
+  const original = {
+    agenda: " 안건\n ", content: "\n기존 논의\r\n ", decisions: " 이전 결정 ",
+  };
+  Object.assign(api.items[0], original, { meetingAt: "2026-11-01T19:30:12.123456" });
+  await page.goto(`${path}/1`);
+  await page.getByRole("button", { name: "회의록 수정", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "팀 회의록 수정", exact: true });
+  await goToMeetingStep(dialog, 1);
+  const field = dialog.getByRole("textbox", { name: "회의 기록", exact: true });
+  // Textarea DOM normalizes CRLF, while an untouched record still keeps API raw text.
+  await expect(field).toHaveValue(formatMeetingRecord(original).replace(/\r\n/g, '\n'));
+  await expect(dialog.getByRole("button", { name: "수정 저장", exact: true })).toBeDisabled();
+  await field.fill(formatMeetingRecord({ ...original, decisions: "새 결정" }));
+  api.items[0].version = 1;
+  api.items[0].content = "다른 팀원의 최신 논의";
+  await dialog.getByRole("button", { name: "수정 저장", exact: true }).click();
+  await expect(field).toHaveValue(formatMeetingRecord({ ...original, decisions: "새 결정" }).replace(/\r\n/g, '\n'));
+  await dialog.getByRole("button", { name: "최신 내용 확인", exact: true }).click();
+  await dialog.getByRole("button", { name: "수정 저장", exact: true }).click();
+  await page.getByRole("dialog", { name: "최신 내용에 내 수정 반영", exact: true })
+    .getByRole("button", { name: "내 수정 저장", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(api.calls.filter(call => call.method === "PATCH").at(-1).body).toEqual({ decisions: "새 결정", expectedVersion: 1 });
+  expect(api.items[0].agenda).toBe(original.agenda);
+  expect(api.items[0].content).toBe("다른 팀원의 최신 논의");
+  expect(api.items[0].meetingAt).toBe("2026-11-01T19:30:12.123456");
 });
 
 test("버전 충돌은 입력을 보존하고 최신 필드 비교와 확인 후 바뀐 항목만 저장한다", async ({
@@ -672,9 +698,9 @@ for (const width of [320, 390, 1440])
     expect(
       await dialog.evaluate((node) => node.scrollWidth <= node.clientWidth),
     ).toBe(true);
-    await goToMeetingStep(dialog, 2);
+    await goToMeetingStep(dialog, 1);
     await expect(
-      dialog.getByRole("textbox", { name: "논의 내용", exact: true }),
+      dialog.getByRole("textbox", { name: "회의 기록", exact: true }),
     ).toBeVisible();
     await expect(save).toBeInViewport();
     await page.screenshot({
