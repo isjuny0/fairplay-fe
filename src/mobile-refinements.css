@@ -9,6 +9,7 @@
 .mobile-drawer-heading strong { min-width: 0; overflow-wrap: anywhere; }
 .mobile-drawer-heading button { display: grid; place-items: center; width: 44px; min-height: 44px; padding: 0; flex-shrink: 0; }
 .mobile-drawer-layer .mobile-side-drawer nav { display: flex; flex-direction: column; padding: 0; }
+.mobile-drawer-layer .mobile-side-drawer :is(.directory-sidebar-actions, .directory-sidebar-shortcuts) { padding-top: 14px; }
 .mobile-drawer-layer .mobile-side-drawer .nav-item { display: flex; align-items: center; width: 100%; min-height: 44px; }
 .mobile-drawer-layer .mobile-side-drawer .workspace-navigation-context { padding: 0 0 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
 .mobile-drawer-layer .mobile-side-drawer > #workspace-navigation { flex: 1; min-height: 0; overflow: hidden; gap: 0; }
