@@ -384,6 +384,30 @@ async function backend(
   };
 }
 
+test('위젯 미리보기는 실제 모양을 공유하고 추가 조회 없이 표시하며 본문 새로고침은 유지한다', async ({ page }) => {
+  const { requests } = await backend(page);
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/spaces/1/teams/1');
+  await expect(page.locator('.dashboard-widget.widget-calendar .team-calendar-grid')).toBeVisible();
+  await clickDashboardControl(page, '위젯 추가');
+  const catalog = page.getByRole('dialog', { name: '위젯 추가', exact: true });
+  const calendarRequests = requests.filter(request => request.path.includes('/calendar-events')).length;
+  await catalog.getByRole('button', { name: '캘린더 위젯 미리보기', exact: true }).hover();
+  const calendar = catalog.getByRole('region', { name: '캘린더 위젯 미리보기', exact: true });
+  await expect(calendar.locator('.team-calendar-grid')).toBeVisible();
+  await expect(calendar.locator('.team-calendar > p[role="status"]')).toHaveCount(0);
+  expect(requests.filter(request => request.path.includes('/calendar-events'))).toHaveLength(calendarRequests);
+  await catalog.getByRole('button', { name: '팀 전체 진행률 위젯 미리보기', exact: true }).focus();
+  await expect(catalog.locator('.home-progress-ring svg circle')).toHaveCount(2);
+  await catalog.getByRole('button', { name: '완료', exact: true }).click();
+  await clickDashboardControl(page, '편집 완료');
+  const summaryRequests = requests.filter(request => request.path.endsWith('/my-work-summary')).length;
+  await page.getByRole('button', { name: '현황 새로고침', exact: true }).click();
+  await expect.poll(() => requests.filter(request => request.path.endsWith('/my-work-summary')).length).toBe(summaryRequests + 1);
+  expect(errors).toEqual([]);
+});
+
 for (const action of ['제거', '추가']) {
 test(`위젯 ${action} 저장 실패는 구성을 보존하고 창 안에서 다시 시도한다`, async ({ page }) => {
   await backend(page);
@@ -411,22 +435,22 @@ test(`위젯 ${action} 저장 실패는 구성을 보존하고 창 안에서 다
   releaseSave();
   await expect(catalog.getByRole('alert')).toContainText('홈 설정 저장 실패');
   await expect(remove).toBeEnabled();
-  await expect(page.locator('.widget-calendar')).toHaveCount(1);
-  await expect(page.locator('.widget-upcoming')).toHaveCount(0);
+  await expect(page.locator('.dashboard-widget.widget-calendar')).toHaveCount(1);
+  await expect(page.locator('.dashboard-widget.widget-upcoming')).toHaveCount(0);
   await expect(page.locator('.dashboard-widget.is-editing')).toHaveCount(3);
   await remove.click();
   if (action === '제거') {
     await expect(catalog.getByRole('button', { name: '캘린더 추가', exact: true })).toBeEnabled();
     await expect(catalog.getByRole('alert')).toHaveCount(0);
     await catalog.getByRole('button', { name: '완료', exact: true }).click();
-    await expect(page.locator('.widget-calendar')).toHaveCount(0);
+    await expect(page.locator('.dashboard-widget.widget-calendar')).toHaveCount(0);
   } else {
     await expect(catalog.getByRole('button', { name: '다가오는 작업 제거', exact: true })).toBeEnabled();
     await expect(catalog).toBeVisible();
     await catalog.getByRole('button', { name: '완료', exact: true }).click();
     await expect(catalog).toHaveCount(0);
     await expect(page.getByRole('button', { name: '다가오는 작업 위젯 드래그', exact: true })).toBeFocused();
-    await expect(page.locator('.widget-upcoming')).toHaveClass(/is-new-widget/);
+    await expect(page.locator('.dashboard-widget.widget-upcoming')).toHaveClass(/is-new-widget/);
   }
   const widgets = action === '제거' ? ['progress', 'contribution'] : ['calendar', 'progress', 'contribution', 'upcoming'];
   expect(payloads).toEqual([{ widgets }, { widgets }]);
@@ -446,7 +470,7 @@ test('일반 팀 홈은 서버 본인 집계를 사용하고 null을 0%로 표�
   await expect(page.getByText('계산할 작업 없음').first()).toBeVisible();
   await expect(page.locator('.home-progress-ring')).not.toHaveAttribute('aria-valuenow');
   const actions = await page.getByRole('region', { name: '지금 확인할 작업' }).boundingBox();
-  await expect(page.locator('.widget-mywork')).toBeVisible();
+  await expect(page.locator('.dashboard-widget.widget-mywork')).toBeVisible();
   const ownWork = await page.getByRole('region', { name: '본인 작업 현황' }).boundingBox();
   expect(ownWork.y).toBeGreaterThanOrEqual(actions.y);
   await page.getByRole('button', { name: '내 작업 현황 계산 기준', exact: true }).click();
@@ -484,7 +508,7 @@ test('다가오는 작업 위젯은 실제 작업 상세로 이동한다', async
   const { requests } = await backend(page);
   await page.goto('/spaces/1/teams/1');
   await addDashboardWidgets(page, ['다가오는 작업']);
-  await page.locator('.widget-upcoming').getByRole('button', { name: /현재 작업/ }).click();
+  await page.locator('.dashboard-widget.widget-upcoming').getByRole('button', { name: /현재 작업/ }).click();
   await expect(page).toHaveURL(/\/tasks\/10$/);
   await expect(page.getByRole('heading', { name: '현재 작업', exact: true })).toBeVisible();
   expect(requests.some(request => request.path === '/api/teams/1/tasks')).toBe(true);

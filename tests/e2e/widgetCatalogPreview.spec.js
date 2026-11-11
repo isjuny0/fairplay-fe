@@ -2,29 +2,41 @@ import { test, expect } from '@playwright/test';
 import { dashboardWidgets } from '../../src/lib/teamDashboard.js';
 import { clickDashboardControl } from './helpers/teamDashboard.js';
 
-for (const width of [320, 390, 1440]) {
-  test(`${width}px 위젯 예시는 호버·미리보기 버튼으로 확인하고 선택 상태를 바꾸지 않는다`, async ({ page }) => {
+for (const width of [320, 390, 720, 1000, 1024, 1440]) {
+  test(`${width}px 실제 위젯 모양을 항목 호버·이름 선택으로 확인하고 선택 상태를 바꾸지 않는다`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
     const mutations = [];
+    const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
     page.on('request', request => {
       if (new URL(request.url()).pathname.startsWith('/api/') && request.method() !== 'GET') mutations.push(request.url());
     });
     await page.goto('/preview/spaces/1/teams/1');
     await clickDashboardControl(page, '위젯 추가');
     const catalog = page.getByRole('dialog', { name: '위젯 추가', exact: true });
+    await expect(catalog.locator('.lucide-eye')).toHaveCount(0);
     const initialSelection = await catalog.locator('.dashboard-catalog-select').evaluateAll(items => items.map(item => item.getAttribute('aria-pressed')));
     for (const widget of dashboardWidgets) {
       const trigger = catalog.getByRole('button', { name: `${widget.title} 위젯 미리보기`, exact: true });
-      if (width === 1440) await trigger.hover();
+      if (width > 1000) await trigger.hover();
       else await trigger.click();
-      const preview = catalog.getByRole('tooltip', { name: `${widget.title} 위젯 미리보기`, exact: true });
+      const preview = catalog.getByRole('region', { name: `${widget.title} 위젯 미리보기`, exact: true });
       await expect(preview).toBeVisible();
       await expect(preview).toContainText('예시 화면');
       const box = await preview.boundingBox();
       expect(box.x).toBeGreaterThanOrEqual(0);
-      expect(box.y).toBeGreaterThanOrEqual(0);
+      await expect(preview.locator('.dashboard-card')).toBeVisible();
+      await expect(preview.locator('.dashboard-title h2')).toHaveText(widget.title);
+      await expect(preview.locator('.dashboard-preview-canvas')).toHaveAttribute('inert', '');
+      await expect(preview.locator('.widget-example')).toHaveCount(0);
       expect(box.x + box.width).toBeLessThanOrEqual(width);
-      expect(box.y + box.height).toBeLessThanOrEqual(844);
+      if (width > 1000) {
+        const item = await trigger.locator('..').boundingBox();
+        expect(box.x).toBeGreaterThanOrEqual(item.x + item.width);
+      } else {
+        const item = await trigger.locator('..').boundingBox();
+        expect(box.y).toBeGreaterThanOrEqual(item.y + item.height);
+      }
       // Close via keyboard before moving to another item so pointer position is irrelevant.
       await trigger.focus();
       await page.keyboard.press('Escape');
@@ -33,6 +45,7 @@ for (const width of [320, 390, 1440]) {
     }
     expect(await catalog.locator('.dashboard-catalog-select').evaluateAll(items => items.map(item => item.getAttribute('aria-pressed')))).toEqual(initialSelection);
     expect(mutations).toEqual([]);
+    expect(errors).toEqual([]);
     await page.keyboard.press('Escape');
     await expect(catalog).toHaveCount(0);
     await expect(page.locator('.dashboard-widget')).toHaveCount(3);

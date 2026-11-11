@@ -646,12 +646,12 @@
   flex: 1;
   min-width: 0;
 }
-.dashboard-catalog strong {
+.dashboard-catalog-preview-trigger strong {
   font-size: 13px;
   display: block;
   font-weight: 600;
 }
-.dashboard-catalog small {
+.dashboard-catalog-preview-trigger small {
   font-size: 11px;
   color: var(--text-muted);
   margin-top: 6px;

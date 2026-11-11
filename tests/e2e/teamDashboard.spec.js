@@ -27,15 +27,15 @@ for (const width of [390, 1440]) {
     const handle = page.getByRole('button', { name: '빠른 메모 위젯 드래그', exact: true });
     await expect(handle).toBeFocused();
     await expect(handle).toBeInViewport();
-    await expect(page.locator('.widget-memo')).toHaveClass(/is-new-widget/);
-    await expect(page.locator('.widget-upcoming')).toHaveClass(/is-new-widget/);
+    await expect(page.locator('.dashboard-widget.widget-memo')).toHaveClass(/is-new-widget/);
+    await expect(page.locator('.dashboard-widget.widget-upcoming')).toHaveClass(/is-new-widget/);
     await page.getByRole('button', { name: '빠른 메모 앞으로 이동', exact: true }).click();
     await expect(page.locator('.dashboard-widget h2')).toHaveText(['캘린더', '지금 확인할 작업', '팀 전체 진행률', '빠른 메모', '다가오는 작업']);
     await clickDashboardControl(page, '편집 완료');
     await expect(handle).toHaveCount(0);
     await expect(add).toHaveCount(0);
     await page.reload();
-    await expect(page.locator('.widget-memo')).toBeVisible();
+    await expect(page.locator('.dashboard-widget.widget-memo')).toBeVisible();
     expect(await page.locator('.dashboard-widget').evaluateAll(items => items.map(item => item.dataset.widgetId))).toEqual(['calendar', 'attention', 'progress', 'memo', 'upcoming']);
     await clickDashboardControl(page, '위젯 추가');
     await catalog.getByRole('button', { name: '닫기', exact: true }).click();
@@ -60,7 +60,7 @@ for (const width of [390, 1440]) {
     const addCalendar = catalog.getByRole('button', { name: '캘린더 추가', exact: true });
     await expect(addCalendar).toBeEnabled();
     await expect(addCalendar).toHaveAttribute('aria-pressed', 'false');
-    await expect(page.locator('.widget-calendar')).toHaveCount(0);
+    await expect(page.locator('.dashboard-widget.widget-calendar')).toHaveCount(0);
     await catalog.getByRole('button', { name: '다가오는 작업 추가', exact: true }).click();
     await expect(catalog.getByRole('button', { name: '다가오는 작업 제거', exact: true })).toBeEnabled();
     await addCalendar.click();
@@ -315,7 +315,7 @@ test('미리보기 저장소 용량이 없어도 현재 탭의 캘린더와 위�
   );
   await page.getByRole('dialog', { name: '위젯 추가', exact: true }).getByRole('button', { name: '완료', exact: true }).click();
   await clickDashboardControl(page, '편집 완료');
-  await expect(page.locator('.widget-memo')).toBeVisible();
+  await expect(page.locator('.dashboard-widget.widget-memo')).toBeVisible();
   await expect(
     page.locator('.team-calendar-grid > button').first(),
   ).toBeEnabled();
