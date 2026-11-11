@@ -5,6 +5,7 @@ export default function DashboardWidgetFrame({
   index,
   count,
   editing,
+  highlighted = false,
   disabled = false,
   draggedId,
   dropId,
@@ -17,7 +18,7 @@ export default function DashboardWidgetFrame({
 }) {
   return (
     <article
-      className={`dashboard-widget widget-${widget.id} ${editing ? 'is-editing' : ''} ${dropId === widget.id ? 'is-drop-target' : ''} ${draggedId === widget.id ? 'is-dragging' : ''}`}
+      className={`dashboard-widget widget-${widget.id} ${editing ? 'is-editing' : ''} ${highlighted ? 'is-new-widget' : ''} ${dropId === widget.id ? 'is-drop-target' : ''} ${draggedId === widget.id ? 'is-dragging' : ''}`}
       data-widget-id={widget.id}
       onDragOver={(event) => {
         if (editing && !disabled && draggedId && draggedId !== widget.id) {

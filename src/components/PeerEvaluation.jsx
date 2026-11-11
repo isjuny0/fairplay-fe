@@ -326,7 +326,7 @@ function RoundResponses({ context, round, onSubmitted }) {
                 <section className="evaluation-progress" aria-label="내 평가 저장 현황">
                   <h2>
                     {round.status === 'CLOSED'
-                      ? '마감된 평가 · 내가 저장한 응답'
+                      ? '내가 저장한 응답'
                       : submitted
                         ? '최종 제출 완료'
                         : '평가 저장 현황'}

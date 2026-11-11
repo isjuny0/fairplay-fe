@@ -384,6 +384,53 @@ async function backend(
   };
 }
 
+for (const action of ['제거', '추가']) {
+test(`위젯 ${action} 저장 실패는 구성을 보존하고 창 안에서 다시 시도한다`, async ({ page }) => {
+  await backend(page);
+  let fail = true, releaseSave, notifyStarted;
+  const started = new Promise(resolve => { notifyStarted = resolve; });
+  const payloads = [];
+  await page.route('**/api/teams/1/home-preferences/me', async route => {
+    if (route.request().method() !== 'PATCH') return route.fallback();
+    payloads.push(route.request().postDataJSON());
+    if (!fail) return route.fallback();
+    fail = false;
+    await new Promise(resolve => { releaseSave = resolve; notifyStarted(); });
+    await route.fulfill({ status: 503, json: { code: 'SERVICE_UNAVAILABLE', message: '홈 설정 저장 실패' } });
+  });
+  await page.goto('/spaces/1/teams/1');
+  await page.getByRole('button', { name: '화면 설정', exact: true }).click();
+  await page.getByRole('button', { name: '위젯 추가', exact: true }).click();
+  const catalog = page.getByRole('dialog', { name: '위젯 추가', exact: true });
+  const remove = catalog.getByRole('button', { name: action === '제거' ? '캘린더 제거' : '다가오는 작업 추가', exact: true });
+  await remove.click();
+  await started;
+  await expect(remove).toBeDisabled();
+  await expect(catalog.getByRole('button', { name: '완료', exact: true })).toBeDisabled();
+  await page.keyboard.press('Escape');
+  await expect(catalog).toBeVisible();
+  releaseSave();
+  await expect(catalog.getByRole('alert')).toContainText('홈 설정 저장 실패');
+  await expect(remove).toBeEnabled();
+  await expect(page.locator('.widget-calendar')).toHaveCount(1);
+  await expect(page.locator('.widget-upcoming')).toHaveCount(0);
+  await expect(page.locator('.dashboard-widget.is-editing')).toHaveCount(0);
+  await remove.click();
+  if (action === '제거') {
+    await expect(catalog.getByRole('button', { name: '캘린더 추가', exact: true })).toBeEnabled();
+    await expect(catalog.getByRole('alert')).toHaveCount(0);
+    await catalog.getByRole('button', { name: '완료', exact: true }).click();
+    await expect(page.locator('.widget-calendar')).toHaveCount(0);
+  } else {
+    await expect(catalog).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '다가오는 작업 위젯 드래그', exact: true })).toBeFocused();
+    await expect(page.locator('.widget-upcoming')).toHaveClass(/is-new-widget/);
+  }
+  const widgets = action === '제거' ? ['progress', 'contribution'] : ['calendar', 'progress', 'contribution', 'upcoming'];
+  expect(payloads).toEqual([{ widgets }, { widgets }]);
+});
+}
+
 test('일반 팀 홈은 서버 본인 집계를 사용하고 null을 0%로 표시하지 않는다', async ({
   page,
 }) => {

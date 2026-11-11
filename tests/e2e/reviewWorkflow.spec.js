@@ -213,7 +213,7 @@ for (const width of [1440, 1079, 768, 320]) {
   test(`제출 응답 ${width}px: 이전 평가 양식에서 점수·사유를 읽고 팀원을 전환한다`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
     await preview(page, '/spaces/1/teams/1/peer-evaluations?roundId=11', 'member', 'published');
-    await expect(page.getByRole('heading', { name: '마감된 평가 · 내가 저장한 응답', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '내가 저장한 응답', exact: true })).toBeVisible();
     await expect(page.getByLabel('김준영 작업 수행 4점', { exact: true })).toBeChecked();
     await expect(page.getByLabel('김준영 적극성 2점', { exact: true })).toBeChecked();
     await expect(page.getByLabel('김준영 작업 수행 4점', { exact: true })).toBeDisabled();

@@ -26,18 +26,21 @@ export async function openCalendarEventEditor(page) {
 }
 
 export async function addDashboardWidgets(page, titles) {
-  await clickDashboardControl(page, '위젯 추가');
   const catalog = page.getByRole('dialog', { name: '위젯 추가', exact: true });
   for (const title of titles) {
-    const added = catalog.getByRole('button', { name: `${title} 추가됨`, exact: true });
-    if (await added.count()) { await expect(added).toBeDisabled(); continue; }
+    await page.getByRole('button', { name: '필요한 위젯 추가하기', exact: true }).click();
+    const added = catalog.getByRole('button', { name: `${title} 제거`, exact: true });
+    if (await added.count()) {
+      await expect(added).toHaveAttribute('aria-pressed', 'true');
+      await expect(added).toBeEnabled();
+      await catalog.getByRole('button', { name: '완료', exact: true }).click();
+      continue;
+    }
     const button = catalog.getByRole('button', { name: `${title} 추가`, exact: true });
     await button.click();
+    await expect(catalog).toHaveCount(0);
+    await clickDashboardControl(page, '편집 완료');
   }
-  await expect(
-    page.getByRole('button', { name: '화면 설정', exact: true }),
-  ).toBeEnabled();
-  await catalog.getByRole('button', { name: '완료', exact: true }).click();
 }
 
 export async function selectCalendarEventDate(page, date) {

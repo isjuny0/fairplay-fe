@@ -7,6 +7,7 @@ import {
   Check,
   ChevronRight,
   LayoutDashboard,
+  Minus,
   Plus,
   Settings,
   Settings2,
@@ -126,6 +127,29 @@ function TeamDashboard({
   const [memoDirty, setMemoDirty] = useState(false);
   const [catalog, setCatalog] = useState(false);
   const [editing, setEditing] = useState(false);
+  const widgetGrid = useRef(null);
+  const [highlightedWidgets, setHighlightedWidgets] = useState([]);
+  const [pendingWidget, setPendingWidget] = useState(null);
+  const openCatalog = () => setCatalog(true);
+  useEffect(() => {
+    if (catalog || !pendingWidget) return;
+    const frame = requestAnimationFrame(() => {
+      const widget = [...(widgetGrid.current?.children || [])]
+        .find(element => element.dataset.widgetId === pendingWidget);
+      widget?.querySelector('.dashboard-drag-handle')?.focus({ preventScroll: true });
+      widget?.scrollIntoView({
+        block: 'start',
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+      });
+      setPendingWidget(null);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [catalog, pendingWidget]);
+  useEffect(() => {
+    if (!highlightedWidgets.length) return;
+    const timer = setTimeout(() => setHighlightedWidgets([]), 3000);
+    return () => clearTimeout(timer);
+  }, [highlightedWidgets]);
   const settingsMenu = useRef(null);
   const closeSettings = () => {
     if (!settingsMenu.current) return;
@@ -203,6 +227,18 @@ function TeamDashboard({
       widgets[index],
     ];
     save({ widgets });
+  };
+  const removeWidget = async (id) => {
+    if (savingRef.current || !dashboard.widgets.includes(id)) return;
+    if (id === 'memo' && memoDirty && !(await confirm({
+      title: '저장하지 않은 메모',
+      message: '메모를 저장하지 않았습니다. 입력 내용을 버리고 위젯을 제거할까요?',
+      label: '위젯 제거',
+    }))) return;
+    if (await save({ widgets: dashboard.widgets.filter(item => item !== id) })) {
+      if (id === 'memo') setMemoDirty(false);
+      setAnnouncement(`${dashboardWidgets.find(widget => widget.id === id).title} 위젯을 제거했습니다.`);
+    }
   };
   const taskLink = (task) =>
     navigate(
@@ -536,7 +572,7 @@ function TeamDashboard({
           <button
             className="secondary-button"
             disabled={saving}
-            onClick={() => { closeSettings(); setCatalog(true); }}
+            onClick={() => { closeSettings(); openCatalog(); }}
           >
             <Plus size={16} />
             위젯 추가
@@ -549,7 +585,7 @@ function TeamDashboard({
         </div>
       </header>
       <TeamBriefingCard spaceId={context.space.id} teamId={context.team.id} userId={context.user.id} />
-      <ErrorNotice error={saveError} />
+      {!catalog && <ErrorNotice error={saveError} />}
       {saving && (
         <p role="status" className="field-help">
           개인 홈 설정을 저장하는 중…
@@ -565,7 +601,7 @@ function TeamDashboard({
       <span className="sr-only" role="status">
         {announcement}
       </span>
-      <div className="dashboard-widget-grid dashboard-arrange-grid">
+      <div className="dashboard-widget-grid dashboard-arrange-grid" ref={widgetGrid}>
         {dashboard.widgets.map((id, index) => {
           const widget = dashboardWidgets.find((item) => item.id === id);
           const base = ['calendar', 'progress', 'contribution'].includes(id);
@@ -576,6 +612,7 @@ function TeamDashboard({
               index={index}
               count={dashboard.widgets.length}
               editing={editing}
+              highlighted={highlightedWidgets.includes(id)}
               disabled={saving}
               draggedId={draggedId}
               dropId={dropId}
@@ -583,22 +620,7 @@ function TeamDashboard({
               onTarget={setDropId}
               onDrop={dropWidget}
               onMove={move}
-              onRemove={async (removed) => {
-                if (
-                  removed === 'memo' &&
-                  memoDirty &&
-                  !(await confirm({
-                    title: '저장하지 않은 메모',
-                    message:
-                      '메모를 저장하지 않았습니다. 입력 내용을 버리고 위젯을 제거할까요?',
-                    label: '위젯 제거',
-                  }))
-                )
-                  return;
-                await save({
-                  widgets: dashboard.widgets.filter((item) => item !== removed),
-                });
-              }}
+              onRemove={removeWidget}
             >
               {base ? (
                 widgetContent(id)
@@ -628,25 +650,35 @@ function TeamDashboard({
       <button
         className="dashboard-add-placeholder"
         disabled={saving}
-        onClick={() => setCatalog(true)}
+        onClick={openCatalog}
       >
         <Plus size={18} />
         <strong>필요한 위젯 추가하기</strong>
       </button>
       {catalog && (
-        <Modal title="위젯 추가" onClose={() => setCatalog(false)} wide>
+        <Modal title="위젯 추가" onClose={() => setCatalog(false)} busy={saving} restoreFocusWithoutScroll wide>
+          <ErrorNotice error={saveError} />
           <div className="dashboard-catalog">
             {dashboardWidgets.map((widget) => {
               const added = dashboard.widgets.includes(widget.id);
               return (
                 <button
+                  type="button"
                   className={added ? 'is-added' : ''}
-                  disabled={added || saving}
-                  aria-label={`${widget.title} ${added ? '추가됨' : '추가'}`}
+                  disabled={saving}
+                  aria-pressed={added}
+                  aria-label={`${widget.title} ${added ? '제거' : '추가'}`}
                   key={widget.id}
-                  onClick={() =>
-                    save({ widgets: [...dashboard.widgets, widget.id] })
-                  }
+                  onClick={async () => {
+                    if (added) {
+                      await removeWidget(widget.id);
+                    } else if (await save({ widgets: [...dashboard.widgets, widget.id] })) {
+                      setCatalog(false);
+                      setEditing(true);
+                      setHighlightedWidgets([widget.id]);
+                      setPendingWidget(widget.id);
+                    }
+                  }}
                 >
                   <span className="dashboard-icon">
                     <Icon name={widget.icon} />
@@ -656,8 +688,8 @@ function TeamDashboard({
                     <small>{widget.description}</small>
                   </span>
                   <span className="dashboard-catalog-action">
-                    {added ? <Check size={16} /> : <Plus size={16} />}
-                    {added ? '추가됨' : '추가'}
+                    {added ? <Minus size={16} /> : <Plus size={16} />}
+                    {added ? '제거' : '추가'}
                   </span>
                 </button>
               );
@@ -665,7 +697,9 @@ function TeamDashboard({
           </div>
           <div className="modal-actions">
             <button
+              type="button"
               className="primary-button"
+              disabled={saving}
               onClick={() => setCatalog(false)}
             >
               완료
