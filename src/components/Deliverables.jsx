@@ -14,10 +14,12 @@ import {
   deleteDeliverable,
   downloadDeliverable,
   findTaskDeliverable,
+  getDeliverable,
   listDeliverables,
   updateDeliverable,
   uploadDeliverable,
 } from "../api/deliverables.js";
+import { ApiError } from "../api/client.js";
 import useResource from "../hooks/useResource.js";
 import { useInteractions } from "../hooks/useInteractions.js";
 import useSaveRecovery from "../hooks/useSaveRecovery.js";
@@ -508,9 +510,25 @@ export default function Deliverables({
   const [localEditing, setEditing] = useState(undefined);
   const editing = sourceEdit ?? localEditing;
   const [selectedDeliverableId, setSelectedDeliverableId] = useState(null);
-  const selectedDeliverable = resource.data?.find(
-    (item) => item.id === selectedDeliverableId,
-  );
+  const linkedDeliverableId = isCollection ? parseRouteId(searchParams.get("deliverableId")) : null;
+  const linkedDeliverable = useResource(async () => {
+    if (linkedDeliverableId == null) return null;
+    const material = await getDeliverable(linkedDeliverableId);
+    if (material.teamId !== team.id)
+      throw new ApiError(404, { message: "이 팀의 자료를 찾을 수 없습니다." });
+    return material;
+  }, [team.id, linkedDeliverableId]);
+  const selectedDeliverable = selectedDeliverableId == null
+    ? linkedDeliverable.data
+    : resource.data?.find((item) => item.id === selectedDeliverableId);
+  const closeDeliverable = () => {
+    setSelectedDeliverableId(null);
+    if (linkedDeliverableId != null) setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.delete("deliverableId");
+      return next;
+    }, { replace: true });
+  };
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [editorError, setEditorError] = useState(null);
@@ -879,6 +897,7 @@ export default function Deliverables({
         </div>
       )}
       <ErrorNotice error={error} onRetry={resource.reload} />
+      {linkedDeliverableId != null && <ErrorNotice error={linkedDeliverable.error} onRetry={linkedDeliverable.reload} />}
       {tasksResource && (
         <ResourceState resource={tasksResource} label="작업 필터 정보" />
       )}
@@ -1025,7 +1044,7 @@ export default function Deliverables({
       {selectedDeliverable && (
         <Modal
           title={selectedDeliverable.title}
-          onClose={() => setSelectedDeliverableId(null)}
+          onClose={closeDeliverable}
           className="deliverable-detail-modal"
           restoreFocusWithoutScroll
           wide={selectedDeliverable.type === "TEXT"}

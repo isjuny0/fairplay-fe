@@ -1,5 +1,6 @@
 import { previewRag } from './rag.js';
 import { previewRagFile } from './ragFiles.js';
+import { previewTeamBriefing } from './teamBriefing.js';
 import { previewTeamHome } from './teamHome.js';
 import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
 import { isMutable } from '../lib/domain.js';
@@ -219,6 +220,11 @@ async function executePreviewRequest(
   }
   if (parts[1] === 'spaces' && parts[3] === 'announcements') {
     const result = await previewSpaceAnnouncements(context, state, parts, url, method, body);
+    saveMockState(context, state);
+    return structuredClone(result);
+  }
+  if (parts[1] === 'teams' && parts[3] === 'briefing') {
+    const result = previewTeamBriefing(context, state, parts, method, body);
     saveMockState(context, state);
     return structuredClone(result);
   }
@@ -796,6 +802,7 @@ async function executePreviewRequest(
     const item =
       entry?.deliverables.find((item) => item.id === id) ||
       missing('DELIVERABLE_NOT_FOUND', '자료가 없습니다.');
+    if (method === 'GET' && parts.length === 3) return structuredClone(item);
     const sample = previewRagFile(item);
     if (responseType === 'blob' && sample) {
       const response = await fetch(sample.assetUrl);
