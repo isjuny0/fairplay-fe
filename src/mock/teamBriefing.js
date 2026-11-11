@@ -9,14 +9,13 @@ function initialChanges(entry) {
   const items = recentTasks.map((task) => {
     const type = task.status === 'DONE' ? 'TASK_COMPLETED'
       : task.status === 'REVISING' ? 'TASK_REVISING' : 'TASK_CREATED';
-    const action = type === 'TASK_COMPLETED' ? '완료됐어요.'
-      : type === 'TASK_REVISING' ? '수정 중으로 변경됐어요.' : '새로 추가됐어요.';
+    const changeDescription = type === 'TASK_COMPLETED' ? '작업이 완료됐어요.' : type === 'TASK_REVISING' ? '작업이 수정 중으로 변경됐어요.' : '작업이 새로 추가됐어요.';
+    const hoursRemaining = Math.ceil((apiTimeToEpoch(task.dueAt) - Date.now()) / 3600000);
     return {
       id: `task-${task.id}`, type,
       priority: task.status === 'REVISING' ? 'ATTENTION' : 'NORMAL',
-      title: `${task.title} 작업이 ${action}`,
-      description: type === 'TASK_COMPLETED' ? '마지막 확인 이후 완료 상태로 변경됐습니다.'
-        : '마지막 확인 이후의 변경 내용을 확인해주세요.',
+      title: task.title, changeDescription,
+      description: task.status !== 'DONE' && hoursRemaining > 0 && hoursRemaining <= 24 ? `마감까지 ${hoursRemaining}시간` : null,
       targetType: 'TASK', targetId: task.id, status: task.status, dueAt: task.dueAt,
       occurredAt: task.updatedAt || koreanDateTime(),
     };
@@ -24,8 +23,8 @@ function initialChanges(entry) {
   for (const material of entry.deliverables.slice(0, 2)) {
     items.push({
       id: `deliverable-${material.id}`, type: 'DELIVERABLE_UPDATED', priority: 'NORMAL',
-      title: `${material.title} 자료가 수정됐어요.`,
-      description: '마지막 확인 이후의 변경 내용을 확인해주세요.',
+      title: material.title, changeDescription: '자료가 수정됐어요.',
+      description: null,
       targetType: 'DELIVERABLE', targetId: material.id, status: null, dueAt: null,
       occurredAt: material.updatedAt || koreanDateTime(),
     });
@@ -73,7 +72,7 @@ export function previewTeamBriefing(context, state, parts, method, body) {
   };
   return {
     teamId, asOf, hasUpdates: items.length > 0, lastReadAt: checkpoint?.lastReadAt || null,
-    headline: items.length ? `팀에 중요한 변화가 ${highlights.length}가지 있어요.` : '새로운 변경 사항이 없어요.',
+    headline: items.length ? `새로운 변경이 ${items.length}건 있어요.` : '새로운 변경 사항이 없어요.',
     totalEventCount: items.length, highlights, items, additionalCount: items.length - highlights.length, ackToken,
   };
 }
