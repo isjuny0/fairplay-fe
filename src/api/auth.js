@@ -12,21 +12,26 @@ function loadGoogleIdentityServices() {
     const existingScript = document.getElementById(GOOGLE_SCRIPT_ID);
     const script = existingScript || document.createElement('script');
 
+    const cleanup = () => {
+      script.removeEventListener('load', handleLoad);
+      script.removeEventListener('error', handleError);
+    };
+    const handleError = () => {
+      cleanup();
+      script.remove();
+      reject(new Error('Google 로그인 서비스를 불러오지 못했습니다.'));
+    };
     const handleLoad = () => {
-      if (window.google?.accounts?.oauth2) resolve(window.google);
-      else reject(new Error('Google 로그인 서비스를 불러오지 못했습니다.'));
+      if (window.google?.accounts?.oauth2) {
+        cleanup();
+        resolve(window.google);
+      } else {
+        handleError();
+      }
     };
 
     script.addEventListener('load', handleLoad, { once: true });
-    script.addEventListener(
-      'error',
-      () => {
-        googleScriptRequest = undefined;
-        script.remove();
-        reject(new Error('Google 로그인 서비스를 불러오지 못했습니다.'));
-      },
-      { once: true },
-    );
+    script.addEventListener('error', handleError, { once: true });
 
     if (!existingScript) {
       script.id = GOOGLE_SCRIPT_ID;
@@ -35,6 +40,9 @@ function loadGoogleIdentityServices() {
       script.defer = true;
       document.head.appendChild(script);
     }
+  }).catch((error) => {
+    googleScriptRequest = undefined;
+    throw error;
   });
 
   return googleScriptRequest;
