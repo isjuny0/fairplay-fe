@@ -745,3 +745,10 @@
   .task-header-body .task-next-action .heading-actions { grid-column: 1; grid-row: 3; }
   .task-next-action > .secondary-button { justify-self: start; }
 }
+
+.task-delay-reason { margin: 18px 0; padding: 16px 18px; border: 1px solid #eadfcf; border-radius: 12px; background: #fffcf6; }
+.task-delay-reason .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.task-delay-reason h2 { margin: 0; font-size: 15px; }
+.task-delay-reason > p { line-height: 1.7; }
+
+.task-delay-reason-text { white-space: pre-wrap; overflow-wrap: anywhere; }

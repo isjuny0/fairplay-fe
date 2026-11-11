@@ -1,3 +1,4 @@
+import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import { formatTaskEstimatedTime } from '../lib/taskTime.js';
 import DetailBackButton from './DetailBackButton.jsx';
 import { usePreviewGuide } from '../lib/previewGuideContext.js';
@@ -153,6 +154,8 @@ export default function TaskDetail({
     setError(null);
   }, [resource.data]);
   const [editing, setEditing] = useState(false);
+  const [delayReasonDialog, setDelayReasonDialog] = useState(null);
+  const [delayReasonText, setDelayReasonText] = useState('');
   const [reopening, setReopening] = useState(false);
   const [revisionAssigneeId, setRevisionAssigneeId] = useState('');
   const [showAllAssignees, setShowAllAssignees] = useState(false);
@@ -162,6 +165,7 @@ export default function TaskDetail({
   useEffect(() => {
     setShowAllAssignees(false);
     setReopening(false);
+    setDelayReasonDialog(null);
     setActiveTab('task-description-section');
     setSourceEdit(null);
     setSectionToFocus(null);
@@ -178,8 +182,13 @@ export default function TaskDetail({
       await action();
       notify(successMessage);
       setEditing(false);
+      setDelayReasonDialog(null);
       resource.reload();
     } catch (requestError) {
+      if (requestError.code === 'DELAY_REASON_REQUIRED') {
+        setDelayReasonText('');
+        setDelayReasonDialog({ complete: true });
+      }
       setError(requestError);
     } finally {
       setBusy(false);
@@ -231,14 +240,31 @@ export default function TaskDetail({
     !missingContributions.length &&
     hasDeliverables;
   const workClosed = task?.completionBlockReason === 'WORK_PERIOD_CLOSED';
+  const delayReason = resource.data?.delayReason;
+  const overdue = task && task.status !== 'DONE' && apiTimeToEpoch(task.dueAt) < Date.now();
+  const canSubmitCompletion = task && (task.completionBlockReason === null || task.completionBlockReason === 'DELAY_REASON_REQUIRED');
+  const openDelayReason = (complete) => {
+    setError(null);
+    setDelayReasonText(delayReason?.text || '');
+    setDelayReasonDialog({ complete });
+  };
+  const submitDelayReason = (event) => {
+    event.preventDefault();
+    if (readOnly || busy || resource.loading || workClosed || !canModifyTeamWork(team) || !delayReasonText.trim() || !['IN_PROGRESS', 'REVISING'].includes(task?.status)) return;
+    mutate(() => updateTask(task.id, {
+      expectedVersion: task.version, delayReason: delayReasonText.trim(),
+      ...(delayReasonDialog.complete ? { status: 'DONE' } : {}),
+    }), delayReasonDialog.complete ? '지연 사유를 기록하고 작업을 완료했습니다.' : '지연 사유를 저장했습니다.');
+  };
   const changeStatus = async (status) => {
     if (readOnly || busy || !canModifyTeamWork(team) || workClosed) return;
     if (
       status === 'DONE' &&
-      (!completionReady || task.completionBlockReason !== null)
+      (!completionReady || !canSubmitCompletion)
     )
       return;
     if (!(await confirmDiscard())) return;
+    if (status === 'DONE' && apiTimeToEpoch(task.dueAt) < Date.now() && !delayReason?.text) { openDelayReason(true); return; }
     if (status === 'REVISING' && departedAllocation > 0) {
       setRevisionAssigneeId('');
       setError(null);
@@ -430,6 +456,22 @@ export default function TaskDetail({
                   </dd>
                 </div>
               </dl>
+              {(delayReason || (overdue && ['IN_PROGRESS', 'REVISING'].includes(task.status))) && (
+                <section className="task-delay-reason" aria-label="지연 사유">
+                  <div className="section-heading">
+                    <h2>지연 사유</h2>
+                    {!readOnly && isAssignee(task, user.id) && isMutable(task) && canModifyTeamWork(team) && !workClosed && (
+                      <button type="button" className="secondary-button" disabled={busy} onClick={() => openDelayReason(false)}>
+                        {delayReason ? '사유 수정' : '사유 작성'}
+                      </button>
+                    )}
+                  </div>
+                  {delayReason ? <>
+                    <p className="task-delay-reason-text">{delayReason.text}</p>
+                    <p className="field-help">작성자: {delayReason.authorName || '알 수 없는 사용자'} · {formatDate(delayReason.updatedAt)}</p>
+                  </> : <p className="field-help">마감이 지난 작업이에요. 완료하려면 지연 사유를 작성해주세요.</p>}
+                </section>
+              )}
               <div className="task-header-body">
                 <div className="task-header-information">
                   <section
@@ -514,39 +556,22 @@ export default function TaskDetail({
                           </ReadinessItem>
                         </ul>
                         <div className="heading-actions">
-                          {['TODO', 'IN_PROGRESS'].includes(task.status) && (
-                            <button
-                              className="secondary-button"
-                              disabled={
-                                busy || !canModifyTeamWork(team) || workClosed
-                              }
-                              onClick={() =>
-                                changeStatus(
-                                  task.status === 'TODO'
-                                    ? 'IN_PROGRESS'
-                                    : 'TODO',
-                                )
-                              }
-                            >
-                              {task.status === 'TODO'
-                                ? '작업 시작'
-                                : '할 일로 되돌리기'}
-                            </button>
+                          {task.status === 'TODO' && (
+                            <button className="secondary-button" disabled={busy || !canModifyTeamWork(team) || workClosed}
+                              onClick={() => changeStatus('IN_PROGRESS')}>작업 시작</button>
                           )}
                           <button
                             className="primary-button"
                             disabled={
                               busy ||
                               !canModifyTeamWork(team) ||
-                              task.completionBlockReason !== null ||
+                              !canSubmitCompletion ||
                               !completionReady
                             }
                             data-guide="complete-task"
                             onClick={() => changeStatus('DONE')}
                           >
-                            {task.status === 'REVISING'
-                              ? '다시 완료'
-                              : '완료 처리'}
+                            {overdue && !delayReason?.text ? '지연 사유 작성 후 완료' : task.status === 'REVISING' ? '다시 완료' : '완료 처리'}
                           </button>
                         </div>
                       </>
@@ -724,6 +749,29 @@ export default function TaskDetail({
           </>
         )}
       </ResourceState>
+      {delayReasonDialog && task && (
+        <Modal title={delayReasonDialog.complete ? '지연 사유 작성 후 완료' : '지연 사유 작성'} busy={busy}
+          onClose={() => setDelayReasonDialog(null)} dirty={delayReasonText !== (delayReason?.text || '')}>
+          <form className="stack" onSubmit={submitDelayReason}>
+            <p>작업이 마감보다 늦어진 이유를 작성해주세요. 작업을 조회할 수 있는 팀원과 스페이스 관리자가 확인할 수 있어요.</p>
+            <Field label="지연 사유">
+              <textarea required maxLength={500} rows={4} value={delayReasonText} disabled={busy}
+                onChange={(event) => setDelayReasonText(event.target.value)} />
+            </Field>
+            <p className="field-help">{delayReasonText.length} / 500자</p>
+            {delayReasonDialog.complete && <p className="field-help">완료 후 작업 내용과 산출물이 잠기며, 보완하려면 수정 중으로 전환해야 해요.</p>}
+            <ErrorNotice error={error} />
+            {error?.code === 'VERSION_CONFLICT' && <button type="button" className="secondary-button" onClick={reload}>최신 작업 불러오기</button>}
+            {task.status === 'DONE' && <p className="field-help">다른 담당자가 작업을 완료했어요. 창을 닫고 저장된 사유를 확인해주세요.</p>}
+            <div className="modal-actions">
+              <button type="button" className="secondary-button" disabled={busy} onClick={() => setDelayReasonDialog(null)}>취소</button>
+              <button type="submit" className="primary-button" disabled={busy || resource.loading || !delayReasonText.trim() || workClosed || !['IN_PROGRESS', 'REVISING'].includes(task.status)}>
+                {delayReasonDialog.complete ? '사유 저장하고 완료' : '사유 저장'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
       {reopening && task && (
         <Modal title="완료 작업 담당 재배정" busy={busy} onClose={() => setReopening(false)}>
           <form className="stack" onSubmit={submitRevisionHandoff}>

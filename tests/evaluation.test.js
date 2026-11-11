@@ -448,6 +448,9 @@ test('FINAL 기한 이후 작업 변경은 차단하며 과거 검토 조회는 
 
 test('미리보기 공동 담당 설명 누락은 직접 완료를 막고 전원 작성 후 완료한다', async () => {
   const leader = context('leader');
+  const state = getMockState(leader);
+  state.teams[1].tasks.find(task => task.id === 102).dueAt = koreanDateTime(Date.now() + 86400000);
+  saveMockState(leader, state);
   let detail = await previewRequest('/api/tasks/102');
   assert.equal(
     detail.task.completionBlockReason,
@@ -605,6 +608,7 @@ test('AI 검토 진행 중에도 직접 완료하고 현재 담당자는 기존 
   const leader=context('leader');
   const state=getMockState(leader);
   const task=state.teams[1].tasks.find(task=>task.id===102);
+  task.dueAt=koreanDateTime(Date.now()+86400000);
   for(const assignment of task.assignees) task.contributions[assignment.userId]='담당한 구현과 검증 결과를 작성했습니다.';
   saveMockState(leader,state);
   const review=await previewRequest('/api/tasks/102/ai-review',{method:'POST'});

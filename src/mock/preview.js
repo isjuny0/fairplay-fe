@@ -175,7 +175,10 @@ function previewTaskResponse(state, context, entry, task) {
     completionBlockReason = 'CONTRIBUTION_DESCRIPTION_REQUIRED';
   else if (!entry.deliverables.some((item) => item.taskId === task.id))
     completionBlockReason = 'DELIVERABLE_REQUIRED';
-  return { ...task, estimatedMinutes: task.weight * 30, completionBlockReason };
+  else if (apiTimeToEpoch(task.dueAt) < Date.now() && !task.delayReason?.text)
+    completionBlockReason = 'DELAY_REASON_REQUIRED';
+  const { delayReason, ...fields } = task;
+  return { ...fields, estimatedMinutes: task.weight * 30, completionBlockReason };
 }
 
 function updateLinkedTaskAfterDeliverableChange(state, entry, taskId, updatedAt, reviewInputChanged) {
@@ -644,6 +647,7 @@ async function executePreviewRequest(
     if (parts.length === 3 && method === 'GET')
       return {
         task: previewTaskResponse(state, context, entry, task),
+        delayReason: task.delayReason || null,
         deliverableSummary: entry.deliverables
           .filter((item) => item.taskId === id)
           .map(({ id, title, type, version }) => ({
@@ -677,7 +681,7 @@ async function executePreviewRequest(
       && task.assignees.some((assignment) => !entry.members.some((member) => member.userId === assignment.userId));
     if (revisingWithDepartedAssignees && !body.assignees?.length)
       throw new MockError('INVALID_TASK_ASSIGNEES', '현재 팀원에게 담당 배분을 지정해 주세요.', 400);
-    if (parts[3] === 'contribution' || body.status != null) {
+    if (parts[3] === 'contribution' || body.status != null || body.delayReason != null) {
       if (!assigned && !(leader && revisingWithDepartedAssignees))
         throw new MockError(
           'FORBIDDEN',
@@ -745,11 +749,11 @@ async function executePreviewRequest(
       if (Object.hasOwn(changes, 'estimatedMinutes'))
         changes.weight = estimatedTaskWeight(changes.estimatedMinutes);
       const changesDetails = Object.keys(changes).some(
-        (key) => key !== 'status' && !(revisingWithDepartedAssignees && key === 'assignees'),
+        (key) => key !== 'status' && key !== 'delayReason' && !(revisingWithDepartedAssignees && key === 'assignees'),
       );
       const transitions = {
         TODO: ['TODO', 'IN_PROGRESS'],
-        IN_PROGRESS: ['IN_PROGRESS', 'TODO', 'DONE'],
+        IN_PROGRESS: ['IN_PROGRESS', 'DONE'],
         REVISING: ['REVISING', 'DONE'],
         DONE: ['REVISING'],
       };
@@ -769,20 +773,24 @@ async function executePreviewRequest(
           'TASK_LOCKED',
           '수정 중으로 전환한 뒤 변경해 주세요.',
         );
+      if (task.status !== 'TODO' && ((body.startAt != null && apiTimeToEpoch(body.startAt) !== apiTimeToEpoch(task.startAt))
+        || (body.dueAt != null && apiTimeToEpoch(body.dueAt) !== apiTimeToEpoch(task.dueAt))))
+        throw new MockError('TASK_SCHEDULE_LOCKED', '시작일과 마감일은 할 일 상태에서만 변경할 수 있습니다.');
+      let proposedReason = task.delayReason;
+      if (Object.hasOwn(body, 'delayReason')) {
+        if (typeof body.delayReason !== 'string' || !body.delayReason.trim() || body.delayReason.trim().length > 500)
+          throw new MockError('INVALID_REQUEST', '지연 사유는 1~500자로 작성해주세요.', 400);
+        if (!['IN_PROGRESS', 'REVISING'].includes(task.status) || apiTimeToEpoch(task.dueAt) >= Date.now())
+          throw new MockError('DELAY_REASON_NOT_ALLOWED', '지연된 진행 중·수정 중 작업에서 작성할 수 있습니다.');
+        if (body.delayReason.trim() !== task.delayReason?.text) proposedReason = {
+          text: body.delayReason.trim(), authorId: context.user.id, authorName: context.user.name, updatedAt: koreanDateTime(),
+        };
+        changes.delayReason = proposedReason;
+      }
       if (body.status === 'DONE') {
-        const reason = previewTaskResponse(
-          state,
-          context,
-          entry,
-          task,
-        ).completionBlockReason;
-        if (reason)
-          throw new MockError(
-            reason,
-            reason === 'CONTRIBUTION_DESCRIPTION_REQUIRED'
-              ? '담당자 전원의 수행 설명이 필요합니다.'
-              : '작업에 연결된 자료가 필요합니다.',
-          );
+        const reason = previewTaskResponse(state, context, entry, {...task, delayReason: proposedReason}).completionBlockReason;
+        if (reason) throw new MockError(reason, reason === 'DELAY_REASON_REQUIRED'
+          ? '지연 사유를 작성한 뒤 완료해주세요.' : '수행 설명과 연결된 결과물이 필요합니다.');
       }
       const startAt = body.startAt ?? task.startAt;
       const dueAt = body.dueAt ?? task.dueAt;
