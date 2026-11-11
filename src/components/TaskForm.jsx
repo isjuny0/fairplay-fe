@@ -710,12 +710,6 @@ export default function TaskForm({
                   </p>
                 )}
             </section>
-            {creating && step === assignmentStep && (
-              <details className="task-form-section task-form-review">
-                <summary><strong>생성할 작업 요약</strong></summary>
-                {reviewFacts}
-              </details>
-            )}
             {!creating && mobile && step === 2 && (
               <section
                 className="task-form-section task-form-review"

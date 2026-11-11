@@ -1627,8 +1627,7 @@ test('작업 시작일은 생성 시 필수이며 일정 검증 후 오프셋과
   await fillDateTime(dialog, '시작일', '2030-12-01T18:00');
   await dialog.getByRole('button', { name: '다음', exact: true }).click();
   await dialog.getByLabel('담당자 · 팀원').check();
-  await dialog.getByText('생성할 작업 요약', { exact: true }).click();
-  const summary = dialog.locator('details.task-form-review');
+  const summary = dialog.getByRole('region', { name: '등록 전 확인', exact: true });
   await expect(summary).toContainText('계획 일정 작업');
   await expect(summary).toContainText('담당자 100%');
   await dialog.getByRole('button', { name: '저장', exact: true }).click();
