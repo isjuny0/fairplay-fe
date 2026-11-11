@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { formatMeetingRecord } from '../../src/lib/meetingRecord.js';
 
 const team = '/preview/spaces/1/teams/1';
 for (const [width, height] of [[320, 844], [390, 500], [390, 1248], [481, 1248], [720, 1000]]) {
@@ -29,12 +30,12 @@ for (const [width, height] of [[320, 844], [390, 500], [390, 1248], [481, 1248],
       expect(await dialog.boundingBox()).toEqual(before);
       await expect(dialog.getByRole('button', { name: '이전', exact: true })).toBeInViewport();
       if (path === 'meeting-minutes') {
-        const editor = dialog.getByRole('textbox', { name: '안건', exact: true });
+        const editor = dialog.getByRole('textbox', { name: '회의 기록', exact: true });
         await expect(editor).toBeVisible();
         const box = await editor.boundingBox();
         expect(box.height).toBeGreaterThanOrEqual(180);
         expect(box.height).toBeLessThanOrEqual(240);
-        await editor.fill('**모바일에서 적은 안건**');
+        await editor.fill(formatMeetingRecord({ agenda: '**모바일에서 적은 안건**' }));
         await dialog.getByRole('button', { name: '미리보기', exact: true }).click();
         await expect(dialog.getByRole('region', { name: '본문 미리보기' })).toContainText('모바일에서 적은 안건');
       }
