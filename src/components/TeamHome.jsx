@@ -127,21 +127,10 @@ function TeamDashboard({
   const [memoDirty, setMemoDirty] = useState(false);
   const [catalog, setCatalog] = useState(false);
   const [editing, setEditing] = useState(false);
-  const catalogAdditions = useRef([]);
   const widgetGrid = useRef(null);
   const [highlightedWidgets, setHighlightedWidgets] = useState([]);
   const [pendingWidget, setPendingWidget] = useState(null);
-  const openCatalog = () => {
-    catalogAdditions.current = [];
-    setCatalog(true);
-  };
-  const finishCatalog = () => {
-    const additions = catalogAdditions.current.filter(id => dashboard.widgets.includes(id));
-    setCatalog(false);
-    setEditing(dashboard.widgets.length > 0);
-    setHighlightedWidgets(additions);
-    setPendingWidget(additions.at(-1) || dashboard.widgets[0] || null);
-  };
+  const openCatalog = () => setCatalog(true);
   useEffect(() => {
     if (catalog || !pendingWidget) return;
     const frame = requestAnimationFrame(() => {
@@ -684,7 +673,10 @@ function TeamDashboard({
                     if (added) {
                       await removeWidget(widget.id);
                     } else if (await save({ widgets: [...dashboard.widgets, widget.id] })) {
-                      catalogAdditions.current = [...catalogAdditions.current.filter(id => id !== widget.id), widget.id];
+                      setCatalog(false);
+                      setEditing(true);
+                      setHighlightedWidgets([widget.id]);
+                      setPendingWidget(widget.id);
                     }
                   }}
                 >
@@ -708,7 +700,7 @@ function TeamDashboard({
               type="button"
               className="primary-button"
               disabled={saving}
-              onClick={finishCatalog}
+              onClick={() => setCatalog(false)}
             >
               완료
             </button>
