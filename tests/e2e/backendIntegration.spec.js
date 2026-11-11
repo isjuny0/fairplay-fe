@@ -2,7 +2,7 @@ import { koreanDateTime } from '../../src/lib/koreanTime.js';
 import { readFile } from 'node:fs/promises';
 import { test, expect } from '@playwright/test';
 import { fillDateTime } from './helpers/dateTime.js';
-import { openCalendarEventEditor, addDashboardWidgets } from './helpers/teamDashboard.js';
+import { openCalendarEventEditor, addDashboardWidgets, clickDashboardControl } from './helpers/teamDashboard.js';
 
 const members = [
   {
@@ -399,8 +399,7 @@ test(`위젯 ${action} 저장 실패는 구성을 보존하고 창 안에서 다
     await route.fulfill({ status: 503, json: { code: 'SERVICE_UNAVAILABLE', message: '홈 설정 저장 실패' } });
   });
   await page.goto('/spaces/1/teams/1');
-  await page.getByRole('button', { name: '화면 설정', exact: true }).click();
-  await page.getByRole('button', { name: '위젯 추가', exact: true }).click();
+  await clickDashboardControl(page, '위젯 추가');
   const catalog = page.getByRole('dialog', { name: '위젯 추가', exact: true });
   const remove = catalog.getByRole('button', { name: action === '제거' ? '캘린더 제거' : '다가오는 작업 추가', exact: true });
   await remove.click();
@@ -414,7 +413,7 @@ test(`위젯 ${action} 저장 실패는 구성을 보존하고 창 안에서 다
   await expect(remove).toBeEnabled();
   await expect(page.locator('.widget-calendar')).toHaveCount(1);
   await expect(page.locator('.widget-upcoming')).toHaveCount(0);
-  await expect(page.locator('.dashboard-widget.is-editing')).toHaveCount(0);
+  await expect(page.locator('.dashboard-widget.is-editing')).toHaveCount(3);
   await remove.click();
   if (action === '제거') {
     await expect(catalog.getByRole('button', { name: '캘린더 추가', exact: true })).toBeEnabled();
@@ -422,6 +421,9 @@ test(`위젯 ${action} 저장 실패는 구성을 보존하고 창 안에서 다
     await catalog.getByRole('button', { name: '완료', exact: true }).click();
     await expect(page.locator('.widget-calendar')).toHaveCount(0);
   } else {
+    await expect(catalog.getByRole('button', { name: '다가오는 작업 제거', exact: true })).toBeEnabled();
+    await expect(catalog).toBeVisible();
+    await catalog.getByRole('button', { name: '완료', exact: true }).click();
     await expect(catalog).toHaveCount(0);
     await expect(page.getByRole('button', { name: '다가오는 작업 위젯 드래그', exact: true })).toBeFocused();
     await expect(page.locator('.widget-upcoming')).toHaveClass(/is-new-widget/);

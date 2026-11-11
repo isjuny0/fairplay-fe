@@ -7,9 +7,7 @@ import {
   Check,
   ChevronRight,
   LayoutDashboard,
-  Minus,
   Plus,
-  Settings,
   Settings2,
 } from 'lucide-react';
 import Icon from './Icon.jsx';
@@ -17,6 +15,7 @@ import TeamHomeCalendar from './TeamHomeCalendar.jsx';
 import TeamBriefingCard from './team-briefing/TeamBriefingCard.jsx';
 import DashboardMetricHelp from './DashboardMetricHelp.jsx';
 import DashboardWidgetFrame from './DashboardWidgetFrame.jsx';
+import DashboardWidgetCatalogItem from './DashboardWidgetCatalogItem.jsx';
 import TeamHomeContribution from './TeamHomeContribution.jsx';
 import TeamProgressRing from './TeamProgressRing.jsx';
 import { getHomePreferences, updateHomePreferences } from '../api/teamHome.js';
@@ -126,11 +125,25 @@ function TeamDashboard({
   const { confirm } = useInteractions();
   const [memoDirty, setMemoDirty] = useState(false);
   const [catalog, setCatalog] = useState(false);
+  const [catalogPreview, setCatalogPreview] = useState(null);
   const [editing, setEditing] = useState(false);
   const widgetGrid = useRef(null);
   const [highlightedWidgets, setHighlightedWidgets] = useState([]);
   const [pendingWidget, setPendingWidget] = useState(null);
-  const openCatalog = () => setCatalog(true);
+  const catalogAdditions = useRef([]);
+  const openCatalog = () => {
+    catalogAdditions.current = [];
+    setCatalogPreview(null);
+    setHighlightedWidgets([]);
+    setCatalog(true);
+  };
+  const finishCatalog = () => {
+    const additions = catalogAdditions.current.filter(id => dashboard.widgets.includes(id));
+    setCatalog(false);
+    setEditing(true);
+    setHighlightedWidgets(additions);
+    setPendingWidget(additions.at(-1) || null);
+  };
   useEffect(() => {
     if (catalog || !pendingWidget) return;
     const frame = requestAnimationFrame(() => {
@@ -150,19 +163,6 @@ function TeamDashboard({
     const timer = setTimeout(() => setHighlightedWidgets([]), 3000);
     return () => clearTimeout(timer);
   }, [highlightedWidgets]);
-  const settingsMenu = useRef(null);
-  const closeSettings = () => {
-    if (!settingsMenu.current) return;
-    settingsMenu.current.open = false;
-    settingsMenu.current.querySelector('summary')?.focus();
-  };
-  useEffect(() => {
-    const outside = event => {
-      if (settingsMenu.current && !settingsMenu.current.contains(event.target)) settingsMenu.current.open = false;
-    };
-    document.addEventListener('pointerdown', outside);
-    return () => document.removeEventListener('pointerdown', outside);
-  }, []);
   const [draggedId, setDraggedId] = useState(null);
   const [dropId, setDropId] = useState(null);
   const [announcement, setAnnouncement] = useState('');
@@ -542,46 +542,16 @@ function TeamDashboard({
           >
             <Icon name="search" />자료에 질문하기
           </button>
-          <details className="dashboard-display-settings" ref={settingsMenu} onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); closeSettings(); } }}>
-          <summary
-            className={`secondary-button ${editing ? 'is-active' : ''}`}
-            role="button"
-            aria-label={editing ? '편집 완료' : '화면 설정'}
-            aria-disabled={editing && saving || undefined}
-            onClick={event => {
-              if (!editing) return;
-              event.preventDefault();
-              if (saving) return;
-              setEditing(false);
-              closeSettings();
-            }}
-          >
-            {editing ? <Check size={15} /> : <Settings size={15} />}
-            {editing ? '편집 완료' : '화면 설정'}
-          </summary>
-          <div className="dashboard-display-settings-actions">
           <button
-            className={`secondary-button ${editing ? 'is-active' : ''}`}
-            onClick={() => { setEditing(!editing); closeSettings(); }}
+            type="button"
+            className={`secondary-button dashboard-edit-toggle ${editing ? 'is-active' : ''}`}
+            onClick={() => setEditing(!editing)}
             aria-pressed={editing}
             disabled={saving}
           >
-            <Settings2 size={15} />
+            {editing ? <Check size={15} /> : <Settings2 size={15} />}
             {editing ? '편집 완료' : '위젯 편집'}
           </button>
-          <button
-            className="secondary-button"
-            disabled={saving}
-            onClick={() => { closeSettings(); openCatalog(); }}
-          >
-            <Plus size={16} />
-            위젯 추가
-          </button>
-          <p className="dashboard-settings-note">
-            일정은 팀원 모두와 공유됩니다. 위젯 구성과 메모는 내 계정에만 저장됩니다.
-          </p>
-          </div>
-          </details>
         </div>
       </header>
       <TeamBriefingCard spaceId={context.space.id} teamId={context.team.id} userId={context.user.id} />
@@ -647,14 +617,15 @@ function TeamDashboard({
           );
         })}
       </div>
-      <button
+      {editing && <button
+        type="button"
         className="dashboard-add-placeholder"
         disabled={saving}
         onClick={openCatalog}
       >
         <Plus size={18} />
         <strong>필요한 위젯 추가하기</strong>
-      </button>
+      </button>}
       {catalog && (
         <Modal title="위젯 추가" onClose={() => setCatalog(false)} busy={saving} restoreFocusWithoutScroll wide>
           <ErrorNotice error={saveError} />
@@ -662,45 +633,33 @@ function TeamDashboard({
             {dashboardWidgets.map((widget) => {
               const added = dashboard.widgets.includes(widget.id);
               return (
-                <button
-                  type="button"
-                  className={added ? 'is-added' : ''}
-                  disabled={saving}
-                  aria-pressed={added}
-                  aria-label={`${widget.title} ${added ? '제거' : '추가'}`}
+                <DashboardWidgetCatalogItem
                   key={widget.id}
-                  onClick={async () => {
+                  widget={widget}
+                  added={added}
+                  disabled={saving}
+                  preview={catalogPreview}
+                  onPreview={setCatalogPreview}
+                  onToggle={async () => {
                     if (added) {
                       await removeWidget(widget.id);
                     } else if (await save({ widgets: [...dashboard.widgets, widget.id] })) {
-                      setCatalog(false);
-                      setEditing(true);
-                      setHighlightedWidgets([widget.id]);
-                      setPendingWidget(widget.id);
+                      catalogAdditions.current = [...catalogAdditions.current.filter(id => id !== widget.id), widget.id];
                     }
                   }}
-                >
-                  <span className="dashboard-icon">
-                    <Icon name={widget.icon} />
-                  </span>
-                  <span>
-                    <strong>{widget.title}</strong>
-                    <small>{widget.description}</small>
-                  </span>
-                  <span className="dashboard-catalog-action">
-                    {added ? <Minus size={16} /> : <Plus size={16} />}
-                    {added ? '제거' : '추가'}
-                  </span>
-                </button>
+                />
               );
             })}
           </div>
+          <p className="dashboard-settings-note">
+            일정은 팀원 모두와 공유됩니다. 위젯 구성과 메모는 내 계정에만 저장됩니다.
+          </p>
           <div className="modal-actions">
             <button
               type="button"
               className="primary-button"
               disabled={saving}
-              onClick={() => setCatalog(false)}
+              onClick={finishCatalog}
             >
               완료
             </button>

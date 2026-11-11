@@ -623,7 +623,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
-.dashboard-catalog > button {
+.dashboard-catalog-select {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -634,15 +634,15 @@
   padding: 16px;
   min-width: 0;
 }
-.dashboard-catalog > button:not(:disabled):hover {
+.dashboard-catalog-select:not(:disabled):hover {
   border-color: var(--brand);
   background: #fafcfb;
 }
-.dashboard-catalog > button.is-added {
+.dashboard-catalog-select.is-added {
   background: var(--dashboard-soft);
   opacity: 1;
 }
-.dashboard-catalog > button > span:nth-child(2) {
+.dashboard-catalog-select > span:nth-child(2) {
   flex: 1;
   min-width: 0;
 }
@@ -826,7 +826,7 @@
   .dashboard-catalog {
     grid-template-columns: minmax(0, 1fr);
   }
-  .dashboard-catalog > button {
+  .dashboard-catalog-select {
     padding: 13px;
   }
   .dashboard-edit-hint {

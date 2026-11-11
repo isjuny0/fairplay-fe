@@ -222,7 +222,7 @@ test('기본·추가 위젯을 드래그하고 화살표로 이동하며 제거�
     .getByRole('button', { name: '빠른 메모 위젯 드래그', exact: true })
     .dragTo(page.locator('[data-widget-id="progress"]'), {targetPosition:{x:30,y:20}});
   await expect(
-    page.locator('.dashboard-display-settings button[aria-pressed]'),
+    page.locator('.dashboard-edit-toggle[aria-pressed]'),
   ).toBeEnabled();
   await page
     .getByRole('button', { name: '팀 전체 진행률 뒤로 이동', exact: true })
