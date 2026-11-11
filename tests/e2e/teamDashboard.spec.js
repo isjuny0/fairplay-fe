@@ -7,6 +7,65 @@ import {
   openCalendarEventEditor,
 } from './helpers/teamDashboard.js';
 
+for (const width of [390, 1440]) {
+  test(`${width}px 위젯 선택 창에서 제거·다시 추가하고 순서와 저장 결과를 유지한다`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto('/preview/spaces/1/teams/1');
+    await clickDashboardControl(page, '위젯 추가');
+    const catalog = page.getByRole('dialog', { name: '위젯 추가', exact: true });
+    const removeCalendar = catalog.getByRole('button', { name: '캘린더 제거', exact: true });
+    await expect(removeCalendar).toHaveAttribute('aria-pressed', 'true');
+    await removeCalendar.click();
+    const addCalendar = catalog.getByRole('button', { name: '캘린더 추가', exact: true });
+    await expect(addCalendar).toBeEnabled();
+    await expect(addCalendar).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.locator('.widget-calendar')).toHaveCount(0);
+    await catalog.getByRole('button', { name: '다가오는 작업 추가', exact: true }).click();
+    await expect(catalog.getByRole('button', { name: '다가오는 작업 제거', exact: true })).toBeEnabled();
+    await addCalendar.click();
+    await expect(removeCalendar).toBeEnabled();
+    await catalog.getByRole('button', { name: '완료', exact: true }).click();
+    expect(await page.locator('.dashboard-widget').evaluateAll(items => items.map(item => item.dataset.widgetId))).toEqual(['attention', 'progress', 'upcoming', 'calendar']);
+    await page.reload();
+    await expect(page.locator('.dashboard-widget h2')).toHaveText(['지금 확인할 작업', '팀 전체 진행률', '다가오는 작업', '캘린더']);
+    await clickDashboardControl(page, '위젯 추가');
+    for (const title of ['지금 확인할 작업', '팀 전체 진행률', '다가오는 작업', '캘린더']) {
+      await catalog.getByRole('button', { name: `${title} 제거`, exact: true }).click();
+      await expect(catalog.getByRole('button', { name: `${title} 추가`, exact: true })).toBeEnabled();
+    }
+    await catalog.getByRole('button', { name: '완료', exact: true }).click();
+    await expect(page.locator('.dashboard-widget')).toHaveCount(0);
+    await page.reload();
+    await expect(page.locator('.dashboard-widget')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '필요한 위젯 추가하기', exact: true })).toBeVisible();
+  });
+}
+
+test('선택 창의 메모 제거도 미저장 내용을 확인하고 저장된 메모는 보존한다', async ({ page }) => {
+  await page.goto('/preview/spaces/1/teams/1');
+  await addDashboardWidgets(page, ['빠른 메모']);
+  const memo = page.getByRole('textbox', { name: '빠른 메모', exact: true });
+  await memo.fill('저장된 메모');
+  await page.getByRole('button', { name: '메모 저장', exact: true }).click();
+  await expect(page.getByRole('button', { name: '메모 저장', exact: true })).toBeDisabled();
+  await memo.fill('아직 저장하지 않은 초안');
+  await clickDashboardControl(page, '위젯 추가');
+  const catalog = page.getByRole('dialog', { name: '위젯 추가', exact: true });
+  await catalog.getByRole('button', { name: '빠른 메모 제거', exact: true }).click();
+  const confirmation = page.getByRole('dialog', { name: '저장하지 않은 메모', exact: true });
+  await confirmation.getByRole('button', { name: '취소', exact: true }).click();
+  await expect(memo).toHaveValue('아직 저장하지 않은 초안');
+  await expect(catalog.getByRole('button', { name: '빠른 메모 제거', exact: true })).toBeEnabled();
+  await catalog.getByRole('button', { name: '빠른 메모 제거', exact: true }).click();
+  await confirmation.getByRole('button', { name: '위젯 제거', exact: true }).click();
+  await expect(catalog.getByRole('button', { name: '빠른 메모 추가', exact: true })).toBeEnabled();
+  await expect(memo).toHaveCount(0);
+  await catalog.getByRole('button', { name: '빠른 메모 추가', exact: true }).click();
+  await expect(catalog.getByRole('button', { name: '빠른 메모 제거', exact: true })).toBeEnabled();
+  await catalog.getByRole('button', { name: '완료', exact: true }).click();
+  await expect(memo).toHaveValue('저장된 메모');
+});
+
 test('위젯을 선택·재정렬·제거하고 메모와 구성이 새로고침 후 유지된다', async ({
   page,
 }) => {

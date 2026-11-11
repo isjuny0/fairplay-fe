@@ -29,10 +29,11 @@ export async function addDashboardWidgets(page, titles) {
   await clickDashboardControl(page, '위젯 추가');
   const catalog = page.getByRole('dialog', { name: '위젯 추가', exact: true });
   for (const title of titles) {
-    const added = catalog.getByRole('button', { name: `${title} 추가됨`, exact: true });
-    if (await added.count()) { await expect(added).toBeDisabled(); continue; }
+    const added = catalog.getByRole('button', { name: `${title} 제거`, exact: true });
+    if (await added.count()) { await expect(added).toHaveAttribute('aria-pressed', 'true'); await expect(added).toBeEnabled(); continue; }
     const button = catalog.getByRole('button', { name: `${title} 추가`, exact: true });
     await button.click();
+    await expect(added).toBeEnabled();
   }
   await expect(
     page.getByRole('button', { name: '화면 설정', exact: true }),
