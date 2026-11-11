@@ -20,26 +20,20 @@ for (const width of [1920, 1440, 1024, 768, 390, 320]) {
       }),
     ).toHaveCount(0);
     await expect(editor.locator('.form-help')).toHaveCount(0);
-    const select = editor.getByLabel('예상 작업량', { exact: true });
+    const select = editor.getByLabel('예상 시간', { exact: true });
     const original = await select.inputValue();
-    const hint = editor.getByText(
-      '담당자 전체의 예상 시간을 합산해 선택하세요.',
+    await expect(editor.getByText(
+      '담당자 전체의 투입 시간을 합산해 30분 단위로 입력하세요.',
       { exact: true },
-    );
-    const box = await select.boundingBox();
+    )).toHaveCount(0);
     const layoutTop = await select.evaluate((element) => element.offsetTop);
-    const hintBox = await hint.boundingBox();
-    expect(hintBox.y).toBeGreaterThanOrEqual(box.y + box.height);
-    expect(hintBox.x + hintBox.width).toBeLessThanOrEqual(
-      box.x + box.width + 1,
-    );
 
     const trigger = editor.getByRole('button', {
-      name: '예상 작업량과 담당 비율 도움말',
+      name: '예상 시간과 담당 비율 도움말',
       exact: true,
     });
     const help = page.getByRole('dialog', {
-      name: '예상 작업량과 담당 비율은 어떻게 사용되나요?',
+      name: '예상 시간과 담당 비율은 어떻게 사용되나요?',
       exact: true,
     });
     const star = await editor
@@ -57,7 +51,7 @@ for (const width of [1920, 1440, 1024, 768, 390, 320]) {
     await expect(help).toBeVisible();
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
     await expect(help).toContainText(
-      '예상 작업량과 담당 비율은 기여도 계산에 반영됩니다.',
+      '기여도 계산에는 예상 시간에 비례한',
     );
     await expect(help).toContainText('팀과 합의해 조정해주세요.');
     await expect(
@@ -79,7 +73,7 @@ for (const width of [1920, 1440, 1024, 768, 390, 320]) {
     await expect(help).toBeVisible();
     await page.keyboard.press('Tab');
     await expect(help).toHaveCount(0);
-    await expect(select).toBeFocused();
+    await expect(editor.getByRole('button', { name: '30분 줄이기', exact: true })).toBeFocused();
 
     await trigger.click();
     await expect(help).toBeVisible();

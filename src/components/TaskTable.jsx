@@ -1,8 +1,7 @@
+import { formatTaskEstimatedTime } from '../lib/taskTime.js';
 import { apiTimeToEpoch } from '../lib/koreanTime.js';
 import {
   formatDate,
-  formatBoardWorkload,
-  formatExpectedWorkload,
   memberName,
   statusLabels,
   toDateInput,
@@ -37,7 +36,7 @@ export default function TaskTable({ tasks, members, onOpenTask, now }) {
             <th scope="col">작업</th>
             <th scope="col">상태</th>
             <th scope="col">담당자·배분</th>
-            <th scope="col">예상 작업량</th>
+            <th scope="col">예상 시간</th>
             <th scope="col">시작일</th>
             <th scope="col">마감일</th>
           </tr>
@@ -69,7 +68,7 @@ export default function TaskTable({ tasks, members, onOpenTask, now }) {
                   </span>
                 ))}
               </td>
-              <td className="task-table-workload" title={formatExpectedWorkload(task.weight)}>{formatBoardWorkload(task.weight)}</td>
+              <td className="task-table-workload" title={formatTaskEstimatedTime(task)}>{formatTaskEstimatedTime(task)}</td>
               <td>
                 <TaskDateTime value={task.startAt} />
               </td>

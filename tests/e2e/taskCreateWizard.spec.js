@@ -8,7 +8,7 @@ for (const width of [1440, 900, 720, 390, 320]) {
     const dialog = page.getByRole('dialog', { name: '새 작업 만들기', exact: true });
     const firstBox = await dialog.boundingBox();
     await expect(dialog.getByRole('list', { name: '작업 입력 단계', exact: true }).locator('li')).toHaveText(['1작업 내용', '2작업 계획', '3담당자 배분']);
-    await expect(dialog.getByLabel('예상 작업량', { exact: true })).toBeHidden();
+    await expect(dialog.getByLabel('예상 시간', { exact: true })).toBeHidden();
     await expect(dialog.getByRole('region', { name: '담당·배분 설정 입력', exact: true })).not.toBeVisible();
     await expect(dialog.getByRole('button', { name: '저장', exact: true })).toHaveCount(0);
     const description = await dialog.getByLabel('작업 설명', { exact: true }).boundingBox();
@@ -25,6 +25,14 @@ for (const width of [1440, 900, 720, 390, 320]) {
       await expect(dialog.getByLabel('작업 제목', { exact: true })).toBeHidden();
       expect(await dialog.boundingBox()).toEqual(firstBox);
     }
+    const estimatedTime = dialog.getByRole('spinbutton', { name: '예상 시간', exact: true });
+    await expect(estimatedTime).toHaveValue('30');
+    await expect(dialog.getByRole('button', { name: '30분 줄이기', exact: true })).toBeDisabled();
+    await dialog.getByRole('button', { name: '30분 늘리기', exact: true }).click();
+    await expect(estimatedTime).toHaveValue('60');
+    await dialog.getByRole('button', { name: '30분 줄이기', exact: true }).click();
+    await expect(estimatedTime).toHaveValue('30');
+    await estimatedTime.fill('90');
     await dialog.getByRole('textbox', { name: '시작일 날짜', exact: true }).fill('2030-12-01');
     await dialog.getByRole('textbox', { name: '마감 날짜', exact: true }).fill('2030-12-02');
     await page.screenshot({ path: testInfo.outputPath('task-create-content.png'), animations: 'disabled' });
@@ -65,6 +73,7 @@ for (const width of [1440, 900, 720, 390, 320]) {
     await dialog.getByRole('button', { name: '저장', exact: true }).click();
     await expect(dialog).toHaveCount(0);
     await expect(page.getByRole('heading', { name: `세 단계 작업 ${width}`, exact: true })).toBeVisible();
+    await expect(page.locator('.task-overview-facts')).toContainText('1시간 30분');
   });
 }
 
@@ -80,7 +89,7 @@ test('낮은 모바일 화면도 크기·이동·날짜 및 도움말 닫기 색
   await dialog.getByLabel('작업 제목', { exact: true }).fill('짧은 화면 작업');
   await dialog.getByLabel('작업 설명', { exact: true }).fill('계획 단계에서 시간과 도움말을 확인합니다.');
   await next.click();
-  await dialog.getByRole('button', { name: '예상 작업량과 담당 비율 도움말', exact: true }).click();
+  await dialog.getByRole('button', { name: '예상 시간과 담당 비율 도움말', exact: true }).click();
   const help = page.getByRole('button', { name: '도움말 닫기', exact: true });
   await expect(help).not.toHaveCSS('background-color', 'rgb(229, 36, 52)');
   await expect(help).toHaveCSS('color', 'rgb(85, 97, 112)');
@@ -101,7 +110,7 @@ for (const width of [390, 1440]) {
     await dialog.getByLabel('작업 제목', { exact: true }).fill('계획 검증 작업');
     await dialog.getByLabel('작업 설명', { exact: true }).fill('단계별 오류와 입력 보존을 확인합니다.');
     await dialog.getByRole('button', { name: '다음', exact: true }).click();
-    await dialog.getByLabel('예상 작업량', { exact: true }).selectOption('5');
+    await dialog.getByLabel('예상 시간', { exact: true }).fill('150');
     const start = dialog.getByLabel('시작일 날짜', { exact: true });
     const due = dialog.getByLabel('마감 날짜', { exact: true });
     await start.fill('');
@@ -122,7 +131,7 @@ for (const width of [390, 1440]) {
     await dialog.getByRole('button', { name: '이전', exact: true }).click();
     await expect(dialog.getByLabel('작업 설명', { exact: true })).toHaveValue('단계별 오류와 입력 보존을 확인합니다.');
     await dialog.getByRole('button', { name: '다음', exact: true }).click();
-    await expect(dialog.getByLabel('예상 작업량', { exact: true })).toHaveValue('5');
+    await expect(dialog.getByLabel('예상 시간', { exact: true })).toHaveValue('150');
     await expect(time).toHaveValue('18:30');
     await page.setViewportSize({ width: width === 390 ? 1440 : 390, height: 900 });
     await expect(dialog.getByRole('list', { name: '작업 입력 단계', exact: true }).locator('[aria-current]')).toHaveText('2작업 계획');
@@ -132,3 +141,30 @@ for (const width of [390, 1440]) {
     await expect(dialog.getByRole('button', { name: '저장', exact: true })).toBeVisible();
   });
 }
+
+
+test('예상 시간은 잘못된 단위를 막고 30분 버튼으로 경계값을 보정한다', async ({ page }) => {
+  await page.goto('/preview/spaces/1/teams/1/tasks');
+  await page.getByRole('button', { name: '새 작업 만들기', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '새 작업 만들기', exact: true });
+  await dialog.getByLabel('작업 제목', { exact: true }).fill('예상 시간 검증');
+  await dialog.getByLabel('작업 설명', { exact: true }).fill('입력 단위와 최댓값을 확인합니다.');
+  await dialog.getByRole('button', { name: '다음', exact: true }).click();
+  const input = dialog.getByRole('spinbutton', { name: '예상 시간', exact: true });
+  for (const value of ['', '0', '31', '30.5', '2147483641']) {
+    await input.fill(value);
+    await dialog.getByRole('button', { name: '다음', exact: true }).click();
+    await expect(input).toHaveAttribute('aria-invalid', 'true');
+    await expect(input).toBeFocused();
+    await expect(dialog.getByRole('heading', { name: '작업 계획', exact: true })).toBeVisible();
+  }
+  await input.fill('31');
+  await dialog.getByRole('button', { name: '30분 줄이기', exact: true }).click();
+  await expect(input).toHaveValue('30');
+  await expect(dialog.getByRole('button', { name: '30분 줄이기', exact: true })).toBeDisabled();
+  await input.fill('2147483640');
+  await expect(dialog.getByRole('button', { name: '30분 늘리기', exact: true })).toBeDisabled();
+  await input.fill('90');
+  await dialog.getByRole('button', { name: '다음', exact: true }).click();
+  await expect(dialog.getByRole('heading', { name: '담당자·담당 비율', exact: true })).toBeVisible();
+});

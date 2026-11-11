@@ -1,4 +1,11 @@
 import { useRef, useState } from 'react';
+import {
+  formatEstimatedTime,
+  formatTaskEstimatedTime,
+  taskEstimatedMinutes,
+  validEstimatedMinutes,
+  MAX_ESTIMATED_MINUTES,
+} from '../lib/taskTime.js';
 import DateTimeInput from './DateTimeInput.jsx';
 import TaskWorkloadHelp from './TaskWorkloadHelp.jsx';
 import { defaultFormDateTime } from '../lib/dateTime.js';
@@ -12,11 +19,9 @@ import { useInteractions } from '../hooks/useInteractions.js';
 import SaveRecovery from './SaveRecovery.jsx';
 import {
   fromDateInput,
-  expectedWorkloadOptions,
   memberRole,
   toDateInput,
   formatDate,
-  formatExpectedWorkload,
   memberName,
   canEditTask,
   statusLabels,
@@ -30,6 +35,30 @@ import {
 function TaskField(props) {
   return <Field {...props} requiredIndicator="*" />;
 }
+
+function EstimatedMinutesInput({ labelText, value, onChange, ...inputProps }) {
+  const minutes = Number(value);
+  const adjust = (direction) => {
+    const current = Number.isFinite(minutes) ? minutes : 0;
+    const next = direction > 0
+      ? Math.floor(current / 30) * 30 + 30
+      : Math.ceil(current / 30) * 30 - 30;
+    onChange({ target: { value: String(Math.min(MAX_ESTIMATED_MINUTES, Math.max(30, next))) } });
+  };
+  return (
+    <div className="task-estimated-time-control">
+      <button type="button" className="secondary-button" aria-label="30분 줄이기"
+        disabled={!value || minutes <= 30} onClick={() => adjust(-1)}>−</button>
+      <span className="task-estimated-time-value">
+        <input {...inputProps} value={value} onChange={onChange} />
+        <span aria-hidden="true">분</span>
+      </span>
+      <button type="button" className="secondary-button" aria-label="30분 늘리기"
+        disabled={minutes >= MAX_ESTIMATED_MINUTES} onClick={() => adjust(1)}>+</button>
+    </div>
+  );
+}
+EstimatedMinutesInput.compositeField = true;
 
 function distributeEqually(assignees) {
   return assignees.map((assignment, index) => ({
@@ -71,7 +100,7 @@ export default function TaskForm({
   const [initialForm] = useState({
     title: task?.title || '',
     description: task?.description || '',
-    weight: task?.weight || 3,
+    estimatedMinutes: String(taskEstimatedMinutes(task) ?? 30),
     startAt: task ? toDateInput(task.startAt) : defaultDateTime,
     dueAt: toDateInput(task?.dueAt) || defaultDateTime,
     assignees: task?.assignees.map((assignment) => ({ ...assignment })) || [],
@@ -90,6 +119,7 @@ export default function TaskForm({
     form.dueAt,
     initialForm.dueAt || defaultDateTime,
   );
+  const estimatedMinutes = Number(form.estimatedMinutes);
   const mobile = useMobileLayout();
   const creating = !task;
   const splitPlanning = creating;
@@ -99,7 +129,7 @@ export default function TaskForm({
   const fieldStep = (name) =>
     ['title', 'description'].includes(name)
       ? 0
-      : ['weight', 'startAt', 'dueAt'].includes(name)
+      : ['estimatedMinutes', 'startAt', 'dueAt'].includes(name)
         ? splitPlanning ? 1 : 0
         : assignmentStep;
   const [step, setStep] = useState(0);
@@ -214,6 +244,11 @@ export default function TaskForm({
       return;
     }
     const allErrors = collectFieldErrors(event.currentTarget, {
+      ...(!validEstimatedMinutes(estimatedMinutes)
+        ? { estimatedMinutes: estimatedMinutes > MAX_ESTIMATED_MINUTES
+          ? `${MAX_ESTIMATED_MINUTES.toLocaleString('ko-KR')}분 이하로 입력해 주세요.`
+          : '최소 30분부터 30분 단위로 입력해 주세요.' }
+        : {}),
       ...(startAt && dueAt && startAt > dueAt
         ? { dueAt: '마감은 시작일과 같거나 이후여야 합니다.' }
         : {}),
@@ -249,7 +284,7 @@ export default function TaskForm({
       !(await confirm({
         title: '최신 작업에 내 입력 반영',
         message:
-          '확인한 최신 작업에 현재 제목·설명·작업량·시작일·마감·담당 배분를 반영합니다. 다른 팀원의 수정 내용을 덮어쓸 수 있습니다. 비교한 내용을 확인하고 저장할까요?',
+          '확인한 최신 작업에 현재 제목·설명·예상 시간·시작일·마감·담당 배분을 반영합니다. 다른 팀원의 수정 내용을 덮어쓸 수 있습니다. 비교한 내용을 확인하고 저장할까요?',
         label: '내 입력으로 저장',
       }))
     )
@@ -258,7 +293,7 @@ export default function TaskForm({
       {
         title: form.title.trim(),
         description: form.description.trim(),
-        weight: Number(form.weight),
+        estimatedMinutes,
         ...(!task ||
         startAt !== initialForm.startAt ||
         (recovery.latest &&
@@ -285,8 +320,8 @@ export default function TaskForm({
         <dd className="preserve-lines">{form.description}</dd>
       </div>
       <div>
-        <dt>예상 작업량</dt>
-        <dd>{formatExpectedWorkload(form.weight)}</dd>
+        <dt>예상 시간</dt>
+        <dd>{formatEstimatedTime(estimatedMinutes)}</dd>
       </div>
       <div>
         <dt>시작일</dt>
@@ -356,24 +391,21 @@ export default function TaskForm({
     <>
       <div className="task-workload-field">
         <TaskField
-          label="예상 작업량"
+          label="예상 시간"
+          error={fieldErrors.estimatedMinutes}
           labelAccessory={<TaskWorkloadHelp />}
-          help="담당자 전체의 예상 시간을 합산해 선택하세요."
         >
-          <select
-            name="weight"
+          <EstimatedMinutesInput
+            name="estimatedMinutes"
+            type="number"
+            inputMode="numeric"
             required
-            value={form.weight}
-            onChange={(event) =>
-              update('weight', Number(event.target.value))
-            }
-          >
-            {expectedWorkloadOptions.map(({ weight, label }) => (
-              <option key={weight} value={weight}>
-                {label}
-              </option>
-            ))}
-          </select>
+            min="30"
+            max={MAX_ESTIMATED_MINUTES}
+            step="30"
+            value={form.estimatedMinutes}
+            onChange={(event) => update('estimatedMinutes', event.target.value)}
+          />
         </TaskField>
       </div>
       <section
@@ -485,7 +517,7 @@ export default function TaskForm({
                 {!task && (
                   <div className="task-assignee-recommendation">
                     <p id="assignee-recommendation-help">
-                      완료·미완료 작업의 예상 작업량과 담당 비율을 기준으로
+                      완료·미완료 작업의 예상 시간과 담당 비율을 기준으로
                       선택합니다.
                     </p>
                     <div className="task-assignee-recommendation-controls">
@@ -759,9 +791,9 @@ export default function TaskForm({
                     input: form.description.trim(),
                   },
                   {
-                    label: '예상 작업량',
-                    latest: formatExpectedWorkload(recovery.latest.task.weight),
-                    input: formatExpectedWorkload(form.weight),
+                    label: '예상 시간',
+                    latest: formatTaskEstimatedTime(recovery.latest.task),
+                    input: formatEstimatedTime(estimatedMinutes),
                   },
                   {
                     label: '시작일',
@@ -801,7 +833,7 @@ export default function TaskForm({
           <dl>
             <div><dt>작업</dt><dd>{form.title || '제목을 입력해 주세요.'}</dd></div>
             <div><dt>기간</dt><dd>{formatDate(startAt)} ~ {formatDate(dueAt)}</dd></div>
-            <div><dt>예상 작업량</dt><dd>{formatExpectedWorkload(form.weight)}</dd></div>
+            <div><dt>예상 시간</dt><dd>{formatEstimatedTime(estimatedMinutes)}</dd></div>
             <div><dt>담당·배분</dt><dd>{form.assignees.length ? form.assignees.map(assignment => `${memberName(editingMembers, assignment.userId)} ${assignment.allocationPercent}%`).join(' · ') : '담당자를 선택해 주세요.'}</dd></div>
           </dl>
         </section>}

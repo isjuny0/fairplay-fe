@@ -864,6 +864,7 @@ export async function plannedRequest(
           title: task.title,
           status: task.status,
           weight: task.weight,
+          estimatedMinutes: task.weight * 30,
           startAt: task.startAt,
           dueAt: task.dueAt,
           allocationPercent: task.assignees.find(

@@ -428,52 +428,37 @@ test('데스크톱 사이드바를 접었다가 다시 펼칠 수 있다', async
   );
 });
 
-for (const [label, weight] of [
-  ['1시간 미만의 작업', 1],
-  ['1시간 이상 ~ 3시간 미만의 작업', 2],
-  ['3시간 이상 ~ 6시간 미만의 작업', 3],
-  ['6시간 이상 ~ 12시간 미만의 작업', 5],
-  ['12시간 이상의 작업', 8],
-])
-  test(`예상 작업량 ${label} 선택은 숫자 가중치 ${weight}로 저장된다`, async ({ page }) => {
+for (const [minutes, label] of [[30, '30분'], [90, '1시간 30분'], [270, '4시간 30분'], [720, '12시간']])
+  test(`예상 시간 ${minutes}분으로 생성·수정하고 숫자 가중치를 보내지 않는다`, async ({ page }) => {
     const { requests } = await workspace(page);
     await page.getByRole('button', { name: '작업', exact: true }).click();
     await page.getByRole('button', { name: '새 작업 만들기', exact: true }).click();
     const dialog = page.getByRole('dialog');
-    await dialog.getByLabel('작업 제목').fill('예상 작업량 확인');
+    await dialog.getByLabel('작업 제목').fill('예상 시간 확인');
     await dialog.getByLabel('작업 설명', { exact: true }).fill('팀과 합의한 작업 범위입니다.');
     await dialog.getByRole('button', { name: '다음', exact: true }).click();
-    const workload = dialog.getByLabel('예상 작업량', { exact: true });
-    await expect(workload).toHaveValue('3');
-    await expect(workload.locator('option')).toHaveText([
-      '1시간 미만의 작업',
-      '1시간 이상 ~ 3시간 미만의 작업',
-      '3시간 이상 ~ 6시간 미만의 작업',
-      '6시간 이상 ~ 12시간 미만의 작업',
-      '12시간 이상의 작업',
-    ]);
-    await workload.selectOption({ label });
+    const workload = dialog.getByLabel('예상 시간', { exact: true });
+    await expect(workload).toHaveValue('30');
+    await workload.fill(String(minutes));
     await fillDateTime(dialog, '마감', '2030-12-01T18:00');
     await dialog.getByRole('button', { name: '다음', exact: true }).click();
     await dialog.getByLabel('담당자 · 팀원').check();
-
     await dialog.getByRole('button', { name: '저장', exact: true }).click();
-    await expect(page.getByRole('heading', { name: '예상 작업량 확인' })).toBeVisible();
-    const request = requests.find(({ method, path }) =>
-      method === 'POST' && path === '/api/teams/1/tasks');
-    expect(JSON.parse(request.body).weight).toBe(weight);
-    await expect(page.getByLabel('작업 기본 정보').getByText(label.replace(/의 작업$/, ''), { exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '예상 시간 확인' })).toBeVisible();
+    const request = requests.find(({ method, path }) => method === 'POST' && path === '/api/teams/1/tasks');
+    expect(JSON.parse(request.body).estimatedMinutes).toBe(minutes);
+    expect(JSON.parse(request.body)).not.toHaveProperty('weight');
+    await expect(page.getByLabel('작업 기본 정보').getByText(label, { exact: true })).toBeVisible();
     await page.getByRole('button', { name: '작업 수정', exact: true }).click();
-    await expect(dialog.getByLabel('예상 작업량', { exact: true })).toHaveValue(String(weight));
-    const changedLabel = weight === 8 ? '1시간 미만의 작업' : '12시간 이상의 작업';
-    await dialog.getByLabel('예상 작업량', { exact: true }).selectOption({ label: changedLabel });
+    await expect(workload).toHaveValue(String(minutes));
+    await workload.fill('120');
     await dialog.getByRole('button', { name: '저장', exact: true }).click();
     await expect(dialog).toHaveCount(0);
-    const update = requests.find(({ method, path }) =>
-      method === 'PATCH' && path === '/api/tasks/10');
-    expect(JSON.parse(update.body)).toMatchObject({ weight: weight === 8 ? 1 : 8, expectedVersion: 0 });
+    const update = requests.find(({ method, path }) => method === 'PATCH' && path === '/api/tasks/10');
+    expect(JSON.parse(update.body)).toMatchObject({ estimatedMinutes: 120, expectedVersion: 0 });
+    expect(JSON.parse(update.body)).not.toHaveProperty('weight');
     await page.reload();
-    await expect(page.getByLabel('작업 기본 정보').getByText(changedLabel.replace(/의 작업$/, ''), { exact: true })).toBeVisible();
+    await expect(page.getByLabel('작업 기본 정보').getByText('2시간', { exact: true })).toBeVisible();
   });
 
 test('담당자가 작업을 생성하고 PATCH 상태와 버전으로 직접 완료하면 잠긴다', async ({
@@ -506,7 +491,7 @@ test('담당자가 작업을 생성하고 PATCH 상태와 버전으로 직접 �
     assignees: [{ userId: 'member', allocationPercent: 100 }],
   });
   expect(creation.headers['x-csrf-token']).toBe('test-token');
-  expect(Object.keys(JSON.parse(creation.body)).sort()).toEqual(['assignees','description','dueAt','startAt','title','weight']);
+  expect(Object.keys(JSON.parse(creation.body)).sort()).toEqual(['assignees','description','dueAt','estimatedMinutes','startAt','title']);
   await expect(
     page.getByRole('button', { name: '완료 처리', exact: true }),
   ).toBeDisabled();

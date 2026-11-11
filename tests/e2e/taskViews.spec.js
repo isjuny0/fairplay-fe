@@ -16,6 +16,7 @@ async function seed(page, view = 'list', extra = '', customize = () => {}) {
     '2026-11-12T13:00:00',
     '2026-11-12T15:00:00',
   ];
+  state.teams[1].tasks = state.teams[1].tasks.slice(0, dates.length);
   state.teams[1].tasks.forEach((task, index) => {
     task.dueAt = dates[index];
     task.startAt = [
@@ -47,7 +48,7 @@ async function searchTasks(page, query) {
   if (timeline) await page.getByRole('button', { name: '타임라인', exact: true }).click();
 }
 
-test('목록은 일곱 열의 표로 제공하고 상세 복귀·필터·보기 전환을 유지한다', async ({
+test('목록은 여섯 열의 표로 제공하고 상세 복귀·필터·보기 전환을 유지한다', async ({
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -57,7 +58,7 @@ test('목록은 일곱 열의 표로 제공하고 상세 복귀·필터·보기 
     '작업',
     '상태',
     '담당자·배분',
-    '예상 작업량',
+    '예상 시간',
     '시작일',
     '마감일',
   ]);
