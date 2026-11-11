@@ -746,9 +746,38 @@
   .task-next-action > .secondary-button { justify-self: start; }
 }
 
-.task-delay-reason { margin: 18px 0; padding: 16px 18px; border: 1px solid #eadfcf; border-radius: 12px; background: #fffcf6; }
-.task-delay-reason .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.task-delay-reason h2 { margin: 0; font-size: 15px; }
-.task-delay-reason > p { line-height: 1.7; }
-
-.task-delay-reason-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+/* A saved reason is a work record; only an unwritten reason needs attention. */
+.task-delay-reason {
+  margin: 18px 0;
+  padding: 16px 18px;
+  border: 1px solid #e3e8e5;
+  border-left: 3px solid #c9d5ce;
+  border-radius: 10px;
+  background: #fafcfb;
+}
+.task-delay-reason-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.task-delay-reason-title { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.task-delay-reason-icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 28px; height: 28px; border: 1px solid #e2e8e4; border-radius: 8px; background: #fff; color: #75877b; }
+.task-delay-reason h2 { margin: 0; color: var(--text-primary); font-size: 13px; font-weight: 650; line-height: 1.5; }
+.task-delay-reason-edit { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; gap: 5px; min-height: 34px; padding: 5px 9px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: #62736a; font: inherit; font-size: 12px; cursor: pointer; }
+.task-delay-reason-edit:hover { background: #edf3ef; color: var(--brand); }
+.task-delay-reason-edit:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.task-delay-reason-edit:disabled { opacity: .5; cursor: wait; }
+.task-delay-reason-body { margin: 8px 0 0 37px; min-width: 0; }
+.task-delay-reason-text { margin: 0; max-width: 76ch; color: #36433b; font-size: 14px; line-height: 1.85; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; }
+.task-delay-reason-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 9px; margin-top: 13px; padding-top: 10px; border-top: 1px solid #e8eeea; color: #66736b; font-size: 12px; line-height: 1.65; }
+.task-delay-reason-author { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.task-delay-reason-avatar { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 20px; height: 20px; border-radius: 50%; background: #e8efea; color: #586c5f; font-size: 11px; }
+.task-delay-reason-updated { min-width: 0; }
+.task-delay-reason-empty { margin: 0; color: #7e6749; font-size: 13px; line-height: 1.8; word-break: keep-all; overflow-wrap: anywhere; }
+.task-delay-reason.is-required { border-color: #eee3d1; border-left-color: #d2b17c; background: #fffcf7; }
+.task-delay-reason.is-required .task-delay-reason-icon { border-color: #f0e1c7; background: #fff8ec; color: #bd8a43; }
+.task-delay-reason.is-required .task-delay-reason-edit { border-color: #eadfcd; background: #fff; color: #876637; }
+@media (max-width: 600px) {
+  .task-delay-reason { padding: 14px; }
+  .task-delay-reason-body { margin: 10px 0 0; }
+  .task-delay-reason-text { font-size: 13px; }
+  .task-delay-reason-edit { min-height: 38px; }
+  .task-delay-reason-separator { display: none; }
+  .task-delay-reason-meta { column-gap: 14px; }
+}

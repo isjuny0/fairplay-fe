@@ -7,6 +7,7 @@ import {
   CalendarDays,
   Clock3,
   FileText,
+  PencilLine,
   Sparkles,
   UsersRound,
 } from 'lucide-react';
@@ -457,19 +458,32 @@ export default function TaskDetail({
                 </div>
               </dl>
               {(delayReason || (overdue && ['IN_PROGRESS', 'REVISING'].includes(task.status))) && (
-                <section className="task-delay-reason" aria-label="지연 사유">
-                  <div className="section-heading">
-                    <h2>지연 사유</h2>
+                <section className={`task-delay-reason${delayReason ? '' : ' is-required'}`} aria-label="지연 사유">
+                  <header className="task-delay-reason-heading">
+                    <div className="task-delay-reason-title">
+                      <span className="task-delay-reason-icon" aria-hidden="true"><Clock3 size={16} /></span>
+                      <h2>지연 사유</h2>
+                    </div>
                     {!readOnly && isAssignee(task, user.id) && isMutable(task) && canModifyTeamWork(team) && !workClosed && (
-                      <button type="button" className="secondary-button" disabled={busy} onClick={() => openDelayReason(false)}>
-                        {delayReason ? '사유 수정' : '사유 작성'}
+                      <button type="button" className="task-delay-reason-edit" disabled={busy}
+                        aria-label={delayReason ? '지연 사유 수정' : '지연 사유 작성'} onClick={() => openDelayReason(false)}>
+                        <PencilLine size={13} aria-hidden="true" />{delayReason ? '수정' : '사유 작성'}
                       </button>
                     )}
+                  </header>
+                  <div className="task-delay-reason-body">
+                    {delayReason ? <>
+                      <p className="task-delay-reason-text">{delayReason.text}</p>
+                      <footer className="task-delay-reason-meta">
+                        <span className="task-delay-reason-author">
+                          <span className="task-delay-reason-avatar" aria-hidden="true">{Array.from(delayReason.authorName || '?')[0]}</span>
+                          <span><span className="sr-only">작성자 </span>{delayReason.authorName || '알 수 없는 사용자'}</span>
+                        </span>
+                        <span className="task-delay-reason-separator" aria-hidden="true">·</span>
+                        <span className="task-delay-reason-updated"><span className="sr-only">마지막 수정 </span><time dateTime={`${delayReason.updatedAt}+09:00`}>{formatDate(delayReason.updatedAt)}</time></span>
+                      </footer>
+                    </> : <p className="task-delay-reason-empty">마감이 지났어요. 완료하기 전에 늦어진 이유를 남겨주세요.</p>}
                   </div>
-                  {delayReason ? <>
-                    <p className="task-delay-reason-text">{delayReason.text}</p>
-                    <p className="field-help">작성자: {delayReason.authorName || '알 수 없는 사용자'} · {formatDate(delayReason.updatedAt)}</p>
-                  </> : <p className="field-help">마감이 지난 작업이에요. 완료하려면 지연 사유를 작성해주세요.</p>}
                 </section>
               )}
               <div className="task-header-body">
