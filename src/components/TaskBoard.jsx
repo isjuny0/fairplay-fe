@@ -1,3 +1,4 @@
+import { formatTaskEstimatedTime } from '../lib/taskTime.js';
 import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
 import { screenLoaders } from '../lib/routeScreens.js';
 import { deferScreen } from './DeferredScreen.jsx';
@@ -12,7 +13,6 @@ import { useInteractions } from '../hooks/useInteractions.js';
 import {
   canModifyTeamWork,
   formatDate,
-  formatBoardWorkload,
   memberName,
   statusLabels,
 } from '../lib/domain.js';
@@ -595,8 +595,8 @@ export default function TaskBoard({
                                 </div>
                               </div>
                               <p className="task-workload-line">
-                                <span className="sr-only">예상 작업량: </span>
-                                {formatBoardWorkload(task.weight)}
+                                <span className="sr-only">예상 시간: </span>
+                                {formatTaskEstimatedTime(task)}
                               </p>
                             </article>
                           );

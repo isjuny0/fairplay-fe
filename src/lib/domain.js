@@ -5,19 +5,6 @@ export const statusLabels = {
   REVISING: '수정 중',
   DONE: '완료',
 };
-export const expectedWorkloadOptions = [
-  { weight: 1, label: '1시간 미만의 작업' },
-  { weight: 2, label: '1시간 이상 ~ 3시간 미만의 작업' },
-  { weight: 3, label: '3시간 이상 ~ 6시간 미만의 작업' },
-  { weight: 5, label: '6시간 이상 ~ 12시간 미만의 작업' },
-  { weight: 8, label: '12시간 이상의 작업' },
-];
-export const formatExpectedWorkload = (weight) =>
-  expectedWorkloadOptions.find((option) => option.weight === weight)?.label ||
-  '예상 작업량 확인 필요';
-// 카드에서도 이상·미만 조건을 그대로 표시합니다.
-export const formatBoardWorkload = (weight) =>
-  formatExpectedWorkload(weight).replace('의 작업', '');
 export const buildingLabels = {
   NOT_CONFIGURED: '기간 미설정',
   SCHEDULED: '시작 전',

@@ -36,7 +36,7 @@ export default function TaskWorkloadHelp() {
         ref={trigger}
         type="button"
         className="task-workload-help-trigger"
-        aria-label="예상 작업량과 담당 비율 도움말"
+        aria-label="예상 시간과 담당 비율 도움말"
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={open ? id : undefined}
@@ -58,7 +58,7 @@ export default function TaskWorkloadHelp() {
         >
           <div className="task-workload-popover-heading">
             <h4 id={`${id}-title`}>
-              예상 작업량과 담당 비율은 어떻게 사용되나요?
+              예상 시간과 담당 비율은 어떻게 사용되나요?
             </h4>
             <button
               ref={closeButton}
@@ -70,9 +70,10 @@ export default function TaskWorkloadHelp() {
             </button>
           </div>
           <p>
-            예상 작업량과 담당 비율은 기여도 계산에 반영됩니다. 실제로 오래
-            걸렸다는 이유로 자동 증가하지 않으며, 작업 범위가 바뀌면 팀과 합의해
-            조정해주세요.
+            예상 시간은 담당자 전체가 투입할 시간의 합계입니다. 2명이 각각 1시간을
+            투입한다면 2시간을 입력하세요. 기여도 계산에는 예상 시간에 비례한
+            작업량과 담당 비율이 반영됩니다. 실제 소요 시간에 따라 자동으로
+            증가하지 않으며, 작업 범위가 바뀌면 팀과 합의해 조정해주세요.
           </p>
         </CalendarPopover>
       )}

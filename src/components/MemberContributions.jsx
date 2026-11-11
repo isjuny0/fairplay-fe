@@ -1,3 +1,4 @@
+import { formatTaskEstimatedTime } from '../lib/taskTime.js';
 import DetailBackButton from './DetailBackButton.jsx';
 import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { useEffect, useId, useState } from 'react';
@@ -11,7 +12,6 @@ import { ApiError } from '../api/client.js';
 import useResource from '../hooks/useResource.js';
 import {
   formatDate,
-  formatExpectedWorkload,
   statusLabels,
 } from '../lib/domain.js';
 import MemberEvaluationResults from './MemberEvaluationResults.jsx';
@@ -99,7 +99,7 @@ function MemberTaskRecord({ task, teamId }) {
     <dl className="member-task-metadata">
       <div><dt>시작일</dt><dd>{formatDate(task.startAt)}</dd></div>
       <div><dt>마감</dt><dd>{formatDate(task.dueAt)}</dd></div>
-      <div><dt>예상 작업량</dt><dd>{formatExpectedWorkload(task.weight)}</dd></div>
+      <div><dt>예상 시간</dt><dd>{formatTaskEstimatedTime(task)}</dd></div>
       <div><dt>본인 배분</dt><dd>{task.allocationPercent}%</dd></div>
     </dl>
     {guidedRecord && <div className="heading-actions preview-guide-inline-action">

@@ -206,7 +206,7 @@ for (const width of [1440, 768, 390, 320]) {
 }
 
 for (const width of [1920, 1440, 1280, 1024, 768, 390, 320]) {
-  test(`작업 카드 ${width}px: 담당자·마감·예상 작업량을 바로 확인한다`, async ({ page }) => {
+  test(`작업 카드 ${width}px: 담당자·마감·예상 시간을 바로 확인한다`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('/preview/spaces/1/teams/1/tasks?view=board');
     const cards = page.locator('.board-task-card');
@@ -236,7 +236,7 @@ for (const width of [1920, 1440, 1280, 1024, 768, 390, 320]) {
     await expect(deadline).not.toHaveText(/\d{2}:\d{2}/);
     await expect(cards.locator('.task-workload-line')).toHaveCount(await cards.count());
     await expect(firstCard.locator('.task-workload-line')).toBeVisible();
-    await expect(firstCard.locator('.task-workload-line')).toContainText(/예상 작업량: \d+시간/);
+    await expect(firstCard.locator('.task-workload-line')).toContainText(/예상 시간: (\d+시간|\d+분)/);
     await expect(cards.locator('.task-card-meta')).toHaveCount(0);
     await expect(cards.getByRole('button', { name: /작업량·담당 비율/ })).toHaveCount(0);
     const overdueCard = page.locator('.board-task-card').filter({

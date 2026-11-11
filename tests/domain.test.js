@@ -1,3 +1,4 @@
+import { formatEstimatedTime, formatTaskEstimatedTime, validEstimatedMinutes, MAX_ESTIMATED_MINUTES } from '../src/lib/taskTime.js';
 import { apiTimeToEpoch } from '../src/lib/koreanTime.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -6,8 +7,6 @@ import {
   teamBuildingCountdown,
   deliverablePermissions,
   fromDateInput,
-  formatBoardWorkload,
-  formatExpectedWorkload,
   toDateInput,
 } from '../src/lib/domain.js';
 test('팀 빌딩 D-day는 한국 날짜를 기준으로 세고 마감 시각부터 마감으로 표시한다', () => {
@@ -25,13 +24,16 @@ test('미설정·잘못된 날짜에는 D-day를 표시하지 않는다', () => 
   assert.equal(teamBuildingCountdown('invalid'), null);
   assert.equal(teamBuildingCountdown('2026-09-15T23:59:00', NaN), null);
 });
-test('카드 작업량은 이상·미만 조건을 생략하지 않고 표시한다', () => {
-  assert.equal(formatBoardWorkload(1), '1시간 미만');
-  assert.equal(formatBoardWorkload(2), '1시간 이상 ~ 3시간 미만');
-  assert.equal(formatBoardWorkload(3), '3시간 이상 ~ 6시간 미만');
-  assert.equal(formatBoardWorkload(5), '6시간 이상 ~ 12시간 미만');
-  assert.equal(formatBoardWorkload(8), '12시간 이상');
-  assert.equal(formatExpectedWorkload(2), '1시간 이상 ~ 3시간 미만의 작업');
+test('예상 시간은 30분 단위로 표시하고 서버 예상 시간을 우선한다', () => {
+  for (const [minutes, label] of [[30, '30분'], [60, '1시간'], [90, '1시간 30분'], [270, '4시간 30분'], [720, '12시간']])
+    assert.equal(formatEstimatedTime(minutes), label);
+  assert.equal(formatTaskEstimatedTime({ weight: 3 }), '1시간 30분');
+  assert.equal(formatTaskEstimatedTime({ weight: 3, estimatedMinutes: 120 }), '2시간');
+  for (const minutes of [undefined, null, '30', 0, 15, 31, 30.5, MAX_ESTIMATED_MINUTES + 30]) {
+    assert.equal(validEstimatedMinutes(minutes), false);
+    assert.equal(formatEstimatedTime(minutes), '예상 시간 확인 필요');
+  }
+  assert.equal(validEstimatedMinutes(MAX_ESTIMATED_MINUTES), true);
 });
 const team = {
   myMembershipStatus: 'APPROVED',

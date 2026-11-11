@@ -3,6 +3,7 @@ import { previewRagFile } from './ragFiles.js';
 import { previewTeamHome } from './teamHome.js';
 import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
 import { isMutable } from '../lib/domain.js';
+import { validEstimatedMinutes } from '../lib/taskTime.js';
 import { spacePath, teamMenuPaths } from '../lib/routes.js';
 import { availableTeamMenus } from '../lib/teamNavigation.js';
 import { previewTaskComments } from './taskComments.js';
@@ -173,7 +174,7 @@ function previewTaskResponse(state, context, entry, task) {
     completionBlockReason = 'CONTRIBUTION_DESCRIPTION_REQUIRED';
   else if (!entry.deliverables.some((item) => item.taskId === task.id))
     completionBlockReason = 'DELIVERABLE_REQUIRED';
-  return { ...task, completionBlockReason };
+  return { ...task, estimatedMinutes: task.weight * 30, completionBlockReason };
 }
 
 function updateLinkedTaskAfterDeliverableChange(state, entry, taskId, updatedAt, reviewInputChanged) {
@@ -182,6 +183,14 @@ function updateLinkedTaskAfterDeliverableChange(state, entry, taskId, updatedAt,
   task.version++;
   task.updatedAt = updatedAt;
   if (reviewInputChanged) invalidateReview(state, task.id);
+}
+
+function estimatedTaskWeight(minutes) {
+  if (!Number.isInteger(minutes) || minutes < -2_147_483_648 || minutes > 2_147_483_647)
+    throw new MockError('INVALID_REQUEST', '예상 시간을 정수 분 단위로 입력해 주세요.', 400);
+  if (!validEstimatedMinutes(minutes))
+    throw new MockError('INVALID_TASK_ESTIMATED_MINUTES', '예상 시간은 최소 30분이며 30분 단위로 입력해주세요.', 400);
+  return minutes / 30;
 }
 
 async function executePreviewRequest(
@@ -499,6 +508,7 @@ async function executePreviewRequest(
         return entry.tasks.map((task) =>
           previewTaskResponse(state, context, entry, task),
         );
+      const weight = estimatedTaskWeight(body.estimatedMinutes);
       if (
         !body.startAt ||
         !Number.isFinite(apiTimeToEpoch(body.startAt)) ||
@@ -511,6 +521,7 @@ async function executePreviewRequest(
         );
       const task = {
         ...body,
+        weight,
         id: Math.max(0, ...entry.tasks.map((task) => task.id)) + 1,
         teamId: id,
         version: 0,
@@ -522,7 +533,7 @@ async function executePreviewRequest(
         completionBlockReason: 'INVALID_TASK_STATE',
       };
       entry.tasks.push(task);
-      result = task;
+      result = previewTaskResponse(state, context, entry, task);
     } else if (parts[3] === 'deliverables') {
       if (method === 'GET') {
         return searchPreviewDeliverables(entry.deliverables, url.searchParams);
@@ -724,7 +735,9 @@ async function executePreviewRequest(
       saveMockState(context, state);
       return null;
     } else {
-      const { expectedVersion, ...changes } = body;
+      const { expectedVersion, weight: ignoredWeight, ...changes } = body;
+      if (Object.hasOwn(changes, 'estimatedMinutes'))
+        changes.weight = estimatedTaskWeight(changes.estimatedMinutes);
       const changesDetails = Object.keys(changes).some(
         (key) => key !== 'status' && !(revisingWithDepartedAssignees && key === 'assignees'),
       );

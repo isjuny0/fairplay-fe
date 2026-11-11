@@ -97,15 +97,12 @@ for (const width of [1440, 390, 320]) {
       await editor.getByLabel('작업 설명', { exact: true }).fill('작업 계획의 선택기 스타일을 확인합니다.');
       await editor.getByRole('button', { name: '다음', exact: true }).click();
     }
-    const workload = editor.getByLabel('예상 작업량', { exact: true });
-    await assertControl(workload);
+    const workload = editor.getByLabel('예상 시간', { exact: true });
     const originalBox = await editor.boundingBox();
-    await workload.click();
-    await page.screenshot({ path: testInfo.outputPath('modal-dropdown.png') });
+    await expect(workload).toHaveValue('30');
+    await editor.getByRole('button', { name: '30분 늘리기', exact: true }).click();
+    await expect(workload).toHaveValue('60');
     expect(await editor.boundingBox()).toEqual(originalBox);
-    await page.keyboard.press('End');
-    await page.keyboard.press('Enter');
-    await expect(workload).toHaveValue('8');
     await expect(editor).toBeVisible();
     await editor.getByRole('button', { name: '닫기', exact: true }).click();
     await page.getByRole('dialog', { name: '저장하지 않은 변경 사항', exact: true })

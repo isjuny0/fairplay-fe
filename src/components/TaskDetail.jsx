@@ -1,3 +1,4 @@
+import { formatTaskEstimatedTime } from '../lib/taskTime.js';
 import DetailBackButton from './DetailBackButton.jsx';
 import { usePreviewGuide } from '../lib/previewGuideContext.js';
 import { useEffect, useRef, useState } from 'react';
@@ -24,7 +25,6 @@ import {
   canModifyTeamWork,
   completionBlockLabels,
   formatDate,
-  formatExpectedWorkload,
   isAssignee,
   isMutable,
   isTeamEditor,
@@ -402,9 +402,9 @@ export default function TaskDetail({
                 <div>
                   <dt>
                     <Clock3 size={14} aria-hidden="true" />
-                    예상 작업량
+                    예상 시간
                   </dt>
-                  <dd>{formatExpectedWorkload(task.weight).replace(/의 작업$/, '')}</dd>
+                  <dd>{formatTaskEstimatedTime(task)}</dd>
                 </div>
                 <div>
                   <dt>
