@@ -39,6 +39,7 @@ export async function addDashboardWidgets(page, titles) {
     page.getByRole('button', { name: '화면 설정', exact: true }),
   ).toBeEnabled();
   await catalog.getByRole('button', { name: '완료', exact: true }).click();
+  await clickDashboardControl(page, '편집 완료');
 }
 
 export async function selectCalendarEventDate(page, date) {

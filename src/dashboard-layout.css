@@ -9,6 +9,11 @@
   min-width: 0;
   scroll-margin-top: 100px;
 }
+.dashboard-arrange-grid > .dashboard-widget.is-new-widget {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+  border-radius: 16px;
+}
 .dashboard-arrange-grid > .dashboard-widget > .dashboard-card {
   flex: 1;
   min-height: 0;

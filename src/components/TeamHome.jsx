@@ -127,6 +127,40 @@ function TeamDashboard({
   const [memoDirty, setMemoDirty] = useState(false);
   const [catalog, setCatalog] = useState(false);
   const [editing, setEditing] = useState(false);
+  const catalogAdditions = useRef([]);
+  const widgetGrid = useRef(null);
+  const [highlightedWidgets, setHighlightedWidgets] = useState([]);
+  const [pendingWidget, setPendingWidget] = useState(null);
+  const openCatalog = () => {
+    catalogAdditions.current = [];
+    setCatalog(true);
+  };
+  const finishCatalog = () => {
+    const additions = catalogAdditions.current.filter(id => dashboard.widgets.includes(id));
+    setCatalog(false);
+    setEditing(dashboard.widgets.length > 0);
+    setHighlightedWidgets(additions);
+    setPendingWidget(additions.at(-1) || dashboard.widgets[0] || null);
+  };
+  useEffect(() => {
+    if (catalog || !pendingWidget) return;
+    const frame = requestAnimationFrame(() => {
+      const widget = [...(widgetGrid.current?.children || [])]
+        .find(element => element.dataset.widgetId === pendingWidget);
+      widget?.querySelector('.dashboard-drag-handle')?.focus({ preventScroll: true });
+      widget?.scrollIntoView({
+        block: 'start',
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+      });
+      setPendingWidget(null);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [catalog, pendingWidget]);
+  useEffect(() => {
+    if (!highlightedWidgets.length) return;
+    const timer = setTimeout(() => setHighlightedWidgets([]), 3000);
+    return () => clearTimeout(timer);
+  }, [highlightedWidgets]);
   const settingsMenu = useRef(null);
   const closeSettings = () => {
     if (!settingsMenu.current) return;
@@ -549,7 +583,7 @@ function TeamDashboard({
           <button
             className="secondary-button"
             disabled={saving}
-            onClick={() => { closeSettings(); setCatalog(true); }}
+            onClick={() => { closeSettings(); openCatalog(); }}
           >
             <Plus size={16} />
             위젯 추가
@@ -578,7 +612,7 @@ function TeamDashboard({
       <span className="sr-only" role="status">
         {announcement}
       </span>
-      <div className="dashboard-widget-grid dashboard-arrange-grid">
+      <div className="dashboard-widget-grid dashboard-arrange-grid" ref={widgetGrid}>
         {dashboard.widgets.map((id, index) => {
           const widget = dashboardWidgets.find((item) => item.id === id);
           const base = ['calendar', 'progress', 'contribution'].includes(id);
@@ -589,6 +623,7 @@ function TeamDashboard({
               index={index}
               count={dashboard.widgets.length}
               editing={editing}
+              highlighted={highlightedWidgets.includes(id)}
               disabled={saving}
               draggedId={draggedId}
               dropId={dropId}
@@ -626,13 +661,13 @@ function TeamDashboard({
       <button
         className="dashboard-add-placeholder"
         disabled={saving}
-        onClick={() => setCatalog(true)}
+        onClick={openCatalog}
       >
         <Plus size={18} />
         <strong>필요한 위젯 추가하기</strong>
       </button>
       {catalog && (
-        <Modal title="위젯 추가" onClose={() => setCatalog(false)} busy={saving} wide>
+        <Modal title="위젯 추가" onClose={() => setCatalog(false)} busy={saving} restoreFocusWithoutScroll wide>
           <ErrorNotice error={saveError} />
           <div className="dashboard-catalog">
             {dashboardWidgets.map((widget) => {
@@ -645,10 +680,13 @@ function TeamDashboard({
                   aria-pressed={added}
                   aria-label={`${widget.title} ${added ? '제거' : '추가'}`}
                   key={widget.id}
-                  onClick={() =>
-                    added ? removeWidget(widget.id)
-                      : save({ widgets: [...dashboard.widgets, widget.id] })
-                  }
+                  onClick={async () => {
+                    if (added) {
+                      await removeWidget(widget.id);
+                    } else if (await save({ widgets: [...dashboard.widgets, widget.id] })) {
+                      catalogAdditions.current = [...catalogAdditions.current.filter(id => id !== widget.id), widget.id];
+                    }
+                  }}
                 >
                   <span className="dashboard-icon">
                     <Icon name={widget.icon} />
@@ -670,7 +708,7 @@ function TeamDashboard({
               type="button"
               className="primary-button"
               disabled={saving}
-              onClick={() => setCatalog(false)}
+              onClick={finishCatalog}
             >
               완료
             </button>
