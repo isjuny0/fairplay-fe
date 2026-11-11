@@ -38,6 +38,9 @@ for (const width of [1440, 900, 720, 390, 320]) {
     await page.screenshot({ path: testInfo.outputPath('task-create-content.png'), animations: 'disabled' });
     await dialog.getByRole('button', { name: '다음', exact: true }).click();
     await expect(dialog.getByRole('heading', { name: '담당자·담당 비율', exact: true })).toBeFocused();
+    const allocationBox = await dialog.locator('.assignment-allocation-panel').boundingBox();
+    const reviewBox = await dialog.getByRole('region', { name: '등록 전 확인', exact: true }).boundingBox();
+    expect(reviewBox.y - allocationBox.y - allocationBox.height).toBeGreaterThanOrEqual(width > 720 ? 16 : 0);
     expect(await dialog.boundingBox()).toEqual(firstBox);
     await expect(dialog.getByRole('region', { name: '작업 내용 입력', exact: true })).not.toBeVisible();
     await dialog.getByRole('button', { name: '저장', exact: true }).click();
