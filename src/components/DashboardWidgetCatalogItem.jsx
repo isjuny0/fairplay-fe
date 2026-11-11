@@ -10,27 +10,39 @@ export default function DashboardWidgetCatalogItem({ widget, added, disabled, on
   const anchor = useRef(null);
   const visible = preview === widget.id;
   const hide = () => onPreview(current => current === widget.id ? null : current);
+  const content = <>
+    <span className="dashboard-icon"><Icon name={widget.icon} /></span>
+    <span><strong>{widget.title}</strong><small>{widget.description}</small></span>
+  </>;
+  const action = <span className="dashboard-catalog-action">{added ? <Minus size={16} /> : <Plus size={16} />}{added ? '제거' : '추가'}</span>;
   return <div className={`dashboard-catalog-item ${added ? 'is-added' : ''} ${visible ? 'is-previewing' : ''}`}
     ref={anchor}
     onMouseEnter={() => { if (!disabled && !mobile) onPreview(widget.id); }}
     onMouseLeave={event => { if (!mobile && !event.currentTarget.contains(document.activeElement)) hide(); }}
     onBlurCapture={event => { if (!mobile && !event.currentTarget.contains(event.relatedTarget)) hide(); }}
   >
-    <div className="dashboard-catalog-item-heading">
+    {mobile ? <div className="dashboard-catalog-item-heading">
       <button type="button" className="dashboard-catalog-preview-trigger" disabled={disabled}
         aria-label={`${widget.title} 위젯 미리보기`} aria-expanded={visible}
         aria-controls={visible ? previewId : undefined}
         onFocus={() => { if (!mobile) onPreview(widget.id); }}
         onClick={() => onPreview(visible && mobile ? null : widget.id)}
       >
-        <span className="dashboard-icon"><Icon name={widget.icon} /></span>
-        <span><strong>{widget.title}</strong><small>{widget.description}</small></span>
+        {content}
       </button>
       <button type="button" className="dashboard-catalog-select" disabled={disabled}
         aria-pressed={added} aria-label={`${widget.title} ${added ? '제거' : '추가'}`}
         onClick={() => { if (!mobile) hide(); onToggle(); }}
-      ><span className="dashboard-catalog-action">{added ? <Minus size={16} /> : <Plus size={16} />}{added ? '제거' : '추가'}</span></button>
-    </div>
+      >{action}</button>
+    </div> : <button type="button" className="dashboard-catalog-select dashboard-catalog-whole-select"
+      disabled={disabled} aria-pressed={added} aria-label={`${widget.title} ${added ? '제거' : '추가'}`}
+      aria-expanded={visible} aria-controls={visible ? previewId : undefined}
+      onFocus={() => onPreview(widget.id)}
+      onClick={() => { hide(); onToggle(); }}
+    >
+      <span className="dashboard-catalog-preview-trigger">{content}</span>
+      {action}
+    </button>}
     {mobile && visible && <div id={previewId} className="dashboard-catalog-inline-preview"><DashboardWidgetPreview widget={widget} /></div>}
     {!mobile && visible && !disabled && <CalendarPopover anchorRef={anchor}
       id={previewId} width={['calendar', 'mywork'].includes(widget.id) ? 560 : 380}

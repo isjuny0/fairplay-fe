@@ -393,12 +393,12 @@ test('위젯 미리보기는 실제 모양을 공유하고 추가 조회 없이 
   await clickDashboardControl(page, '위젯 추가');
   const catalog = page.getByRole('dialog', { name: '위젯 추가', exact: true });
   const calendarRequests = requests.filter(request => request.path.includes('/calendar-events')).length;
-  await catalog.getByRole('button', { name: '캘린더 위젯 미리보기', exact: true }).hover();
+  await catalog.getByRole('button', { name: '캘린더 제거', exact: true }).hover();
   const calendar = catalog.getByRole('region', { name: '캘린더 위젯 미리보기', exact: true });
   await expect(calendar.locator('.team-calendar-grid')).toBeVisible();
   await expect(calendar.locator('.team-calendar > p[role="status"]')).toHaveCount(0);
   expect(requests.filter(request => request.path.includes('/calendar-events'))).toHaveLength(calendarRequests);
-  await catalog.getByRole('button', { name: '팀 전체 진행률 위젯 미리보기', exact: true }).focus();
+  await catalog.getByRole('button', { name: '팀 전체 진행률 제거', exact: true }).focus();
   await expect(catalog.locator('.home-progress-ring svg circle')).toHaveCount(2);
   await catalog.getByRole('button', { name: '완료', exact: true }).click();
   await clickDashboardControl(page, '편집 완료');
