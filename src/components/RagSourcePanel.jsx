@@ -32,11 +32,13 @@ export default function RagSourcePanel({
     [teamId, reference.deliverableId, reference.deliverableVersion, reference.pageNumber],
   );
   useEffect(() => {
-    if (resource.error?.status === 403) onAccessError(resource.error);
+    if ([401, 403].includes(resource.error?.status)) onAccessError(resource.error);
   }, [resource.error, onAccessError]);
   useEffect(() => {
     panel.current?.focus({ preventScroll: true });
-    return () => originalFocus.current?.focus({ preventScroll: true });
+    return () => {
+      requestAnimationFrame(() => originalFocus.current?.focus({ preventScroll: true }));
+    };
   }, []);
   useEffect(() => {
     const element = panel.current?.querySelector(
@@ -163,7 +165,7 @@ export default function RagSourcePanel({
               className="rag-original-line"
               key={index}
               data-source-highlight={
-                hasCitation && index + 1 >= reference.startLine && index + 1 <= reference.endLine
+                sourceReady && index + 1 >= reference.startLine && index + 1 <= reference.endLine
               }
             >
               <span aria-hidden="true">{index + 1}</span>
