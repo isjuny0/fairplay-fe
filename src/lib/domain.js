@@ -13,6 +13,7 @@ export const buildingLabels = {
   LOCKED: '팀 구성 고정',
 };
 export const completionBlockLabels = {
+  DELAY_REASON_REQUIRED: '마감이 지난 작업은 지연 사유를 작성한 뒤 완료할 수 있습니다.',
   WORK_PERIOD_CLOSED:
     '최종 평가 마감 이후에는 작업을 변경하거나 완료 처리할 수 없습니다.',
   DELIVERABLE_REQUIRED: '완료 처리 전에 결과물을 추가해 주세요.',

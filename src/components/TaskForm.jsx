@@ -94,6 +94,8 @@ export default function TaskForm({
 }) {
   const { confirm } = useInteractions();
   const recovery = useSaveRecovery(serverError);
+  const currentTask = recovery.latest?.task || task;
+  const scheduleLocked = Boolean(currentTask && currentTask.status !== 'TODO');
   const editingMembers = recovery.latest?.members || members;
   const [defaultDateTime] = useState(defaultFormDateTime);
   const [initialForm] = useState({
@@ -111,11 +113,11 @@ export default function TaskForm({
   const [recommendationError, setRecommendationError] = useState(null);
   const [recommendationNotice, setRecommendationNotice] = useState('');
   const startAt = withDefaultTime(
-    form.startAt,
+    scheduleLocked ? toDateInput(currentTask.startAt) : form.startAt,
     initialForm.startAt || defaultDateTime,
   );
   const dueAt = withDefaultTime(
-    form.dueAt,
+    scheduleLocked ? toDateInput(currentTask.dueAt) : form.dueAt,
     initialForm.dueAt || defaultDateTime,
   );
   const estimatedMinutes = Number(form.estimatedMinutes);
@@ -279,7 +281,7 @@ export default function TaskForm({
       !(await confirm({
         title: '최신 작업에 내 입력 반영',
         message:
-          '확인한 최신 작업에 현재 제목·설명·예상 시간·시작일·마감·담당 배분을 반영합니다. 다른 팀원의 수정 내용을 덮어쓸 수 있습니다. 비교한 내용을 확인하고 저장할까요?',
+          `확인한 최신 작업에 현재 제목·설명·예상 시간${scheduleLocked ? '' : '·시작일·마감'}·담당 배분을 반영합니다. 다른 팀원의 수정 내용을 덮어쓸 수 있습니다. 비교한 내용을 확인하고 저장할까요?`,
         label: '내 입력으로 저장',
       }))
     )
@@ -289,13 +291,7 @@ export default function TaskForm({
         title: form.title.trim(),
         description: form.description.trim(),
         estimatedMinutes,
-        ...(!task ||
-        startAt !== initialForm.startAt ||
-        (recovery.latest &&
-          startAt !== toDateInput(recovery.latest.task.startAt))
-          ? { startAt: fromDateInput(startAt) }
-          : {}),
-        dueAt: fromDateInput(dueAt),
+        ...(!scheduleLocked ? { startAt: fromDateInput(startAt), dueAt: fromDateInput(dueAt) } : {}),
         assignees: form.assignees.map((assignment) => ({
           userId: assignment.userId,
           allocationPercent: Number(assignment.allocationPercent),
@@ -369,6 +365,7 @@ export default function TaskForm({
         aria-label="계획 일정 입력"
       >
         <h4>계획 일정</h4>
+        {scheduleLocked && <p className="field-help">시작일과 마감일은 할 일 상태에서만 변경할 수 있어요.</p>}
         <div className="two-columns">
           <TaskField
             label="시작일"
@@ -377,11 +374,12 @@ export default function TaskForm({
           >
             <DateTimeInput
               name="startAt"
+              disabled={scheduleLocked}
               compactTime
               required
               timeRequired={false}
               showRequirements
-              value={form.startAt}
+              value={scheduleLocked ? toDateInput(currentTask.startAt) : form.startAt}
               onChange={(event) =>
                 update('startAt', event.target.value)
               }
@@ -394,11 +392,12 @@ export default function TaskForm({
           >
             <DateTimeInput
               name="dueAt"
+              disabled={scheduleLocked}
               compactTime
               required
               timeRequired={false}
               showRequirements
-              value={form.dueAt}
+              value={scheduleLocked ? toDateInput(currentTask.dueAt) : form.dueAt}
               onChange={(event) => update('dueAt', event.target.value)}
             />
           </TaskField>
