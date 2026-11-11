@@ -317,7 +317,6 @@ export default function MeetingMinuteEditor({
               <Field
                 label="회의 기록"
                 error={errors.record}
-                help="안건·내용·결정사항 제목 아래에 작성하세요. 안건·결정사항은 각 5,000자, 내용은 20,000자까지 입력할 수 있습니다."
               >
                 <MarkdownEditor
                   name="record"
