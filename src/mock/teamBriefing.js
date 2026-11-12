@@ -41,6 +41,7 @@ export function previewTeamBriefing(context, state, parts, method, body) {
   state.teamBriefingEvents ||= {};
   state.teamBriefingCheckpoints ||= {};
   state.teamBriefingWindows ||= {};
+  state.teamBriefingItemReads ||= {};
   const key = `${teamId}:${context.user.id}`;
   const checkpoint = state.teamBriefingCheckpoints[key];
   const asOf = koreanDateTime();
@@ -52,6 +53,13 @@ export function previewTeamBriefing(context, state, parts, method, body) {
       throw new MockError('FORBIDDEN', '이 브리핑을 확인할 수 없습니다.', 403);
     if (window.teamId !== teamId)
       throw new MockError('TEAM_BRIEFING_SCOPE_MISMATCH', '다른 팀의 브리핑입니다.', 409);
+    if (body.itemId !== undefined && body.itemId !== null) {
+      if (!window.itemIds?.includes(body.itemId))
+        throw new MockError('INVALID_REQUEST', '조회한 브리핑에 없는 항목입니다.', 400);
+      const reads = state.teamBriefingItemReads[key] ||= {};
+      reads[body.itemId] = Math.max(reads[body.itemId] || 0, window.throughPosition);
+      return null;
+    }
     state.teamBriefingCheckpoints[key] = {
       position: Math.max(checkpoint?.position || 0, window.throughPosition),
       lastReadAt: checkpoint?.lastReadAt > window.asOf ? checkpoint.lastReadAt : window.asOf,
@@ -61,12 +69,12 @@ export function previewTeamBriefing(context, state, parts, method, body) {
   if (method !== 'GET' || parts.length !== 4)
     throw new MockError('NOT_FOUND', '지원하지 않는 API입니다.', 404);
   const events = state.teamBriefingEvents[teamId] ||= initialChanges(entry);
-  const items = events.filter((item) => item.position > (checkpoint?.position || 0)
+  const items = events.filter((item) => item.position > Math.max(checkpoint?.position || 0, state.teamBriefingItemReads[key]?.[item.id] || 0)
     && (checkpoint || apiTimeToEpoch(item.occurredAt) >= Date.now() - 7 * 86400000));
   const highlights = items.slice(0, 2);
   const ackToken = items.length ? crypto.randomUUID() : null;
   if (ackToken) state.teamBriefingWindows[ackToken] = {
-    userId: context.user.id, teamId, asOf,
+    userId: context.user.id, teamId, asOf, itemIds: items.map(({ id }) => id),
     throughPosition: Math.max(0, ...events.map(({ position }) => position)),
     expiresAt: koreanDateTime(Date.now() + 15 * 60 * 1000),
   };

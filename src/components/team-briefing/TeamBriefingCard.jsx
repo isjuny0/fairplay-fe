@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import {
   ArrowUpRight, Check, CheckCircle2, ChevronDown, ChevronUp,
@@ -19,7 +19,7 @@ const timeFormatter = new Intl.DateTimeFormat('ko-KR', {
   minute: '2-digit',
 });
 
-function BriefingItem({ item, spaceId, teamId, prominent = false, expanded = false }) {
+function BriefingItem({ item, spaceId, teamId, prominent = false, expanded = false, onOpen, saving }) {
   const { pathname } = useLocation();
   const menu = item.targetType === 'TASK' ? '작업' : '팀 자료';
   const destination = teamMenuPath(spaceId, teamId, menu);
@@ -40,7 +40,11 @@ function BriefingItem({ item, spaceId, teamId, prominent = false, expanded = fal
     <li className={`team-briefing-item${prominent ? ' is-highlight' : ''}${attention ? ' needs-attention' : ''}${completed ? ' is-completed' : ''}`}>
       <span className="team-briefing-item-icon" aria-hidden="true"><ItemIcon size={prominent ? 21 : 18} /></span>
       <div className="team-briefing-item-copy">
-        <Link to={href} className="team-briefing-item-link">
+        <Link to={href} className="team-briefing-item-link" aria-disabled={saving || undefined} onClick={(event) => {
+          if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+          event.preventDefault();
+          onOpen(item, href);
+        }}>
           <span><strong>{item.title}</strong><span className="team-briefing-change-description"> {item.changeDescription}</span></span>
           <ArrowUpRight size={14} aria-hidden="true" />
         </Link>
@@ -78,6 +82,27 @@ function BriefingCard({ spaceId, teamId, userId }) {
   const [acknowledgeError, setAcknowledgeError] = useState(null);
   const savingRef = useRef(false);
   const detailsId = useId();
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  const openItem = async (item, href) => {
+    if (savingRef.current || resource.loading || !resource.data?.ackToken) return;
+    savingRef.current = true;
+    setSaving(true);
+    setAcknowledgeError(null);
+    try {
+      await acknowledgeTeamBriefing(teamId, resource.data.ackToken, item.id);
+      if (mountedRef.current) navigate(href);
+    } catch (error) {
+      if (mountedRef.current) setAcknowledgeError(error);
+    } finally {
+      savingRef.current = false;
+      if (mountedRef.current) setSaving(false);
+    }
+  };
 
   const acknowledge = async () => {
     if (savingRef.current || resource.loading || !resource.data?.ackToken) return;
@@ -112,7 +137,7 @@ function BriefingCard({ spaceId, teamId, userId }) {
   const periodLabel = briefing.lastReadAt ? '지난 확인 이후' : '최근 7일 팀 소식';
 
   return (
-    <section className="team-briefing-card" aria-label="팀 변경 브리핑">
+    <section className="team-briefing-card" aria-label="팀 변경 브리핑" aria-busy={saving}>
       <header className="team-briefing-heading">
         <div className="team-briefing-heading-copy">
           <span className="team-briefing-eyebrow"><Sparkles size={17} aria-hidden="true" />{periodLabel}</span>
@@ -127,14 +152,14 @@ function BriefingCard({ spaceId, teamId, userId }) {
       </header>
       <div className="team-briefing-details">
         <ul className="team-briefing-highlights" aria-label="주요 소식">
-          {briefing.highlights.map((item) => <BriefingItem key={item.id} item={item} spaceId={spaceId} teamId={teamId} prominent expanded={expanded} />)}
+          {briefing.highlights.map((item) => <BriefingItem key={item.id} item={item} spaceId={spaceId} teamId={teamId} prominent expanded={expanded} onOpen={openItem} saving={saving} />)}
         </ul>
         <div id={detailsId} hidden={!expanded}>
           {additionalItems.length > 0 && (
             <div className="team-briefing-additional">
               <h3>그 밖의 변경 <span>({additionalItems.length}건)</span></h3>
               <ul aria-label="추가 변경">
-                {additionalItems.map((item) => <BriefingItem key={item.id} item={item} spaceId={spaceId} teamId={teamId} />)}
+                {additionalItems.map((item) => <BriefingItem key={item.id} item={item} spaceId={spaceId} teamId={teamId} onOpen={openItem} saving={saving} />)}
               </ul>
             </div>
           )}

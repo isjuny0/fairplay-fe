@@ -158,3 +158,33 @@ test('이전 브리핑 확인을 반복해도 조회 이후의 새 변경은 남
   assert.equal(next.items.length, 1);
   assert.equal(next.items[0].title, '조회 이후의 새 변경');
 });
+
+
+test('브리핑 개별 확인은 선택한 항목만 제외하고 이후 새 변경과 다른 사용자 상태를 보존한다', async () => {
+  const first = await previewRequest('/api/teams/1/briefing');
+  const item = first.items[0];
+  const ack = () => previewRequest('/api/teams/1/briefing/acknowledge', {
+    method: 'POST', body: { ackToken: first.ackToken, itemId: item.id },
+  });
+  await ack();
+  await ack();
+  const remaining = await previewRequest('/api/teams/1/briefing');
+  assert.deepEqual(remaining.items, first.items.filter(({ id }) => id !== item.id));
+  assert.equal(remaining.totalEventCount, first.totalEventCount - 1);
+  assert.equal(remaining.highlights.length, Math.min(2, remaining.items.length));
+  const context = previewContext(), state = getMockState(context);
+  state.teamBriefingEvents[1].push({ ...item, position: first.totalEventCount + 1, title: '같은 대상의 새 변경' });
+  saveMockState(context, state);
+  await ack();
+  assert.ok((await previewRequest('/api/teams/1/briefing')).items.some(({ title }) => title === '같은 대상의 새 변경'));
+  setPreviewRole('member');
+  assert.ok((await previewRequest('/api/teams/1/briefing')).items.some(({ id }) => id === item.id));
+});
+
+test('브리핑 조회에 없는 항목은 개별 확인할 수 없다', async () => {
+  const briefing = await previewRequest('/api/teams/1/briefing');
+  await assert.rejects(previewRequest('/api/teams/1/briefing/acknowledge', {
+    method: 'POST', body: { ackToken: briefing.ackToken, itemId: 'task-not-in-window' },
+  }), { code: 'INVALID_REQUEST' });
+  assert.equal((await previewRequest('/api/teams/1/briefing')).totalEventCount, briefing.totalEventCount);
+});
