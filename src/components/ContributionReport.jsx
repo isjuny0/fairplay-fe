@@ -11,6 +11,7 @@ import {
 } from '../api/reports.js';
 import useResource from '../hooks/useResource.js';
 import { formatDate } from '../lib/domain.js';
+import { validReportWorkload } from '../lib/reportWorkload.js';
 import { formatReportNumber } from './ReportScore.jsx';
 import ContributionEvidence from './ContributionEvidence.jsx';
 import { EmptyState, ResourceState } from './ui.jsx';
@@ -42,6 +43,13 @@ function ReportDetail({ context, report, actions, toolbarTarget, guide, manageme
     return () => window.removeEventListener('fairplay:guide-focus', restoreGuideMember);
   }, [managementGuide?.reportManagementMemberId, Boolean(managementGuide)]);
   const resultsLabel = '팀원별 종합 평가';
+  const workloadSummary = validReportWorkload(report.workloadSummary, report.evaluatedMemberCount) ? report.workloadSummary : null;
+  const equalWorkShare = workloadSummary
+    ? workloadSummary.equalSharePercent
+    : report.evaluatedMemberCount > 0 ? 100 / report.evaluatedMemberCount : null;
+  const workShareFor = (member) => workloadSummary
+    ? workloadSummary.members.find((item) => item.userId === member.userId)?.completedWorkSharePercent
+    : member.details.taskRatioPercent;
   return (
     <div className="report-result">
       {toolbarTarget ? createPortal(<>
@@ -60,17 +68,25 @@ function ReportDetail({ context, report, actions, toolbarTarget, guide, manageme
         </div>
       )}
       {context.manager && <section className="report-team-result">
-        <div className="section-heading"><h2>{resultsLabel}</h2></div>
+        <div className="section-heading report-team-results-heading"><h2>{resultsLabel}</h2>
+          {equalWorkShare !== null && <span className="report-equal-work-share"><i aria-hidden="true" />{report.evaluatedMemberCount}명 기준 균등 비중 {formatReportNumber(equalWorkShare)}%</span>}
+        </div>
         <div className="table-scroll" role="region" aria-label={resultsLabel} tabIndex={0}>
           <table className="data-table composite-results-table"><caption className="sr-only">{resultsLabel}</caption>
-            <thead><tr>{['팀원', '완료 작업량 비율', '작업 점수', '중간 평가', '최종 평가', '종합점수'].map((label) => <th scope="col" key={label}>{label}</th>)}</tr></thead>
+            <thead><tr>{['팀원', '작업 점수', '완료 작업량 비중', '중간 평가', '최종 평가', '종합점수'].map((label) => <th scope="col" key={label}>{label}</th>)}</tr></thead>
             <tbody>{reviewableMembers.map((member) => <tr key={member.userId} className={member.userId === selectedMember?.userId ? 'report-selected-member' : ''}
               onClick={() => setSelectedMemberId(member.userId)}>
               <th scope="row"><button type="button" className="report-member-select" data-guide-report-member={member.userId}
                 aria-label={`${member.name} 수행 근거 확인`} aria-pressed={member.userId === selectedMember?.userId}
                 aria-controls={memberEvidenceId} onClick={() => setSelectedMemberId(member.userId)}>{member.name}<span aria-hidden="true">{member.userId === selectedMember?.userId ? '선택됨' : '확인'}</span></button></th>
-              <td>{member.details.taskRatioPercent === null ? '산정 대상 없음' : `${formatReportNumber(member.details.taskRatioPercent)}%`}</td>
               <td>{member.details.taskScore === null ? '산정 대상 없음' : `${formatReportNumber(member.details.taskScore)}점`}</td>
+              <td className="report-work-share-cell">{Number.isFinite(workShareFor(member)) ? <div className="report-work-share">
+                <span className="report-work-share-track" aria-hidden="true">
+                  <span style={{ width: `${Math.min(100, Math.max(0, workShareFor(member)))}%` }} />
+                  {equalWorkShare !== null && <i style={{ left: `${equalWorkShare}%` }} />}
+                </span>
+                <strong>{formatReportNumber(workShareFor(member))}%</strong>
+              </div> : '산정 대상 없음'}</td>
               <td>{formatReportNumber(member.details.midEvaluationAverage)} / 5</td><td>{formatReportNumber(member.details.finalEvaluationAverage)} / 5</td>
               <td><strong>{formatReportNumber(member.totalScore)}점</strong></td>
             </tr>)}</tbody>

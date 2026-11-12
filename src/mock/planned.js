@@ -329,7 +329,7 @@ function makeReport(state, entry, status = 'UNPUBLISHED', weights = state.report
       0,
     ),
   );
-  const totalWork = rawWork.reduce((sum, value) => sum + value, 0);
+  const totalWork = done.reduce((sum, task) => sum + task.weight, 0);
   if (!totalWork && weights.taskPercent > 0) fail('REPORT_UNCALCULABLE', '작업 점수를 계산할 완료 작업량이 없습니다.');
   const roundNumber = (value) => Math.round((value + Number.EPSILON) * 10000) / 10000;
   const received = (type, member) => {
@@ -369,11 +369,26 @@ function makeReport(state, entry, status = 'UNPUBLISHED', weights = state.report
     details,
   };
 }
-const publicReport = ({ details, evidenceTasks, ...report }, context) => ({
-  ...report,
-  members: report.members.filter((member) => context.manager || member.userId === context.user.id)
-    .map((member) => ({ ...member, details: details[member.userId] })),
-});
+const publicReport = ({ details, evidenceTasks, ...report }, context) => {
+  const snapshotTasks = evidenceTasks ?? [];
+  const totalWork = snapshotTasks.reduce((sum, task) => sum + task.weightAtCutoff, 0);
+  const completedWork = report.members.map((member) => snapshotTasks.reduce((sum, task) => sum
+    + task.weightAtCutoff * (task.assignments.find((assignment) => assignment.userId === member.userId)?.allocationPercent ?? 0) / 100, 0));
+  const round = (value) => Math.round((value + Number.EPSILON) * 10000) / 10000;
+  const workPercent = (work) => totalWork > 0 ? round(work / totalWork * 100) : null;
+  return {
+    ...report,
+    workloadSummary: evidenceTasks ? {
+      equalSharePercent: round(100 / report.evaluatedMemberCount),
+      formerMemberCompletedWorkSharePercent: workPercent(Math.max(0, totalWork - completedWork.reduce((sum, work) => sum + work, 0))),
+      members: report.members.map((member, index) => ({ userId: member.userId, name: member.name,
+        completedWorkSharePercent: workPercent(completedWork[index]),
+        relativeToTeamAveragePercent: workPercent(completedWork[index] * report.evaluatedMemberCount) })),
+    } : null,
+    members: report.members.filter((member) => context.manager || member.userId === context.user.id)
+      .map((member) => ({ ...member, details: details[member.userId] })),
+  };
+};
 function captureMidWorkSnapshot(state, round, useFixtures = false) {
   const cutoff = new Date(apiTimeToEpoch(round.closesAt));
   // 이미 마감된 전시 회차는 마감 시점에 맞춘 예시 작업으로 초기화한다.

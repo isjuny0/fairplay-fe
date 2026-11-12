@@ -1,0 +1,36 @@
+.report-workload-summary { padding-block: var(--space-6); border-block: 1px solid var(--border); }
+.report-workload-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; margin-bottom: var(--space-6); }
+.report-workload-heading h3 { margin: 0; font-size: var(--text-section); font-weight: 600; }
+.report-workload-heading > span { color: var(--text-muted); font-size: var(--text-caption); }
+.report-workload-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-8); align-items: center; }
+.report-workload-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); margin: 0; }
+.report-workload-metrics > div { min-width: 0; padding: var(--space-card); border-radius: var(--radius-card); background: var(--surface-secondary); }
+.report-workload-metrics dt { font-size: var(--text-support); line-height: 1.6; }
+.report-workload-metrics dd { display: flex; align-items: baseline; gap: 3px; margin: 12px 0 8px; font-variant-numeric: tabular-nums; }
+.report-workload-metrics dd > strong { color: var(--brand); font-size: 32px; font-weight: 650; letter-spacing: -1px; }
+.report-workload-metrics dd > span { font-size: 16px; color: var(--brand); }
+.report-workload-metrics dd > .is-unavailable { font-size: 16px; letter-spacing: 0; color: var(--text-muted); }
+.report-workload-metrics .report-workload-metric-help { display: block; margin: 0; color: var(--text-muted); font-size: var(--text-caption); line-height: 1.6; }
+.report-workload-chart-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.report-workload-chart-heading h4 { margin: 0; font-size: var(--text-support); font-weight: 500; }
+.report-workload-chart-heading > span { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-caption); color: var(--text-muted); }
+.report-workload-chart-heading i { height: 12px; border-left: 1px dashed var(--text-muted); }
+.report-workload-distribution ul { display: grid; gap: 20px; margin: 0; padding: 0; list-style: none; }
+.report-workload-distribution li { display: grid; grid-template-columns: minmax(48px, 76px) minmax(0, 1fr) 50px; align-items: center; gap: 12px; font-size: var(--text-support); }
+.report-workload-name { overflow-wrap: anywhere; }
+.report-workload-distribution li > strong { text-align: right; font-weight: 500; font-variant-numeric: tabular-nums; }
+.report-workload-track { position: relative; height: 10px; background: #edf1ef; border-radius: 3px; }
+.report-workload-fill { display: block; height: 100%; border-radius: inherit; background: #94a3b8; }
+.report-workload-track > i { position: absolute; top: -4px; bottom: -4px; border-left: 1px dashed var(--text-muted); }
+.report-workload-distribution .is-selected { color: var(--brand-dark); font-weight: 600; }
+.report-workload-distribution .is-selected .report-workload-fill { background: var(--brand); }
+.report-workload-note { margin: 20px 0 0; font-size: var(--text-caption); color: var(--text-muted); line-height: 1.7; }
+@media (max-width: 1100px) {
+  .report-workload-layout { grid-template-columns: minmax(0, 1fr); gap: var(--space-6); }
+}
+@media (max-width: 480px) {
+  .report-workload-metrics { gap: 10px; }
+  .report-workload-metrics > div { padding: 12px; }
+  .report-workload-metrics dd > strong { font-size: 28px; }
+  .report-workload-distribution li { grid-template-columns: 60px minmax(0, 1fr) 46px; gap: 8px; }
+}

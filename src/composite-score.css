@@ -39,6 +39,15 @@
 .composite-results-table .report-selected-member { background: var(--brand-light); }
 .composite-results-table .report-member-select { border: 0; padding: 0; display: inline-flex; gap: 10px; color: var(--text-primary); }
 .composite-results-table .report-member-select > span { color: var(--text-muted); font-size: 10px; }
+.report-team-results-heading { flex-wrap: wrap; gap: 8px 16px; }
+.report-equal-work-share { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: var(--text-caption); }
+.report-equal-work-share > i { height: 12px; border-left: 1px dashed var(--text-muted); }
+.composite-results-table .report-work-share-cell { min-width: 180px; }
+.report-work-share { display: grid; grid-template-columns: minmax(100px, 1fr) 52px; align-items: center; gap: 12px; }
+.report-work-share > strong { font-weight: 600; font-variant-numeric: tabular-nums; }
+.report-work-share-track { position: relative; display: block; height: 8px; border-radius: 3px; background: var(--surface-secondary); }
+.report-work-share-track > span { display: block; height: 100%; border-radius: inherit; background: var(--brand); }
+.report-work-share-track > i { position: absolute; top: -4px; bottom: -4px; border-left: 1px dashed var(--text-muted); }
 .report-weight-description { display: block; margin-top: 8px; line-height: 1.7; }
 .report-score-example { margin-top: 20px; padding: 16px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; }
 .report-score-example > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }

@@ -40,7 +40,6 @@
 }
 .team-join-restriction { max-width: none; grid-column: 1 / -1; }
 .report-calculation-details { min-width: 0; border-bottom: 1px solid var(--border); }
-.report-calculation-details > summary { cursor: pointer; padding: 12px 0; font-weight: 600; }
 .workflow-steps li[data-complete='true'] { color: var(--brand-dark); }
 .team-deletion-section.danger-zone { border-top: 2px solid #d9a4a4; padding-top: 24px; }
 .main-content :is(.announcement-pagination, .meeting-pagination, .task-pagination, .personal-notification-simple-pagination) { gap: var(--space-4); padding-top: 0; font-size: var(--text-support); }
