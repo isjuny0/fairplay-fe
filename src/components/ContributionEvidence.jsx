@@ -6,6 +6,7 @@ import { ResourceState } from './ui.jsx';
 import useResource from '../hooks/useResource.js';
 import { ResultSummary } from './ReportScore.jsx';
 import ContributionEvidenceList from './ContributionEvidenceList.jsx';
+import ReportWorkloadSummary from './ReportWorkloadSummary.jsx';
 import '../contribution-evidence.css';
 
 export default function ContributionEvidence({ id, context, report, member, members, onMemberChange, guide, currentTasksHref, managementGuide, onReviewConfirmed }) {
@@ -30,6 +31,7 @@ export default function ContributionEvidence({ id, context, report, member, memb
     </header>}
     <ResultSummary key={member.userId} name={context.manager ? `${member.name}님의` : '나의'} totalScore={member.totalScore} details={member.details}
       weights={report.weights} evaluatedMemberCount={report.evaluatedMemberCount} personal={!context.manager} own guide={guide} />
+    <ReportWorkloadSummary report={report} member={member} personal={!context.manager} />
     {managementGuide?.stepId === 'management-report-review' && <div className="heading-actions preview-guide-inline-action">
       <button className="secondary-button" data-guide="confirm-management-report-review" disabled={!managementGuide.reportManagementReady}
         onClick={() => managementGuide.confirmReportManagementStep('management-report-review')}>점수 검토 완료</button>

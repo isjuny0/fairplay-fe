@@ -362,6 +362,7 @@ test('관리자 생성·공개 요청은 같은 결과를 반환하고 계산 �
       'publishedAt',
       'members',
       'weights',
+      'workloadSummary',
     ].sort(),
   );
   const result = await plannedRequest(manager, '/api/teams/1/report', {
@@ -1100,6 +1101,7 @@ test('작업 근거는 관리자 또는 공개 후 본인만 조회하고 현재
   current.assignees = [];
   saveMockState(manager, state);
   const after = await plannedRequest(manager, endpoint);
+  assert.deepEqual((await plannedRequest(manager, '/api/teams/1/report')).workloadSummary, report.workloadSummary);
   assert.deepEqual(after.workSummary, before.workSummary);
   assert.deepEqual(after.details, before.details);
   assert.equal(after.tasks[0].weightAtCutoff, before.tasks[0].weightAtCutoff);
@@ -1127,6 +1129,7 @@ test('기여 근거를 저장하지 않은 이전 미리보기 리포트는 현�
   const state = getMockState(manager);
   delete state.reports[0].evidenceTasks;
   saveMockState(manager, state);
+  assert.equal((await plannedRequest(manager, '/api/teams/1/report')).workloadSummary, null);
   await assert.rejects(plannedRequest(manager, `/api/teams/1/report/evidence?userId=${state.reports[0].members[0].userId}`), { code: 'REPORT_EVIDENCE_UNAVAILABLE' });
 });
 
@@ -1221,6 +1224,18 @@ test('종합 평가 예시는 개인별 점수를 계산하며 팀 합계를 100
   assert.equal(report.evaluatedMemberCount, 3);
   assert.equal(report.members[0].details.taskRatioPercent, 61);
   assert.equal(report.members[0].details.taskScore, 100);
+  assert.deepEqual(report.workloadSummary, {
+    equalSharePercent: 33.3333,
+    formerMemberCompletedWorkSharePercent: 0,
+    members: report.members.map((member, index) => ({ userId: member.userId, name: member.name,
+      completedWorkSharePercent: [61, 27, 12][index], relativeToTeamAveragePercent: [183, 81, 36][index] })),
+  });
+  const { validReportWorkload } = await import('../src/lib/reportWorkload.js');
+  assert.equal(validReportWorkload(report.workloadSummary, 3), true);
+  await plannedRequest(manager, `/api/reports/${report.id}/publish`, { method: 'POST' });
+  const personal = await plannedRequest(context('leader'), '/api/teams/1/report');
+  assert.equal(personal.members.length, 1);
+  assert.deepEqual(personal.workloadSummary, report.workloadSummary);
   assert.ok(report.members.reduce((sum, member) => sum + member.totalScore, 0) > 100);
   for (const member of report.members) {
     assert.ok(member.totalScore >= 0 && member.totalScore <= 100);
@@ -1241,5 +1256,29 @@ test('산정 대상 없는 작업은 null과 비중 0으로 전달하고 점수 
   assert.equal(report.members[0].details.taskScore, null);
   assert.equal(report.members[0].details.taskRatioPercent, null);
   assert.equal(report.members[0].details.taskWeightedScore, 0);
+  assert.equal(report.workloadSummary.formerMemberCompletedWorkSharePercent, null);
+  assert.ok(report.workloadSummary.members.every((member) => member.completedWorkSharePercent === null && member.relativeToTeamAveragePercent === null));
   assert.equal(validReportScore({ ...report, weights: { taskPercent: 70, midPercent: 10, finalPercent: 20 } }), false);
+});
+
+test('작업량 요약은 탈퇴자 몫을 보존하고 반올림 전 작업량으로 평균 대비 비율을 계산한다', async () => {
+  const manager = context('manager');
+  resetMockState(manager, 'published');
+  const state = getMockState(manager);
+  const snapshot = state.reports.find((report) => report.teamId === 1);
+  snapshot.evidenceTasks = [{ taskId: 101, weightAtCutoff: 100, assignments: [
+    { userId: snapshot.members[0].userId, allocationPercent: 30 },
+    { userId: 'former-member', allocationPercent: 70 },
+  ] }];
+  saveMockState(manager, state);
+  const { workloadSummary } = await plannedRequest(manager, '/api/teams/1/report');
+  assert.equal(workloadSummary.formerMemberCompletedWorkSharePercent, 70);
+  assert.deepEqual(workloadSummary.members.map((member) => member.completedWorkSharePercent), [30, 0, 0]);
+  assert.deepEqual(workloadSummary.members.map((member) => member.relativeToTeamAveragePercent), [90, 0, 0]);
+
+  snapshot.evidenceTasks = snapshot.members.map((member, index) => ({ taskId: index + 1, weightAtCutoff: 1,
+    assignments: [{ userId: member.userId, allocationPercent: 100 }] }));
+  saveMockState(manager, state);
+  const equal = await plannedRequest(manager, '/api/teams/1/report');
+  assert.ok(equal.workloadSummary.members.every((member) => member.completedWorkSharePercent === 33.3333 && member.relativeToTeamAveragePercent === 100));
 });
