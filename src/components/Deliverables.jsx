@@ -522,6 +522,15 @@ export default function Deliverables({
     ? linkedDeliverable.data
     : resource.data?.find((item) => item.id === selectedDeliverableId);
   const closeDeliverable = () => {
+    const briefingOrigin = location.state?.teamBriefingReturn;
+    if (linkedDeliverableId != null && briefingOrigin?.teamId === team.id
+      && briefingOrigin.targetType === 'DELIVERABLE' && briefingOrigin.targetId === linkedDeliverableId) {
+      navigateToMaterials(teamMenuPath(briefingOrigin.spaceId, team.id, '팀 홈'), {
+        replace: true,
+        state: { ...briefingOrigin.state, restoreScrollY: briefingOrigin.scrollY },
+      });
+      return;
+    }
     setSelectedDeliverableId(null);
     if (linkedDeliverableId != null) setSearchParams((current) => {
       const next = new URLSearchParams(current);

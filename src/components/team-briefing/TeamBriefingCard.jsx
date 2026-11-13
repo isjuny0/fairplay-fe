@@ -95,7 +95,14 @@ function BriefingCard({ spaceId, teamId, userId }) {
     setAcknowledgeError(null);
     try {
       await acknowledgeTeamBriefing(teamId, resource.data.ackToken, item.id);
-      if (mountedRef.current) navigate(href);
+      if (mountedRef.current) navigate(href, {
+        state: {
+          teamBriefingReturn: {
+            spaceId, teamId, targetType: item.targetType, targetId: item.targetId,
+            state: location.state, scrollY: window.scrollY,
+          },
+        },
+      });
     } catch (error) {
       if (mountedRef.current) setAcknowledgeError(error);
     } finally {

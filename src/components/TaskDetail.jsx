@@ -138,6 +138,7 @@ export default function TaskDetail({
   user,
   members,
   onBack,
+  backLabel = '목록으로',
   readOnly = false,
 }) {
   const guide = usePreviewGuide();
@@ -384,7 +385,7 @@ export default function TaskDetail({
 
   return (
     <section className="stack task-detail-page">
-      <DetailBackButton onClick={onBack}>목록으로</DetailBackButton>
+      <DetailBackButton onClick={onBack}>{backLabel}</DetailBackButton>
       <ErrorNotice error={error} onRetry={reload} />
       <ResourceState resource={resource} label="작업 상세">
         {task && (

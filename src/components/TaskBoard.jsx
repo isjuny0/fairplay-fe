@@ -9,6 +9,8 @@ import { createTask, listTasks } from '../api/tasks.js';
 import useResource from '../hooks/useResource.js';
 import useCurrentTime from '../hooks/useCurrentTime.js';
 import useMobileLayout from '../hooks/useMobileLayout.js';
+import useAppNavigate from '../hooks/useAppNavigate.js';
+import { teamMenuPath } from '../lib/routes.js';
 import { useInteractions } from '../hooks/useInteractions.js';
 import {
   canModifyTeamWork,
@@ -58,6 +60,7 @@ export default function TaskBoard({
   const { notify, clearChanges } = useInteractions();
   const now = useCurrentTime();
   const location = useLocation();
+  const navigate = useAppNavigate();
   const resource = useResource(() => listTasks(team.id), [team.id, taskId]);
   const [searchParams, setSearchParams] = useSearchParams();
   const filterControls = useRef({});
@@ -208,6 +211,10 @@ export default function TaskBoard({
     }, { replace: true, state: location.state });
   }, [canNormalizePage, requestedPage, canonicalPage, setSearchParams, location.state]);
 
+  const briefingOrigin = location.state?.teamBriefingReturn;
+  const fromBriefing = briefingOrigin?.spaceId === space.id
+    && briefingOrigin.teamId === team.id && briefingOrigin.targetType === 'TASK'
+    && briefingOrigin.targetId === taskId;
   if (taskId != null)
     return (
       <TaskDetail
@@ -217,7 +224,11 @@ export default function TaskBoard({
         space={space}
         user={user}
         members={members}
-        onBack={onTaskBack}
+        onBack={fromBriefing ? () => navigate(teamMenuPath(space.id, team.id, '팀 홈'), {
+          replace: true,
+          state: { ...briefingOrigin.state, restoreScrollY: briefingOrigin.scrollY },
+        }) : onTaskBack}
+        backLabel={fromBriefing ? '팀 홈으로' : '목록으로'}
         readOnly={readOnly}
       />
     );
