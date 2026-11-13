@@ -755,6 +755,9 @@ test('팀 브리핑 조회와 확인은 팀 경로와 서버 토큰을 사용한
   assert.equal(request.url, '/api/teams/12/briefing/acknowledge');
   assert.equal(request.headers['X-CSRF-TOKEN'], 'token');
   assert.deepEqual(JSON.parse(request.body), { ackToken: 'server-token' });
+  await acknowledgeTeamBriefing(12, 'server-token', 'task-42');
+  const individual = calls.filter(({ method }) => method === 'POST').at(-1);
+  assert.deepEqual(JSON.parse(individual.body), { ackToken: 'server-token', itemId: 'task-42' });
 });
 
 test('브리핑 자료는 목록 페이지와 무관하게 ID로 상세 조회한다', async () => {
