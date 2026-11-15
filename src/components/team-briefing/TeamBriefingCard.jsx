@@ -152,10 +152,6 @@ function BriefingCard({ spaceId, teamId, userId }) {
           <p className="team-briefing-selection">주요 소식 {briefing.highlights.length}건을 먼저 보여드려요.</p>
           {Number.isFinite(lastReadAt) && <p className="team-briefing-period">마지막 확인 <time dateTime={`${briefing.lastReadAt}+09:00`}>{timeFormatter.format(lastReadAt)}</time></p>}
         </div>
-        <button type="button" className="team-briefing-chevron" onClick={toggleExpanded}
-          aria-label={`전체 변경 ${expanded ? '접기' : '펼치기'}`} aria-expanded={expanded} aria-controls={detailsId}>
-          {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-        </button>
       </header>
       <div className="team-briefing-details">
         <ul className="team-briefing-highlights" aria-label="주요 소식">
@@ -175,11 +171,11 @@ function BriefingCard({ spaceId, teamId, userId }) {
       <footer className="team-briefing-actions">
         <button type="button" className="team-briefing-toggle" onClick={toggleExpanded}
           aria-expanded={expanded} aria-controls={detailsId}>
-          {expanded ? '간략히 보기' : '모든 변경 보기'}{expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+          {expanded ? '간략히 보기' : '모든 변경 보기'}{expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </button>
         <button type="button" className="team-briefing-acknowledge" disabled={saving || resource.loading}
           onClick={acknowledge} aria-label={`${briefing.totalEventCount}건 모두 확인했어요`}>
-          <Check size={16} aria-hidden="true" />{saving ? '확인 중…' : `${briefing.totalEventCount}건 모두 확인했어요`}
+          <Check size={14} aria-hidden="true" />{saving ? '확인 중…' : `${briefing.totalEventCount}건 모두 확인했어요`}
         </button>
       </footer>
       {acknowledgeError && (
