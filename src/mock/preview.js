@@ -507,7 +507,7 @@ async function executePreviewRequest(
       };
       if (existing) Object.assign(existing, application);
       else state.applications.push(application);
-      result = application;
+      result = null;
     } else if (parts[3] === 'task-assignee-recommendations' && method === 'GET') {
       return previewAssigneeRecommendations(
         context, state, entry, url.searchParams.get('count'),
@@ -629,7 +629,7 @@ async function executePreviewRequest(
       });
       entry.team.approvedMemberCount = entry.members.length;
     }
-    result = application;
+    result = null;
   } else if (parts[1] === 'tasks') {
     const entry = Object.values(state.teams).find((entry) =>
       entry.tasks.some((task) => task.id === id),

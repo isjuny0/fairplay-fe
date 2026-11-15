@@ -68,7 +68,7 @@ async function spaceHome(page, { joined = true, empty = false, rejected = false 
       if (team) {
         team.myMembershipStatus = 'PENDING';
         team.canApply = false;
-        return reply({ id: 99, status: 'PENDING' });
+        return route.fulfill({ status: 204 });
       }
     }
     if (path === '/api/spaces') return reply([space]);

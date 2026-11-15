@@ -39,6 +39,7 @@ import {
   deleteTeam,
   getTeamDeletionRequest,
   leaveTeam,
+  requestTeamJoin,
   reviewTeamApplication,
   updateTeamDeletionConsent,
 } from '../src/api/teams.js';
@@ -374,9 +375,22 @@ test('직접 완료와 재수정은 PATCH 상태와 버전만 전송한다', asy
     expectedVersion: 5,
   });
 });
-test('가입 처리는 팀 경로가 아닌 application 경로를 사용한다', async () => {
-  await reviewTeamApplication(5, 'APPROVED');
-  assert.equal(calls[1].url, '/api/team-applications/5');
+test('팀 가입 신청·승인·반려의 본문 없는 204를 처리한다', async () => {
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, ...options });
+    return url.endsWith('/csrf')
+      ? jsonResponse({ headerName: 'X-CSRF-TOKEN', token: 'token' })
+      : new Response(null, { status: 204 });
+  };
+
+  assert.equal(await requestTeamJoin(2), null);
+  assert.equal(await reviewTeamApplication(5, 'APPROVED'), null);
+  assert.equal(await reviewTeamApplication(6, 'REJECTED'), null);
+  assert.deepEqual(calls.slice(1).map(({ url, method, body }) => [url, method, body]), [
+    ['/api/teams/2/applications', 'POST', undefined],
+    ['/api/team-applications/5', 'PATCH', JSON.stringify({ status: 'APPROVED' })],
+    ['/api/team-applications/6', 'PATCH', JSON.stringify({ status: 'REJECTED' })],
+  ]);
 });
 test('팀 삭제 현황은 단수 경로이고 생성과 동의는 CSRF를 포함한다', async () => {
   await getTeamDeletionRequest(7);
