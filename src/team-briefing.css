@@ -7,14 +7,14 @@
   box-shadow: 0 2px 8px #25283204;
   color: var(--text, #252832);
 }
-.team-briefing-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 19px 22px 9px; }
+.team-briefing-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 19px 22px 9px; }
 .team-briefing-heading-copy { display: grid; gap: 7px; min-width: 0; }
 .team-briefing-eyebrow { display: flex; align-items: center; gap: 8px; color: #756699; font-size: 12px; font-weight: 650; }
 .team-briefing-heading h2 { margin: 0; font-size: 18px; line-height: 1.6; letter-spacing: -.025em; overflow-wrap: anywhere; }
 .team-briefing-period { margin: 0; color: #7c7d84; font-size: 12px; line-height: 1.6; }
 .team-briefing-chevron { display: flex; align-items: center; justify-content: center; flex: 0 0 40px; min-height: 40px; border: 0; border-radius: 8px; background: transparent; color: #7b7d85; cursor: pointer; }
 .team-briefing-chevron:hover { background: #efedf5; }
-.team-briefing-details { padding: 0 24px; }
+.team-briefing-details { padding: 0 24px 4px; }
 .team-briefing-card ul { list-style: none; padding: 0; margin: 0; }
 .team-briefing-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; min-width: 0; }
 .team-briefing-item-icon { display: flex; justify-content: center; align-items: center; flex: 0 0 22px; color: #858292; }
@@ -37,12 +37,14 @@
 .team-briefing-additional h3 { margin: 0 0 5px; font-size: 13px; font-weight: 700; }
 .team-briefing-additional h3 span { color: #827994; font-weight: 500; }
 .team-briefing-additional .team-briefing-item { padding: 8px 0; }
-.team-briefing-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 24px 18px; }
-.team-briefing-toggle, .team-briefing-acknowledge { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 38px; border-radius: 9px; padding: 8px 14px; cursor: pointer; font: inherit; font-size: 13px; font-weight: 650; }
-.team-briefing-toggle { background: #ffffffb8; color: #70727d; border: 1px solid #dedfe5; }
-.team-briefing-acknowledge { background: #49565e; color: white; border: 1px solid #49565e; }
-.team-briefing-acknowledge:hover { background: #35424a; }
+.team-briefing-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin: 0 24px; padding: 12px 0 18px; border-top: 1px solid #e8e4ef; flex-wrap: wrap; }
+.team-briefing-toggle, .team-briefing-acknowledge { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; border-radius: 7px; padding: 6px 10px; cursor: pointer; font: inherit; font-size: 12px; font-weight: 600; line-height: 1.5; white-space: nowrap; }
+.team-briefing-toggle { background: #fff; color: #59636f; border: 1px solid var(--border, #dce3e8); }
+.team-briefing-toggle:hover { background: #f7f8fa; color: #252832; }
+.team-briefing-acknowledge { background: #f4f9f6; color: var(--brand-dark, #08694e); border: 1px solid #d4e5dc; }
+.team-briefing-acknowledge:hover:not(:disabled) { background: #e8f3ed; border-color: #a5c8b5; }
 .team-briefing-acknowledge:disabled { opacity: .6; cursor: wait; }
+.team-briefing-actions svg { flex-shrink: 0; }
 .team-briefing-card button:focus-visible, .team-briefing-item-link:focus-visible { outline: 3px solid #9d88ed; outline-offset: 3px; }
 .team-briefing-error { border-top: 1px solid #e4dff2; margin: 0 24px; padding: 12px 0 16px; color: #a34d46; font-size: 13px; }
 .team-briefing-error p { margin: 0; }
@@ -54,9 +56,9 @@
 @media (max-width: 600px) {
   .team-briefing-heading { padding: 17px 16px 7px; gap: 8px; }
   .team-briefing-heading h2 { font-size: 16px; }
-  .team-briefing-details { padding: 0 17px; }
+  .team-briefing-details { padding: 0 17px 4px; }
   .team-briefing-item { gap: 9px; align-items: flex-start; }
-  .team-briefing-actions { padding: 12px 17px 16px; flex-wrap: wrap; }
+  .team-briefing-actions { margin: 0 17px; padding: 12px 0 16px; }
   .team-briefing-error { margin: 0 17px; }
 }
 @media (max-width: 360px) {
