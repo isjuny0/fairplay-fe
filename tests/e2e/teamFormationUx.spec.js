@@ -94,7 +94,7 @@ async function teamFormation(page, { period = 'OPEN', joined = true, pending = t
           members.push({ userId: 'applicant', name: '한지민', role: 'MEMBER' });
           team.approvedMemberCount++;
         }
-        return reply({ id: 7, status: body.status });
+        return route.fulfill({ status: 204 });
       }
     }
     return reply(
@@ -166,6 +166,10 @@ for (const status of ['APPROVED', 'REJECTED']) {
         hasText: `한지민님의 가입 신청을 ${status === 'APPROVED' ? '승인' : '반려'}했습니다.`,
       }),
     ).toBeVisible();
+    await expect(page.getByText('대기 중인 가입 신청이 없습니다.')).toBeVisible();
+    await expect(
+      page.getByRole('list', { name: '현재 팀원' }).getByText('한지민', { exact: true }),
+    ).toHaveCount(status === 'APPROVED' ? 1 : 0);
     expect(fixture.mutations).toEqual([
       { path: '/api/team-applications/7', body: { status } },
     ]);

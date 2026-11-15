@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cancelTeamJoin, createTeam, getTeam, requestTeamJoin } from '../src/api/teams.js';
+import {
+  cancelTeamJoin,
+  createTeam,
+  getTeam,
+  getTeamApplications,
+  requestTeamJoin,
+  reviewTeamApplication,
+} from '../src/api/teams.js';
 import { clearCsrfToken } from '../src/api/client.js';
 import { invalidateSharedReads } from '../src/api/sharedReads.js';
 import { previewContext, resetPreview, setPreviewRole } from '../src/mock/preview.js';
@@ -69,10 +76,13 @@ test('반려된 신청을 같은 신청으로 갱신하고 취소 후 상태를 
   const state = getMockState(context);
   state.applications[0].status = 'REJECTED';
   saveMockState(context, state);
-  const result = await requestTeamJoin(1);
-  assert.equal(result.id, 700);
-  assert.equal(result.status, 'PENDING');
+  assert.equal(await requestTeamJoin(1), null);
   assert.equal((await getTeam(1)).myMembershipStatus, 'PENDING');
+  setPreviewRole('leader');
+  const [reapplied] = await getTeamApplications(1);
+  assert.equal(reapplied.id, 700);
+  assert.equal(reapplied.status, 'PENDING');
+  setPreviewRole('participant');
   await cancelTeamJoin(1);
   assert.equal((await getTeam(1)).myMembershipStatus, null);
   assert.equal((await getTeam(2)).canApply, true);
@@ -92,22 +102,27 @@ test('팀 생성 기간이 끝나도 구성 확정 전에는 취소 후 다시 �
 
 for (const status of ['APPROVED', 'REJECTED']) {
   test(`${status} 신청 취소는 409이며 기존 신청을 보존한다`, async () => {
-    const context = previewContext();
-    const state = getMockState(context);
-    state.applications[0].status = status;
-    saveMockState(context, state);
+    setPreviewRole('leader');
+    const [application] = await getTeamApplications(1);
+    assert.equal(await reviewTeamApplication(application.id, status), null);
+    assert.deepEqual(await getTeamApplications(1), []);
+    setPreviewRole('participant');
     await assert.rejects(cancelTeamJoin(1), { status: 409, code: 'APPLICATION_ALREADY_DECIDED' });
     assert.equal((await getTeam(1)).myMembershipStatus, status);
-    assert.equal(getMockState(context).applications[0].status, status);
   });
 }
 
 test('취소는 204에 해당하는 빈 결과이며 반복 취소는 404, 재신청은 새 식별자를 사용한다', async () => {
   assert.equal(await cancelTeamJoin(1), null);
   await assert.rejects(cancelTeamJoin(1), { status: 404, code: 'APPLICATION_NOT_FOUND' });
-  const first = await requestTeamJoin(1);
+  assert.equal(await requestTeamJoin(1), null);
+  setPreviewRole('leader');
+  const [first] = await getTeamApplications(1);
+  setPreviewRole('participant');
   await cancelTeamJoin(1);
-  const second = await requestTeamJoin(1);
+  assert.equal(await requestTeamJoin(1), null);
+  setPreviewRole('leader');
+  const [second] = await getTeamApplications(1);
   assert.notEqual(first.id, second.id);
   assert.equal(second.status, 'PENDING');
   assert.equal(second.decidedAt, null);
@@ -128,7 +143,8 @@ for (const membership of ['APPROVED', 'PENDING']) {
       state.applications.push({ id: 900, teamId: 3, userId: context.user.id, status: 'PENDING' });
     saveMockState(context, state);
     assert.equal((await getTeam(1)).canApply, true);
-    assert.equal((await requestTeamJoin(1)).status, 'PENDING');
+    assert.equal(await requestTeamJoin(1), null);
+    assert.equal((await getTeam(1)).myMembershipStatus, 'PENDING');
   });
 }
 
