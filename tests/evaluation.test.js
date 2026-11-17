@@ -30,6 +30,14 @@ const context = (role) => {
   setPreviewRole(role);
   return previewContext();
 };
+const spaceReportsPath = '/api/spaces/1/reports';
+const publishSpaceReportsPath = spaceReportsPath + '/publish';
+const teamReportPath = (teamId = 1) => `/api/teams/${teamId}/report`;
+async function generateAndReadReport(manager, body) {
+  await plannedRequest(manager, spaceReportsPath, { method: 'POST', body });
+  return plannedRequest(manager, teamReportPath());
+}
+
 const scores = {
   taskExecution: 4,
   responsibility: 4,
@@ -161,22 +169,20 @@ test('일반 사용자에게 관리자 집계·타 팀 리포트·관리자 권�
     status: 403,
   });
 });
-test('리포트는 팀당 한 번 생성하고 공개 후 본인 계산만 제공한다', async () => {
+test('리포트는 스페이스 단위로 생성하고 공개 후 본인 계산만 제공한다', async () => {
   const leader = context('leader');
   resetMockState(leader, 'review');
   assert.equal(await plannedRequest(leader, '/api/teams/1/report'), null);
   const manager = context('manager');
-  const report = await plannedRequest(manager, '/api/teams/1/report', {
-    method: 'POST',
-  });
+  const report = await generateAndReadReport(manager);
   assert.equal(report.id, 10001);
   assert.equal(report.status, 'UNPUBLISHED');
   assert.equal(Object.hasOwn(report, 'myDetails'), false);
   assert.deepEqual(
-    await plannedRequest(manager, '/api/teams/1/report', { method: 'POST' }),
+    await generateAndReadReport(manager),
     report,
   );
-  await plannedRequest(manager, '/api/reports/10001/publish', {
+  await plannedRequest(manager, publishSpaceReportsPath, {
     method: 'POST',
   });
   const result = await plannedRequest(leader, '/api/teams/1/report');
@@ -193,21 +199,24 @@ test('리포트는 팀당 한 번 생성하고 공개 후 본인 계산만 제�
     3,
   );
   assert.equal(
-    (await plannedRequest(manager, '/api/teams/1/report', { method: 'POST' }))
-      .status,
+    (await generateAndReadReport(manager)).status,
     'PUBLISHED',
   );
 });
-test('리포트 생성과 공개는 해당 팀 제출만 확인하고 AI 점수를 요구하지 않는다', async () => {
+test('일괄 생성과 공개는 전 팀 제출을 확인하고 AI 점수를 요구하지 않는다', async () => {
   const manager = context('manager');
   resetMockState(manager, 'review');
   const state = getMockState(manager);
   state.reports = [];
-  delete state.submitted[`12:${state.teams[2].members[0].userId}`];
+  const submissionKey = `12:${state.teams[2].members[0].userId}`;
+  const submission = state.submitted[submissionKey];
+  delete state.submitted[submissionKey];
   saveMockState(manager, state);
-  const report = await plannedRequest(manager, '/api/teams/1/report', {
-    method: 'POST',
-  });
+  await assert.rejects(plannedRequest(manager, spaceReportsPath, { method: 'POST' }), { code: 'REPORT_INPUT_INCOMPLETE' });
+  assert.deepEqual(getMockState(manager).reports, []);
+  state.submitted[submissionKey] = submission;
+  saveMockState(manager, state);
+  const report = await generateAndReadReport(manager);
   assert.equal(report.members.length, 3);
   assert.equal(report.members[0].details.taskRatioPercent, 61);
   assert.equal(report.members[0].details.taskWeightedScore, 70);
@@ -216,20 +225,14 @@ test('리포트 생성과 공개는 해당 팀 제출만 확인하고 AI 점수�
   delete current.submitted[`12:${current.teams[1].members[0].userId}`];
   saveMockState(manager, current);
   await assert.rejects(
-    plannedRequest(manager, '/api/reports/10001/publish', { method: 'POST' }),
+    plannedRequest(manager, publishSpaceReportsPath, { method: 'POST' }),
     { code: 'REPORT_PUBLICATION_BLOCKED' },
   );
   current.submitted[`12:${current.teams[1].members[0].userId}`] =
     koreanDateTime();
   saveMockState(manager, current);
-  assert.equal(
-    (
-      await plannedRequest(manager, '/api/reports/10001/publish', {
-        method: 'POST',
-      })
-    ).status,
-    'PUBLISHED',
-  );
+  const published = await plannedRequest(manager, publishSpaceReportsPath, { method: 'POST' });
+  assert.equal(published.publishedTeamCount, published.totalTeamCount);
 });
 
 test('관리자 평가 원문은 마감된 회차의 최종 제출분만 제공한다', async () => {
@@ -347,9 +350,7 @@ test('관리자 생성·공개 요청은 같은 결과를 반환하고 계산 �
   const state = getMockState(manager);
   state.reports = [];
   saveMockState(manager, state);
-  const report = await plannedRequest(manager, '/api/teams/1/report', {
-    method: 'POST',
-  });
+  const report = await generateAndReadReport(manager);
   assert.deepEqual(
     Object.keys(report).sort(),
     [
@@ -365,28 +366,14 @@ test('관리자 생성·공개 요청은 같은 결과를 반환하고 계산 �
       'workloadSummary',
     ].sort(),
   );
-  const result = await plannedRequest(manager, '/api/teams/1/report', {
-    method: 'POST',
-  });
-  assert.deepEqual(result, report);
-  const published = await plannedRequest(
-    manager,
-    `/api/reports/${report.id}/publish`,
-    { method: 'POST' },
-  );
+  assert.deepEqual(await generateAndReadReport(manager), report);
+  const publishedBatch = await plannedRequest(manager, publishSpaceReportsPath, { method: 'POST' });
+  const published = await plannedRequest(manager, teamReportPath());
   assert.equal(published.status, 'PUBLISHED');
   assert.deepEqual(published.members, report.members);
   assert.equal(published.createdAt, report.createdAt);
-  assert.deepEqual(
-    await plannedRequest(manager, `/api/reports/${report.id}/publish`, {
-      method: 'POST',
-    }),
-    published,
-  );
-  assert.deepEqual(
-    await plannedRequest(manager, '/api/teams/1/report', { method: 'POST' }),
-    published,
-  );
+  assert.deepEqual(await plannedRequest(manager, publishSpaceReportsPath, { method: 'POST' }), publishedBatch);
+  assert.deepEqual(await generateAndReadReport(manager), published);
 });
 
 test('OPEN 마감 시각만 수정할 수 있고 기한 도달 시 마감 기준을 고정한다', async () => {
@@ -633,13 +620,14 @@ test('미리보기는 최초 성공 비율을 스페이스에 고정하고 다�
   state.reportWeights = null;
   saveMockState(manager, state);
   const weights = { taskPercent: 50, midPercent: 20, finalPercent: 30 };
-  const report = await previewRequest('/api/teams/1/report', { method: 'POST', body: weights });
+  const report = await generateAndReadReport(manager, weights);
   assert.deepEqual(report.weights, weights);
   assert.deepEqual((await previewRequest('/api/spaces/1')).reportWeights, weights);
-  await assert.rejects(previewRequest('/api/teams/2/report', { method: 'POST', body: { taskPercent: 70, midPercent: 10, finalPercent: 20 } }), { code: 'REPORT_WEIGHTS_LOCKED' });
-  const second = await previewRequest('/api/teams/2/report', { method: 'POST' });
+  await assert.rejects(previewRequest(spaceReportsPath, { method: 'POST', body: { taskPercent: 70, midPercent: 10, finalPercent: 20 } }), { code: 'REPORT_WEIGHTS_LOCKED' });
+  const second = await previewRequest(teamReportPath(2));
   assert.deepEqual(second.weights, weights);
-  const published = await previewRequest(`/api/reports/${report.id}/publish`, { method: 'POST' });
+  await previewRequest(publishSpaceReportsPath, { method: 'POST' });
+  const published = await previewRequest(teamReportPath());
   assert.deepEqual(published.weights, weights);
   assert.deepEqual(published.members, report.members);
   context('member');
@@ -655,11 +643,11 @@ test('미리보기는 잘못된 비율이나 생성 실패로 비율을 고정�
   state.teams[1].tasks = [];
   saveMockState(manager, state);
   for (const body of [{}, { taskPercent: 50.5, midPercent: 20, finalPercent: 29.5 }, { taskPercent: 0, midPercent: 0, finalPercent: 99 }])
-    await assert.rejects(previewRequest('/api/teams/1/report', { method: 'POST', body }), { code: 'INVALID_REQUEST' });
-  await assert.rejects(previewRequest('/api/teams/1/report', { method: 'POST' }), { code: 'REPORT_UNCALCULABLE' });
+    await assert.rejects(previewRequest(spaceReportsPath, { method: 'POST', body }), { code: 'INVALID_REQUEST' });
+  await assert.rejects(previewRequest(spaceReportsPath, { method: 'POST' }), { code: 'REPORT_UNCALCULABLE' });
   assert.equal((await previewRequest('/api/spaces/1')).reportWeights, null);
   const weights = { taskPercent: 0, midPercent: 0, finalPercent: 100 };
-  const report = await previewRequest('/api/teams/1/report', { method: 'POST', body: weights });
+  const report = await generateAndReadReport(manager, weights);
   assert.deepEqual(report.weights, weights);
   for (const member of report.members) { assert.equal(member.details.taskWeightedScore, 0); assert.equal(member.details.taskRatioPercent, null); assert.equal(member.details.taskScore, null); }
 });
@@ -939,12 +927,11 @@ test('관리자 리포트 가이드는 전체 생성·계산 근거 검토·전�
     assert.equal(reportManagementGuideReady('management-report-weights', { ...initial, weights: { ...weights, taskPercent: 70 } }), false);
     assert.equal(reportManagementGuideReady('management-report-weights', { ...initial, canGenerate: false, generationBlockReasons: ['ROUNDS_NOT_CLOSED'] }), false);
     assert.equal(reportManagementGuideReady('management-report-generate', initial), false);
-    await assert.rejects(previewRequest('/api/teams/1/report', { method: 'POST', body: { ...weights, taskPercent: 70 } }), { code: 'INVALID_REQUEST' });
+    await assert.rejects(previewRequest(spaceReportsPath, { method: 'POST', body: { ...weights, taskPercent: 70 } }), { code: 'INVALID_REQUEST' });
     assert.equal(reportManagementGuideReady('management-report-generate', await batch()), false);
-    const first = await previewRequest('/api/teams/1/report', { method: 'POST', body: weights });
+    await previewRequest(spaceReportsPath, { method: 'POST', body: weights });
+    const first = await previewRequest(teamReportPath());
     assert.equal(first.status, 'UNPUBLISHED');
-    assert.equal(reportManagementGuideReady('management-report-generate', await batch()), false);
-    await previewRequest('/api/teams/2/report', { method: 'POST', body: weights });
     const generated = await batch();
     assert.deepEqual(generated.weights, weights);
     assert.equal(reportManagementGuideReady('management-report-generate', generated), true);
@@ -1086,7 +1073,7 @@ test('작업 근거는 관리자 또는 공개 후 본인만 조회하고 현재
   const leader = context('leader');
   resetMockState(leader, 'review');
   const manager = context('manager');
-  const report = await plannedRequest(manager, '/api/teams/1/report', { method: 'POST' });
+  const report = await generateAndReadReport(manager);
   const endpoint = `/api/teams/1/report/evidence?userId=${leader.user.id}`;
   await assert.rejects(plannedRequest(leader, endpoint), { status: 404, code: 'REPORT_NOT_FOUND' });
   const before = await plannedRequest(manager, endpoint);
@@ -1110,7 +1097,7 @@ test('작업 근거는 관리자 또는 공개 후 본인만 조회하고 현재
   assert.equal(after.tasks[0].current.contributionDescription, null);
   assert.equal(after.reportId, report.id);
   assert.ok(after.tasks.every((task) => task.current.materials.every((material) => !Object.hasOwn(material, 'text'))));
-  await plannedRequest(manager, `/api/reports/${report.id}/publish`, { method: 'POST' });
+  await plannedRequest(manager, publishSpaceReportsPath, { method: 'POST' });
   assert.deepEqual((await plannedRequest(leader, endpoint)).details, before.details);
   const other = report.members.find((member) => member.userId !== leader.user.id);
   await assert.rejects(plannedRequest(leader, `/api/teams/1/report/evidence?userId=${other.userId}`), { status: 403 });
@@ -1153,15 +1140,15 @@ test('평가 완료 미리보기는 전원 제출·리포트 미생성 상태에
     }
   }
   const weights = { taskPercent: 50, midPercent: 20, finalPercent: 30 };
+  await plannedRequest(manager, spaceReportsPath, { method: 'POST', body: weights });
   for (const entry of Object.values(state.teams)) {
-    const report = await plannedRequest(manager, `/api/teams/${entry.team.id}/report`, { method: 'POST', body: weights });
+    const report = await plannedRequest(manager, teamReportPath(entry.team.id));
     assert.equal(report.status, 'UNPUBLISHED');
     assert.deepEqual(report.weights, weights);
   }
-  const report = getMockState(manager).reports[0];
   const member = context('member');
   assert.equal(await plannedRequest(member, '/api/teams/1/report'), null);
-  await plannedRequest(manager, `/api/reports/${report.id}/publish`, { method: 'POST' });
+  await plannedRequest(manager, publishSpaceReportsPath, { method: 'POST' });
   assert.equal((await plannedRequest(member, '/api/teams/1/report')).status, 'PUBLISHED');
   resetMockState(manager, 'evaluated');
   assert.deepEqual(getMockState(manager).reports, []);
@@ -1194,15 +1181,25 @@ test('스페이스 단위 생성·공개는 전체 팀에 적용되며 반복해
 test('미생성 팀이 있거나 제출 조건이 바뀌면 일괄 공개는 아무 팀도 공개하지 않는다', async () => {
   const manager = context('manager');
   resetMockState(manager, 'evaluated');
-  await plannedRequest(manager, '/api/teams/1/report', { method: 'POST' });
-  await assert.rejects(previewRequest('/api/spaces/1/reports/publish', { method: 'POST' }), { code: 'REPORT_PUBLICATION_BLOCKED' });
-  assert.ok(getMockState(manager).reports.every((report) => report.status === 'UNPUBLISHED'));
+  await assert.rejects(previewRequest(publishSpaceReportsPath, { method: 'POST' }), { code: 'REPORTS_NOT_GENERATED' });
+  assert.deepEqual(getMockState(manager).reports, []);
   await previewRequest('/api/spaces/1/reports', { method: 'POST' });
   const state = getMockState(manager);
   delete state.submitted[Object.keys(state.submitted)[0]];
   saveMockState(manager, state);
   await assert.rejects(previewRequest('/api/spaces/1/reports/publish', { method: 'POST' }), { code: 'REPORT_PUBLICATION_BLOCKED' });
   assert.ok(getMockState(manager).reports.every((report) => report.status === 'UNPUBLISHED'));
+});
+
+test('미리보기에서도 개별 생성과 공개는 리포트 상태를 바꾸지 않는다', async () => {
+  const manager = context('manager');
+  resetMockState(manager, 'evaluated');
+  await assert.rejects(plannedRequest(manager, teamReportPath(), { method: 'POST' }), { status: 405 });
+  assert.deepEqual(getMockState(manager).reports, []);
+  const generated = await generateAndReadReport(manager);
+  const before = getMockState(manager).reports;
+  await assert.rejects(plannedRequest(manager, `/api/reports/${generated.id}/publish`, { method: 'POST' }), { status: 404 });
+  assert.deepEqual(getMockState(manager).reports, before);
 });
 
 test('스페이스 리포트 관리 API는 팀원과 다른 스페이스 접근을 거절한다', async () => {
@@ -1232,7 +1229,7 @@ test('종합 평가 예시는 개인별 점수를 계산하며 팀 합계를 100
   });
   const { validReportWorkload } = await import('../src/lib/reportWorkload.js');
   assert.equal(validReportWorkload(report.workloadSummary, 3), true);
-  await plannedRequest(manager, `/api/reports/${report.id}/publish`, { method: 'POST' });
+  await plannedRequest(manager, publishSpaceReportsPath, { method: 'POST' });
   const personal = await plannedRequest(context('leader'), '/api/teams/1/report');
   assert.equal(personal.members.length, 1);
   assert.deepEqual(personal.workloadSummary, report.workloadSummary);
@@ -1250,7 +1247,7 @@ test('산정 대상 없는 작업은 null과 비중 0으로 전달하고 점수 
   const state = getMockState(manager);
   state.teams[1].tasks = [];
   saveMockState(manager, state);
-  const report = await plannedRequest(manager, '/api/teams/1/report', { method: 'POST', body: { taskPercent: 0, midPercent: 50, finalPercent: 50 } });
+  const report = await generateAndReadReport(manager, { taskPercent: 0, midPercent: 50, finalPercent: 50 });
   const { validReportScore } = await import('../src/lib/reportScore.js');
   assert.equal(validReportScore(report), true);
   assert.equal(report.members[0].details.taskScore, null);

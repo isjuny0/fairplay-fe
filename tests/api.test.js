@@ -2,8 +2,6 @@ import { getTeamBriefing, acknowledgeTeamBriefing } from '../src/api/teamBriefin
 import { getDeliverable } from '../src/api/deliverables.js';
 import {
   getTeamReport,
-  generateTeamReport,
-  publishReport,
 } from '../src/api/reports.js';
 import { getMemberContributions } from '../src/api/dashboard.js';
 import { listMeetingMinutes, getMeetingMinute, createMeetingMinute, updateMeetingMinute, deleteMeetingMinute } from '../src/api/meetingMinutes.js';
@@ -603,25 +601,6 @@ test('추가된 리포트·관리자 조회는 현재 경로에 쿠키를 전송
     ),
   );
 });
-test('리포트 생성·공개에는 본문이나 쿼리 없이 CSRF만 전송한다', async () => {
-  await generateTeamReport(7);
-  await publishReport(8);
-  assert.deepEqual(
-    calls.slice(1).map((call) => call.url),
-    ['/api/teams/7/report', '/api/reports/8/publish'],
-  );
-  assert.ok(
-    calls
-      .slice(1)
-      .every(
-        (call) =>
-          call.method === 'POST' &&
-          call.body === undefined &&
-          call.headers['Content-Type'] === undefined &&
-          call.headers['X-CSRF-TOKEN'] === 'token',
-      ),
-  );
-});
 
 test('팀 홈 API는 표시 구간·개인 부분 수정과 일정 version·CSRF·204 삭제 계약을 사용한다', async () => {
   const {
@@ -724,15 +703,6 @@ test('원문 변경·권한·읽기 실패는 목업이나 이전 버전으로 �
   }
 });
 
-test('리포트 생성 비율은 최상위 JSON 본문과 CSRF로 전송한다', async () => {
-  const weights = { taskPercent: 50, midPercent: 20, finalPercent: 30 };
-  await generateTeamReport(7, weights);
-  const request = calls.find((call) => call.url === '/api/teams/7/report');
-  assert.equal(request.method, 'POST');
-  assert.deepEqual(JSON.parse(request.body), weights);
-  assert.equal(request.headers['Content-Type'], 'application/json');
-  assert.equal(request.headers['X-CSRF-TOKEN'], 'token');
-});
 
 test('스페이스 리포트는 백엔드 확정 DTO와 비율 확정 여부를 사용하며 세션·CSRF로 일괄 요청한다', async () => {
   const { getSpaceReports, generateSpaceReports, publishSpaceReports } = await import('../src/api/spaceReports.js');
@@ -752,7 +722,9 @@ test('스페이스 리포트는 백엔드 확정 DTO와 비율 확정 여부를 
   const posts = calls.filter((call) => call.method === 'POST');
   assert.deepEqual(posts.map((call) => call.url), ['/api/spaces/7/reports', '/api/spaces/7/reports/publish']);
   assert.equal(posts[0].body, JSON.stringify(weights));
+  assert.equal(posts[0].headers['Content-Type'], 'application/json');
   assert.equal(posts[1].body, undefined);
+  assert.equal(posts[1].headers['Content-Type'], undefined);
   assert.ok(posts.every((call) => call.credentials === 'include' && call.headers['X-CSRF-TOKEN'] === 'token'));
   for (const change of [{ weightsConfirmed: undefined }, { weights: null }, { generatedTeamCount: 1 }, { teams: [{ ...response.teams[0], generationBlockReasons: null }] }, { spaceId: 8 }]) {
     globalThis.fetch = async () => jsonResponse({ ...response, ...change });

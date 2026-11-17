@@ -1429,10 +1429,7 @@ async function reportBackend(
         })),
       } });
     }
-    if (
-      !['/api/teams/1/report', '/api/reports/40/publish'].includes(url.pathname)
-    )
-      return route.fallback();
+    if (url.pathname !== '/api/teams/1/report' || request.method() !== 'GET') return route.fallback();
     fixture.requests.push({
       path: url.pathname,
       method: request.method(),
@@ -1440,23 +1437,11 @@ async function reportBackend(
       body: request.postData(),
       headers: request.headers(),
     });
-    const error = url.pathname.endsWith('/publish')
-      ? publishError
-      : request.method() === 'POST'
-        ? generateError
-        : getError;
-    if (error)
+    if (getError)
       return route.fulfill({
-        status: error.status || 409,
-        json: { code: error.code, message: error.message || '서버 거절' },
+        status: getError.status || 409,
+        json: { code: getError.code, message: getError.message || '서버 거절' },
       });
-    if (url.pathname.endsWith('/publish'))
-      report = {
-        ...report,
-        status: 'PUBLISHED',
-        publishedAt: '2026-10-15T20:00:00',
-      };
-    else if (request.method() === 'POST') report ||= reportResponse(manager, 'UNPUBLISHED', request.postDataJSON() ?? defaultWeights);
     return route.fulfill({ json: report });
   });
   return fixture;
