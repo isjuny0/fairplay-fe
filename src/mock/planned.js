@@ -637,6 +637,7 @@ export async function plannedRequest(
       state.reports.push(...reports);
     } else if (method === 'POST' && segments.length === 5 && segments[4] === 'publish') {
       if (status.totalTeamCount > 0 && status.publishedTeamCount === status.totalTeamCount) return clone(status);
+      if (status.generatedTeamCount < status.totalTeamCount) fail('REPORTS_NOT_GENERATED', '모든 팀의 리포트를 먼저 생성해야 합니다.');
       if (!status.canPublish) fail('REPORT_PUBLICATION_BLOCKED', status.publicationBlockReasons.join(' '));
       const publishedAt = now();
       state.reports.filter((report) => status.teams.some((team) => team.reportId === report.id) && report.status === 'UNPUBLISHED')
@@ -898,81 +899,15 @@ export async function plannedRequest(
             })),
         }));
     }
-    if (
-      segments[3] === 'report' &&
-      segments.length === 4 &&
-      ['GET', 'POST'].includes(method)
-    ) {
-      if (method === 'GET') {
-        const report = state.reports.find(
-          (report) =>
-            report.teamId === id &&
-            (context.manager || report.status === 'PUBLISHED'),
-        );
-        result = report ? publicReport(report, context) : null;
-      } else {
-        requireManager();
-        const weights = body == null ? state.reportWeights ?? defaultReportWeights : body;
-        if (!validReportWeights(weights)) fail('INVALID_REQUEST', '각 반영 비율은 0~100 정수이며 합계가 100이어야 합니다.', 400);
-        if (state.reportWeights && !sameReportWeights(state.reportWeights, weights))
-          fail('REPORT_WEIGHTS_LOCKED', '첫 리포트 생성 시 확정한 스페이스 공통 반영 비율은 변경할 수 없습니다.');
-        const existing = state.reports.find((report) => report.teamId === id);
-        if (existing) return clone(publicReport(existing, context));
-        if (entry.members.length < 2)
-          fail('TEAM_TOO_SMALL', '승인 팀원 2명 이상이 필요합니다.');
-        if (
-          !['MID', 'FINAL'].every((type) =>
-            state.rounds.some(
-              (round) => round.type === type && round.status === 'CLOSED',
-            ),
-          )
-        )
-          fail(
-            'REPORT_INPUT_INCOMPLETE',
-            '중간·최종 평가 마감과 우리 팀 필수 제출이 필요합니다.',
-          );
-        if (!state.rounds.every((round) => allSubmitted(state, round, [entry])))
-          fail(
-            'REPORT_INPUT_INCOMPLETE',
-            '우리 팀의 필수 평가 제출이 필요합니다.',
-          );
-        const calculated = makeReport(state, entry, 'UNPUBLISHED', weights);
-        state.reportWeights = { ...weights };
-        state.reports.push(calculated);
-        result = publicReport(calculated, context);
-      }
-    }
-  } else if (segments[1] === 'reports') {
-    const report = state.reports.find((entry) => entry.id === id);
-    if (!report) fail('REPORT_NOT_FOUND', '리포트가 없습니다.', 404);
-    if (
-      !context.manager &&
-      (!state.teams[report.teamId]?.members.some(
-        (member) => member.userId === context.user.id,
-      ) ||
-        context.team?.id !== report.teamId)
-    )
-      fail('FORBIDDEN', '다른 팀의 리포트는 볼 수 없습니다.', 403);
-    if (method !== 'POST' || segments[3] !== 'publish' || segments.length !== 4)
-      fail('NOT_FOUND', '지원하지 않는 요청입니다.', 404);
-    requireManager();
-    if (report.status === 'PUBLISHED')
-      return clone(publicReport(report, context));
-    if (
-      state.rounds.length !== 2 ||
-      state.rounds.some(
-        (round) =>
-          round.status !== 'CLOSED' ||
-          !allSubmitted(state, round, [state.teams[report.teamId]]),
-      )
-    )
-      fail(
-        'REPORT_PUBLICATION_BLOCKED',
-        '해당 팀의 모든 필수 평가 제출이 완료되어야 공개할 수 있습니다.',
+    if (segments[3] === 'report' && segments.length === 4) {
+      if (method !== 'GET') fail('METHOD_NOT_ALLOWED', '리포트 조회만 지원합니다.', 405);
+      const report = state.reports.find(
+        (report) => report.teamId === id && (context.manager || report.status === 'PUBLISHED'),
       );
-    report.status = 'PUBLISHED';
-    report.publishedAt = now();
-    result = publicReport(report, context);
+      result = report ? publicReport(report, context) : null;
+    }
+  } else if (segments[1] === 'reports' && segments[3] === 'publish') {
+    fail('NOT_FOUND', '지원하지 않는 요청입니다.', 404);
   }
   if (result === undefined)
     fail('MOCK_NOT_SUPPORTED', '이 목업 동작은 아직 준비되지 않았습니다.', 400);
