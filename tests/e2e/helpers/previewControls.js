@@ -1,3 +1,10 @@
+export async function openFinalEvaluationPreview(page, path) {
+  await page.goto('/preview/main');
+  await page.locator('.preview-toolbar').waitFor({ state: 'visible' });
+  await selectPreviewOption(page, '미리보기 상황', 'final-evaluation');
+  await page.goto(path);
+}
+
 export async function selectPreviewOption(page, label, value) {
   const control = page.getByLabel(label, { exact: true });
   if (!(await control.isVisible())) {

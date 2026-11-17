@@ -4,6 +4,7 @@ import { previewTeamBriefing } from './teamBriefing.js';
 import { previewTeamHome } from './teamHome.js';
 import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
 import { isMutable } from '../lib/domain.js';
+import { isFinalWorkClosed } from '../lib/evaluation.js';
 import { validEstimatedMinutes } from '../lib/taskTime.js';
 import { spacePath, teamMenuPaths } from '../lib/routes.js';
 import { availableTeamMenus } from '../lib/teamNavigation.js';
@@ -146,22 +147,18 @@ function teamDetail(entry, context, state) {
         item.userId === context.user.id && item.status === 'PENDING' &&
         state.teams[item.teamId]?.team.spaceId === entry.team.spaceId,
       ),
-    canCreateTask: membership === 'APPROVED' && entry.members.length >= 2,
+    canCreateTask: membership === 'APPROVED' && entry.members.length >= 2 &&
+      !state.rounds.some((round) => isFinalWorkClosed(round)),
   };
 }
 
 function previewTaskResponse(state, context, entry, task) {
   let completionBlockReason = null;
-  const finalRound = state.rounds.find((round) => round.type === 'FINAL');
   if (
     !task.assignees.some((assignment) => assignment.userId === context.user.id)
   )
     completionBlockReason = 'NOT_ASSIGNEE';
-  else if (
-    finalRound &&
-    finalRound.status !== 'DRAFT' &&
-    new Date(apiTimeToEpoch(finalRound.closesAt)) <= new Date()
-  )
+  else if (state.rounds.some((round) => isFinalWorkClosed(round)))
     completionBlockReason = 'WORK_PERIOD_CLOSED';
   else if (!['IN_PROGRESS', 'REVISING'].includes(task.status))
     completionBlockReason = 'INVALID_TASK_STATE';

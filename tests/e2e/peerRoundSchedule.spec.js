@@ -1,3 +1,4 @@
+import { openFinalEvaluationPreview } from './helpers/previewControls.js';
 import { test, expect } from '@playwright/test';
 
 // Preview's "member" is a team participant; "participant" has not joined a team.
@@ -8,7 +9,7 @@ for (const role of ['leader', 'member']) {
       await page.addInitScript((role) => {
         localStorage.setItem('fairplay:preview-role', role);
       }, role);
-      await page.goto('/preview/spaces/1/teams/1/peer-evaluations');
+      await openFinalEvaluationPreview(page, '/preview/spaces/1/teams/1/peer-evaluations');
 
       const picker = page.getByRole('group', { name: '평가 회차 선택' });
       const mid = picker.getByRole('button', { name: /^중간 평가/ });
@@ -18,6 +19,8 @@ for (const role of ['leader', 'member']) {
       await final.click();
       await expect(final).toHaveAttribute('aria-expanded', 'true');
       const collapsedWidth = (await mid.boundingBox()).width;
+      await expect(final.getByText('작업 마감', { exact: true })).toBeVisible();
+      await expect(final.getByText('최종 평가 제출 마감', { exact: true })).toBeVisible();
       const finalDates = await final.locator('time').evaluateAll((items) => items.map((item) => item.dateTime));
 
       await mid.click();

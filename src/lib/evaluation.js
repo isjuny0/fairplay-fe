@@ -1,4 +1,8 @@
 import { apiTimeToEpoch, koreanDateTime } from './koreanTime.js';
+export function isFinalWorkClosed(round, asOf = Date.now()) {
+  return round?.type === 'FINAL' && apiTimeToEpoch(round.opensAt) <= asOf;
+}
+
 export const roundLabels = { MID: '중간 평가', FINAL: '최종 평가' };
 export const roundStatusLabels = {
   DRAFT: '일정 대기',

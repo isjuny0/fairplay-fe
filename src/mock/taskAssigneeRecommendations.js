@@ -1,5 +1,4 @@
-import { MockError } from './planned.js';
-import { apiTimeToEpoch } from '../lib/koreanTime.js';
+import { MockError, requireWorkBeforeFinalDeadline } from './planned.js';
 
 export function previewAssigneeRecommendations(
   context,
@@ -9,13 +8,7 @@ export function previewAssigneeRecommendations(
 ) {
   if (!entry.members.some((member) => member.userId === context.user.id))
     throw new MockError('FORBIDDEN', '현재 팀원만 이용할 수 있습니다.', 403);
-  const final = state.rounds.find((round) => round.type === 'FINAL');
-  if (final && apiTimeToEpoch(final.closesAt) <= Date.now())
-    throw new MockError(
-      'TASK_WORK_CLOSED',
-      '최종 평가 마감 이후에는 작업을 생성할 수 없습니다.',
-      409,
-    );
+  requireWorkBeforeFinalDeadline(state);
   if (state.deletion?.teamId === entry.team.id && state.deletion.workFrozen)
     throw new MockError(
       'TEAM_DELETION_IN_PROGRESS',

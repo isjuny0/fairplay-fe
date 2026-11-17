@@ -70,7 +70,7 @@ for (const width of [1440, 1280, 390]) {
 for (const width of [1440, 1280, 390]) {
   test(`동료 평가 관리 ${width}px: 기간은 마감 변경 왼쪽에 표시하고 종료된 버튼도 유지한다`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 900 });
-    await openManagerPreview(page, '/spaces/1/rounds');
+    await openManagerPreview(page, '/spaces/1/rounds', 'final-evaluation');
     const overview = page.getByRole('region', { name: '평가 회차 일정과 제출 현황', exact: true });
     await expect(overview.getByRole('heading', { level: 2 })).toHaveText(['중간 평가']);
     const midRound = page.getByRole('region', { name: '중간 평가 운영', exact: true });
@@ -119,7 +119,7 @@ for (const width of [1440, 1280, 390]) {
     await page.screenshot({ path: testInfo.outputPath('open-round-deadline.png'), animations: 'disabled' });
     await page.getByText('평가 운영 기준', { exact: true }).click();
     await expect(page.getByText('중간 평가가 시작되면 팀 구성과 평가 참여자가 고정됩니다.', { exact: true })).toBeVisible();
-    await expect(page.getByText('최종 평가 마감 이후에는 작업 변경과 추가 제출이 제한됩니다.', { exact: true })).toBeVisible();
+    await expect(page.getByText('최종 평가 시작 예정 시각에 작업이 마감됩니다. 평가는 회차가 열린 뒤 제출 마감 시각 전까지 작성할 수 있습니다.', { exact: true })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
 }

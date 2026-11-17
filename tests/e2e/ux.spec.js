@@ -37,7 +37,7 @@ const peerPath = '/spaces/1/teams/1/peer-evaluations';
 test('저장 후 바꾼 평가는 제출을 막고 다시 저장한 최신 점수만 제출한다', async ({
   page,
 }) => {
-  await openPreview(page, peerPath);
+  await openPreview(page, peerPath, 'leader', 'final-evaluation');
   for (const member of ['김영진', '박선우']) {
     await fillEvaluation(page, member);
     await page
@@ -75,7 +75,7 @@ test('저장 후 바꾼 평가는 제출을 막고 다시 저장한 최신 점�
 test('미저장 평가의 메뉴 이동과 브라우저 뒤로가기를 취소하면 입력을 유지한다', async ({
   page,
 }) => {
-  await openPreview(page, '/spaces/1/teams/1');
+  await openPreview(page, '/spaces/1/teams/1', 'leader', 'final-evaluation');
   await page.getByRole('button', { name: '동료 평가', exact: true }).click();
   await page.getByLabel('김영진 작업 수행 5점', { exact: true }).check();
   await page.getByRole('button', { name: '작업', exact: true }).click();
@@ -933,7 +933,7 @@ test('평가 마감 시각이 지나면 열린 작성 화면도 조회 전용으
   page,
 }) => {
   await page.clock.install({ time: new Date('2026-10-16T09:00:00+09:00') });
-  await openPreview(page, peerPath);
+  await openPreview(page, peerPath, 'leader', 'final-evaluation');
   await expect(page.getByLabel('김영진 작업 수행 5점', { exact: true })).toBeEnabled();
   const closesAt = koreanDateTime(await page.evaluate(() => Date.now()) + 30000);
   await page.evaluate((closesAt) => {

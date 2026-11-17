@@ -19,7 +19,7 @@ import { getManagerDashboard } from '../api/dashboard.js';
 import useResource from '../hooks/useResource.js';
 import { useInteractions } from '../hooks/useInteractions.js';
 import { formatDate, fromDateInput, toDateInput } from '../lib/domain.js';
-import { roundLabels } from '../lib/evaluation.js';
+import { isFinalWorkClosed, roundLabels } from '../lib/evaluation.js';
 import {
   ErrorNotice,
   Field,
@@ -81,7 +81,8 @@ export default function RoundManagement({ context, onChanged }) {
   const rounds = resource.data || [];
   const teamsNeedingMembers = (submissions.data?.teams || [])
     .filter((team) => Number.isInteger(team.approvedMemberCount) && team.approvedMemberCount < 2);
-  const closingOnly = editing?.round?.status === 'OPEN';
+  const closingOnly = editing?.kind === 'edit' &&
+    (editing.round.status === 'OPEN' || isFinalWorkClosed(editing.round));
   const autoRefreshing = activeTab === 'operations' && !editing && !busy
     && !resource.error && !submissions.error
     && rounds.some((round) => ['DRAFT', 'OPEN'].includes(round.status));
@@ -165,6 +166,7 @@ export default function RoundManagement({ context, onChanged }) {
               const round = rounds.find((item) => item.type === type);
               const needsMidSchedule = type === 'FINAL' && !rounds.some((item) => item.type === 'MID');
               const status = round?.status || 'UNCONFIGURED';
+              const workClosed = isFinalWorkClosed(round);
               const teamSubmissions = submissions.data?.missingPeerSubmissions.find((item) => item.roundId === round?.id)?.teams;
               const startBlockReasons = status === 'DRAFT' && Array.isArray(round.startBlockReasons) ? round.startBlockReasons : [];
               const hasSubmissions = !submissions.error && teamSubmissions?.length > 0;
@@ -175,13 +177,13 @@ export default function RoundManagement({ context, onChanged }) {
                   <div><h2>{roundLabels[type]}</h2><span className={`status-badge round-lifecycle-${status.toLowerCase()}`}>{stateLabel}</span></div>
                   <div className="round-section-tools">
                     {round && <dl className="round-period" aria-label="평가 기간">
-                      <div><dt className="sr-only">시작</dt><dd><RoundPeriodDate value={round.opensAt} /></dd></div>
-                      <div><dt className="sr-only">마감</dt><dd><RoundPeriodDate value={round.closesAt} /></dd></div>
+                      <div><dt className={type === 'MID' ? 'sr-only' : undefined}>{type === 'FINAL' ? '작업 마감' : '시작'}</dt><dd><RoundPeriodDate value={round.opensAt} /></dd></div>
+                      <div><dt className={type === 'MID' ? 'sr-only' : undefined}>{type === 'FINAL' ? '최종 평가 제출 마감' : '마감'}</dt><dd><RoundPeriodDate value={round.closesAt} /></dd></div>
                     </dl>}
                     <div className="round-management-actions">
                       {!round && <button className="primary-button" data-guide={type === 'MID' ? 'schedule-mid-evaluation' : undefined} disabled={busy || needsMidSchedule} aria-label={`${roundLabels[type]} 일정 설정`} onClick={() => openForm('create', { type })}>일정 설정</button>}
-                      {startBlockReasons.length > 0 && <button className="secondary-button" disabled={busy} aria-label={`${roundLabels[type]} 일정 수정`} onClick={() => openForm('edit', round)}>일정 수정</button>}
-                      {['OPEN', 'CLOSED'].includes(status) && <button type="button" className="secondary-button round-deadline-button" disabled={busy || status === 'CLOSED'} aria-label={`${roundLabels[type]} 마감 시각 수정`} title={status === 'CLOSED' ? '마감된 평가는 변경할 수 없습니다.' : undefined} onClick={() => openForm('edit', round)}>마감 변경</button>}
+                      {status === 'DRAFT' && !workClosed && (type === 'FINAL' || startBlockReasons.length > 0) && <button className="secondary-button" disabled={busy} aria-label={`${roundLabels[type]} 일정 수정`} onClick={() => openForm('edit', round)}>일정 수정</button>}
+                      {(['OPEN', 'CLOSED'].includes(status) || (status === 'DRAFT' && workClosed)) && <button type="button" className="secondary-button round-deadline-button" disabled={busy || status === 'CLOSED'} aria-label={`${roundLabels[type]} 마감 시각 수정`} title={status === 'CLOSED' ? '마감된 평가는 변경할 수 없습니다.' : undefined} onClick={() => openForm('edit', round)}>마감 변경</button>}
                     </div>
                   </div>
                 </header>
@@ -194,7 +196,7 @@ export default function RoundManagement({ context, onChanged }) {
                     <strong>평가를 시작하지 못했습니다.</strong>
                     <ul>
                       {startBlockReasons.map((reason) => (
-                        <li key={reason}>{startBlockMessages[reason] || '시작 조건을 확인하지 못했습니다. 현황을 새로고침해 주세요.'}</li>
+                        <li key={reason}>{reason === 'SCHEDULE_EXPIRED' && type === 'FINAL' ? '제출 마감 시각을 연장해 주세요.' : startBlockMessages[reason] || '시작 조건을 확인하지 못했습니다. 현황을 새로고침해 주세요.'}</li>
                       ))}
                     </ul>
                     {startBlockReasons.includes('TEAM_TOO_SMALL') && teamsNeedingMembers.length > 0 && (
@@ -230,7 +232,7 @@ export default function RoundManagement({ context, onChanged }) {
       <details className="round-operation-guide">
         <summary>평가 운영 기준</summary>
         <p>중간 평가가 시작되면 팀 구성과 평가 참여자가 고정됩니다.</p>
-        <p>최종 평가 마감 이후에는 작업 변경과 추가 제출이 제한됩니다.</p>
+        <p>최종 평가 시작 예정 시각에 작업이 마감됩니다. 평가는 회차가 열린 뒤 제출 마감 시각 전까지 작성할 수 있습니다.</p>
       </details>
       </div>}
       </div>
@@ -250,10 +252,20 @@ export default function RoundManagement({ context, onChanged }) {
             onSubmit={async (event) => {
               event.preventDefault();
               setError(null);
-              if (apiTimeToEpoch(form.closesAt) <= apiTimeToEpoch(form.opensAt)) {
+              const now = Date.now();
+              const editDeadlineOnly = editing.kind === 'edit' &&
+                (editing.round.status === 'OPEN' || isFinalWorkClosed(editing.round, now));
+              const opensAt = editDeadlineOnly ? editing.round.opensAt : form.opensAt;
+              if (!closingOnly && editDeadlineOnly) {
+                setError(new Error('작업이 마감되었습니다. 제출 마감 시각만 수정할 수 있습니다.')); return;
+              }
+              if (!editDeadlineOnly && form.type === 'FINAL' && apiTimeToEpoch(opensAt) < now) {
+                setError(new Error('최종 평가 시작 시각을 현재 시각 이후로 지정해 주세요.')); return;
+              }
+              if (apiTimeToEpoch(form.closesAt) <= apiTimeToEpoch(opensAt)) {
                 setError(new Error('마감 시각은 시작 시각보다 늦어야 합니다.')); return;
               }
-              if (apiTimeToEpoch(form.closesAt) <= Date.now()) {
+              if (apiTimeToEpoch(form.closesAt) <= now) {
                 setError(new Error('마감 시각은 현재 시각보다 늦어야 합니다.')); return;
               }
               setBusy(true);
@@ -267,9 +279,7 @@ export default function RoundManagement({ context, onChanged }) {
                   await createEvaluationRound(context.space.id, body);
                 else
                   await updateEvaluationRound(editing.round.id, {
-                    ...(editing.round.status === 'DRAFT'
-                      ? { opensAt: body.opensAt }
-                      : {}),
+                    ...(!editDeadlineOnly ? { opensAt: body.opensAt } : {}),
                     closesAt: body.closesAt,
                     expectedVersion: editing.round.version,
                   });
@@ -283,14 +293,16 @@ export default function RoundManagement({ context, onChanged }) {
               }
             }}
           >
-            {closingOnly ? <p className="field-help">시작 {formatDate(editing.round.opensAt)} · 시작 시각은 변경할 수 없습니다.</p> : <>
-              <p className="field-help">일정을 저장하면 시작 시각에 자동으로 평가가 열립니다. 중간 평가가 시작되면 팀 구성과 평가 참여자가 고정됩니다.</p>
+            {closingOnly ? <p className="field-help">{form.type === 'FINAL' ? '작업 마감' : '시작'} {formatDate(editing.round.opensAt)} · 시작 시각은 변경할 수 없습니다.</p> : <>
+              <p className="field-help">{form.type === 'FINAL'
+                ? '시작 예정 시각에 작업이 마감됩니다. 평가는 회차가 열린 뒤 제출 마감 전까지 작성할 수 있습니다.'
+                : '중간 평가가 시작되면 팀 구성과 평가 참여자가 고정됩니다.'}</p>
               <Field label="평가 시작 시각">
                 <DateTimeInput name="opensAt" required disabled={busy} value={form.opensAt}
                   onChange={(event) => setForm({ ...form, opensAt: event.target.value })} />
               </Field>
             </>}
-            <Field label="평가 마감 시각">
+            <Field label={form.type === 'FINAL' ? '최종 평가 제출 마감 시각' : '평가 마감 시각'}>
               <DateTimeInput
                 name="closesAt"
                 required

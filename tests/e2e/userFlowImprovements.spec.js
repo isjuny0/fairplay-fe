@@ -187,7 +187,7 @@ test('모바일 고급 필터는 접혀 있고 통합 메뉴에 현재 위치를
 for (const width of [1440, 390])
   test(`점수와 기준 정렬 ${width}px 및 입력 오류 초점`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await preview(page, '/spaces/1/teams/1/peer-evaluations');
+    await preview(page, '/spaces/1/teams/1/peer-evaluations', 'leader', 'final-evaluation');
     await page
       .getByRole('button', { name: '김영진 평가 저장', exact: true })
       .click();
