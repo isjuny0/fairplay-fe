@@ -2238,7 +2238,7 @@ async function batchReportBackend(page, { missing = false, open = false, failSec
           generatedTeams.push(1, 2); generationWeights.push(weights, weights);
           return route.fulfill({ status: 409, json: { code: 'REPORT_UNCALCULABLE', message: '계산 불가' } });
         }
-        for (const team of teams.filter((team) => !reports.has(team.id))) {
+        for (const team of reports.size ? [] : teams) {
           generatedTeams.push(team.id); generationWeights.push(weights);
           lockedWeights ??= weights;
           reports.set(team.id, { ...reportResponse(true, 'UNPUBLISHED', weights), id: 40 + team.id, teamId: team.id });
@@ -2262,17 +2262,7 @@ async function batchReportBackend(page, { missing = false, open = false, failSec
     const match = path.match(/^\/api\/teams\/(\d+)\/report$/);
     if (!match) return route.fallback();
     const teamId = Number(match[1]);
-    if (request.method() === 'POST') {
-      generatedTeams.push(teamId);
-      const weights = request.postDataJSON();
-      generationWeights.push(weights);
-      if (teamId === 2 && failSecondOnce) {
-        failSecondOnce = false;
-        return route.fulfill({ status: 409, json: { code: 'REPORT_UNCALCULABLE', message: '계산 불가' } });
-      }
-      lockedWeights ??= weights;
-      reports.set(teamId, { ...reportResponse(true, 'UNPUBLISHED', weights), id: 40 + teamId, teamId });
-    }
+    if (request.method() !== 'GET') return route.fallback();
     return route.fulfill({ json: reports.get(teamId) ?? null });
   });
   return { reports, generatedTeams, generationWeights, setLockedWeights: (value) => { lockedWeights = value; }, setMissing: (value) => { missing = value; }, setOpen: (value) => { open = value; } };
@@ -2367,17 +2357,13 @@ test('관리자는 0을 포함한 정수 비율만 합계 100으로 설정하고
   await expect(page.getByRole('spinbutton')).toHaveCount(0);
 });
 
-test('기존 개별 생성 결과가 있으면 비율을 유지하고 미생성 팀만 채운다', async ({ page }) => {
-  const weights = { taskPercent: 50, midPercent: 20, finalPercent: 30 };
-  const fixture = await batchReportBackend(page, { partial: true, lockedWeights: weights });
+test('일부 팀 리포트만 생성된 현황에서는 생성·공개를 제공하지 않는다', async ({ page }) => {
+  const fixture = await batchReportBackend(page, { partial: true });
   await page.goto('/spaces/1/reports');
-  await expect(page.getByRole('region', { name: '확정된 평가 비중', exact: true }).locator('dl > div').filter({ hasText: '작업 점수' })).toContainText('50%');
-  await expect(page.getByRole('region', { name: '확정된 평가 비중', exact: true })).toBeVisible();
-  await expect(page.getByRole('spinbutton')).toHaveCount(0);
-  await page.getByRole('button', { name: '미생성 팀 다시 생성', exact: true }).click();
-  await expect(page.getByRole('heading', { name: '전체 리포트 생성 완료', exact: true })).toBeVisible();
-  expect(fixture.generatedTeams).toEqual([2]);
-  expect(fixture.generationWeights).toEqual([weights]);
+  await expect(page.getByRole('alert')).toContainText('리포트 관리 현황을 확인하지 못했습니다.');
+  await expect(page.getByRole('button', { name: '전체 리포트 생성', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '전체 리포트 공개', exact: true })).toHaveCount(0);
+  expect(fixture.generatedTeams).toEqual([]);
 });
 
 test('다른 관리자가 먼저 확정한 비율을 생성 직전에 다시 확인하고 이전 입력을 전송하지 않는다', async ({ page }) => {
@@ -2453,7 +2439,7 @@ test('전체 공개 확인 뒤 대상이 바뀌면 공개 요청 없이 최신 �
   await page.goto('/spaces/1/reports');
   await page.getByRole('button', { name: '전체 리포트 공개', exact: true }).click();
   const confirm = page.getByRole('dialog', { name: '전체 리포트 공개', exact: true });
-  await expect(confirm).toContainText('미공개 1개 팀');
+  await expect(confirm).toContainText('전체 1개 팀');
   const changedReport = { ...reportResponse(true), id: 99 };
   await page.route('**/api/spaces/1/reports', (route) => route.fulfill({ json:
     reportManagementStatus([{ id: 1, name: '실제 API 팀' }], new Map([[1, changedReport]]), changedReport.weights) }));

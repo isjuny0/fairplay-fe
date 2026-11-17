@@ -623,6 +623,11 @@ export async function plannedRequest(
     requireManager();
     if (id !== context.space.id) fail('FORBIDDEN', '다른 스페이스의 리포트는 관리할 수 없습니다.', 403);
     const status = spaceReportStatus(state, context);
+    const { totalTeamCount, generatedTeamCount, publishedTeamCount } = status;
+    if ((generatedTeamCount > 0 && generatedTeamCount < totalTeamCount)
+      || (publishedTeamCount > 0 && publishedTeamCount < totalTeamCount)) {
+      fail('REPORT_SPACE_STATE_INCONSISTENT', '스페이스의 리포트 상태가 일치하지 않습니다.');
+    }
     if (method === 'GET' && segments.length === 4) return clone(status);
     if (method === 'POST' && segments.length === 4) {
       const weights = body ?? state.reportWeights ?? defaultReportWeights;
@@ -631,8 +636,7 @@ export async function plannedRequest(
       if (status.totalTeamCount > 0 && status.generatedTeamCount === status.totalTeamCount) return clone(status);
       if (!status.canGenerate) fail('REPORT_INPUT_INCOMPLETE', status.generationBlockReasons.join(' '));
       // Calculate all pending reports before changing persisted preview state.
-      const pending = Object.values(state.teams).filter((entry) => !state.reports.some((report) => report.teamId === entry.team.id));
-      const reports = pending.map((entry) => makeReport(state, entry, 'UNPUBLISHED', weights));
+      const reports = Object.values(state.teams).map((entry) => makeReport(state, entry, 'UNPUBLISHED', weights));
       state.reportWeights = { ...weights };
       state.reports.push(...reports);
     } else if (method === 'POST' && segments.length === 5 && segments[4] === 'publish') {
@@ -640,7 +644,7 @@ export async function plannedRequest(
       if (status.generatedTeamCount < status.totalTeamCount) fail('REPORTS_NOT_GENERATED', '모든 팀의 리포트를 먼저 생성해야 합니다.');
       if (!status.canPublish) fail('REPORT_PUBLICATION_BLOCKED', status.publicationBlockReasons.join(' '));
       const publishedAt = now();
-      state.reports.filter((report) => status.teams.some((team) => team.reportId === report.id) && report.status === 'UNPUBLISHED')
+      state.reports.filter((report) => status.teams.some((team) => team.reportId === report.id))
         .forEach((report) => { report.status = 'PUBLISHED'; report.publishedAt = publishedAt; });
     } else fail('NOT_FOUND', '지원하지 않는 요청입니다.', 404);
     result = spaceReportStatus(state, context);
