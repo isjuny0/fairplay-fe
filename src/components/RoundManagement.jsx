@@ -37,6 +37,11 @@ const startBlockMessages = {
   MID_ROUND_NOT_CLOSED: '중간 평가의 마감과 참여자 확정이 완료되지 않았습니다.',
 };
 
+function editsClosingTimeOnly(editing, asOf) {
+  return editing?.kind === 'edit' &&
+    (editing.round.status === 'OPEN' || isFinalWorkClosed(editing.round, asOf));
+}
+
 function RoundPeriodDate({ value }) {
   const formatted = formatDate(value);
   const parts = formatted.match(/^(.*) (\d{2}:\d{2})$/);
@@ -81,8 +86,7 @@ export default function RoundManagement({ context, onChanged }) {
   const rounds = resource.data || [];
   const teamsNeedingMembers = (submissions.data?.teams || [])
     .filter((team) => Number.isInteger(team.approvedMemberCount) && team.approvedMemberCount < 2);
-  const closingOnly = editing?.kind === 'edit' &&
-    (editing.round.status === 'OPEN' || isFinalWorkClosed(editing.round));
+  const closingOnly = editsClosingTimeOnly(editing);
   const autoRefreshing = activeTab === 'operations' && !editing && !busy
     && !resource.error && !submissions.error
     && rounds.some((round) => ['DRAFT', 'OPEN'].includes(round.status));
@@ -253,13 +257,12 @@ export default function RoundManagement({ context, onChanged }) {
               event.preventDefault();
               setError(null);
               const now = Date.now();
-              const editDeadlineOnly = editing.kind === 'edit' &&
-                (editing.round.status === 'OPEN' || isFinalWorkClosed(editing.round, now));
-              const opensAt = editDeadlineOnly ? editing.round.opensAt : form.opensAt;
-              if (!closingOnly && editDeadlineOnly) {
+              const closingOnlyAtSubmit = editsClosingTimeOnly(editing, now);
+              const opensAt = closingOnlyAtSubmit ? editing.round.opensAt : form.opensAt;
+              if (!closingOnly && closingOnlyAtSubmit) {
                 setError(new Error('작업이 마감되었습니다. 제출 마감 시각만 수정할 수 있습니다.')); return;
               }
-              if (!editDeadlineOnly && form.type === 'FINAL' && apiTimeToEpoch(opensAt) < now) {
+              if (!closingOnlyAtSubmit && form.type === 'FINAL' && apiTimeToEpoch(opensAt) < now) {
                 setError(new Error('최종 평가 시작 시각을 현재 시각 이후로 지정해 주세요.')); return;
               }
               if (apiTimeToEpoch(form.closesAt) <= apiTimeToEpoch(opensAt)) {
@@ -270,21 +273,17 @@ export default function RoundManagement({ context, onChanged }) {
               }
               setBusy(true);
               try {
-                const body = {
-                  type: form.type,
-                  opensAt: fromDateInput(form.opensAt),
-                  closesAt: fromDateInput(form.closesAt),
-                };
+                const schedule = { closesAt: fromDateInput(form.closesAt) };
+                if (!closingOnlyAtSubmit) schedule.opensAt = fromDateInput(opensAt);
                 if (editing.kind === 'create')
-                  await createEvaluationRound(context.space.id, body);
+                  await createEvaluationRound(context.space.id, { type: form.type, ...schedule });
                 else
                   await updateEvaluationRound(editing.round.id, {
-                    ...(!editDeadlineOnly ? { opensAt: body.opensAt } : {}),
-                    closesAt: body.closesAt,
+                    ...schedule,
                     expectedVersion: editing.round.version,
                   });
                 setEditing(null);
-                notify(closingOnly ? '평가 마감 시각을 변경했습니다.' : '자동 시작 일정을 저장했습니다.');
+                notify(closingOnlyAtSubmit ? '평가 마감 시각을 변경했습니다.' : '자동 시작 일정을 저장했습니다.');
                 reload();
               } catch (error) {
                 setError(error);
