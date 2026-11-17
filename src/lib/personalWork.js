@@ -10,7 +10,7 @@ export const notificationTypeLabels = {
 
 export const restrictionLabels = {
   TEAM_DELETION_IN_PROGRESS: '팀 삭제 절차가 진행 중입니다.',
-  TASK_WORK_CLOSED: '최종 평가 마감 후 작업이 제한됩니다.',
+  TASK_WORK_CLOSED: '최종 평가 시작 예정 시각부터 작업이 제한됩니다.',
   INSUFFICIENT_TEAM_MEMBERS: '승인된 팀원이 부족해 작업이 제한됩니다.',
 };
 

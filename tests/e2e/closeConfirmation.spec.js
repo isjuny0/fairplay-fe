@@ -1,3 +1,4 @@
+import { openFinalEvaluationPreview } from './helpers/previewControls.js';
 import { test, expect } from '@playwright/test';
 
 const team = '/preview/spaces/1/teams/1';
@@ -56,7 +57,7 @@ for (const width of [1440, 390]) {
   test(`미저장 화면 이동 확인도 같은 닫기 스타일을 사용한다 (${width}px)`, async ({ page }) => {
     await page.setViewportSize({ width, height: 960 });
     await page.addInitScript(() => localStorage.setItem('fairplay:preview-role', 'leader'));
-    await page.goto(`${team}/peer-evaluations`);
+    await openFinalEvaluationPreview(page, `${team}/peer-evaluations`);
     const score = page.locator('.peer-target.is-active .score-field').first().getByRole('radio').nth(3);
     await score.check();
     if (width < 721) await page.getByRole('button', {name:'스페이스 메뉴 펼치기',exact:true}).click();

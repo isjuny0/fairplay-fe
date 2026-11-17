@@ -320,7 +320,7 @@ for (const width of [390, 1440])
     page,
   }, testInfo) => {
     const state = structuredClone(getMockState(previewContext()));
-    state.rounds.find((round) => round.type === 'FINAL').closesAt =
+    state.rounds.find((round) => round.type === 'FINAL').opensAt =
       '2020-01-01T09:00:00';
     await page.addInitScript((state) => {
       localStorage.setItem('fairplay:preview-role', 'teammate');

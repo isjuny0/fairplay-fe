@@ -1,3 +1,4 @@
+import { openFinalEvaluationPreview } from './helpers/previewControls.js';
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import JSZip from 'jszip';
@@ -36,7 +37,7 @@ for (const width of [320, 390, 1440]) {
 for (const width of [320, 390]) {
   test(`${width}px: 평가 하단 바는 저장 전 입력 공간을 확보한다`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
-    await page.goto('/preview/spaces/1/teams/1/peer-evaluations');
+    await openFinalEvaluationPreview(page, '/preview/spaces/1/teams/1/peer-evaluations');
     const dock = page.getByRole('region', { name: '평가 저장 및 제출', exact: true });
     await expect(dock).toBeVisible();
     expect((await dock.boundingBox()).height).toBeLessThan(90);

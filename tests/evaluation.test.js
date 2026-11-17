@@ -64,7 +64,8 @@ test('미리보기 상황을 바꿔도 캡스톤 프로젝트 기록은 동일�
   for (const [scenario, roundStatuses, reportStatus] of [
     ['building', [], null],
     ['setup', [], null],
-    ['active', ['CLOSED', 'OPEN'], null],
+    ['active', ['CLOSED', 'DRAFT'], null],
+    ['final-evaluation', ['CLOSED', 'OPEN'], null],
     ['evaluated', ['CLOSED', 'CLOSED'], null],
     ['review', ['CLOSED', 'CLOSED'], 'UNPUBLISHED'],
     ['published', ['CLOSED', 'CLOSED'], 'PUBLISHED'],
@@ -118,6 +119,7 @@ test('저점 사유는 대상당 10~500자이며 미선택 값을 저점으로 �
 });
 test('평가 저장과 최종 제출을 구분하고 제출 응답은 잠긴다', async () => {
   const leader = context('leader');
+  resetMockState(leader, 'final-evaluation');
   const targets = await plannedRequest(
     leader,
     '/api/evaluation-rounds/12/targets',
@@ -378,6 +380,7 @@ test('관리자 생성·공개 요청은 같은 결과를 반환하고 계산 �
 
 test('OPEN 마감 시각만 수정할 수 있고 기한 도달 시 마감 기준을 고정한다', async () => {
   const manager = context('manager');
+  resetMockState(manager, 'final-evaluation');
   const state = getMockState(manager);
   const final = state.rounds.find((round) => round.type === 'FINAL');
   const closesAt = koreanDateTime(Date.now() + 86400000);
@@ -413,10 +416,32 @@ test('OPEN 마감 시각만 수정할 수 있고 기한 도달 시 마감 기준
   );
 });
 
-test('FINAL 기한 이후 작업 변경은 차단하며 과거 검토 조회는 유지한다', async () => {
+test('개방이 지연된 최종 평가의 시작 시각은 유지하고 제출 마감만 수정한다', async () => {
+  const manager = context('manager');
+  const state = getMockState(manager);
+  const [mid, final] = state.rounds;
+  mid.status = 'DRAFT';
+  final.opensAt = koreanDateTime(Date.now() - 1000);
+  saveMockState(manager, state);
+
+  const closesAt = koreanDateTime(Date.now() + 8 * 86400000);
+  await assert.rejects(plannedRequest(manager, '/api/evaluation-rounds/12', {
+    method: 'PATCH', body: { opensAt: closesAt, closesAt, expectedVersion: final.version },
+  }), { code: 'INVALID_REQUEST' });
+  const extended = await plannedRequest(manager, '/api/evaluation-rounds/12', {
+    method: 'PATCH', body: { closesAt, expectedVersion: final.version },
+  });
+
+  assert.equal(extended.status, 'DRAFT');
+  assert.equal(extended.opensAt, final.opensAt);
+  assert.equal(extended.closesAt, closesAt);
+});
+
+test('FINAL이 시작 대기 상태여도 예정 시각부터 작업과 AI 요청은 차단한다', async () => {
   const member = context('member');
   const state = getMockState(member);
-  state.rounds[1].closesAt = koreanDateTime(Date.now() - 1000);
+  state.rounds[0].status = 'DRAFT';
+  state.rounds[1].opensAt = koreanDateTime(Date.now() - 1000);
   saveMockState(member, state);
   await assert.rejects(
     previewRequest('/api/tasks/101', {

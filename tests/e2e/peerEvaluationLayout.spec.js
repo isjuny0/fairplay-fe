@@ -1,3 +1,4 @@
+import { openFinalEvaluationPreview } from './helpers/previewControls.js';
 import { test, expect } from '@playwright/test';
 
 for (const role of ['leader', 'member']) {
@@ -5,7 +6,7 @@ for (const role of ['leader', 'member']) {
     test(`저장 현황과 평가 입력을 정렬하고 설명을 자르지 않는다 (${role}, ${width}px)`, async ({ page }, testInfo) => {
       await page.setViewportSize({ width, height: 1000 });
       await page.addInitScript((role) => localStorage.setItem('fairplay:preview-role', role), role);
-      await page.goto('/preview/spaces/1/teams/1/peer-evaluations');
+      await openFinalEvaluationPreview(page, '/preview/spaces/1/teams/1/peer-evaluations');
       const progress = page.getByRole('region', { name: '내 평가 저장 현황' });
       const targetHeading = page.locator('.peer-target-heading');
       const sidebar = page.getByRole('complementary', { name: '평가 대상과 진행률' });

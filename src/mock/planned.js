@@ -2,7 +2,7 @@ import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
 import { exampleCalendarEvents, exampleDeliverables, exampleTasks, peerCriteria, previewMembers } from './fixtures.js';
 import { capstoneProjectMaterials, capstoneProjectMeetings, capstoneProjectScenario, capstoneProjectTasks } from './capstoneProject.js';
 import { previewRagFileMaterials } from './ragFiles.js';
-import { validatePeerResponse, workSummary } from '../lib/evaluation.js';
+import { isFinalWorkClosed, validatePeerResponse, workSummary } from '../lib/evaluation.js';
 import { defaultReportWeights, sameReportWeights, validReportWeights } from '../lib/reportWeights.js';
 
 export class MockError extends Error {
@@ -103,9 +103,9 @@ export function getMockState(context, initialScenario = 'active', recordsAt = Da
           id: context.space.id * 10 + 2,
           spaceId: context.space.id,
           type: 'FINAL',
-          status: 'OPEN',
+          status: initialScenario === 'final-evaluation' ? 'OPEN' : 'DRAFT',
           version: 1,
-          opensAt: koreanDateTime(timestamp - 86400000),
+          opensAt: koreanDateTime(initialScenario === 'final-evaluation' ? timestamp - 2000 : timestamp + 86400000),
           closesAt: koreanDateTime(timestamp + 7 * 86400000),
         },
       ] : [],
@@ -210,8 +210,11 @@ export function resetMockState(context, scenario = 'active') {
   }
   if (['evaluated', 'review', 'published'].includes(scenario)) {
     state.rounds.forEach((round) => {
-      if (new Date(apiTimeToEpoch(round.closesAt)) > new Date())
+      if (apiTimeToEpoch(round.closesAt) > Date.now()) {
         round.closesAt = koreanDateTime(Date.now() - 1000);
+        if (apiTimeToEpoch(round.opensAt) >= apiTimeToEpoch(round.closesAt))
+          round.opensAt = koreanDateTime(Date.now() - 2000);
+      }
       round.status = 'CLOSED';
 
       round.version++;
@@ -298,15 +301,10 @@ function seedSubmittedRound(state, round) {
 }
 
 export function requireWorkBeforeFinalDeadline(state) {
-  const final = state.rounds.find((round) => round.type === 'FINAL');
-  if (
-    final &&
-    final.status !== 'DRAFT' &&
-    new Date(apiTimeToEpoch(final.closesAt)) <= new Date()
-  )
+  if (state.rounds.some((round) => isFinalWorkClosed(round)))
     fail(
       'TASK_WORK_CLOSED',
-      '최종 평가 마감 이후에는 작업과 자료를 변경할 수 없습니다.',
+      '최종 평가 시작 예정 시각부터 작업과 자료를 변경할 수 없습니다.',
     );
 }
 
@@ -316,7 +314,9 @@ function allSubmitted(state, round, entries = Object.values(state.teams)) {
     .every((member) => state.submitted[responseKey(round.id, member.userId)]);
 }
 function makeReport(state, entry, status = 'UNPUBLISHED', weights = state.reportWeights ?? defaultReportWeights) {
-  const done = entry.tasks.filter((task) => task.status === 'DONE');
+  const cutoffAt = state.rounds.find((round) => round.type === 'FINAL').opensAt;
+  const done = entry.tasks.filter((task) => task.status === 'DONE' &&
+    apiTimeToEpoch(task.completedAt) < apiTimeToEpoch(cutoffAt));
   const rawWork = entry.members.map((member) =>
     done.reduce(
       (sum, task) =>
@@ -361,7 +361,7 @@ function makeReport(state, entry, status = 'UNPUBLISHED', weights = state.report
   return {
     id: entry.team.id * 10000 + 1, teamId: entry.team.id, status,
     evaluatedMemberCount: entry.members.length,
-    cutoffAt: state.rounds.find((round) => round.type === 'FINAL').closesAt,
+    cutoffAt,
     weights: { ...weights },
     evidenceTasks: done.map((task) => ({ taskId: task.id, completedAt: task.completedAt, weightAtCutoff: task.weight, assignments: clone(task.assignees) })),
     createdAt: now(), publishedAt: status === 'PUBLISHED' ? now() : null,
@@ -790,14 +790,15 @@ export async function plannedRequest(
             'INVALID_ROUND_STATE',
             '마감된 회차의 일정은 수정할 수 없습니다.',
           );
-        if (round.status === 'OPEN' && Object.hasOwn(body, 'opensAt'))
+        const canChangeStart = round.status === 'DRAFT' && !isFinalWorkClosed(round);
+        if (canChangeStart !== (body.opensAt != null))
           fail(
             'INVALID_REQUEST',
-            '작성 중에는 마감 시각만 수정할 수 있습니다.',
+            '회차의 현재 상태에 맞게 시작과 제출 마감 시각을 입력해 주세요.',
             400,
           );
         const schedule = { opensAt: round.opensAt, ...body, type: round.type };
-        validateSchedule(state, context, schedule);
+        validateSchedule(state, context, schedule, canChangeStart);
         Object.assign(round, {
           opensAt: schedule.opensAt,
           closesAt: schedule.closesAt,
@@ -913,7 +914,7 @@ export async function plannedRequest(
   saveMockState(context, state);
   return clone(result);
 }
-function validateSchedule(state, context, body) {
+function validateSchedule(state, context, body, changesStart = true) {
   if (
     !['MID', 'FINAL'].includes(body.type) ||
     !body.opensAt ||
@@ -921,7 +922,8 @@ function validateSchedule(state, context, body) {
     !Number.isFinite(apiTimeToEpoch(body.opensAt)) ||
     !Number.isFinite(apiTimeToEpoch(body.closesAt)) ||
     new Date(apiTimeToEpoch(body.opensAt)) >= new Date(apiTimeToEpoch(body.closesAt)) ||
-    new Date(apiTimeToEpoch(body.closesAt)) <= new Date()
+    apiTimeToEpoch(body.closesAt) <= Date.now() ||
+    (changesStart && body.type === 'FINAL' && apiTimeToEpoch(body.opensAt) < Date.now())
   )
     fail(
       'INVALID_ROUND_WINDOW',

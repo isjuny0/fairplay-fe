@@ -33,11 +33,12 @@ const scheduleTimeFormat = new Intl.DateTimeFormat('ko-KR', {
   timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false,
 });
 
-function EvaluationScheduleDate({ label, value }) {
+function EvaluationScheduleDate({ label, value, showLabel }) {
   const timestamp = apiTimeToEpoch(value);
   const date = Number.isFinite(timestamp) ? new Date(timestamp) : null;
   return <span className="evaluation-schedule-date">
     {date ? <time dateTime={value} aria-label={`${label} ${scheduleDateFormat.format(date)} ${scheduleTimeFormat.format(date)}`}>
+      {showLabel && <small>{label}</small>}
       <strong>{scheduleDateFormat.format(date)}</strong>
       <span>{scheduleTimeFormat.format(date)}</span>
     </time> : <span className="evaluation-schedule-unset" aria-label={`${label} 미설정`}>미설정</span>}
@@ -564,16 +565,16 @@ function PeerEvaluationScreen({ context }) {
                 selected={round?.id}
                 onSelect={(id) => setParams({ roundId: String(id) })}
                 renderDetails={(item) => <span className="evaluation-round-context">
-                  <EvaluationScheduleDate label="시작" value={item.opensAt} />
+                  <EvaluationScheduleDate label={item.type === 'FINAL' ? '작업 마감' : '시작'} value={item.opensAt} showLabel={item.type === 'FINAL'} />
                   <ArrowRight className="evaluation-schedule-arrow" size={16} aria-hidden="true" />
-                  <EvaluationScheduleDate label="마감" value={item.closesAt} />
+                  <EvaluationScheduleDate label={item.type === 'FINAL' ? '최종 평가 제출 마감' : '마감'} value={item.closesAt} showLabel={item.type === 'FINAL'} />
                 </span>}
               />
             </div>
             {round.status === 'DRAFT' ? (
               <EmptyState>
                 <h2>평가 시작을 기다리고 있습니다.</h2>
-                <p>관리자가 회차를 시작하면 평가할 팀원이 표시됩니다.</p>
+                <p>회차가 자동으로 열리면 평가할 팀원이 표시됩니다.</p>
               </EmptyState>
             ) : round.mySubmissionStatus === 'NOT_PARTICIPATING' ? (
               <EmptyState>이 평가 회차의 고정 참여자가 아닙니다.</EmptyState>

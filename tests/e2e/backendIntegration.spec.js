@@ -860,6 +860,37 @@ test('OPEN 회차 일정 수정은 expectedVersion과 마감만 전송한다', a
     JSON.parse(requests.find((request) => request.method === 'PATCH').body),
   ).toEqual({ closesAt: '2030-12-02T18:00:00', expectedVersion: 3 });
 });
+test('시작 예정 시각에 도달한 FINAL은 DRAFT여도 작업 마감과 제출 마감을 구분한다', async ({ page }) => {
+  await page.clock.install({ time: new Date('2030-12-03T09:00:00+09:00') });
+  await backend(page, { manager: true });
+  const finalRound = {
+    id: 12, spaceId: 1, type: 'FINAL', status: 'DRAFT', version: 4,
+    opensAt: '2030-12-03T09:00:00', closesAt: '2030-12-05T18:00:00',
+    participantCount: 0, mySubmissionStatus: 'NOT_PARTICIPATING', startBlockReasons: [],
+  };
+  await page.route('**/api/spaces/1/evaluation-rounds', (route) => route.fulfill({ json: [finalRound] }));
+  const updates = [];
+  await page.route('**/api/evaluation-rounds/12', (route) => {
+    const body = route.request().postDataJSON();
+    updates.push(body);
+    return route.fulfill({ json: { ...finalRound, closesAt: body.closesAt, version: 5 } });
+  });
+  await page.goto('/spaces/1/rounds?operationRound=FINAL');
+
+  const schedule = page.getByRole('region', { name: '최종 평가 운영', exact: true });
+  await expect(schedule.getByText('작업 마감', { exact: true })).toBeVisible();
+  await expect(schedule.getByText('최종 평가 제출 마감', { exact: true })).toBeVisible();
+  await expect(schedule.getByRole('button', { name: '최종 평가 일정 수정' })).toHaveCount(0);
+  await schedule.getByRole('button', { name: '최종 평가 마감 시각 수정' }).click();
+  const dialog = page.getByRole('dialog', { name: '최종 평가 마감 변경' });
+  await expect(dialog.getByLabel('평가 시작 시각')).toHaveCount(0);
+  await fillDateTime(dialog, '최종 평가 제출 마감 시각', '2030-12-06T18:00');
+  await dialog.getByRole('button', { name: '저장', exact: true }).click();
+
+  await expect(dialog).toHaveCount(0);
+  expect(updates).toEqual([{ closesAt: '2030-12-06T18:00:00', expectedVersion: 4 }]);
+});
+
 test('AI 검토는 수동 요청 후 진행 상태를 조회하고 점수 없이 근거와 확인 한계를 표시한다', async ({
   page,
 }) => {
@@ -1292,7 +1323,7 @@ test('FINAL 마감 후 새 AI 검토 버튼을 숨기고 기존 피드백은 읽
   await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
   await expect(page.getByText('마감 후에도 확인할 기존 피드백')).toBeVisible();
   await expect(
-    page.getByText(/최종 평가 마감 이후에는 새 검토를 요청할 수 없습니다/),
+    page.getByText(/작업 마감 후에는 새 검토를 요청할 수 없습니다/),
   ).toBeVisible();
   await expect(
     page.getByRole('button', { name: '피드백 받기', exact: true }),

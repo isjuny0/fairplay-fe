@@ -141,7 +141,7 @@ export default function AiReview({ context, onEditSource }) {
       {(context.task.completionBlockReason === 'WORK_PERIOD_CLOSED' ||
         error?.code === 'TASK_WORK_CLOSED') && (
         <p className="notice">
-          최종 평가 마감 이후에는 새 검토를 요청할 수 없습니다. 기존 결과는
+          작업 마감 후에는 새 검토를 요청할 수 없습니다. 기존 결과는
           조회할 수 있습니다.
         </p>
       )}

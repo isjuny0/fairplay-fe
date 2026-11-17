@@ -159,7 +159,7 @@ for (const width of [1440, 1280, 390]) {
     page,
   }) => {
     await page.setViewportSize({ width, height: width === 1280 ? 800 : 900 });
-    await preview(page, '/spaces/1/teams/1/peer-evaluations', 'leader');
+    await preview(page, '/spaces/1/teams/1/peer-evaluations', 'leader', 'final-evaluation');
     const fields = page.locator('.peer-target.is-active .score-field');
     const firstField = await fields.nth(0).boundingBox();
     const secondField = await fields.nth(1).boundingBox();

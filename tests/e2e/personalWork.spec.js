@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { getMockState } from '../../src/mock/planned.js';
+import { getMockState, resetMockState } from '../../src/mock/planned.js';
 import { previewContext } from '../../src/mock/preview.js';
 
 async function enterPreview(page) {
@@ -20,7 +20,7 @@ test('헤더 알림 미리보기는 최근 접근 가능 항목을 표시하고 
   await expect(page.getByRole('region', { name: '최근 알림' })).toContainText('읽지 않은 알림 3개');
   await expect(page.getByRole('region', { name: '최근 알림' }).locator('.header-notification-preview-more')).toHaveCount(0);
   await expect(page.getByText('더 이상 접근할 수 없는 항목입니다')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /최종 평가가 시작되었습니다/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /중간 평가가 시작되었습니다/ })).toBeVisible();
   await page.getByRole('button', { name: /새 작업에 배정되었습니다/ }).click();
   await expect(page).toHaveURL(/\/preview\/spaces\/1\/teams\/1\/tasks\/102$/);
   expect(calls).toEqual([]);
@@ -48,6 +48,7 @@ test('알림함은 전체·미읽음 커서 목록과 전체 읽음을 제공한
 
 test('통합 할 일 팝오버는 전체 작업·미제출 평가를 스크롤로 제공하고 상세로 연결한다', async ({ page }) => {
   const context = previewContext();
+  resetMockState(context, 'final-evaluation');
   const state = structuredClone(getMockState(context));
   const baseTask = state.teams[1].tasks.find((task) =>
     task.assignees?.some((assignee) => assignee.userId === context.user.id),

@@ -1,11 +1,12 @@
 import { MockError, saveMockState } from './planned.js';
 import { previewSpace } from './fixtures.js';
-import { koreanDateTime } from '../lib/koreanTime.js';
+import { apiTimeToEpoch, koreanDateTime } from '../lib/koreanTime.js';
+import { isFinalWorkClosed } from '../lib/evaluation.js';
 
 const initialNotifications = (context, state) => {
   const now = Date.now();
-  const evaluationRound = state.rounds.find((round) => round.type === 'FINAL')
-    || state.rounds.find((round) => round.type === 'MID');
+  const evaluationRound = state.rounds.find((round) => round.type === 'FINAL' && round.status !== 'DRAFT')
+    || state.rounds.find((round) => round.type === 'MID' && round.status !== 'DRAFT');
   const roundLabel = evaluationRound?.type === 'FINAL' ? '최종 평가' : '중간 평가';
   return [
     { id: 205, type: 'TASK_ASSIGNED', title: '새 작업에 배정되었습니다', message: '팀 자료 검색 개선', spaceId: 1, teamId: 1, target: { type: 'TASK', id: 102, taskId: null }, accessible: true, createdAt: koreanDateTime(now - 3600000), readAt: null },
@@ -113,16 +114,17 @@ export function previewPersonalWork(context, state, parts, url, method) {
     const todos = (context.teamContexts || []).flatMap(({ team, members }) => {
       const entry = state.teams[team.id];
       if (!entry || !members.some((member) => member.userId === context.user.id)) return [];
+      const workClosed = state.rounds.some((round) => round.spaceId === team.spaceId && isFinalWorkClosed(round, now));
       const tasks = entry.tasks.filter((task) => ['TODO', 'IN_PROGRESS', 'REVISING'].includes(task.status) && task.assignees?.some((assignee) => assignee.userId === context.user.id)).map((task) => {
         const assignee = task.assignees.find((member) => member.userId === context.user.id);
         return {
           type: 'TASK', id: task.id, spaceId: team.spaceId, spaceName: previewSpace.name, teamId: team.id, teamName: team.name,
           title: task.title, dueAt: task.dueAt, isOverdue: new Date(task.dueAt) < new Date(),
-          task: { taskId: task.id, title: task.title, status: task.status, startAt: task.startAt, dueAt: task.dueAt, myAllocationPercent: assignee.allocationPercent, workRestrictionReasons: [] },
+          task: { taskId: task.id, title: task.title, status: task.status, startAt: task.startAt, dueAt: task.dueAt, myAllocationPercent: assignee.allocationPercent, workRestrictionReasons: workClosed ? ['TASK_WORK_CLOSED'] : [] },
           evaluation: null,
         };
       });
-      const evaluations = state.rounds.filter((round) => round.spaceId === team.spaceId && round.status === 'OPEN' && new Date(round.closesAt).getTime() > now && !state.submitted[`${round.id}:${context.user.id}`]).map((round) => ({
+      const evaluations = state.rounds.filter((round) => round.spaceId === team.spaceId && round.status === 'OPEN' && apiTimeToEpoch(round.closesAt) > now && !state.submitted[`${round.id}:${context.user.id}`]).map((round) => ({
         type: 'PEER_EVALUATION', id: round.id, spaceId: team.spaceId, spaceName: previewSpace.name, teamId: team.id, teamName: team.name,
         title: round.type === 'MID' ? '중간 동료 평가' : '최종 동료 평가', dueAt: round.closesAt, isOverdue: false,
         task: null, evaluation: { roundId: round.id, roundType: round.type, opensAt: round.opensAt, closesAt: round.closesAt },

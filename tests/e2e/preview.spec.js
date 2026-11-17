@@ -106,6 +106,7 @@ test('대상별 평가를 저장하고 제출하면 새로고침 후에도 수�
   page,
 }) => {
   const calls = await preview(page, {
+    scenario: 'final-evaluation',
     path: '/spaces/1/teams/1/peer-evaluations',
   });
   for (const member of ['김영진', '박선우']) {
@@ -137,7 +138,7 @@ test('대상별 평가를 저장하고 제출하면 새로고침 후에도 수�
 test('저점 사유 누락을 안내하고 공개 전 리포트는 팀원에게 보이지 않는다', async ({
   page,
 }) => {
-  await preview(page, { path: '/spaces/1/teams/1/peer-evaluations' });
+  await preview(page, { scenario: 'final-evaluation', path: '/spaces/1/teams/1/peer-evaluations' });
   for (const criterion of ['작업 수행', '책임감', '적극성', '의사소통'])
     await page.getByLabel(`김영진 ${criterion} 2점`, { exact: true }).check();
   await page

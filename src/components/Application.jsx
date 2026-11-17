@@ -20,7 +20,8 @@ import '../header-profile.css';
 const previewScenarios = [
   ['building', '팀 구성 중'],
   ['setup', '평가 시작 전'],
-  ['active', '최종 평가 진행 중'],
+  ['active', '팀 작업 진행 중'],
+  ['final-evaluation', '최종 평가 진행 중'],
   ['evaluated', '평가 마감 · 리포트 생성 전'],
   ['review', '리포트 검토 중'],
   ['published', '리포트 공개 완료'],

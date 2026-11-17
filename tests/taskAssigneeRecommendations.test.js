@@ -113,7 +113,7 @@ test('잘못된 인원·미가입·한 명 팀·마감·삭제 동결은 추천�
     code: 'TEAM_DELETION_IN_PROGRESS',
   });
   state.deletion = null;
-  state.rounds.find((round) => round.type === 'FINAL').closesAt =
+  state.rounds.find((round) => round.type === 'FINAL').opensAt =
     '2020-01-01T00:00:00';
   saveMockState(context, state);
   await assert.rejects(recommend(1), { status: 409, code: 'TASK_WORK_CLOSED' });

@@ -15,7 +15,7 @@ export const buildingLabels = {
 export const completionBlockLabels = {
   DELAY_REASON_REQUIRED: '마감이 지난 작업은 지연 사유를 작성한 뒤 완료할 수 있습니다.',
   WORK_PERIOD_CLOSED:
-    '최종 평가 마감 이후에는 작업을 변경하거나 완료 처리할 수 없습니다.',
+    '최종 평가 시작 예정 시각부터 작업을 변경하거나 완료할 수 없습니다.',
   DELIVERABLE_REQUIRED: '완료 처리 전에 결과물을 추가해 주세요.',
   NOT_ASSIGNEE: '현재 담당자만 완료할 수 있습니다.',
   INVALID_TASK_STATE: '진행 중·수정 중인 작업만 완료할 수 있습니다.',
@@ -90,7 +90,7 @@ export function errorMessage(error) {
   if (error.code === 'REPORT_INPUT_INCOMPLETE')
     return '대상 팀의 중간·최종 평가 마감과 필수 제출을 확인해 주세요. 목록에 마감으로 표시되어도 서버의 마감 정리가 끝날 때까지 기다린 뒤 다시 시도해야 합니다.';
   if (error.code === 'REPORT_UNCALCULABLE')
-    return '계산할 완료 작업 또는 평가 입력이 부족합니다. 최종 평가 마감 전 완료된 작업과 팀원의 담당 배분을 확인해 주세요.';
+    return '계산할 완료 작업 또는 평가 입력이 부족합니다. 작업 마감 전에 완료된 작업과 팀원의 담당 배분을 확인해 주세요.';
   if (error.code === 'REPORT_PUBLICATION_BLOCKED')
     return '전체 팀의 리포트 생성, 두 회차 마감과 필수 평가 제출을 확인한 뒤 공개해 주세요.';
   if (error.code === 'REPORTS_NOT_GENERATED') return '모든 팀의 리포트를 생성한 후 전체 공개할 수 있습니다.';
