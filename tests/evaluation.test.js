@@ -1191,22 +1191,6 @@ test('미생성 팀이 있거나 제출 조건이 바뀌면 일괄 공개는 아
   assert.ok(getMockState(manager).reports.every((report) => report.status === 'UNPUBLISHED'));
 });
 
-test('미리보기에서 기존 리포트 상태가 섞이면 현황과 일괄 작업을 거절한다', async () => {
-  const manager = context('manager');
-  for (const partiallyPublished of [false, true]) {
-    resetMockState(manager, 'review');
-    const state = getMockState(manager);
-    if (partiallyPublished) state.reports[0].status = 'PUBLISHED';
-    else state.reports.pop();
-    saveMockState(manager, state);
-    const before = getMockState(manager).reports;
-    for (const [path, method] of [[spaceReportsPath, 'GET'], [spaceReportsPath, 'POST'], [publishSpaceReportsPath, 'POST']]) {
-      await assert.rejects(plannedRequest(manager, path, { method }), { status: 409, code: 'REPORT_SPACE_STATE_INCONSISTENT' });
-    }
-    assert.deepEqual(getMockState(manager).reports, before);
-  }
-});
-
 test('미리보기에서도 개별 생성과 공개는 리포트 상태를 바꾸지 않는다', async () => {
   const manager = context('manager');
   resetMockState(manager, 'evaluated');

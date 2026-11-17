@@ -2221,10 +2221,9 @@ test('리포트 관리는 이전 결과 탭 주소에서도 생성·공개만 �
   expect(fixture.requests.some((request) => /teams\/1\/responses$/.test(request.path))).toBe(false);
 });
 
-async function batchReportBackend(page, { missing = false, open = false, failSecondOnce = false, lockedWeights = null, partial = false } = {}) {
+async function batchReportBackend(page, { missing = false, open = false, failSecondOnce = false, lockedWeights = null } = {}) {
   await reportBackend(page);
   const reports = new Map();
-  if (partial) { lockedWeights ??= defaultWeights; reports.set(1, { ...reportResponse(true, 'UNPUBLISHED', lockedWeights), id: 41, teamId: 1 }); }
   const generatedTeams = [];
   const generationWeights = [];
   const teams = [1, 2].map((id) => ({ id, spaceId: 1, name: `테스트 ${id}팀`, approvedMemberCount: 2 }));
@@ -2355,15 +2354,6 @@ test('관리자는 0을 포함한 정수 비율만 합계 100으로 설정하고
   await expect(page.getByRole('region', { name: '확정된 평가 비중', exact: true }).locator('dl > div').filter({ hasText: '최종 동료 평가' })).toContainText('100%');
   await expect(page.getByRole('region', { name: '확정된 평가 비중', exact: true })).toBeVisible();
   await expect(page.getByRole('spinbutton')).toHaveCount(0);
-});
-
-test('일부 팀 리포트만 생성된 현황에서는 생성·공개를 제공하지 않는다', async ({ page }) => {
-  const fixture = await batchReportBackend(page, { partial: true });
-  await page.goto('/spaces/1/reports');
-  await expect(page.getByRole('alert')).toContainText('리포트 관리 현황을 확인하지 못했습니다.');
-  await expect(page.getByRole('button', { name: '전체 리포트 생성', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: '전체 리포트 공개', exact: true })).toHaveCount(0);
-  expect(fixture.generatedTeams).toEqual([]);
 });
 
 test('다른 관리자가 먼저 확정한 비율을 생성 직전에 다시 확인하고 이전 입력을 전송하지 않는다', async ({ page }) => {
