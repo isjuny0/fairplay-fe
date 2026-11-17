@@ -1323,7 +1323,7 @@ test('FINAL 마감 후 새 AI 검토 버튼을 숨기고 기존 피드백은 읽
   await page.getByRole('tab', { name: 'AI 피드백', exact: true }).click();
   await expect(page.getByText('마감 후에도 확인할 기존 피드백')).toBeVisible();
   await expect(
-    page.getByText(/최종 평가 마감 이후에는 새 검토를 요청할 수 없습니다/),
+    page.getByText(/작업 마감 후에는 새 검토를 요청할 수 없습니다/),
   ).toBeVisible();
   await expect(
     page.getByRole('button', { name: '피드백 받기', exact: true }),
