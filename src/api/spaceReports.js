@@ -29,6 +29,8 @@ export async function getSpaceReports(spaceId) {
     || new Set(result.teams.map((team) => team.teamId)).size !== result.teams.length
     || result.generatedTeamCount !== result.teams.filter((team) => team.reportId != null).length
     || result.publishedTeamCount !== result.teams.filter((team) => team.reportStatus === 'PUBLISHED').length
+    || (result.generatedTeamCount !== 0 && result.generatedTeamCount !== result.totalTeamCount)
+    || (result.publishedTeamCount !== 0 && result.publishedTeamCount !== result.totalTeamCount)
     || (result.generatedTeamCount > 0 && !result.weightsConfirmed)) {
     throw new ApiError(502, { code: 'REPORT_MANAGEMENT_INVALID', message: '리포트 관리 현황을 확인하지 못했습니다. 새로고침해 주세요.' });
   }

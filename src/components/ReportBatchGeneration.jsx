@@ -13,9 +13,6 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
   const { notify } = useInteractions();
   const resource = useResource(() => getSpaceReports(context.space.id), [context.space.id, guide?.scope, refreshRevision]);
   const data = !resource.loading && !resource.error ? resource.data : null;
-  const state = data && {
-    teams: data.teams, pending: data.teams.filter((team) => team.reportId == null), canGenerate: data.canGenerate,
-  };
   useEffect(() => { onReadinessLoaded?.(data?.teams ?? null); }, [data, onReadinessLoaded]);
   const [busy, setBusy] = useState(false);
   useEffect(() => { onBusyChange?.(busy || resource.loading); }, [busy, resource.loading, onBusyChange]);
@@ -29,18 +26,18 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
   const weightsValid = validReportWeights(weights);
   const totalWeight = reportWeightFields.reduce((sum, { key }) => sum + (Number.isFinite(weights[key]) ? weights[key] : 0), 0);
   const running = useRef(false);
-  const allGenerated = state && state.teams.length > 0 && state.pending.length === 0;
+  const allGenerated = Boolean(data?.totalTeamCount > 0 && data.generatedTeamCount === data.totalTeamCount);
   const reportBatch = guide?.setManagedReportBatch;
   useEffect(() => {
     if (!guidedManagement) return;
     reportBatch(!busy && !resource.loading && !resource.error && resource.data
       ? { ...resource.data, weights } : null);
     return () => reportBatch(null);
-  }, [guidedManagement, reportBatch, busy, resource.loading, resource.error, resource.data, weights, state?.canGenerate]);
+  }, [guidedManagement, reportBatch, busy, resource.loading, resource.error, resource.data, weights, data?.canGenerate]);
   const canPublish = Boolean(data?.canPublish && data.totalTeamCount > 0
-    && data.generatedTeamCount === data.totalTeamCount && data.publishedTeamCount < data.totalTeamCount);
+    && data.generatedTeamCount === data.totalTeamCount && data.publishedTeamCount === 0);
   const allPublished = Boolean(data?.totalTeamCount > 0 && data.publishedTeamCount === data.totalTeamCount);
-  const generationReason = !state ? '' : !state.canGenerate
+  const generationReason = !data ? '' : !data.canGenerate
     ? data.generationBlockReasons.map(reportBlockMessage).join(' · ') || '전체 팀 현황을 확인해 주세요.'
     : !weightsValid ? '반영 비율의 합계를 100%로 맞춰 주세요.'
     : guidedManagement && guide.stepId === 'management-report-weights'
@@ -53,7 +50,7 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
     finally { resource.reload(); onGenerated(); setBusy(false); running.current = false; }
   };
   const generateAll = (requestedWeights) => {
-    if (!validReportWeights(requestedWeights) || !state?.canGenerate) return;
+    if (!validReportWeights(requestedWeights) || !data?.canGenerate) return;
     setGenerationWeights(null);
     execute(async () => {
       const latest = await getSpaceReports(context.space.id);
@@ -67,7 +64,7 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
     });
   };
   const requestGeneration = () => {
-    if (!weightsValid || !state?.canGenerate || busy) return;
+    if (!weightsValid || !data?.canGenerate || busy) return;
     if (lockedWeights) generateAll(lockedWeights);
     else setGenerationWeights({ ...weights });
   };
@@ -138,38 +135,38 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
       <div className="section-heading">
         <div>
           <h2>{allPublished ? '전체 리포트 공개 완료' : allGenerated ? '전체 리포트 생성 완료' : '전체 리포트 생성'}</h2>
-          {state && !allGenerated && <span className={`report-generation-status${state.canGenerate ? ' is-ready' : ''}`}>
-            {state.canGenerate ? <Check size={14} aria-hidden="true" /> : <Clock3 size={14} aria-hidden="true" />}
-            {state.canGenerate ? '생성 가능' : '생성 대기'}
+          {data && !allGenerated && <span className={`report-generation-status${data.canGenerate ? ' is-ready' : ''}`}>
+            {data.canGenerate ? <Check size={14} aria-hidden="true" /> : <Clock3 size={14} aria-hidden="true" />}
+            {data.canGenerate ? '생성 가능' : '생성 대기'}
           </span>}
         </div>
       </div>
       <ErrorNotice error={confirmingPublication ? null : error} />
       <ResourceState resource={resource} label="전체 리포트 생성 조건">
-        {state && !allGenerated && (
+        {data && !allGenerated && (
           <ul className="readiness-list round-readiness" aria-label="팀별 리포트 준비 상태">
-            {state.teams.map((team) => <li key={team.teamId} className={team.canGenerate ? 'is-complete' : ''}>
+            {data.teams.map((team) => <li key={team.teamId} className={team.canGenerate ? 'is-complete' : ''}>
               {team.canGenerate ? <Check size={16} aria-hidden="true" /> : <Clock3 size={16} aria-hidden="true" />}
               <strong>{team.teamName}</strong>
-              <span>{team.reportId != null ? '생성 완료' : team.canGenerate ? '생성 가능' : '생성 대기'}</span>
+              <span>{team.canGenerate ? '생성 가능' : '생성 대기'}</span>
               {!team.canGenerate && <span>{team.generationBlockReasons.map(reportBlockMessage).join(' · ')}</span>}
             </li>)}
           </ul>
         )}
-        {state && (!allGenerated || validReportWeights(lockedWeights)) && weightContent}
-        {state && !allGenerated && (
+        {data && (!allGenerated || validReportWeights(lockedWeights)) && weightContent}
+        {data && !allGenerated && (
           <div className="report-generation-action">
             {generationReason && <p id="report-generation-reason">{generationReason}</p>}
             <button type="button" className="primary-button" data-guide="generate-all-reports"
               aria-describedby={generationReason ? "report-generation-reason" : undefined}
-              disabled={busy || resource.loading || Boolean(resource.error) || !state.canGenerate || !weightsValid
+              disabled={busy || resource.loading || Boolean(resource.error) || !data.canGenerate || !weightsValid
                 || (guidedManagement && guide.stepId === 'management-report-weights')}
               onClick={requestGeneration}>
-              {busy ? '처리 중…' : data.generatedTeamCount > 0 ? '미생성 팀 다시 생성' : '전체 리포트 생성'}
+              {busy ? '처리 중…' : '전체 리포트 생성'}
             </button>
           </div>
         )}
-        {state && allGenerated && !validReportWeights(lockedWeights) && <p className="field-help">확정된 반영 비율 정보를 다시 불러와 주세요.</p>}
+        {data && allGenerated && !validReportWeights(lockedWeights) && <p className="field-help">확정된 반영 비율 정보를 다시 불러와 주세요.</p>}
       </ResourceState>
       {data && allGenerated && !allPublished && <div className="report-generation-action report-publication-action" data-guide="space-report-publication">
         {!canPublish && <p>{data.publicationBlockReasons.map(reportBlockMessage).join(' · ') || '공개 조건을 확인해 주세요.'}</p>}
@@ -187,13 +184,12 @@ export default function ReportBatchGeneration({ context, onGenerated, onReadines
         <div className="heading-actions">
           <button type="button" className="secondary-button" onClick={() => setGenerationWeights(null)}>취소</button>
           <button type="button" className="primary-button" data-guide="confirm-generate-all-reports"
-            disabled={busy || !state?.canGenerate} onClick={() => generateAll(generationWeights)}>생성 확정</button>
+            disabled={busy || !data?.canGenerate} onClick={() => generateAll(generationWeights)}>생성 확정</button>
         </div>
       </Modal>}
       {confirmingPublication && <Modal title="전체 리포트 공개" busy={busy} onClose={() => setConfirmingPublication(null)}>
-        <p>미공개 {confirmingPublication.totalTeamCount - confirmingPublication.publishedTeamCount}개 팀의 리포트를 함께 공개합니다.</p>
+        <p>전체 {confirmingPublication.totalTeamCount}개 팀의 리포트를 함께 공개합니다.</p>
         <p data-guide="report-publication-scope">각 팀원은 본인의 종합점수·평가 결과·작업 근거만 볼 수 있습니다. 공개 후에는 수정하거나 비공개로 되돌릴 수 없습니다.</p>
-        {confirmingPublication.publishedTeamCount > 0 && <p className="field-help">이미 공개된 {confirmingPublication.publishedTeamCount}개 팀은 유지됩니다.</p>}
         <ErrorNotice error={error} />
         <div className="heading-actions"><button className="secondary-button" disabled={busy} onClick={() => setConfirmingPublication(null)}>취소</button>
           <button className="primary-button" data-guide="confirm-publish-all-reports" disabled={busy || resource.loading || Boolean(resource.error) || !canPublish} onClick={publishAll}>{busy ? '공개 중…' : '전체 공개 확정'}</button></div>
