@@ -4,7 +4,7 @@ import useResource from '../hooks/useResource.js';
 import useAppNavigate from '../hooks/useAppNavigate.js';
 import { useInteractions } from '../hooks/useInteractions.js';
 import { getMyNotificationUnreadCount, listMyNotifications, listAllMyTodos, markNotificationRead } from '../api/personalWork.js';
-import { announceNotificationChange, notificationPath } from '../lib/personalWork.js';
+import { announceNotificationChange, isDeadlineNotification, notificationPath } from '../lib/personalWork.js';
 import { formatDate, statusLabels } from '../lib/domain.js';
 import { teamMenuPath } from '../lib/routes.js';
 
@@ -125,7 +125,7 @@ export default function HeaderActivityActions() {
         <header className="notification-popover-heading"><strong>{count.error ? '알림' : `읽지 않은 알림 ${count.data ?? 0}개`}</strong><button type="button" onClick={() => { setOpen(false); navigate('/notifications'); }}>전체 보기</button></header>
         {count.error && <p className="notification-popover-state" role="alert">읽지 않은 알림 수를 불러오지 못했습니다.</p>}
         {recent.error ? <p className="notification-popover-state">알림을 불러오지 못했습니다.</p> : recent.loading && !recent.data ? <p className="notification-popover-state" role="status">알림을 불러오는 중…</p> : recent.data?.items.length ? <>
-          <div className="header-notification-preview-cards">{recent.data.items.slice(0, 3).map((item) => <button type="button" className="header-notification-preview-card" data-unread={!item.readAt} key={item.id} onClick={() => openNotification(item)}>
+          <div className="header-notification-preview-cards">{recent.data.items.slice(0, 3).map((item) => <button type="button" className="header-notification-preview-card" data-unread={!item.readAt} data-deadline={isDeadlineNotification(item)} key={item.id} onClick={() => openNotification(item)}>
             <span className="header-notification-preview-card-heading"><span className="header-notification-preview-state"><i />{item.readAt ? '읽음' : '읽지 않음'}</span><time>{formatDate(item.createdAt)}</time></span>
             <strong>{item.title}</strong>
             {item.message && <span className="header-notification-preview-message">{item.message}</span>}

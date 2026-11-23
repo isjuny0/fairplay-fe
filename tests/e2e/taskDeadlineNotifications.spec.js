@@ -153,11 +153,18 @@ for (const width of [390, 1440]) {
     for (const [, title, label] of stages) {
       const row = page.locator('.personal-notification').filter({ hasText: title });
       await expect(row.locator('.notification-type-label')).toHaveText(label);
+      await expect(row).toHaveCSS('background-color', 'rgb(255, 244, 244)');
     }
+    await expect(page.locator('.personal-notification').filter({ hasText: '새 작업에 배정되었습니다' })).toHaveCSS('background-color', 'rgb(247, 251, 248)');
     await page.getByRole('button', { name: '알림함', exact: true }).click();
     const popover = page.getByRole('region', { name: '최근 알림' });
     await expect(popover.locator('.header-notification-preview-card')).toHaveCount(3);
     for (const [, title] of stages) await expect(popover).toContainText(title);
+    const todayCard = popover.getByRole('button', { name: /담당 작업의 마감이 오늘입니다/ });
+    await expect(todayCard).toHaveCSS('background-color', 'rgb(255, 244, 244)');
+    await expect(todayCard).toHaveCSS('border-left-color', 'rgb(179, 59, 57)');
+    await todayCard.hover();
+    await expect(todayCard).toHaveCSS('background-color', 'rgb(255, 237, 237)');
     await popover.getByRole('button', { name: /담당 작업의 마감이 오늘입니다/ }).click();
     await expect(page).toHaveURL(/\/preview\/spaces\/1\/teams\/1\/tasks\/102$/);
     await expect(page.locator('.task-detail-page h1')).toContainText('팀 자료 검색 개선');

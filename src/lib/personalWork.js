@@ -10,6 +10,11 @@ export const notificationTypeLabels = {
   TEAM_APPLICATION_APPROVED: '팀 가입 승인', TEAM_APPLICATION_REJECTED: '팀 가입 결과',
 };
 
+export const isDeadlineNotification = (item) => [
+  'TASK_DEADLINE_IN_THREE_DAYS', 'TASK_DEADLINE_TOMORROW', 'TASK_DUE_TODAY',
+  'EVALUATION_DEADLINE_APPROACHING',
+].includes(item?.type);
+
 export const restrictionLabels = {
   TEAM_DELETION_IN_PROGRESS: '팀 삭제 절차가 진행 중입니다.',
   TASK_WORK_CLOSED: '최종 평가 시작 예정 시각부터 작업이 제한됩니다.',
