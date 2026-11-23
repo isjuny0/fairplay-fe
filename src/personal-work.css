@@ -71,14 +71,14 @@
 .notification-mark-read:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .notification-mark-read:disabled { cursor: wait; opacity: .55; }
 .personal-notification.is-inaccessible { color: var(--text-muted); }
-:is(.header-notification-preview-card, .personal-notification)[data-deadline="true"] { background: #fff4f4; border-color: #f0c6c6; }
+.header-notification-preview-card[data-deadline="true"], .personal-notification.is-unread[data-deadline="true"] { background: #fff4f4; border-color: #f0c6c6; }
 .header-notification-preview-card[data-deadline="true"] { border-left-color: #b33b39; }
 .header-notification-preview-card[data-deadline="true"]:hover { background: #ffeded; border-color: #d99090; border-left-color: #b33b39; }
 .header-notification-preview-card[data-deadline="true"] .header-notification-preview-state,
-.personal-notification[data-deadline="true"] :is(.notification-type-label, .notification-unread-label),
-.personal-notification[data-deadline="true"] .personal-notification-open:hover strong { color: #b33b39; }
+.personal-notification.is-unread[data-deadline="true"] :is(.notification-type-label, .notification-unread-label),
+.personal-notification.is-unread[data-deadline="true"] .personal-notification-open:hover strong { color: #b33b39; }
 .header-notification-preview-card[data-deadline="true"] .header-notification-preview-state i { background: #b33b39; }
-.personal-notification[data-deadline="true"]:not(.is-unread) { background: #fffafa; }
+.personal-notification[data-deadline="true"]:not(.is-unread) { background: #fff; border-color: var(--border); }
 @media (max-width: 720px) {
   .profile-area { gap: 5px; }
   .header-activity-actions { gap: 0; }

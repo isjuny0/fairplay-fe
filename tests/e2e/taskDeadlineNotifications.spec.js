@@ -129,9 +129,15 @@ test('화면을 유지하는 동안 생성된 마감 알림은 알림창 재열�
 test('작업 마감 알림 모두 읽음은 기존 API로 처리하고 알림창·미읽음 수를 함께 갱신한다', async ({ page }) => {
   const backend = await deadlineBackend(page);
   await page.goto('/notifications');
+  const cards = page.locator('.personal-notification');
+  await cards.first().getByRole('button', { name: /읽음으로 표시/ }).click();
+  await expect(cards.first()).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(cards.first().locator('.notification-type-label')).not.toHaveCSS('color', 'rgb(179, 59, 57)');
+  await expect(cards.nth(1)).toHaveCSS('background-color', 'rgb(255, 244, 244)');
   await page.getByRole('button', { name: '모두 읽음', exact: true }).click();
   await expect(page.locator('.notification-unread-label')).toHaveCount(0);
   await expect(page.locator('.personal-notification')).toHaveCount(3);
+  for (const card of await cards.all()) await expect(card).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   const bell = page.getByRole('button', { name: '알림함', exact: true });
   await expect(bell.locator('.notification-count')).toHaveCount(0);
   await bell.click();
