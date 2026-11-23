@@ -79,6 +79,9 @@
 .personal-notification.is-unread[data-deadline="true"] .personal-notification-open:hover strong { color: #b33b39; }
 .header-notification-preview-card[data-deadline="true"] .header-notification-preview-state i { background: #b33b39; }
 .personal-notification[data-deadline="true"]:not(.is-unread) { background: #fff; border-color: var(--border); }
+.personal-notification.is-unread[data-deadline="true"] .notification-mark-read { border-color: #edbcbc; background: #fffafa; color: #b33b39; }
+.personal-notification.is-unread[data-deadline="true"] .notification-mark-read:hover { border-color: #d99090; background: #ffe6e6; }
+.personal-notification.is-unread[data-deadline="true"] .notification-mark-read:focus-visible { outline-color: #b33b39; }
 @media (max-width: 720px) {
   .profile-area { gap: 5px; }
   .header-activity-actions { gap: 0; }

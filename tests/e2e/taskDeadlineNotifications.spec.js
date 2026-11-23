@@ -160,6 +160,7 @@ for (const width of [390, 1440]) {
       const row = page.locator('.personal-notification').filter({ hasText: title });
       await expect(row.locator('.notification-type-label')).toHaveText(label);
       await expect(row).toHaveCSS('background-color', 'rgb(255, 244, 244)');
+      await expect(row.locator('.notification-mark-read')).toHaveCSS('color', 'rgb(179, 59, 57)');
     }
     await expect(page.locator('.personal-notification').filter({ hasText: '새 작업에 배정되었습니다' })).toHaveCSS('background-color', 'rgb(247, 251, 248)');
     await page.getByRole('button', { name: '알림함', exact: true }).click();
