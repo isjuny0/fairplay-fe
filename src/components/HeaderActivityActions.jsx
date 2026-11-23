@@ -23,7 +23,10 @@ export default function HeaderActivityActions() {
 
   useEffect(() => {
     const update = () => { count.reload(); recent.reload(); };
+    const resume = () => { if (document.visibilityState === 'visible') update(); };
     window.addEventListener('fairplay:notifications-changed', update);
+    window.addEventListener('focus', resume);
+    document.addEventListener('visibilitychange', resume);
     const outside = (event) => {
       if (!root.current?.contains(event.target)) {
         setOpen(false);
@@ -40,6 +43,8 @@ export default function HeaderActivityActions() {
     document.addEventListener('keydown', key);
     return () => {
       window.removeEventListener('fairplay:notifications-changed', update);
+      window.removeEventListener('focus', resume);
+      document.removeEventListener('visibilitychange', resume);
       document.removeEventListener('pointerdown', outside);
       document.removeEventListener('keydown', key);
     };
@@ -80,7 +85,11 @@ export default function HeaderActivityActions() {
   return (
     <div className="header-activity-actions" ref={root}>
       <div className="header-activity-item">
-        <button className="header-activity-button" type="button" aria-label="알림함" onClick={() => { setTaskPopoverOpen(false); setOpen((value) => !value); }} aria-expanded={open}>
+        <button className="header-activity-button" type="button" aria-label="알림함" onClick={() => {
+          setTaskPopoverOpen(false);
+          if (!open) { count.reload(); recent.reload(); }
+          setOpen((value) => !value);
+        }} aria-expanded={open}>
           <Bell size={19} />
           {count.data > 0 && <span className="notification-count">{count.data > 99 ? '99+' : count.data}</span>}
         </button>
