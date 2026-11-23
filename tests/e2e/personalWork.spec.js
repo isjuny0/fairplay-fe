@@ -14,14 +14,15 @@ async function enterPreview(page) {
 
 test('헤더 알림 미리보기는 최근 접근 가능 항목을 표시하고 읽은 뒤 알림함으로 이동한다', async ({ page }) => {
   const calls = await enterPreview(page);
-  await expect(page.getByRole('button', { name: '알림함' })).toContainText('3');
+  await expect(page.getByRole('button', { name: '알림함' })).toContainText('6');
   await page.getByRole('button', { name: '알림함' }).click();
   await expect(page.getByRole('region', { name: '최근 알림' })).toBeVisible();
-  await expect(page.getByRole('region', { name: '최근 알림' })).toContainText('읽지 않은 알림 3개');
+  await expect(page.getByRole('region', { name: '최근 알림' })).toContainText('읽지 않은 알림 6개');
   await expect(page.getByRole('region', { name: '최근 알림' }).locator('.header-notification-preview-more')).toHaveCount(0);
   await expect(page.getByText('더 이상 접근할 수 없는 항목입니다')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /중간 평가가 시작되었습니다/ })).toBeVisible();
-  await page.getByRole('button', { name: /새 작업에 배정되었습니다/ }).click();
+  await expect(page.getByRole('button', { name: /담당 작업의 마감이 내일입니다/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /담당 작업의 마감이 3일 남았습니다/ })).toBeVisible();
+  await page.getByRole('button', { name: /담당 작업의 마감이 오늘입니다/ }).click();
   await expect(page).toHaveURL(/\/preview\/spaces\/1\/teams\/1\/tasks\/102$/);
   expect(calls).toEqual([]);
 });
@@ -31,15 +32,16 @@ test('알림함은 전체·미읽음 커서 목록과 전체 읽음을 제공한
   await page.goto('/preview/notifications');
   await expect(page.getByRole('heading', { name: '알림함', exact: true })).toBeVisible();
   await expect(page.getByText('더 이상 접근할 수 없는 항목입니다')).toBeVisible();
-  await expect(page.locator('.personal-notification-open')).toHaveCount(4);
+  await expect(page.locator('.personal-notification-open')).toHaveCount(7);
+  await expect(page.getByText('중간 평가가 시작되었습니다', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '열기' })).toHaveCount(0);
   await page.getByRole('button', { name: '읽지 않음' }).click();
-  await expect(page.locator('.notification-mark-read')).toHaveCount(3);
+  await expect(page.locator('.notification-mark-read')).toHaveCount(6);
   await page.locator('.notification-mark-read').first().click();
-  await expect(page.locator('.notification-mark-read')).toHaveCount(2);
+  await expect(page.locator('.notification-mark-read')).toHaveCount(5);
   await page.getByRole('button', { name: '모두 읽음' }).click();
   await expect(page.getByText('읽지 않은 알림이 없습니다.')).toBeVisible();
-  await expect(page.getByRole('button', { name: '알림함' })).not.toContainText('3');
+  await expect(page.getByRole('button', { name: '알림함' }).locator('.notification-count')).toHaveCount(0);
   await page.getByRole('button', { name: '전체', exact: true }).click();
   await page.getByRole('button', { name: '새 작업에 배정되었습니다 상세 보기' }).click();
   await expect(page).toHaveURL(/\/preview\/spaces\/1\/teams\/1\/tasks\/102$/);
@@ -51,8 +53,11 @@ test('통합 할 일 팝오버는 전체 작업·미제출 평가를 스크롤�
   resetMockState(context, 'final-evaluation');
   const state = structuredClone(getMockState(context));
   const baseTask = state.teams[1].tasks.find((task) =>
-    task.assignees?.some((assignee) => assignee.userId === context.user.id),
+    task.status !== 'DONE' && task.assignees?.some((assignee) => assignee.userId === context.user.id),
   );
+  // Keep the paging fixture independent from new preview task examples.
+  state.teams[1].tasks = [structuredClone(baseTask)];
+  state.previewTodoExamplesSeeded = true;
   state.teams[1].tasks.push(...Array.from({ length: 22 }, (_, index) => ({
     ...structuredClone(baseTask),
     id: 5000 + index,
@@ -69,11 +74,11 @@ test('통합 할 일 팝오버는 전체 작업·미제출 평가를 스크롤�
   await page.getByRole('button', { name: '할 일' }).click();
   const popover = page.getByRole('region', { name: '할 일 미리보기' });
   await expect(popover).toBeVisible();
-  await expect(popover).toContainText('할 일 30개');
+  await expect(popover).toContainText('할 일 24개');
   await expect(popover).toContainText('최종 동료 평가');
   const list = popover.locator('.header-task-preview-cards');
   const cards = list.locator('.header-task-preview-card');
-  await expect(cards).toHaveCount(30);
+  await expect(cards).toHaveCount(24);
   const { listTop, listBottom, fifthTop, scrollHeight, clientHeight } = await list.evaluate((element) => ({
     listTop: element.getBoundingClientRect().top,
     listBottom: element.getBoundingClientRect().bottom,

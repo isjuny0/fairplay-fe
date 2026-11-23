@@ -5,7 +5,7 @@ import useResource from '../hooks/useResource.js';
 import useAppNavigate from '../hooks/useAppNavigate.js';
 import { useInteractions } from '../hooks/useInteractions.js';
 import { getMyNotificationUnreadCount, listMyNotifications, markAllNotificationsRead, markNotificationRead } from '../api/personalWork.js';
-import { announceNotificationChange, notificationPath, notificationTypeLabels } from '../lib/personalWork.js';
+import { announceNotificationChange, isDeadlineNotification, notificationPath, notificationTypeLabels } from '../lib/personalWork.js';
 import { formatDate } from '../lib/domain.js';
 import { ErrorNotice, EmptyState, ResourceState } from './ui.jsx';
 import { HeaderContext } from './HeaderContext.js';
@@ -102,7 +102,7 @@ export default function PersonalNotifications() {
           const dateLabel = notificationDateLabel(item.createdAt);
           return <Fragment key={item.id}>
           {(index === 0 || dateLabel !== notificationDateLabel(page.items[index - 1].createdAt)) && <li className="notification-date-heading" role="presentation"><h2>{dateLabel}</h2></li>}
-          <li className={`personal-notification ${!item.readAt ? 'is-unread' : ''} ${!item.accessible ? 'is-inaccessible' : ''}`}>
+          <li className={`personal-notification ${!item.readAt ? 'is-unread' : ''} ${!item.accessible ? 'is-inaccessible' : ''}`} data-deadline={isDeadlineNotification(item)}>
             {targetPath
               ? <button type="button" className="personal-notification-open" disabled={busy} aria-label={`${item.title} 상세 보기`} onClick={() => openNotification(item, targetPath)}>{copy}</button>
               : copy}
