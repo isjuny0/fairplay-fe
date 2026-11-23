@@ -9,6 +9,16 @@ const initialNotifications = (context, state) => {
     || state.rounds.find((round) => round.type === 'MID' && round.status !== 'DRAFT');
   const roundLabel = evaluationRound?.type === 'FINAL' ? '최종 평가' : '중간 평가';
   return [
+    ...[
+      [208, 'TASK_DUE_TODAY', '담당 작업의 마감이 오늘입니다', 102],
+      [207, 'TASK_DEADLINE_TOMORROW', '담당 작업의 마감이 내일입니다', 103],
+      [206, 'TASK_DEADLINE_IN_THREE_DAYS', '담당 작업의 마감이 3일 남았습니다', 104],
+    ].map(([id, type, title, taskId], index) => ({
+      id, type, title,
+      message: state.teams[1]?.tasks.find(task => task.id === taskId)?.title || '담당 작업',
+      spaceId: 1, teamId: 1, target: { type: 'TASK', id: taskId, taskId: null },
+      accessible: true, createdAt: koreanDateTime(now - (index + 1) * 60000), readAt: null,
+    })),
     { id: 205, type: 'TASK_ASSIGNED', title: '새 작업에 배정되었습니다', message: '팀 자료 검색 개선', spaceId: 1, teamId: 1, target: { type: 'TASK', id: 102, taskId: null }, accessible: true, createdAt: koreanDateTime(now - 3600000), readAt: null },
     { id: 204, type: 'TASK_COMMENT_CREATED', title: '작업에 댓글이 등록되었습니다', message: 'AI 피드백 화면 개선', spaceId: 1, teamId: 1, target: { type: 'TASK_COMMENT', id: 9002, taskId: 103 }, accessible: true, createdAt: koreanDateTime(now - 7200000), readAt: null },
     ...(evaluationRound ? [{

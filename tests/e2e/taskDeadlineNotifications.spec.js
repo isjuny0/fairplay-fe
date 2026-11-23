@@ -143,3 +143,26 @@ test('작업 마감 알림 모두 읽음은 기존 API로 처리하고 알림창
   expect(write).toMatchObject({ path: '/api/me/notifications/read-all', body: null });
   expect(write.headers['x-csrf-token']).toBe('deadline-token');
 });
+
+for (const width of [390, 1440]) {
+  test(`${width}px 미리보기에서 마감 알림 3종의 유형·작업 이동·읽음을 실제 API 요청 없이 확인한다`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    const network = [];
+    page.on('request', request => { if (new URL(request.url()).pathname.startsWith('/api/')) network.push(request.url()); });
+    await page.goto('/preview/notifications');
+    for (const [, title, label] of stages) {
+      const row = page.locator('.personal-notification').filter({ hasText: title });
+      await expect(row.locator('.notification-type-label')).toHaveText(label);
+    }
+    await page.getByRole('button', { name: '알림함', exact: true }).click();
+    const popover = page.getByRole('region', { name: '최근 알림' });
+    await expect(popover.locator('.header-notification-preview-card')).toHaveCount(3);
+    for (const [, title] of stages) await expect(popover).toContainText(title);
+    await popover.getByRole('button', { name: /담당 작업의 마감이 오늘입니다/ }).click();
+    await expect(page).toHaveURL(/\/preview\/spaces\/1\/teams\/1\/tasks\/102$/);
+    await expect(page.locator('.task-detail-page h1')).toContainText('팀 자료 검색 개선');
+    await page.getByRole('button', { name: '알림함', exact: true }).click();
+    await expect(popover).not.toContainText('담당 작업의 마감이 오늘입니다');
+    expect(network).toEqual([]);
+  });
+}

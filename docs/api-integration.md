@@ -21,5 +21,6 @@
 - 백엔드 `feature/task-deadline-notifications#267`의 `NotificationType`·`NotificationResponse`와 `docs/api.md`를 기준으로 `TASK_DEADLINE_IN_THREE_DAYS`, `TASK_DEADLINE_TOMORROW`, `TASK_DUE_TODAY`를 각각 ‘마감 3일 전’, ‘마감 전날’, ‘오늘 마감’으로 표시합니다. 제목과 작업명은 서버의 `title`·`message`를 사용합니다.
 - 기존 알림 목록·커서·미읽음 수·개별/모두 읽음 API와 `TASK` 상세 이동을 그대로 사용합니다. 서버가 한국 날짜 기준으로 발송 여부를 결정하며 프론트에서 마감 알림을 생성하거나 72/24시간 기준으로 재계산하지 않습니다.
 - 헤더 알림창을 열거나 브라우저로 복귀하면 최근 미읽음 알림과 카운트를 다시 조회합니다. 읽은 알림은 팝업에서 빠지고, 원본 접근 불가 항목은 기존 권한 가림 규칙을 따릅니다.
+- 로컬 `/preview/notifications`와 헤더 알림창에는 세 마감 유형의 미읽음 예시를 제공합니다. 기존 작업 상세로 이동하고 읽음을 확인할 수 있으며, 예시는 서버의 실제 예약 발송이나 시간 경과를 재현하지 않습니다.
 
 [공통 요청](../src/api/client.js) · [조회 공유](../src/api/sharedReads.js) · [조회 훅](../src/hooks/useResource.js) · [저장 복구](../src/hooks/useSaveRecovery.js)
