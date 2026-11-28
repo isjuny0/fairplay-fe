@@ -1,63 +1,37 @@
-# Fairplay 프론트엔드
+# Fairplay Frontend
 
-**팀 프로젝트에서 누가 무엇을 했는지, 그 기여가 어떻게 평가됐는지 확인하는 협업 관리 서비스입니다.**
+Fairplay의 팀원·리더·관리자 화면과 로그인 없는 미리보기, 사용자 가이드를 제공하는 React · Vite 프론트엔드입니다.
 
-팀원은 작업을 나누고 수행 설명과 결과물을 남깁니다. 관리자가 리포트를 공개하면 팀원은 완료 기록과 동료 평가가 반영된 본인의 종합점수와 산정 근거를 확인할 수 있습니다.
+프로젝트 소개, 주요 기능과 화면, 전체 시스템 구성은 [Fairplay 조직 README](https://github.com/fairplay-web)에서 관리합니다.
 
-![Fairplay 작업 보드에서 상태별 작업, 담당자, 마감일과 예상 작업량을 확인하는 화면.](docs/images/task-board.webp)
+[백엔드 저장소](https://github.com/fairplay-web/fairplay-be) · [서비스 미리보기](https://fairplay-fe.vercel.app/preview) · [사용자 가이드](https://fairplay-fe.vercel.app/preview/exhibition)
 
-## 서비스 미리보기
+## 로컬 실행과 테스트
 
-| 체험 | 시작 방법 |
+Node.js 22를 사용합니다.
+
+```bash
+npm ci
+npm run dev
+```
+
+[로컬 미리보기](http://localhost:5173/preview)는 백엔드 없이 실행할 수 있습니다. Google 로그인과 실제 API를 사용하려면 [`.env.example`](.env.example)을 `.env`로 복사해 `VITE_GOOGLE_CLIENT_ID`를 설정하고 백엔드를 실행합니다. Vite의 기본 API 프록시 대상은 `http://localhost:8080`입니다.
+
+```bash
+npm test           # 단위 테스트
+npm run test:e2e   # 설치된 Chrome으로 화면 흐름 검증
+npm run build      # 배포용 빌드
+```
+
+### 환경 변수
+
+| 변수 | 용도 |
 | --- | --- |
-| [자유 탐색](https://fairplay-fe.vercel.app/preview) | 헤더의 미리보기 메뉴에서 팀 리더·팀원·스페이스 관리자 등 역할과 진행 상황을 선택합니다. |
-| [전시 사용자 가이드](https://fairplay-fe.vercel.app/preview/exhibition) | 팀원 또는 관리자 탭에서 작업 완료, 동료 평가 제출, 리포트 생성·공개 등의 가이드를 선택합니다. |
+| `VITE_API_BASE_URL` | API 기본 주소. 비워 두면 `/api` 요청을 개발·배포 프록시로 전달합니다. |
+| `VITE_API_PROXY_TARGET` | 로컬 개발 서버가 요청을 전달할 백엔드 주소. 기본값은 `http://localhost:8080`입니다. |
+| `VITE_GOOGLE_CLIENT_ID` | Google 로그인에 사용하는 클라이언트 ID |
 
-계정 없이 예시 데이터로 체험할 수 있습니다. 저장·제출·공개는 브라우저의 미리보기 상태에 반영됩니다. 이 문서의 화면은 Fairplay 미리보기에서 캡처했습니다.
-
-## 주요 기능과 화면
-
-### 1. 작업 관리
-
-보드·목록·타임라인에서 작업을 확인합니다. 담당자는 작업 상세에 결과물과 수행 설명을 남기고 작업을 완료합니다. 보완이 필요하면 수정 중으로 전환해 다시 완료할 수 있습니다.
-
-### 2. 동료 평가와 기여도 리포트
-
-팀원은 중간·최종 평가에서 대상별 점수와 사유를 저장한 뒤 제출합니다. 관리자는 제출 현황을 확인하고, 평가가 마감되면 팀별 리포트를 생성·검토·공개합니다. 팀원은 공개된 본인 리포트에서 100점 만점 종합점수, 항목별 반영 비중과 완료 작업 근거를 확인합니다.
-
-![공개된 기여도 리포트에서 개인 종합점수, 평가 비중과 항목별 반영 점수를 확인하는 화면.](docs/images/contribution-report.webp)
-
-<details>
-<summary>동료 평가 작성과 완료 작업 근거 화면</summary>
-
-![동료 평가 작성 화면에서 대상별 저장 현황과 점수 입력 항목을 확인하는 모습.](docs/images/peer-evaluation.webp)
-
-![리포트에 반영된 완료 작업을 펼쳐 본인 수행 설명과 연결 자료를 확인하는 화면.](docs/images/contribution-report-evidence.webp)
-
-</details>
-
-### 3. AI 피드백
-
-담당자가 요청하면 작업 설명과 결과물을 바탕으로 보완할 점과 선택 제안을 보여줍니다. 제안에 연결된 근거에서 자료를 열고, 수정 권한이 있으면 편집으로 이어갈 수 있습니다.
-
-![AI 피드백이 개선 방법과 제안에 연결된 팀 자료를 함께 보여주는 화면.](docs/images/ai-review.webp)
-
-### 4. 팀 자료 검색
-
-팀 자료에 질문하면 답변과 인용 근거를 볼 수 있습니다. 데스크톱에서는 오른쪽 패널에서 원문이나 추출 텍스트의 인용 위치를 함께 확인합니다.
-
-![팀 자료 검색의 답변과 강조된 인용 원문을 나란히 표시한 화면.](docs/images/materials-search.webp)
-
-### 5. 역할별 협업과 운영
-
-팀원과 리더는 팀 홈에서 일정·작업을 확인하고 자료와 회의록을 공유합니다. 스페이스 관리자는 팀별 진행률, 지연 작업, 평가 제출과 리포트 공개 상태를 관리합니다.
-
-<details>
-<summary>관리자 팀 관리 화면</summary>
-
-![관리자가 팀별 진행률, 작업 상태와 지연 건수, 자료 수를 비교하는 화면.](docs/images/manager-dashboard.webp)
-
-</details>
+프론트 환경 변수는 브라우저에 포함되므로 서버 비밀 키나 배포 토큰을 넣지 않습니다.
 
 ## 기술 스택
 
@@ -72,7 +46,7 @@
 ## 프론트엔드 구조
 
 ```mermaid
-flowchart LR
+flowchart TD
     Entry["React 앱"] --> AppRoutes["React Router · 기능별 화면"]
     AppRoutes --> State["컴포넌트 상태 · 조회 훅"]
     State --> Client["공통 API 클라이언트"]
@@ -93,22 +67,9 @@ flowchart LR
 - **작업 완료·평가 제출·리포트 공개**. 작업 상태와 담당자별 수행 설명, 연결 결과물에 따라 완료 조건을 표시합니다. 팀원 평가의 임시 저장과 최종 제출, 관리자 리포트의 생성과 공개는 각각 별도 단계로 처리합니다. 수정 요청이 버전 충돌로 실패하면 입력을 보존하고 최신 내용을 다시 확인할 수 있게 합니다. [작업 상세](src/components/TaskDetail.jsx) · [동료 평가](src/components/PeerEvaluation.jsx) · [리포트 관리](src/components/ReportReview.jsx)
 - **AI 대기 상태와 검색 맥락**. AI 피드백은 검토 대기·진행 중인 동안 경과 시간에 따라 조회 간격을 늘리고, 브라우저 탭이 숨겨지면 조회를 멈춥니다. 팀 자료 검색은 같은 팀으로 돌아올 때 최근 답변과 질문 초안을 복원합니다. 인용을 열면 해당 자료 버전과 위치를 확인합니다. [AI 피드백](src/components/AiReview.jsx) · [팀 자료 검색](src/components/TeamRagSearch.jsx)
 
-## 로컬 실행과 테스트
+## 배포
 
-Node.js 22를 사용합니다.
-
-```bash
-npm ci
-npm run dev
-```
-
-[로컬 미리보기](http://localhost:5173/preview)는 백엔드 없이 실행할 수 있습니다. Google 로그인과 실제 API를 사용하려면 [`.env.example`](.env.example)을 `.env`로 복사해 `VITE_GOOGLE_CLIENT_ID`를 설정하고 백엔드를 실행합니다. Vite의 기본 API 프록시 대상은 `http://localhost:8080`입니다.
-
-```bash
-npm test           # 단위 테스트
-npm run test:e2e   # 설치된 Chrome으로 화면 흐름 검증
-npm run build      # 배포용 빌드
-```
+운영 배포와 Repository Secrets 설정, 결과 확인 방법은 [Vercel 배포 안내](.github/VERCEL_DEPLOYMENT.md)를 따릅니다. 배포 토큰은 GitHub Actions의 Repository Secrets에서 관리합니다.
 
 ## 관련 문서
 
@@ -117,4 +78,4 @@ npm run build      # 배포용 빌드
 - [날짜·시간 계약](docs/datetime.md)
 - [공통 UI 규칙](docs/ui-conventions.md)
 - [API 연동과 오류 처리](docs/api-integration.md)
-- [Fairplay 백엔드 저장소](https://github.com/isjuny0/fairplay-be)
+- [Fairplay 백엔드 저장소](https://github.com/fairplay-web/fairplay-be)
