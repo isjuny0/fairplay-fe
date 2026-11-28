@@ -77,20 +77,29 @@ flowchart LR
 
 ## 로컬 실행
 
-Node.js 22를 사용합니다.
+Node.js 22를 사용합니다. 미리보기만 사용할 때는 환경파일 설정 없이 실행할 수 있습니다.
+
+1. 의존성을 설치합니다.
 
 ```bash
 npm ci
-npm run dev
 ```
 
-[로컬 미리보기](http://localhost:5173/preview)는 추가 설정 없이 확인할 수 있습니다. 실제 API와 Google 로그인을 사용하려면 [`.env.example`](.env.example)을 `.env`로 복사하고 Google 클라이언트 ID·API 설정을 입력한 뒤 백엔드를 실행합니다.
+2. 실제 API와 Google 로그인을 사용할 경우에만 환경파일을 준비합니다. 미리보기만 사용할 때는 이 단계를 생략합니다.
 
 ```bash
 cp .env.example .env
 ```
 
-기본 개발 서버는 `http://localhost:5173`, 기본 백엔드 프록시 대상은 `http://localhost:8080`입니다. 프록시 대상은 [`vite.config.js`](vite.config.js)와 환경변수에서 설정합니다.
+[환경변수 예시](.env.example)를 참고해 `.env`에 Google 클라이언트 ID·API 설정을 입력하고 백엔드를 실행합니다.
+
+3. 개발 서버를 시작합니다.
+
+```bash
+npm run dev
+```
+
+[로컬 미리보기](http://localhost:5173/preview)에서 예시 화면을 확인할 수 있습니다. 기본 개발 서버는 `http://localhost:5173`, 기본 백엔드 프록시 대상은 `http://localhost:8080`입니다. 프록시 대상은 [`vite.config.js`](vite.config.js)와 환경변수에서 설정합니다.
 
 ## 테스트와 빌드
 
