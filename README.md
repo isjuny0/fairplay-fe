@@ -6,24 +6,18 @@ Fairplay의 팀원·리더·관리자 화면과 로그인 없는 미리보기, �
 
 [백엔드 저장소](https://github.com/fairplay-web/fairplay-be) · [서비스 미리보기](https://fairplay-fe.vercel.app/preview) · [사용자 가이드](https://fairplay-fe.vercel.app/preview/exhibition)
 
-## 로컬 실행과 테스트
+## 준비 사항
 
-Node.js 22를 사용합니다.
+- Node.js 22와 npm을 사용합니다.
+- 실제 Google 로그인과 API를 확인하려면 백엔드와 Google OAuth 클라이언트 ID가 필요합니다. 로그인 없는 미리보기는 백엔드 없이 실행할 수 있습니다.
 
-```bash
-npm ci
-npm run dev
-```
+## 환경 설정
 
-[로컬 미리보기](http://localhost:5173/preview)는 백엔드 없이 실행할 수 있습니다. Google 로그인과 실제 API를 사용하려면 [`.env.example`](.env.example)을 `.env`로 복사해 `VITE_GOOGLE_CLIENT_ID`를 설정하고 백엔드를 실행합니다. Vite의 기본 API 프록시 대상은 `http://localhost:8080`입니다.
+미리보기만 확인할 때는 환경 변수 설정 없이 실행할 수 있습니다. 실제 API를 연동할 때는 [`.env.example`](.env.example)을 복사한 뒤 `VITE_GOOGLE_CLIENT_ID`와 필요한 API 주소를 설정합니다.
 
 ```bash
-npm test           # 단위 테스트
-npm run test:e2e   # 설치된 Chrome으로 화면 흐름 검증
-npm run build      # 배포용 빌드
+cp .env.example .env
 ```
-
-### 환경 변수
 
 | 변수 | 용도 |
 | --- | --- |
@@ -32,6 +26,25 @@ npm run build      # 배포용 빌드
 | `VITE_GOOGLE_CLIENT_ID` | Google 로그인에 사용하는 클라이언트 ID |
 
 프론트 환경 변수는 브라우저에 포함되므로 서버 비밀 키나 배포 토큰을 넣지 않습니다.
+
+## 로컬 실행
+
+```bash
+npm ci
+npm run dev
+```
+
+개발 서버는 `http://localhost:5173`에서 실행됩니다. [로컬 미리보기](http://localhost:5173/preview)는 예시 데이터를 사용하며 실제 서버의 업무 데이터를 변경하지 않습니다. Google 로그인과 실제 API를 확인할 때는 앞서 설정한 백엔드를 함께 실행합니다.
+
+## 테스트와 빌드
+
+의존성을 설치한 뒤 필요한 검증 명령을 실행합니다. E2E 테스트는 설치된 Google Chrome을 사용합니다.
+
+```bash
+npm test           # 단위 테스트
+npm run test:e2e   # Chrome으로 화면 흐름 검증
+npm run build      # 배포용 빌드
+```
 
 ## 기술 스택
 
