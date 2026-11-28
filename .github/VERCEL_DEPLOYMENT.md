@@ -1,6 +1,6 @@
 # Vercel 운영 자동 배포
 
-원본 `isjuny0/fairplay-fe`의 `main`에 push 또는 PR 병합이 발생하면
+원본 `fairplay-web/fairplay-fe`의 `main`에 push 또는 PR 병합이 발생하면
 `Deploy production to Vercel` workflow가 기존 Vercel 프로젝트에 배포합니다.
 GitHub와 Vercel의 저장소 직접 연결은 필요하지 않습니다.
 
