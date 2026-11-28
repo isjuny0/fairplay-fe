@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.repository == 'isjuny0/fairplay-fe' && github.ref == 'refs/heads/main'
+    if: github.repository == 'fairplay-web/fairplay-fe' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
